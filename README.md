@@ -1,5 +1,22 @@
 # Whimway
 
+Whimway now includes a genuine **React Native / Expo iOS and Android app** in apps/mobile, alongside the existing Next.js backend and web client. The native app uses Expo Router, Reanimated, Gesture Handler, native Google maps, foreground location, local reminders, secure optional authentication and shared validated planning contracts. It is not a WebView.
+
+Start with [native run and build instructions](docs/mobile-release.md), [the audit](docs/mobile-audit.md), [API contracts](docs/mobile-api.md), [verification checklist](docs/mobile-checklist.md) and [dependency advisories](docs/dependency-advisories.md). Android/iOS JavaScript bundles and native project generation do not establish device or signing readiness. Live providers, hosted accounts and signed device builds require external configuration.
+
+~~~powershell
+# Terminal 1 — backend
+npm ci
+npm run dev
+# Terminal 2 — native development client
+cd apps/mobile
+npm ci
+# Configure .env.local from .env.example: API address + platform maps keys.
+npm start
+~~~
+
+The original web application and its provider, database and security logic remain below.
+
 A responsive, guest-first area discovery and outing planner. **Good plans start anywhere.**
 
 This repository began as an empty checkout. It now contains a Next.js App Router application with a real Google Places/Routes adapter, OpenAI Responses Structured Outputs, a deterministic planner/editor, device persistence, and optional Supabase authentication and sharing.

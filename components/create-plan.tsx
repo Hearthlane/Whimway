@@ -47,6 +47,17 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [startBusy, setStartBusy] = useState(false);
+  const [endBusy, setEndBusy] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
+  const resolving = useRef({
+    area: false,
+    start: false,
+    end: false,
+    pin: false,
+  });
+  const pinSequence = useRef(0);
   const [loaded, setLoaded] = useState(false);
   const active = useRef<AbortController | null>(null);
   const flight = useRef(false);
@@ -200,15 +211,25 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
     );
   }
   async function pin(point: { lat: number; lng: number }) {
+    const current = ++pinSequence.current;
+    resolving.current.pin = true;
+    setPinBusy(true);
     try {
-      choose(await api<Location>("point", point));
+      const location = await api<Location>("point", point);
+      if (current === pinSequence.current) choose(location);
     } catch (e) {
-      setError((e as Error).message);
+      if (current === pinSequence.current) setError((e as Error).message);
+    } finally {
+      if (current === pinSequence.current) {
+        resolving.current.pin = false;
+        setPinBusy(false);
+      }
     }
   }
   async function generate(e: React.FormEvent) {
     e.preventDefault();
-    if (flight.current) return;
+    if (flight.current || Object.values(resolving.current).some(Boolean))
+      return;
     setError("");
     if (!location) {
       setError("Select an area from the location search first.");
@@ -291,7 +312,15 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
               <h2>Pick your patch of the world.</h2>
             </div>
             <label className="input-label">Exploration centre</label>
-            <LocationSearch value={location} onChange={choose} demo={demo} />
+            <LocationSearch
+              value={location}
+              onChange={choose}
+              demo={demo}
+              onBusyChange={(busy) => {
+                resolving.current.area = busy;
+                setLocationBusy(busy);
+              }}
+            />
             {location ? (
               <div className="location-confirm">
                 <MapPin size={14} />
@@ -505,7 +534,15 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
               <label className="input-label anchor-label">
                 Optional starting point
               </label>
-              <LocationSearch value={start} onChange={setStart} demo={demo} />
+              <LocationSearch
+                value={start}
+                onChange={setStart}
+                demo={demo}
+                onBusyChange={(busy) => {
+                  resolving.current.start = busy;
+                  setStartBusy(busy);
+                }}
+              />
               {start ? (
                 <button
                   className="text-link"
@@ -519,7 +556,15 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
               <label className="input-label anchor-label">
                 Optional ending point
               </label>
-              <LocationSearch value={end} onChange={setEnd} demo={demo} />
+              <LocationSearch
+                value={end}
+                onChange={setEnd}
+                demo={demo}
+                onBusyChange={(busy) => {
+                  resolving.current.end = busy;
+                  setEndBusy(busy);
+                }}
+              />
               {end ? (
                 <button
                   className="text-link"
@@ -554,7 +599,12 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
             </Notice>
           ) : null}
           {error ? <Notice error>{error}</Notice> : null}
-          <Button className="primary generate-button" type="submit" busy={busy}>
+          <Button
+            className="primary generate-button"
+            type="submit"
+            busy={busy}
+            disabled={locationBusy || startBusy || endBusy || pinBusy}
+          >
             {busy ? "Finding your kind of day…" : "Make my day"}
             {!busy ? <Sparkles size={19} /> : null}
           </Button>

@@ -5,4 +5,13 @@ node_modules/
 coverage/
 playwright-report/
 test-results/
+test-results-mobile/
 *.tsbuildinfo
+.expo/
+dist/
+apps/mobile/android/
+apps/mobile/ios/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

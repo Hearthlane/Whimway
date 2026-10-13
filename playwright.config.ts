@@ -9,6 +9,8 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:3000",
+    // Inspect settled colors/layout; motion is reviewed independently in preview.
+    reducedMotion: "reduce",
     trace: "retain-on-failure",
     launchOptions: {
       executablePath:
