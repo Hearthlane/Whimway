@@ -446,8 +446,8 @@ export class GoogleRoutes implements RouteProvider {
           .array(
             z.object({
               duration: z.string().regex(/^\d+(\.\d+)?s$/),
-              distanceMeters: z.number(),
-              polyline: z.object({ encodedPolyline: z.string() }),
+              distanceMeters: z.number().nonnegative(),
+              polyline: z.object({ encodedPolyline: z.string().min(1) }),
             }),
           )
           .min(1),
