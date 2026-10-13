@@ -4,6 +4,9 @@ cd "$(dirname "$0")/.."
 if curl --fail --silent --output /dev/null http://127.0.0.1:3000/api/status; then
   exit 0
 fi
+if [[ -n "${CODESPACE_NAME:-}" ]]; then
+  export APP_ORIGIN="${APP_ORIGIN:-https://${CODESPACE_NAME}-3000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}}"
+fi
 nohup env WHIMWAY_DEMO_MODE=true NEXT_PUBLIC_WHIMWAY_DEMO_MODE=true \
   DAILY_GUEST_GENERATIONS=100 DAILY_REMIX_LIMIT=100 \
   npm run dev >/tmp/whimway-preview.log 2>&1 </dev/null &
