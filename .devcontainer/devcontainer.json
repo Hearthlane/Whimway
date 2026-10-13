@@ -1,0 +1,14 @@
+{
+  "name": "Whimway preview",
+  "image": "node:24-bookworm",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Whimway development preview",
+      "onAutoForward": "openBrowser",
+      "visibility": "private"
+    }
+  },
+  "postCreateCommand": "npm ci --no-audit --no-fund",
+  "postAttachCommand": "bash .devcontainer/start-preview.sh"
+}
