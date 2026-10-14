@@ -4,7 +4,7 @@ appId: ${APP_ID || 'com.example.whimway'}
     clearState: true
     permissions:
       location: deny
-      notifications: ${NOTIFICATION_PERMISSION || 'deny'}
+      notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
 - openLink: ${EXPO_DEV_URL}
 - extendedWaitUntil:
     visible: "Where are we heading?"

@@ -19,7 +19,7 @@ if (sha.test(before ?? "") && sha.test(after ?? "") && !/^0+$/.test(before)) {
     native = diff.stdout
       .split(/\r?\n/)
       .some((file) =>
-        /^(apps\/mobile\/|packages\/|lib\/|app\/api\/|e2e-native\/|package(?:-lock)?\.json$|scripts\/(?:native-build-inputs|start-native-test-services|verify-native-permissions)\.mjs$|scripts\/run-android-native-qa\.sh$|\.github\/workflows\/native\.yml$)/.test(
+        /^(apps\/mobile\/|packages\/|lib\/|app\/api\/|e2e-native\/|package(?:-lock)?\.json$|scripts\/(?:native-build-inputs|reuse-native-build|start-native-test-services|verify-native-permissions)\.mjs$|scripts\/run-android-native-qa\.sh$|\.github\/workflows\/native\.yml$)/.test(
           file,
         ),
       );

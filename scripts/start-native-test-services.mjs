@@ -69,6 +69,9 @@ start(
 start(
   "metro",
   [
+    // Expo binds --localhost using DNS. Prefer IPv4 so both the health probe
+    // and adb reverse reach that same loopback listener on hosted runners.
+    "--dns-result-order=ipv4first",
     path.join(mobile, "node_modules/expo/bin/cli"),
     "start",
     "--dev-client",
@@ -79,6 +82,10 @@ start(
   mobile,
   {
     EXPO_PUBLIC_API_URL: "http://127.0.0.1:3000",
+    REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1",
+    // CI exercises the native app, without preparing an unused desktop
+    // React Native DevTools Electron shell on a headless Linux runner.
+    EXPO_UNSTABLE_HEADLESS: "1",
   },
 );
 const deadline = Date.now() + 180000;

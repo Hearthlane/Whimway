@@ -12,6 +12,7 @@ on:
         "package-lock.json",
         "e2e-native/**",
         "scripts/native-build-inputs.mjs",
+        "scripts/reuse-native-build.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
@@ -29,6 +30,7 @@ on:
         "package-lock.json",
         "e2e-native/**",
         "scripts/native-build-inputs.mjs",
+        "scripts/reuse-native-build.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
@@ -38,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   EXPO_NO_TELEMETRY: "1"
@@ -74,11 +77,27 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
+      - name: Find an APK built from the same product source
+        id: reuse_android
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs android
+      - name: Restore verified compiled APKs
+        if: steps.reuse_android.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_android.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_android.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/android
       - name: Install compatible mobile dependencies
         run: npm ci
       - uses: actions/cache@v5
@@ -94,8 +113,10 @@ jobs:
           "$JAVA_HOME_17_X64/bin/java" -version
           test -d "$ANDROID_HOME/licenses"
       - name: Generate Android project
+        if: steps.reuse_android.outputs.reused != 'true'
         run: npx expo prebuild --platform android --no-install
       - name: Compile standalone internal-test APK
+        if: steps.reuse_android.outputs.reused != 'true'
         run: |
           cd android
           chmod +x gradlew
@@ -169,11 +190,41 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
+      - name: Find simulator apps built from the same product source
+        id: reuse_ios_release
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs ios-release
+      - name: Find a matching simulator development client
+        id: reuse_ios_debug
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs ios-debug
+      - name: Restore verified Release simulator archive
+        if: steps.reuse_ios_release.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_ios_release.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_ios_release.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/.expo/native-reuse/release
+      - name: Restore verified Debug simulator archive
+        if: steps.reuse_ios_debug.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_ios_debug.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_ios_debug.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/.expo/native-reuse/debug
       - name: Report installed Apple toolchain
         run: |
           xcodebuild -version
@@ -188,15 +239,23 @@ jobs:
       - name: Install compatible mobile dependencies
         run: npm ci
       - name: Generate iOS project and install pods
+        if: steps.reuse_ios_release.outputs.reused != 'true' || steps.reuse_ios_debug.outputs.reused != 'true'
         run: |
           npx expo prebuild --platform ios --no-install
           cd ios
           pod install
       - name: Compile iOS simulator app without signing credentials
         id: ios_compile
+        if: steps.reuse_ios_release.outputs.reused != 'true'
         run: |
           xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-build.log 2>&1
           tar -czf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator Whimway.app
+      - name: Unpack verified Release simulator app
+        if: steps.reuse_ios_release.outputs.reused == 'true'
+        run: |
+          mkdir -p ios/build/Build/Products/Release-iphonesimulator
+          cp .expo/native-reuse/release/whimway-ios-simulator.tar.gz ios/whimway-ios-simulator.tar.gz
+          tar -xzf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator
       - name: Launch the actual simulator app and capture first frame
         timeout-minutes: 12
         run: |
@@ -207,7 +266,7 @@ jobs:
           sleep 5
           xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
       - name: Retain simulator app and runtime evidence
-        if: always() && steps.ios_compile.outcome == 'success'
+        if: always() && (steps.ios_compile.outcome == 'success' || steps.reuse_ios_release.outputs.reused == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: ios-native-simulator-app
@@ -218,8 +277,24 @@ jobs:
             apps/mobile/ios/devices.json
           retention-days: 7
       - name: Compile a simulator development client
+        id: ios_debug_compile
+        if: steps.reuse_ios_debug.outputs.reused != 'true'
         run: |
           xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-debug-build.log 2>&1
+          tar -czf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator Whimway.app
+      - name: Unpack verified Debug simulator app
+        if: steps.reuse_ios_debug.outputs.reused == 'true'
+        run: |
+          mkdir -p ios/build/Build/Products/Debug-iphonesimulator
+          cp .expo/native-reuse/debug/whimway-ios-simulator-debug.tar.gz ios/whimway-ios-simulator-debug.tar.gz
+          tar -xzf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator
+      - name: Retain compiled simulator development client
+        if: always() && (steps.ios_debug_compile.outcome == 'success' || steps.reuse_ios_debug.outputs.reused == 'true')
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-simulator-debug
+          path: apps/mobile/ios/whimway-ios-simulator-debug.tar.gz
+          retention-days: 7
       - name: Prepare and exercise actual iOS development views
         working-directory: .
         run: |
