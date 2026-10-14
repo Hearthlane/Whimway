@@ -82,7 +82,7 @@ export default function Explore() {
       </Reveal>
       <Reveal delay={80}>
         <View style={styles.section}>
-          <View style={[styles.row, { gap: 8 }]}>
+          <View style={[styles.row, { gap: 8, alignItems: "stretch" }]}>
             {(
               [
                 ["place", "Pick a place", MapPin],
