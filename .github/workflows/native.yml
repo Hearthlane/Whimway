@@ -7,9 +7,14 @@ on:
         "apps/mobile/**",
         "packages/**",
         "lib/**",
+        "app/api/**",
+        "package.json",
+        "package-lock.json",
         "e2e-native/**",
+        "scripts/native-build-inputs.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
+        "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
       ]
   push:
@@ -19,9 +24,14 @@ on:
         "apps/mobile/**",
         "packages/**",
         "lib/**",
+        "app/api/**",
+        "package.json",
+        "package-lock.json",
         "e2e-native/**",
+        "scripts/native-build-inputs.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
+        "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
       ]
   workflow_dispatch:
@@ -29,17 +39,32 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: native-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   EXPO_NO_TELEMETRY: "1"
   EXPO_PUBLIC_API_URL: https://whimway.invalid
   WHIMWAY_NATIVE_BUILD_CHECK: "true"
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.inputs.outputs.native }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check actual native build inputs changed in this push
+        id: inputs
+        run: node scripts/native-build-inputs.mjs
   android:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    concurrency:
+      group: native-android-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     defaults:
@@ -130,6 +155,11 @@ jobs:
           path: apps/mobile/android/build/reports
           retention-days: 7
   ios:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    concurrency:
+      group: native-ios-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: macos-26
     timeout-minutes: 75
     defaults:
