@@ -79,11 +79,11 @@ tags: [native, fixtures, smoke]
     element: "Your route, timing and estimates are updated."
     direction: UP
 - scrollUntilVisible:
-    element: "Want reminders for your day?"
+    element: "Want reminders for your day[?]"
     direction: DOWN
     timeout: 30000
-- tapOn: "Want reminders for your day?"
-- assertVisible: "A little nudge for your day?"
+- tapOn: "Want reminders for your day[?]"
+- assertVisible: "A little nudge for your day[?]"
 - tapOn: "Yes, remind me"
 - tapOn:
     text: "Don.t [Aa]llow"
@@ -110,9 +110,12 @@ tags: [native, fixtures, smoke]
     permissions:
       location: deny
       notifications: deny
+- extendedWaitUntil:
+    visible: "Development Build|Where are we heading[?]"
+    timeout: 60000
 - openLink: ${EXPO_DEV_URL}
 - extendedWaitUntil:
-    visible: "Where are we heading?"
+    visible: "Where are we heading[?]"
     timeout: 120000
 - tapOn: "Saved"
 - extendedWaitUntil:

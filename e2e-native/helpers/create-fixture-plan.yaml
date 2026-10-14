@@ -18,7 +18,7 @@ appId: ${APP_ID || 'com.example.whimway'}
     element: ".*find something good"
     direction: DOWN
 - tapOn: ".*find something good"
-- assertVisible: "What sounds fun?"
+- assertVisible: "What sounds fun[?]"
 - tapOn: "Food & drinks"
 - scrollUntilVisible:
     element: "Next"
@@ -35,7 +35,7 @@ appId: ${APP_ID || 'com.example.whimway'}
       platform: iOS
     commands:
       - tapOn: "Back"
-- assertVisible: "What sounds fun?"
+- assertVisible: "What sounds fun[?]"
 - scrollUntilVisible:
     element: "Next"
     direction: DOWN

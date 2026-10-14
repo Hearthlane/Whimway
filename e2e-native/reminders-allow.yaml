@@ -8,10 +8,10 @@ tags: [native, fixtures, reminders]
       NOTIFICATION_PERMISSION: allow
 - runFlow: helpers/create-fixture-plan.yaml
 - scrollUntilVisible:
-    element: "Want reminders for your day?"
+    element: "Want reminders for your day[?]"
     direction: DOWN
     timeout: 30000
-- tapOn: "Want reminders for your day?"
+- tapOn: "Want reminders for your day[?]"
 - tapOn: "Also remind me before each stop"
 - tapOn: "Yes, remind me"
 - tapOn:
