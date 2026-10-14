@@ -118,6 +118,17 @@ test("Explore, Saved and Profile render at representative portrait widths", asyn
     await expect(
       page.getByText("Where are we heading?", { exact: true }),
     ).toBeVisible();
+    if (width === 375) {
+      const search = page.getByRole("textbox", {
+        name: "Search a place",
+        exact: true,
+      });
+      await search.focus();
+      await expect(search).toBeFocused();
+      await shot(page, "explore-search-focused-375");
+      await page.getByText("Where are we heading?", { exact: true }).click();
+      await expect(search).not.toBeFocused();
+    }
     await noOverflow(page);
     await shot(page, `explore-${width}`);
   }
@@ -153,6 +164,22 @@ test("Guided planning skips, preserves Back state, generates early and reopens f
   page,
 }) => {
   await start(page);
+  const details = page.getByRole("button", {
+    name: "Review day details",
+    exact: true,
+  });
+  const defaults = page.getByText(
+    "Unchosen details use these starting choices. Adjust them anytime.",
+    { exact: true },
+  );
+  await expect(details).toHaveAttribute("aria-expanded", "false");
+  await expect(defaults).not.toBeVisible();
+  await details.click();
+  await expect(details).toHaveAttribute("aria-expanded", "true");
+  await expect(defaults).toBeVisible();
+  await details.click();
+  await expect(details).toHaveAttribute("aria-expanded", "false");
+  await expect(defaults).not.toBeVisible();
   await page
     .getByRole("button", { name: "Food & drinks", exact: true })
     .click();
@@ -169,14 +196,20 @@ test("Guided planning skips, preserves Back state, generates early and reopens f
   await expect(
     page.getByText("What’s your energy today?", { exact: true }),
   ).toBeVisible();
+  const balanced = page.getByRole("button", {
+    name: "A little of both",
+    exact: true,
+  });
+  await balanced.click();
+  await expect(balanced).toHaveAttribute("aria-pressed", "true");
   await shot(page, "planner-energy-390");
   const submitted = page.waitForRequest((request) =>
     request.url().endsWith("/api/generate"),
   );
   await page.getByRole("button", { name: "Make my day", exact: true }).click();
-  expect((await submitted).postDataJSON().request.interests).toContain(
-    "Food & drinks",
-  );
+  const requested = (await submitted).postDataJSON().request;
+  expect(requested.interests).toContain("Food & drinks");
+  expect(requested.energy).toBe("balanced");
   await expect(page).toHaveURL(/\/plan\/[a-f\d-]+/);
   await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
     4,
@@ -321,8 +354,12 @@ test("Complete prompt prefills supplied constraints without repeat questions", a
     "Plan a fun date around Toronto tomorrow. We have $70 each, four hours and want food, shopping and something exciting.",
   );
   await expect(
-    page.getByText("CAD 70 / person · Walking", { exact: true }),
+    page.getByText("4 hours · CAD 70 / person", { exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Review day details", exact: true })
+    .click();
+  await expect(page.getByText(/ · Walking$/)).toBeVisible();
   await expect(
     page.getByText("What’s your budget?", { exact: true }),
   ).not.toBeVisible();
@@ -896,10 +933,23 @@ test("Local diagnostics report failure codes without private input and can be cl
   await expect(report).toContainText("No recent errors recorded.");
 });
 
-test("Shared sheet supports header drag dismissal and remains keyboard-focusable", async ({
+test("Shared sheet supports drag, keyboard focus and field-specific edit recovery", async ({
   page,
 }) => {
+  const generation = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
   await generate(page);
+  const original = await (await generation).json();
+  const savedBefore = await page.evaluate(() =>
+    localStorage.getItem("whimway:native:plans:v1"),
+  );
+  const edits: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/edit"))
+      edits.push(request.postData() ?? "");
+  });
   await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
   const sheet = page.getByRole("dialog", {
     name: "Make room for your day",
@@ -929,6 +979,71 @@ test("Shared sheet supports header drag dismissal and remains keyboard-focusable
   await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
     4,
   );
+  await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  const duration = sheet.getByRole("textbox", {
+    name: "Plan duration",
+    exact: true,
+  });
+  const budget = sheet.getByRole("textbox", {
+    name: "Plan budget",
+    exact: true,
+  });
+  await duration.fill("0");
+  await sheet
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  await expect(
+    sheet.getByText("Enter a whole number from 60 to 720 minutes.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(edits).toHaveLength(0);
+  await duration.fill(String(original.request.duration));
+  await budget.fill("-1");
+  await sheet
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  await expect(
+    sheet.getByText(
+      `Enter a budget from 0 to 1,000,000 ${original.cost.currency} per person.`,
+      { exact: true },
+    ),
+  ).toBeVisible();
+  expect(edits).toHaveLength(0);
+  expect(
+    await page.evaluate(() => localStorage.getItem("whimway:native:plans:v1")),
+  ).toBe(savedBefore);
+  await auditAccessibility(page, "field-specific editing error");
+  await shot(page, "editing-field-error-390");
+  await budget.fill(String(original.request.budget));
+  const retry = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/edit") && response.status() === 200,
+  );
+  await sheet
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  const updated = await (await retry).json();
+  expect(updated.revision).toBeGreaterThan(original.revision);
+  expect(edits).toHaveLength(1);
+  await expect(sheet).not.toBeVisible();
+  await page
+    .getByRole("button", { name: /^Customize / })
+    .first()
+    .click();
+  const stopSheet = page.getByRole("dialog");
+  await stopSheet
+    .getByRole("textbox", { name: "Visit duration in minutes", exact: true })
+    .fill("0");
+  await stopSheet
+    .getByRole("button", { name: "Update visit duration", exact: true })
+    .click();
+  await expect(
+    stopSheet.getByText("Enter a whole number from 15 to 240 minutes.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(edits).toHaveLength(1);
 });
 
 test("Free planning enforces zero estimated activity cost rather than a soft zero budget", async ({

@@ -140,7 +140,6 @@ async function schedule(
     await Notifications.setNotificationChannelAsync(CHANNEL, {
       name: "Day reminders",
       importance: Notifications.AndroidImportance.DEFAULT,
-      sound: "default",
     });
   let permission = await Notifications.getPermissionsAsync();
   if (!permitted(permission) && requestPermission && permission.canAskAgain)

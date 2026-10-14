@@ -112,12 +112,12 @@ export function RouteMap({
   };
   if (!configured || !area)
     return (
-      <View style={[styles.unavailable, style]} accessibilityRole="summary">
-        <Text style={styles.title}>Your route, in one place</Text>
+      <View style={[style, styles.unavailable]} accessibilityRole="summary">
+        <Text style={styles.title}>Map unavailable</Text>
         <Text style={styles.explanation}>
-          {!area
-            ? "Choose an area to open the map."
-            : "Native maps need a configured Google Maps SDK key and a new device build. Your itinerary is available below."}
+          {plan
+            ? "Follow your stops and day details below."
+            : "Search for a place or use Near me to keep exploring."}
         </Text>
       </View>
     );
@@ -267,14 +267,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mint,
   },
   unavailable: {
-    minHeight: 180,
-    borderRadius: 24,
+    // Unavailable maps are notices, even when a caller reserves map height.
+    height: "auto",
+    minHeight: 0,
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: "auto",
+    aspectRatio: undefined,
+    borderRadius: 18,
     backgroundColor: colors.mint,
-    justifyContent: "center",
-    padding: 24,
-    gap: 12,
+    padding: 16,
+    gap: 4,
   },
-  title: { fontFamily: fonts.display, color: colors.ink, fontSize: 24 },
+  title: { fontFamily: fonts.medium, color: colors.ink, fontSize: 16 },
   explanation: {
     fontFamily: fonts.body,
     color: colors.ink,

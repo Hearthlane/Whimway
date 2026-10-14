@@ -6,21 +6,31 @@ import {
   TextInput,
   Platform,
   BackHandler,
+  useWindowDimensions,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { DateTime } from "luxon";
 import * as Haptics from "expo-haptics";
-import { ArrowLeft, Coffee, Compass, Zap } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Coffee,
+  Compass,
+  Zap,
+} from "lucide-react-native";
 import Animated, {
   FadeInRight,
   FadeInLeft,
   FadeOutLeft,
   FadeOutRight,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   useReducedMotion,
   withTiming,
+  withSpring,
 } from "react-native-reanimated";
 import {
   Screen,
@@ -62,6 +72,198 @@ const headings: Record<Step, string> = {
   date: "When’s the adventure?",
   duration: "How long are we out?",
 };
+function EnergyChoice({
+  value,
+  selected,
+  largeText,
+  onPress,
+}: {
+  value: "chill" | "balanced" | "active";
+  selected: boolean;
+  largeText: boolean;
+  onPress: () => void;
+}) {
+  const reduced = useReducedMotion();
+  const pressed = useSharedValue(1);
+  const chosen = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    chosen.set(
+      reduced
+        ? Number(selected)
+        : withSpring(Number(selected), { damping: 18, stiffness: 220 }),
+    );
+  }, [selected, reduced, chosen]);
+  const response = useAnimatedStyle(() => ({
+    transform: [{ scale: pressed.value }],
+  }));
+  const illustration = useAnimatedStyle(() => ({
+    transform: [
+      { scale: 1 + chosen.value * 0.08 },
+      { rotate: `${chosen.value * (value === "chill" ? -7 : 7)}deg` },
+    ],
+  }));
+  const details = {
+    chill: {
+      label: "Chill & relaxed",
+      note: "Slow down. Soak it in.",
+      color: c.mint,
+      Icon: Coffee,
+    },
+    balanced: {
+      label: "A little of both",
+      note: "A wander, with a little wow.",
+      color: c.lavender,
+      Icon: Compass,
+    },
+    active: {
+      label: "Active & adventurous",
+      note: "Let’s make a story.",
+      color: c.sun,
+      Icon: Zap,
+    },
+  }[value];
+  const { Icon } = details;
+  const wide = largeText || value === "active";
+  return (
+    <Animated.View
+      style={[
+        { flexBasis: wide ? "100%" : "46%", flexGrow: 1, minWidth: 130 },
+        response,
+      ]}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={details.label}
+        accessibilityHint={details.note}
+        accessibilityState={{ selected }}
+        aria-pressed={selected}
+        onPressIn={() =>
+          pressed.set(reduced ? 1 : withTiming(0.98, { duration: 90 }))
+        }
+        onPressOut={() =>
+          pressed.set(
+            reduced ? 1 : withSpring(1, { damping: 18, stiffness: 260 }),
+          )
+        }
+        onPress={() => {
+          void Haptics.selectionAsync().catch(() => {});
+          onPress();
+        }}
+        style={{
+          flex: 1,
+          padding: 18,
+          gap: 16,
+          flexDirection: wide ? "row-reverse" : "column",
+          alignItems: wide ? "center" : "flex-start",
+          backgroundColor: details.color,
+          borderRadius: value === "chill" ? 30 : value === "balanced" ? 22 : 18,
+          borderWidth: 2,
+          borderColor: selected ? c.ink : "transparent",
+        }}
+      >
+        {selected ? (
+          <View style={{ position: "absolute", top: 10, right: 10 }}>
+            <Check size={18} color={c.ink} />
+          </View>
+        ) : null}
+        <Animated.View
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            {
+              width: 64,
+              height: 64,
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            illustration,
+          ]}
+        >
+          {value === "chill" ? (
+            <View
+              style={{
+                position: "absolute",
+                width: 64,
+                height: 46,
+                borderRadius: 30,
+                backgroundColor: "#E9F7F1",
+                transform: [{ rotate: "-18deg" }],
+              }}
+            />
+          ) : value === "balanced" ? (
+            <>
+              <View
+                style={{
+                  position: "absolute",
+                  width: 62,
+                  height: 62,
+                  borderRadius: 31,
+                  borderWidth: 1,
+                  borderColor: c.ink,
+                }}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  width: 14,
+                  height: 14,
+                  borderRadius: 7,
+                  top: 1,
+                  right: 1,
+                  backgroundColor: c.sun,
+                }}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  bottom: 2,
+                  left: 2,
+                  backgroundColor: c.paper,
+                }}
+              />
+            </>
+          ) : (
+            <View
+              style={{
+                position: "absolute",
+                width: 48,
+                height: 48,
+                borderRadius: 10,
+                backgroundColor: c.peach,
+                transform: [{ rotate: "22deg" }],
+              }}
+            />
+          )}
+          <View style={{ position: "relative", zIndex: 1 }}>
+            <Icon
+              color={c.ink}
+              size={value === "active" ? 40 : 32}
+              strokeWidth={1.7}
+            />
+          </View>
+        </Animated.View>
+        <View
+          style={{ flex: wide ? 1 : undefined, alignSelf: "stretch", gap: 5 }}
+        >
+          <Text style={[styles.heading, { fontSize: 22 }]}>
+            {details.label}
+          </Text>
+          <Text
+            style={[
+              styles.body,
+              { color: c.ink, fontSize: 14, lineHeight: 20 },
+            ]}
+          >
+            {details.note}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 function ProgressSegment({
   active,
   reduced,
@@ -104,9 +306,11 @@ export default function Planner() {
   const [intent, setIntent] = useState<PlanningIntent>();
   const [advanced, setAdvanced] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const intake = useRef(draft);
   const current = useRef(draft);
   const reduced = useReducedMotion();
+  const largeText = useWindowDimensions().fontScale > 1.3;
   const step = queue[index];
   const ready = !step;
   // Commit the new exit direction before changing the keyed question. This
@@ -411,64 +615,20 @@ export default function Planner() {
           </>
         ) : null}
         {step === "energy" ? (
-          <View style={{ gap: 14 }}>
-            {(
-              [
-                {
-                  value: "chill",
-                  label: "Chill & relaxed",
-                  note: "Slow down. Soak it in.",
-                  color: c.mint,
-                  Icon: Coffee,
-                },
-                {
-                  value: "balanced",
-                  label: "A little of both",
-                  note: "A wander, with a little wow.",
-                  color: c.lavender,
-                  Icon: Compass,
-                },
-                {
-                  value: "active",
-                  label: "Active & adventurous",
-                  note: "Let’s make a story.",
-                  color: c.sun,
-                  Icon: Zap,
-                },
-              ] as const
-            ).map(({ value, label, note, color, Icon }) => (
-              <Pressable
+          <View
+            style={[
+              styles.row,
+              { flexWrap: "wrap", alignItems: "stretch", gap: 12 },
+            ]}
+          >
+            {(["chill", "balanced", "active"] as const).map((value) => (
+              <EnergyChoice
                 key={value}
-                accessibilityRole="button"
-                accessibilityState={{ selected: draft.energy === value }}
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  update({ energy: value });
-                }}
-                style={[
-                  styles.row,
-                  {
-                    padding: 22,
-                    borderRadius: 24,
-                    backgroundColor: color,
-                    borderWidth: draft.energy === value ? 2 : 0,
-                    borderColor: c.ink,
-                  },
-                ]}
-              >
-                <Icon color={c.ink} size={32} />
-                <View style={{ flex: 1, gap: 5 }}>
-                  <Text style={[styles.heading, { fontSize: 22 }]}>
-                    {label}
-                  </Text>
-                  <Text style={[styles.body, { color: c.ink, fontSize: 14 }]}>
-                    {note}
-                  </Text>
-                </View>
-                <Text style={styles.label}>
-                  {draft.energy === value ? "✓" : "↗"}
-                </Text>
-              </Pressable>
+                value={value}
+                selected={draft.energy === value}
+                largeText={largeText}
+                onPress={() => update({ energy: value })}
+              />
             ))}
           </View>
         ) : null}
@@ -624,33 +784,59 @@ export default function Planner() {
         {summary ? (
           <View
             style={{
-              backgroundColor: c.lilac,
-              borderRadius: 20,
-              padding: 18,
+              borderColor: c.line,
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 12,
               gap: 5,
             }}
           >
-            <Text style={styles.label}>{summary.location.name}</Text>
-            <Text style={styles.body}>
-              {summary.date} at {summary.startTime} · {summary.duration / 60}{" "}
-              hours
-            </Text>
-            <Text style={styles.body}>
-              {summary.location.currency} {summary.budget} / person ·{" "}
-              {summary.mode === "WALK" ? "Walking" : "Driving"}
-            </Text>
-            {!draft.known.includes("date") ||
-            !draft.known.includes("duration") ||
-            !draft.known.includes("budget") ? (
-              <Text style={[styles.body, { fontSize: 12 }]}>
-                Unchosen details use the starting choices above. Adjust them
-                anytime.
-              </Text>
-            ) : null}
-            {draft.dateChoice === "flexible" ? (
-              <Text style={[styles.body, { fontSize: 12 }]}>
-                Using tomorrow for route and opening-hour checks.
-              </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Review day details"
+              accessibilityState={{ expanded: summaryOpen }}
+              aria-expanded={summaryOpen}
+              onPress={() => setSummaryOpen((open) => !open)}
+              style={[styles.row, { minHeight: 44, gap: 12 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={styles.label}>{summary.location.name}</Text>
+                <Text style={[styles.body, { fontSize: 12, lineHeight: 18 }]}>
+                  {summary.duration / 60} hours · {summary.location.currency}{" "}
+                  {summary.budget} / person
+                </Text>
+              </View>
+              <ChevronDown
+                size={20}
+                color={c.ink}
+                style={{
+                  transform: [{ rotate: summaryOpen ? "180deg" : "0deg" }],
+                }}
+              />
+            </Pressable>
+            {summaryOpen ? (
+              <Animated.View
+                entering={reduced ? undefined : FadeInDown.duration(160)}
+                style={{ gap: 5, paddingTop: 8 }}
+              >
+                <Text style={styles.body}>
+                  {summary.date} at {summary.startTime} ·{" "}
+                  {summary.mode === "WALK" ? "Walking" : "Driving"}
+                </Text>
+                {!draft.known.includes("date") ||
+                !draft.known.includes("duration") ||
+                !draft.known.includes("budget") ? (
+                  <Text style={[styles.body, { fontSize: 12 }]}>
+                    Unchosen details use these starting choices. Adjust them
+                    anytime.
+                  </Text>
+                ) : null}
+                {draft.dateChoice === "flexible" ? (
+                  <Text style={[styles.body, { fontSize: 12 }]}>
+                    Using tomorrow for route and opening-hour checks.
+                  </Text>
+                ) : null}
+              </Animated.View>
             ) : null}
           </View>
         ) : null}
@@ -662,15 +848,39 @@ export default function Planner() {
           />
         ) : null}
         {step && step !== "location" ? (
-          <Pressable
-            onPress={next}
-            accessibilityRole="button"
-            style={{ padding: 14, alignItems: "center" }}
+          <View
+            style={{
+              flexDirection: largeText ? "column" : "row",
+              alignItems: "stretch",
+              gap: 12,
+            }}
           >
-            <Text style={styles.label}>Skip for now</Text>
-          </Pressable>
-        ) : null}
-        {draft.location ? (
+            <Pressable
+              onPress={next}
+              accessibilityRole="button"
+              style={{
+                flex: largeText ? undefined : 1,
+                padding: 14,
+                minHeight: 48,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={styles.label}>Skip for now</Text>
+            </Pressable>
+            {draft.location ? (
+              <View style={{ flex: largeText ? undefined : 1 }}>
+                <Button
+                  title="Make my day"
+                  secondary
+                  icon={false}
+                  onPress={generate}
+                  disabled={busy || !summary}
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : draft.location ? (
           <Button
             title="Make my day"
             secondary={!ready}

@@ -59,7 +59,7 @@ tags: [native, fixtures, smoke]
 - tapOn: "Done editing, dismiss keyboard"
 - tapOn: "Update my plan"
 - extendedWaitUntil:
-    visible: "Some inputs are invalid.*"
+    visible: "Enter a whole number from 60 to 720 minutes[.]"
     timeout: 10000
 - takeScreenshot: native-edit-validation
 - tapOn: "Plan duration"
@@ -86,6 +86,7 @@ tags: [native, fixtures, smoke]
 - scrollUntilVisible:
     element: "Reminders are off.*"
     direction: UP
+- assertNotVisible: ".*Custom sound.*"
 - takeScreenshot: native-reminders-denied
 - scrollUntilVisible:
     element: "Start my day"

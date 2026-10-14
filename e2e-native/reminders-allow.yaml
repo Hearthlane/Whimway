@@ -20,6 +20,7 @@ tags: [native, fixtures, reminders]
 - scrollUntilVisible:
     element: ".*reminders scheduled.*"
     direction: UP
+- assertNotVisible: ".*Custom sound.*"
 - takeScreenshot: native-reminders-scheduled
 - tapOn: "Back"
 - repeat:

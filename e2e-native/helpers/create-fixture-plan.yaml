@@ -50,6 +50,11 @@ appId: ${APP_ID || 'com.example.whimway'}
 - tapOn: "Skip for now"
 - assertVisible: "What.*energy today.*"
 - scrollUntilVisible:
+    element: "A little of both"
+    direction: DOWN
+- tapOn: "A little of both"
+- takeScreenshot: native-planner-energy
+- scrollUntilVisible:
     element: "Make my day"
     direction: DOWN
 - tapOn: "Make my day"

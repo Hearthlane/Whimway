@@ -7,6 +7,14 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import Animated, {
+  Easing,
+  interpolateColor,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import * as Crypto from "expo-crypto";
 import { MapPin, LocateFixed, Map } from "lucide-react-native";
 import { api } from "../services/api";
@@ -39,6 +47,27 @@ export function LocationSearch({
   const request = useRef<AbortController | null>(null);
   const action = useRef<AbortController | null>(null);
   const session = useRef(Crypto.randomUUID());
+  const reduced = useReducedMotion();
+  const focus = useSharedValue(0);
+  const focusSurface = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(focus.value, [0, 1], [c.line, c.ink]),
+    backgroundColor: interpolateColor(
+      focus.value,
+      [0, 1],
+      [c.white, "#FFFEFB"],
+    ),
+  }));
+  const focusRing = useAnimatedStyle(() => ({ opacity: focus.value * 0.85 }));
+  function showFocus(active: boolean) {
+    focus.set(
+      reduced
+        ? Number(active)
+        : withTiming(Number(active), {
+            duration: 160,
+            easing: Easing.out(Easing.cubic),
+          }),
+    );
+  }
   function setResolving(value: boolean) {
     setActionBusy(value);
     onBusyChange?.(value);
@@ -158,7 +187,7 @@ export function LocationSearch({
           <Text style={[styles.label, { flex: 1 }]}>{value.name}</Text>
         </View>
       ) : null}
-      <View
+      <Animated.View
         style={[
           styles.row,
           {
@@ -168,18 +197,41 @@ export function LocationSearch({
             borderColor: c.line,
             paddingHorizontal: 16,
           },
+          focusSurface,
         ]}
       >
+        <Animated.View
+          pointerEvents="none"
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            {
+              position: "absolute",
+              top: -4,
+              left: -4,
+              right: -4,
+              bottom: -4,
+              borderRadius: 22,
+              borderWidth: 2,
+              borderColor: c.lavender,
+            },
+            focusRing,
+          ]}
+        />
         <MapPin color={c.muted} size={20} />
         <TextInput
           accessibilityLabel="Search a place"
           editable={!actionBusy}
           value={query}
           onChangeText={setQuery}
+          onFocus={() => showFocus(true)}
+          onBlur={() => showFocus(false)}
           placeholder="City, neighbourhood, anywhere…"
           placeholderTextColor={c.muted}
           style={[
             styles.input,
+            Platform.OS === "web" && { outlineWidth: 0 },
             {
               flex: 1,
               borderWidth: 0,
@@ -189,7 +241,7 @@ export function LocationSearch({
           ]}
         />
         {busy ? <ActivityIndicator color={c.ink} /> : null}
-      </View>
+      </Animated.View>
       {results.map((result) => (
         <Pressable
           key={result.id}

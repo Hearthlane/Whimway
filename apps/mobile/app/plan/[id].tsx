@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { DateTime } from "luxon";
+import * as Haptics from "expo-haptics";
 import {
   MoreHorizontal,
   LockKeyhole,
@@ -53,6 +54,8 @@ import { colors as c } from "../../src/design/theme";
 import {
   remixActions,
   toSpec,
+  PlanRequest as PlanRequestSchema,
+  StopRef,
   type Itinerary,
   type ItineraryStop,
   type CandidatePlace,
@@ -81,6 +84,11 @@ export default function PlanScreen() {
   const [budget, setBudget] = useState("");
   const [duration, setDuration] = useState("");
   const [visit, setVisit] = useState("");
+  const [editErrors, setEditErrors] = useState<{
+    budget?: string;
+    duration?: string;
+    visit?: string;
+  }>({});
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState<Itinerary[]>([]);
   const scroll = useRef<ScrollView>(null);
@@ -170,6 +178,39 @@ export default function PlanScreen() {
           request,
         },
         { signal },
+      ),
+    );
+  }
+  function updateSettings() {
+    if (!plan) return;
+    const nextBudget = budget.trim() ? Number(budget) : NaN;
+    const nextDuration = duration.trim() ? Number(duration) : NaN;
+    const errors: typeof editErrors = {};
+    if (!PlanRequestSchema.shape.budget.safeParse(nextBudget).success)
+      errors.budget = `Enter a budget from 0 to 1,000,000 ${plan.request.location.currency} per person.`;
+    if (!PlanRequestSchema.shape.duration.safeParse(nextDuration).success)
+      errors.duration = "Enter a whole number from 60 to 720 minutes.";
+    setEditErrors(errors);
+    setError("");
+    if (Object.keys(errors).length) return;
+    void edit(plan.stops, {
+      ...plan.request,
+      budget: nextBudget,
+      duration: nextDuration,
+    });
+  }
+  function updateVisit() {
+    if (!plan || !menu) return;
+    const minutes = visit.trim() ? Number(visit) : NaN;
+    setError("");
+    if (!StopRef.shape.minutes.safeParse(minutes).success) {
+      setEditErrors({ visit: "Enter a whole number from 15 to 240 minutes." });
+      return;
+    }
+    setEditErrors({});
+    void edit(
+      plan.stops.map((stop) =>
+        stop.placeId === menu.placeId ? { ...stop, minutes } : stop,
       ),
     );
   }
@@ -282,14 +323,19 @@ export default function PlanScreen() {
       </Screen>
     );
   const selectedStop = plan.stops.find((s) => s.placeId === selected);
+  const sheetOpen = Boolean(
+    menu || remix || add || settings || saveSheet || share || reminders,
+  );
   return (
     <Screen scroll={false} style={{ padding: 0 }}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
-        <Header title="YOUR GOOD DAY" />
+      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+        <View style={{ marginBottom: -16 }}>
+          <Header title="YOUR GOOD DAY" />
+        </View>
         <View
           style={[
             styles.row,
-            { justifyContent: "space-between", marginBottom: 12 },
+            { justifyContent: "space-between", marginBottom: 4 },
           ]}
         >
           <Chip label={map ? "Timeline" : "Map"} onPress={() => setMap(!map)} />
@@ -311,7 +357,7 @@ export default function PlanScreen() {
           </Pressable>
         </View>
       </View>
-      <Notice message={error || reminderError} error />
+      <Notice message={sheetOpen ? undefined : error || reminderError} error />
       <Notice message={message} />
       {map ? (
         <View style={{ flex: 1 }}>
@@ -385,19 +431,38 @@ export default function PlanScreen() {
             padding: 24,
             paddingTop: 6,
             paddingBottom: 40,
-            gap: 20,
+            gap: 16,
           }}
         >
           <Reveal>
             <Text style={styles.eyebrow}>
               {plan.request.location.name.toUpperCase()}
             </Text>
-            <Text style={[styles.title, { marginVertical: 12 }]}>
+            <Text
+              style={[
+                styles.title,
+                { fontSize: 32, lineHeight: 36, marginVertical: 8 },
+              ]}
+            >
               {plan.title}
             </Text>
-            <Text style={styles.body}>{plan.summary}</Text>
+            {plan.demo ? (
+              <Text
+                style={[
+                  styles.body,
+                  { fontSize: 13, lineHeight: 18, color: c.error },
+                ]}
+              >
+                Development fixture · Places, prices and travel are synthetic.
+                Not a real outing.
+              </Text>
+            ) : (
+              <Text style={[styles.body, { fontSize: 15, lineHeight: 21 }]}>
+                {plan.summary}
+              </Text>
+            )}
             <View
-              style={[styles.row, { flexWrap: "wrap", marginTop: 18, gap: 14 }]}
+              style={[styles.row, { flexWrap: "wrap", marginTop: 10, gap: 10 }]}
             >
               <Text style={styles.label}>
                 {DateTime.fromISO(plan.request.date).toFormat("ccc, LLL d")}
@@ -407,33 +472,37 @@ export default function PlanScreen() {
               </Text>
               <Text style={styles.label}>{plan.stops.length} stops</Text>
             </View>
-            <Text style={[styles.body, { marginTop: 10 }]}>
+            <Text
+              style={[
+                styles.body,
+                { marginTop: 6, fontSize: 14, lineHeight: 20 },
+              ]}
+            >
               {money(plan.cost.low, plan.cost.currency)}–
               {money(plan.cost.high, plan.cost.currency)} estimated / person
               {plan.cost.unknown ? " + unknown prices" : ""}
             </Text>
-            <View style={{ marginTop: 20 }}>
+            <View style={{ marginTop: 12 }}>
               <Button
                 title="Start my day"
                 onPress={() => router.push("/day/" + id)}
               />
             </View>
           </Reveal>
-          {plan.demo ? (
-            <Notice message="Development fixture. These places, prices and travel estimates are synthetic; this is not a real outing." />
-          ) : null}
-          <View style={[styles.row, { flexWrap: "wrap" }]}>
-            <Chip label="Day Remix ✦" onPress={() => setRemix(true)} />
-            <Chip
+          <View style={[styles.row, { gap: 8 }]}>
+            <PlanTool label="Day Remix ✦" onPress={() => setRemix(true)} />
+            <PlanTool
               label="Adjust plan"
               onPress={() => {
+                setError("");
+                setEditErrors({});
                 setBudget(String(plan.request.budget));
                 setDuration(String(plan.request.duration));
                 setSettings(true);
               }}
             />
             {plan.stops.length < 8 ? (
-              <Chip
+              <PlanTool
                 label="Add a stop +"
                 onPress={() => {
                   setMenu(undefined);
@@ -492,6 +561,7 @@ export default function PlanScreen() {
                     disabled={busy}
                     onPress={() => {
                       setError("");
+                      setEditErrors({});
                       setMenu(stop);
                       setVisit(String(stop.minutes));
                     }}
@@ -643,21 +713,18 @@ export default function PlanScreen() {
               keyboardType="number-pad"
               style={styles.input}
               value={visit}
-              onChangeText={setVisit}
+              onChangeText={(value) => {
+                setVisit(value);
+                setEditErrors((errors) => ({ ...errors, visit: undefined }));
+                setError("");
+              }}
             />
+            <EditFieldError message={editErrors.visit} />
             <Button
               secondary
               title="Update visit duration"
               disabled={busy || menu.locked}
-              onPress={() =>
-                void edit(
-                  plan.stops.map((s) =>
-                    s.placeId === menu.placeId
-                      ? { ...s, minutes: Number(visit) }
-                      : s,
-                  ),
-                )
-              }
+              onPress={updateVisit}
             />
             <View style={styles.row}>
               {["earlier", "later"].map((direction, i) => (
@@ -784,16 +851,26 @@ export default function PlanScreen() {
           style={styles.input}
           keyboardType="decimal-pad"
           value={budget}
-          onChangeText={setBudget}
+          onChangeText={(value) => {
+            setBudget(value);
+            setEditErrors((errors) => ({ ...errors, budget: undefined }));
+            setError("");
+          }}
         />
+        <EditFieldError message={editErrors.budget} />
         <Text style={styles.label}>Available minutes</Text>
         <TextInput
           accessibilityLabel="Plan duration"
           style={styles.input}
           keyboardType="number-pad"
           value={duration}
-          onChangeText={setDuration}
+          onChangeText={(value) => {
+            setDuration(value);
+            setEditErrors((errors) => ({ ...errors, duration: undefined }));
+            setError("");
+          }}
         />
+        <EditFieldError message={editErrors.duration} />
         <View style={styles.row}>
           {(["WALK", "DRIVE"] as const).map((mode) => (
             <Chip
@@ -804,17 +881,7 @@ export default function PlanScreen() {
             />
           ))}
         </View>
-        <Button
-          title="Update my plan"
-          busy={busy}
-          onPress={() =>
-            void edit(plan.stops, {
-              ...plan.request,
-              budget: Number(budget),
-              duration: Number(duration),
-            })
-          }
-        />
+        <Button title="Update my plan" busy={busy} onPress={updateSettings} />
       </Sheet>
       <Sheet
         error={error}
@@ -927,5 +994,47 @@ export default function PlanScreen() {
         />
       </Sheet>
     </Screen>
+  );
+}
+
+function EditFieldError({ message }: { message?: string }) {
+  return message ? (
+    <Text
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={[styles.body, { color: c.error, fontSize: 13, lineHeight: 18 }]}
+    >
+      {message}
+    </Text>
+  ) : null;
+}
+
+function PlanTool({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        void Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
+      style={({ pressed }) => ({
+        flex: 1,
+        minHeight: 44,
+        paddingHorizontal: 8,
+        paddingVertical: 10,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: c.line,
+        backgroundColor: c.white,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.75 : 1,
+      })}
+    >
+      <Text style={[styles.label, { fontSize: 13, textAlign: "center" }]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
