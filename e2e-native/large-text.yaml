@@ -1,5 +1,5 @@
 appId: ${APP_ID || 'com.example.whimway'}
-name: Native Android font-scale 2.0 outing
+name: Native large-text outing
 tags: [native, fixtures, accessibility]
 ---
 - runFlow: helpers/boot.yaml
