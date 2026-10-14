@@ -26,7 +26,9 @@ const runtimeFiles = new Set([
 
 export function allowedReuseChange(file, target = "strict") {
   return (
+    file === "README.md" ||
     file.startsWith("docs/") ||
+    file.startsWith("tests/") ||
     file.startsWith("e2e-native/") ||
     file.startsWith("e2e-mobile/") ||
     runtimeFiles.has(file) ||

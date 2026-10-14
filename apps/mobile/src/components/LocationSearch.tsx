@@ -19,6 +19,7 @@ import * as Crypto from "expo-crypto";
 import { MapPin, LocateFixed, Map } from "lucide-react-native";
 import { api } from "../services/api";
 import { requestCurrentLocation } from "../services/location";
+import { LocationSelection } from "../core/location-selection";
 import type { Location } from "../../../../lib/schema";
 import { colors as c } from "../design/theme";
 import { styles, Notice, Sheet, Button } from "./ui";
@@ -45,7 +46,7 @@ export function LocationSearch({
   const [map, setMap] = useState(false);
   const [pin, setPin] = useState<{ lat: number; lng: number }>();
   const request = useRef<AbortController | null>(null);
-  const action = useRef<AbortController | null>(null);
+  const selection = useRef(new LocationSelection());
   const session = useRef(Crypto.randomUUID());
   const reduced = useReducedMotion();
   const focus = useSharedValue(0);
@@ -115,64 +116,64 @@ export function LocationSearch({
   useEffect(
     () => () => {
       request.current?.abort();
-      action.current?.abort();
+      selection.current.cancel();
       onBusyChange?.(false);
     },
     [onBusyChange],
   );
   async function choose(id: string) {
     request.current?.abort();
-    action.current?.abort();
-    const controller = new AbortController();
-    action.current = controller;
     setSearchBusy(false);
-    setResolving(true);
     setError("");
-    try {
-      const location = await api<Location>(
-        "location?id=" +
-          encodeURIComponent(id) +
-          "&session=" +
-          session.current +
-          (demo ? "&demo=true" : ""),
-        undefined,
-        { signal: controller.signal },
-      );
-      if (controller.signal.aborted) return;
-      onChange(location);
-      setQuery("");
-      setResults([]);
-      session.current = Crypto.randomUUID();
-    } catch (e) {
-      if (!controller.signal.aborted) setError((e as Error).message);
-    } finally {
-      if (!controller.signal.aborted) setResolving(false);
-    }
+    await selection.current.run(
+      (signal) =>
+        api<Location>(
+          "location?id=" +
+            encodeURIComponent(id) +
+            "&session=" +
+            session.current +
+            (demo ? "&demo=true" : ""),
+          undefined,
+          { signal },
+        ),
+      {
+        busy: setResolving,
+        accept: (location) => {
+          onChange(location);
+          setQuery("");
+          setResults([]);
+          session.current = Crypto.randomUUID();
+        },
+        error: (error) => setError((error as Error).message),
+      },
+    );
   }
   async function resolve(point?: { lat: number; lng: number }) {
     request.current?.abort();
-    action.current?.abort();
-    const controller = new AbortController();
-    action.current = controller;
     setSearchBusy(false);
-    setResolving(true);
     setError("");
-    try {
-      const selected = point || (await requestCurrentLocation());
-      if (controller.signal.aborted) return;
-      const location = await api<Location>("point", selected, {
-        signal: controller.signal,
-      });
-      if (controller.signal.aborted) return;
-      onChange(location);
-      setMap(false);
-      setQuery("");
-      session.current = Crypto.randomUUID();
-    } catch (e) {
-      if (!controller.signal.aborted) setError((e as Error).message);
-    } finally {
-      if (!controller.signal.aborted) setResolving(false);
-    }
+    await selection.current.run(
+      async (signal) => {
+        const selected = point || (await requestCurrentLocation());
+        if (signal.aborted) throw new Error("Location selection cancelled.");
+        return api<Location>("point", selected, { signal });
+      },
+      {
+        busy: setResolving,
+        accept: (location) => {
+          onChange(location);
+          setMap(false);
+          setQuery("");
+          session.current = Crypto.randomUUID();
+        },
+        error: (error) => setError((error as Error).message),
+      },
+    );
+  }
+  function closeMap() {
+    selection.current.cancel();
+    setMap(false);
+    setError("");
   }
   return (
     <View style={{ gap: 12 }}>
@@ -285,7 +286,8 @@ export function LocationSearch({
         error={error}
         visible={map}
         title="Drop your starting pin"
-        onClose={() => setMap(false)}
+        onDismissStart={() => selection.current.cancel()}
+        onClose={closeMap}
       >
         <Text style={styles.body}>
           Tap the map to choose an exploration area.

@@ -62,7 +62,7 @@ import {
   type PlanRequest,
 } from "../../../../lib/schema";
 import { money, timeLabel } from "../../../../lib/time";
-import { toggleStopLock } from "../../src/core/plan-edit";
+import { toggleStopLock, updatedPlanSettings } from "../../src/core/plan-edit";
 export default function PlanScreen() {
   const { reminderError, refreshPreferences } = useApp();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -83,6 +83,7 @@ export default function PlanScreen() {
   const [before, setBefore] = useState(15);
   const [budget, setBudget] = useState("");
   const [duration, setDuration] = useState("");
+  const [travelMode, setTravelMode] = useState<PlanRequest["mode"]>("WALK");
   const [visit, setVisit] = useState("");
   const [editErrors, setEditErrors] = useState<{
     budget?: string;
@@ -193,11 +194,14 @@ export default function PlanScreen() {
     setEditErrors(errors);
     setError("");
     if (Object.keys(errors).length) return;
-    void edit(plan.stops, {
-      ...plan.request,
-      budget: nextBudget,
-      duration: nextDuration,
-    });
+    void edit(
+      plan.stops,
+      updatedPlanSettings(plan.request, {
+        budget: nextBudget,
+        duration: nextDuration,
+        mode: travelMode,
+      }),
+    );
   }
   function updateVisit() {
     if (!plan || !menu) return;
@@ -498,6 +502,7 @@ export default function PlanScreen() {
                 setEditErrors({});
                 setBudget(String(plan.request.budget));
                 setDuration(String(plan.request.duration));
+                setTravelMode(plan.request.mode);
                 setSettings(true);
               }}
             />
@@ -876,8 +881,8 @@ export default function PlanScreen() {
             <Chip
               key={mode}
               label={mode === "WALK" ? "Walking" : "Driving"}
-              selected={plan.request.mode === mode}
-              onPress={() => void edit(plan.stops, { ...plan.request, mode })}
+              selected={travelMode === mode}
+              onPress={() => setTravelMode(mode)}
             />
           ))}
         </View>

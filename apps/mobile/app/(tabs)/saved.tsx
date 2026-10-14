@@ -3,6 +3,17 @@ import { Text, View, Pressable, Linking } from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { Bookmark, Trash2, ArrowUpRight, Heart } from "lucide-react-native";
 import { api } from "../../src/services/api";
+import { getAuthClient } from "../../src/services/auth";
+import {
+  collectionAccount,
+  collectionDeleted,
+  collectionSynced,
+  deleteSavedCollectionPlan,
+  emptyCloudCollection,
+  syncedAccountForPlan,
+  type CloudCollection,
+  type CloudStatus,
+} from "../../src/core/cloud-collection";
 import {
   getSavedPlans,
   savePlan,
@@ -43,9 +54,40 @@ import type {
 export default function Saved() {
   const [plans, setPlans] = useState<PlanSpec[]>([]),
     [favorites, setFavorites] = useState<FavoritePlaceRef[]>([]);
-  const [cloud, setCloud] = useState<string[]>([]),
+  const [cloud, setCloud] = useState<CloudCollection>(emptyCloudCollection),
     [error, setError] = useState(""),
-    [pending, setPending] = useState<PlanSpec>();
+    [message, setMessage] = useState(""),
+    [pending, setPending] = useState<{ plan: PlanSpec; accountId?: string }>();
+  const cloudRef = useRef(cloud),
+    refresh = useRef<AbortController | null>(null),
+    deletion = useRef<AbortController | null>(null),
+    exploring = useRef<AbortController | null>(null),
+    authEpoch = useRef(0),
+    exploreGeneration = useRef(0);
+  const [authRevision, setAuthRevision] = useState(0);
+  const updateCloud = useCallback(
+    (change: (previous: CloudCollection) => CloudCollection) => {
+      const next = change(cloudRef.current);
+      cloudRef.current = next;
+      setCloud(next);
+    },
+    [],
+  );
+  const applyCloudStatus = useCallback(
+    (status: CloudStatus) => {
+      const nextId = status.user?.id ?? null;
+      if (
+        cloudRef.current.accountId !== undefined &&
+        cloudRef.current.accountId !== nextId
+      ) {
+        deletion.current?.abort();
+        setPending(undefined);
+        setMessage("");
+      }
+      updateCloud((previous) => collectionAccount(previous, status));
+    },
+    [updateCloud],
+  );
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [collection, setCollection] = useState<"plans" | "places">("plans");
@@ -57,42 +99,81 @@ export default function Saved() {
     focused = useRef(false);
   const openGeneration = useRef(0);
   const { setDraft, setPlan, preferences } = useApp();
+  useEffect(() => {
+    const auth = getAuthClient();
+    const subscription = auth?.auth.onAuthStateChange((_event, session) => {
+      const accountId = session?.user.id ?? null;
+      if (cloudRef.current.accountId === accountId) return;
+      deletion.current?.abort();
+      refresh.current?.abort();
+      setPending(undefined);
+      setMessage("");
+      updateCloud((previous) =>
+        collectionAccount(previous, {
+          user: accountId ? { id: accountId } : null,
+          cloud: previous.enabled,
+        }),
+      );
+      authEpoch.current++;
+      setAuthRevision(authEpoch.current);
+    });
+    return () => subscription?.data.subscription.unsubscribe();
+  }, [updateCloud]);
   useFocusEffect(
     useCallback(() => {
+      if (authRevision !== authEpoch.current) return;
       const controller = new AbortController();
+      refresh.current = controller;
       let active = true;
       focused.current = true;
       setLoading(true);
       setError("");
-      setCloud([]);
+      setMessage("");
       void (async () => {
         try {
           const [local, favoriteRefs] = await Promise.all([
             getSavedPlans(),
             getFavoritePlaces(),
           ]);
-          if (!active) return;
+          if (!active || controller.signal.aborted) return;
           setPlans(local);
           setFavorites(favoriteRefs);
-          const status = await api<{ user: unknown; cloud: boolean }>(
-            "status",
-            undefined,
-            { signal: controller.signal },
-          );
+          const status = await api<CloudStatus>("status", undefined, {
+            signal: controller.signal,
+          });
+          if (!active || controller.signal.aborted) return;
+          applyCloudStatus(status);
           if (status.user && status.cloud) {
+            const accountId = status.user.id;
             const rows = await api<{ spec: PlanSpec }[]>("plans", undefined, {
               signal: controller.signal,
             });
-            if (!active) return;
+            if (
+              !active ||
+              controller.signal.aborted ||
+              cloudRef.current.accountId !== accountId
+            )
+              return;
+            updateCloud((previous) =>
+              collectionSynced(
+                previous,
+                accountId,
+                rows.map((r) => r.spec.id),
+              ),
+            );
             const map = new Map(local.map((p) => [p.id, p]));
             for (const row of rows) {
               if ((map.get(row.spec.id)?.revision ?? -1) < row.spec.revision) {
-                await savePlan(row.spec);
+                await savePlan(row.spec, { signal: controller.signal });
                 map.set(row.spec.id, row.spec);
               }
-              if (!active) return;
+              if (
+                !active ||
+                controller.signal.aborted ||
+                cloudRef.current.accountId !== accountId
+              )
+                return;
             }
-            setCloud(rows.map((r) => r.spec.id));
             setPlans([...map.values()]);
           }
         } catch (e) {
@@ -111,12 +192,18 @@ export default function Saved() {
         setOpeningId(undefined);
         setCanCancelOpening(false);
         setBusy(false);
+        deletion.current?.abort();
+        deletion.current = null;
+        exploring.current?.abort();
+        exploring.current = null;
+        exploreGeneration.current++;
         controller.abort();
       };
-    }, []),
+    }, [authRevision, applyCloudStatus, updateCloud]),
   );
   async function openSaved(spec: PlanSpec, unlock = false) {
-    if (busy || opening.current) return;
+    if (busy || opening.current || deletion.current || exploring.current)
+      return;
     const controller = new AbortController();
     const generation = ++openGeneration.current;
     opening.current = controller;
@@ -184,19 +271,68 @@ export default function Saved() {
     // Keep this operation guarded until its cancellation cleanup completes.
   }
   async function remove() {
-    if (!pending || busy) return;
+    if (
+      !pending ||
+      busy ||
+      deletion.current ||
+      opening.current ||
+      exploring.current
+    )
+      return;
+    const target = pending,
+      controller = new AbortController();
+    deletion.current = controller;
+    refresh.current?.abort();
+    setLoading(false);
     setBusy(true);
     setError("");
+    setMessage("");
     try {
-      if (cloud.includes(pending.id))
-        await api("plans/" + pending.id, undefined, { method: "DELETE" });
-      await removePlan(pending.id);
-      setPlans((rows) => rows.filter((p) => p.id !== pending.id));
+      const scope = await deleteSavedCollectionPlan(
+        { planId: target.plan.id, accountId: target.accountId },
+        {
+          currentAccount: () => cloudRef.current.accountId,
+          readStatus: async () => {
+            const status = await api<CloudStatus>("status", undefined, {
+              signal: controller.signal,
+            });
+            applyCloudStatus(status);
+            return status;
+          },
+          deleteCloud: async (id) => {
+            await api("plans/" + id, undefined, {
+              method: "DELETE",
+              signal: controller.signal,
+            });
+          },
+          deleteDevice: removePlan,
+          cloudDeleted: (accountId, id) => {
+            updateCloud((previous) =>
+              collectionDeleted(previous, accountId, id),
+            );
+            setPending((current) =>
+              current?.plan.id === id ? { plan: current.plan } : current,
+            );
+          },
+        },
+        controller.signal,
+      );
+      if (controller.signal.aborted || !focused.current) return;
+      setPlans((rows) => rows.filter((p) => p.id !== target.plan.id));
       setPending(undefined);
+      setMessage(
+        scope === "account-and-device"
+          ? "Device and account copies deleted, including that account’s share links."
+          : "Device copy removed. Cloud copies and share links are unchanged.",
+      );
     } catch (e) {
-      setError((e as Error).message);
+      if (!controller.signal.aborted && focused.current)
+        setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (deletion.current === controller) {
+        deletion.current = null;
+        if (focused.current) setBusy(false);
+      }
     }
   }
   async function forget(ref: FavoritePlaceRef) {
@@ -212,7 +348,11 @@ export default function Saved() {
     }
   }
   async function explore(ref: FavoritePlaceRef) {
-    if (busy) return;
+    if (busy || exploring.current || opening.current || deletion.current)
+      return;
+    const controller = new AbortController(),
+      generation = ++exploreGeneration.current;
+    exploring.current = controller;
     setBusy(true);
     setError("");
     try {
@@ -222,7 +362,16 @@ export default function Saved() {
             ref.demo ? (ref.sourceLocationId ?? ref.placeId) : ref.placeId,
           ) +
           (ref.demo ? "&demo=true" : ""),
+        undefined,
+        { signal: controller.signal },
       );
+      if (
+        controller.signal.aborted ||
+        !focused.current ||
+        generation !== exploreGeneration.current ||
+        exploring.current !== controller
+      )
+        return;
       setDraft(
         applySavedPreferences(
           {
@@ -237,9 +386,16 @@ export default function Saved() {
       );
       router.push("/planner");
     } catch (e) {
-      setError((e as Error).message);
+      if (
+        !controller.signal.aborted &&
+        focused.current &&
+        generation === exploreGeneration.current
+      )
+        setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (exploring.current === controller) exploring.current = null;
+      if (focused.current && generation === exploreGeneration.current)
+        setBusy(false);
     }
   }
   return (
@@ -261,6 +417,7 @@ export default function Saved() {
         />
       </View>
       <Notice message={error} error />
+      <Notice message={message} />
       {loading ? (
         <Text style={styles.body}>Opening your collection…</Text>
       ) : null}
@@ -306,7 +463,7 @@ export default function Saved() {
                   <Text style={styles.eyebrow}>
                     {plan.demo
                       ? "DEVELOPMENT FIXTURE"
-                      : cloud.includes(plan.id)
+                      : syncedAccountForPlan(cloud, plan.id)
                         ? "ACCOUNT + DEVICE"
                         : "THIS DEVICE"}
                   </Text>
@@ -316,7 +473,11 @@ export default function Saved() {
                     disabled={busy}
                     onPress={() => {
                       setError("");
-                      setPending(plan);
+                      setMessage("");
+                      setPending({
+                        plan,
+                        accountId: syncedAccountForPlan(cloud, plan.id),
+                      });
                     }}
                     style={{ padding: 12 }}
                   >
@@ -413,13 +574,28 @@ export default function Saved() {
         error={error}
         visible={!!pending}
         title="Let this plan go?"
-        onClose={() => setPending(undefined)}
+        onDismissStart={() => deletion.current?.abort()}
+        onClose={() => {
+          deletion.current?.abort();
+          setPending(undefined);
+        }}
       >
         <Text style={styles.body}>
-          Deletes this device copy, any synced cloud copy and its share links.
-          Reminders are cancelled. Favorite places stay in your collection.
+          {pending?.accountId
+            ? "Deletes this device copy and its copy in the account that synced it, including that account’s share links. We verify the same account first. A failed cloud deletion keeps this device copy."
+            : "Removes this device copy. Cloud copies and share links stay unchanged. To delete an account copy, sign in to that account and refresh Saved first."}{" "}
+          Device reminders are cancelled when this copy is removed. Favorite
+          places stay in your collection.
         </Text>
-        <Button title="Delete plan" busy={busy} onPress={() => void remove()} />
+        <Button
+          title={
+            pending?.accountId
+              ? "Delete account and device copies"
+              : "Remove device copy"
+          }
+          busy={busy}
+          onPress={() => void remove()}
+        />
         <Button
           secondary
           title="Keep it"

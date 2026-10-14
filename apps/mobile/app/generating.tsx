@@ -28,7 +28,13 @@ export default function Generating() {
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
-        await setPlan(plan, { signal: controller.signal });
+        // A generated UUID has no opted-in reminders. Hand off as soon as its
+        // durable/state transaction accepts, without a cancellable-looking wait.
+        await setPlan(plan, {
+          signal: controller.signal,
+          refreshReminders: false,
+        });
+        if (controller.signal.aborted || active.current !== controller) return;
         router.replace("/plan/" + plan.id);
       } catch (e) {
         if (!controller.signal.aborted) setError((e as Error).message);

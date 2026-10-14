@@ -18,6 +18,7 @@ import {
 import { cancelPlanReminders } from "./notifications";
 import { recordDiagnostic } from "./diagnostics";
 import { commitRecoveredSavedPlan } from "../core/saved-recovery";
+import type { PlanPersistenceOptions } from "../core/plan-commit";
 
 export {
   DayProgressSchema,
@@ -52,19 +53,58 @@ async function setItem(key: string, value: string) {
     );
   }
 }
-export async function getSavedPlans(): Promise<PlanSpec[]> {
+async function readSavedPlans(): Promise<PlanSpec[]> {
   return parseSavedPlans(await AsyncStorage.getItem(PLANS));
 }
-export async function savePlan(plan: Itinerary | PlanSpec): Promise<void> {
+export function getSavedPlans(): Promise<PlanSpec[]> {
+  // Readers share the transaction queue: a Saved screen must never observe a
+  // tentative write while cancellation is restoring the previous snapshot.
+  return write(readSavedPlans);
+}
+export async function savePlan(
+  plan: Itinerary | PlanSpec,
+  options: Partial<PlanPersistenceOptions> = {},
+): Promise<void> {
   const spec = referenceOnlyPlan(plan);
+  const check = () => {
+    if (options.signal?.aborted) throw new Error("The request was cancelled.");
+  };
+  check();
   return write(async () => {
-    const plans = await getSavedPlans();
-    await setItem(
-      PLANS,
-      JSON.stringify(
-        [spec, ...plans.filter((p) => p.id !== spec.id)].slice(0, 100),
-      ),
-    );
+    check();
+    const previous = await AsyncStorage.getItem(PLANS);
+    check();
+    const plans = parseSavedPlans(previous);
+    if (
+      plans.some(
+        (saved) => saved.id === spec.id && saved.revision > spec.revision,
+      )
+    )
+      throw new Error(
+        "Your saved plan changed during this request. Open the latest copy and try again.",
+      );
+    try {
+      await setItem(
+        PLANS,
+        JSON.stringify(
+          [spec, ...plans.filter((p) => p.id !== spec.id)].slice(0, 100),
+        ),
+      );
+      check();
+      // No await separates the final cancellation check from React acceptance.
+      // If acceptance rejects a stale revision, rollback still owns the queue.
+      options.onCommit?.();
+    } catch (error) {
+      try {
+        if (previous === null) await AsyncStorage.removeItem(PLANS);
+        else await setItem(PLANS, previous);
+      } catch {
+        throw new Error(
+          "Device storage could not restore the previous plan. Check your saved plans and available storage before trying again.",
+        );
+      }
+      throw error;
+    }
   });
 }
 export function saveRecoveredPlan(
@@ -77,7 +117,7 @@ export function saveRecoveredPlan(
       original,
       recovered,
       {
-        read: getSavedPlans,
+        read: readSavedPlans,
         write: (plans) => setItem(PLANS, JSON.stringify(plans)),
       },
       signal,
@@ -87,7 +127,7 @@ export function saveRecoveredPlan(
 export async function removePlan(id: string): Promise<void> {
   return write(async () => {
     await cancelPlanReminders(id);
-    const plans = await getSavedPlans();
+    const plans = await readSavedPlans();
     await setItem(PLANS, JSON.stringify(plans.filter((p) => p.id !== id)));
     await AsyncStorage.removeItem(progressKey(id));
   });

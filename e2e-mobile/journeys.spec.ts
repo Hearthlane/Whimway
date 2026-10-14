@@ -674,12 +674,36 @@ test("Replacement, add, reorder, duration, budget, transport and favorite places
   expect(afterOrder.legs.length).toBe(4);
 
   await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Plan budget", exact: true })
+    .fill("95");
+  await page
+    .getByRole("textbox", { name: "Plan duration", exact: true })
+    .fill("270");
+  await page.getByRole("button", { name: "Driving", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Driving", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("textbox", { name: "Plan budget", exact: true }),
+  ).toHaveValue("95");
+  await expect(
+    page.getByRole("textbox", { name: "Plan duration", exact: true }),
+  ).toHaveValue("270");
+  await shot(page, "plan-settings-combined-390");
   const transport = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/edit") && response.status() === 200,
   );
-  await page.getByRole("button", { name: "Driving", exact: true }).click();
-  expect((await (await transport).json()).request.mode).toBe("DRIVE");
+  await page
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  const combinedSettings = await (await transport).json();
+  expect(combinedSettings.request).toMatchObject({
+    mode: "DRIVE",
+    budget: 95,
+    duration: 270,
+  });
   await expect(
     page.getByRole("button", { name: "Update my plan", exact: true }),
   ).not.toBeVisible();
@@ -1143,6 +1167,87 @@ test("Free planning enforces zero estimated activity cost rather than a soft zer
     free.stops.length,
   );
   await shot(page, "free-plan-390");
+});
+
+test("Editing between Free and numeric budgets recomputes the hard-budget policy", async ({
+  page,
+}) => {
+  await generate(page);
+  const savedBefore = await page.evaluate(() =>
+    localStorage.getItem("whimway:native:plans:v1"),
+  );
+  await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Plan budget", exact: true })
+    .fill("0");
+  const rejectedResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/edit"),
+  );
+  await page
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  const rejected = await rejectedResponse;
+  expect(rejected.status()).toBe(422);
+  expect(rejected.request().postDataJSON().request).toMatchObject({
+    budget: 0,
+    hardBudget: true,
+  });
+  await expect(
+    page
+      .getByRole("dialog", { name: "Make room for your day", exact: true })
+      .getByText((await rejected.json()).error, { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem("whimway:native:plans:v1")),
+  ).toBe(savedBefore);
+  await page
+    .getByRole("dialog", { name: "Make room for your day", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  // The editor preserves chosen stops rather than silently discarding a paid
+  // venue. Remove it explicitly, then Free can be accepted for the remaining day.
+  await page
+    .getByRole("button", {
+      name: "Customize Art Gallery of Ontario",
+      exact: true,
+    })
+    .click();
+  const removedResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/edit"),
+  );
+  await page.getByRole("button", { name: "Remove stop", exact: true }).click();
+  expect((await removedResponse).status()).toBe(200);
+  await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Plan budget", exact: true })
+    .fill("0");
+  const freeResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/edit"),
+  );
+  await page
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  const freeResult = await freeResponse;
+  expect(freeResult.status()).toBe(200);
+  const free = await freeResult.json();
+  expect(free.request).toMatchObject({ budget: 0, hardBudget: true });
+  expect(free.cost.high).toBe(0);
+  expect(free.cost.unknown).toBe(0);
+  await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Plan budget", exact: true })
+    .fill("75");
+  const paidResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/edit"),
+  );
+  await page
+    .getByRole("button", { name: "Update my plan", exact: true })
+    .click();
+  const paidResult = await paidResponse;
+  expect(paidResult.status()).toBe(200);
+  const paid = await paidResult.json();
+  expect(paid.request).toMatchObject({ budget: 75, hardBudget: false });
+  expect(paid.revision).toBeGreaterThan(free.revision);
 });
 
 test("Saved lock conflict requires explicit unlock and preserves the original on cancelled or failed recovery", async ({

@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { Itinerary } from "../../../../lib/schema";
 import type { Draft } from "../core/planning";
@@ -32,6 +33,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     demo: false,
   });
   const [plan, setCurrentPlan] = useState<Itinerary>();
+  const acceptedPlan = useRef<Itinerary | undefined>(undefined);
   const [preferences, setPreferences] = useState<Preferences>();
   const [reminderError, setReminderError] = useState("");
   const refreshPreferences = useCallback(
@@ -42,16 +44,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     void refreshPreferences().catch(() => {});
     return startAuthLifecycle();
   }, [refreshPreferences]);
-  const setPlan = useCallback(async (next: Itinerary, options: PlanCommitOptions = {}) => {
-    await commitPlan(next, {
-      persist: savePlan,
-      commit: setCurrentPlan,
-      refreshReminders: async (plan) => {
-        setReminderError("");
-        await updatePlanReminders(plan).catch(() => setReminderError("Your plan is ready. Reminders could not refresh; open this plan’s reminders to retry."));
-      },
-    }, options);
-  }, []);
+  const setPlan = useCallback(
+    async (next: Itinerary, options: PlanCommitOptions = {}) => {
+      await commitPlan(
+        next,
+        {
+          persist: savePlan,
+          commit: (plan) => {
+            if (
+              acceptedPlan.current?.id === plan.id &&
+              acceptedPlan.current.revision > plan.revision
+            )
+              throw new Error(
+                "Your plan changed during this request. Open the latest copy and try again.",
+              );
+            acceptedPlan.current = plan;
+            setCurrentPlan(plan);
+          },
+          refreshReminders: async (plan) => {
+            setReminderError("");
+            await updatePlanReminders(plan).catch(() => {
+              if (!options.signal?.aborted && acceptedPlan.current === plan)
+                setReminderError(
+                  "Your plan is ready. Reminders could not refresh; open this plan’s reminders to retry.",
+                );
+            });
+          },
+        },
+        options,
+      );
+    },
+    [],
+  );
   return (
     <Context.Provider
       value={{

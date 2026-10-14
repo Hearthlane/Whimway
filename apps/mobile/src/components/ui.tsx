@@ -212,6 +212,7 @@ export function Chip({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected }}
+        aria-pressed={selected}
         onPress={() => {
           void Haptics.selectionAsync().catch(() => {});
           if (!reduced) {
@@ -315,12 +316,14 @@ export function Sheet({
   visible,
   title,
   onClose,
+  onDismissStart,
   children,
   error,
 }: {
   visible: boolean;
   title: string;
   onClose: () => void;
+  onDismissStart?: () => void;
   children: React.ReactNode;
   error?: string;
 }) {
@@ -330,16 +333,24 @@ export function Sheet({
     closing = useSharedValue(false);
   const closeRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const dismissalStarted = useSharedValue(false);
+  const beginDismissal = useCallback(() => {
+    if (dismissalStarted.get()) return;
+    dismissalStarted.set(true);
+    onDismissStart?.();
+  }, [onDismissStart, dismissalStarted]);
   const closeSheet = useCallback(() => {
     Keyboard.dismiss();
+    beginDismissal();
     onClose();
-  }, [onClose]);
+  }, [onClose, beginDismissal]);
   const dismissKeyboard = useCallback(() => Keyboard.dismiss(), []);
   useEffect(() => {
+    dismissalStarted.set(false);
     cancelAnimation(displacement);
     displacement.set(0);
     closing.set(false);
-  }, [visible, displacement, closing]);
+  }, [visible, displacement, closing, dismissalStarted]);
   useEffect(() => {
     if (visible && error)
       scrollRef.current?.scrollTo({ y: 0, animated: !reduced });
@@ -366,6 +377,8 @@ export function Sheet({
         )
       ) {
         closing.set(true);
+        // Stop pending work when dismissal is accepted, before the exit motion.
+        scheduleOnRN(beginDismissal);
         if (reduced) scheduleOnRN(closeSheet);
         else
           displacement.set(
