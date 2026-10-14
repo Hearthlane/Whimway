@@ -1,5 +1,9 @@
 import type { ExpoConfig } from "expo/config";
 
+// CI compiles the Google iOS adapter without claiming a configured live map.
+// This mode must never be used for a distribution build (release:check rejects it).
+const nativeBuildCheck = process.env.WHIMWAY_NATIVE_BUILD_CHECK === "true";
+
 const config: ExpoConfig = {
   name: "Whimway",
   slug: "whimway",
@@ -75,9 +79,13 @@ const config: ExpoConfig = {
       },
     ],
     "@react-native-community/datetimepicker",
+    ...(nativeBuildCheck && !process.env.GOOGLE_MAPS_IOS_KEY
+      ? ["./plugins/with-native-build-check.cjs"]
+      : []),
   ],
   web: { bundler: "metro", output: "single", favicon: "./assets/favicon.png" },
   extra: {
+    nativeBuildCheck,
     nativeMapsConfigured: {
       ios: Boolean(process.env.GOOGLE_MAPS_IOS_KEY),
       android: Boolean(process.env.GOOGLE_MAPS_ANDROID_KEY),

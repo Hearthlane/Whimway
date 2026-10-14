@@ -1,0 +1,142 @@
+name: Whimway native compilation
+
+on:
+  pull_request:
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/**",
+        "lib/**",
+        ".github/workflows/native.yml",
+      ]
+  push:
+    branches: [main, "codex/**"]
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/**",
+        "lib/**",
+        ".github/workflows/native.yml",
+      ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+  EXPO_PUBLIC_API_URL: https://whimway.invalid
+  WHIMWAY_NATIVE_BUILD_CHECK: "true"
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Install compatible mobile dependencies
+        run: npm ci
+      - name: Use installed JDK 17 and report toolchain
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          "$JAVA_HOME_17_X64/bin/java" -version
+          test -d "$ANDROID_HOME/licenses"
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Compile standalone internal-test APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+      - name: Inspect compiled permissions and package
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions android/app/build/outputs/apk/release/app-release.apk > android/permissions.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk > android/package.txt
+          node ../../scripts/verify-native-permissions.mjs android/permissions.txt
+      - name: Retain internal APK and manifest evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-compilation-apk
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/permissions.txt
+            apps/mobile/android/package.txt
+          retention-days: 7
+      - name: Retain compiler logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-build-failure
+          path: apps/mobile/android/build/reports
+          retention-days: 7
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Report installed Apple toolchain
+        run: |
+          xcodebuild -version
+          pod --version
+      - name: Install compatible mobile dependencies
+        run: npm ci
+      - name: Generate iOS project and install pods
+        run: |
+          npx expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Compile iOS simulator app without signing credentials
+        run: |
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build > ios/native-build.log 2>&1
+      - name: Launch the actual simulator app and capture first frame
+        run: |
+          xcrun simctl list devices available -j > ios/devices.json
+          SIMULATOR_ID=$(node -e 'const fs=require("node:fs"); const devices=Object.values(JSON.parse(fs.readFileSync("ios/devices.json")).devices).flat(); const phone=devices.find(d=>d.isAvailable&&d.name==="iPhone 17"&&d.state==="Shutdown"); if(!phone)throw Error("No available iPhone 17 simulator"); process.stdout.write(phone.udid)')
+          xcrun simctl boot "$SIMULATOR_ID"
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcrun simctl install "$SIMULATOR_ID" ios/build/Build/Products/Release-iphonesimulator/Whimway.app
+          xcrun simctl launch "$SIMULATOR_ID" com.example.whimway > ios/launch.txt
+          sleep 5
+          xcrun simctl io "$SIMULATOR_ID" screenshot ios/native-smoke.png
+          tar -czf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator Whimway.app
+      - name: Retain simulator app and runtime evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-simulator-app
+          path: |
+            apps/mobile/ios/whimway-ios-simulator.tar.gz
+            apps/mobile/ios/native-smoke.png
+            apps/mobile/ios/launch.txt
+            apps/mobile/ios/devices.json
+          retention-days: 7
+      - name: Retain native compiler evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-build-log
+          path: apps/mobile/ios/native-build.log
+          retention-days: 7
