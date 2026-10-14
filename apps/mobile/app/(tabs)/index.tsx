@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Text, View, TextInput, Switch } from "react-native";
 import { router } from "expo-router";
-import { Sparkles, ArrowUpRight } from "lucide-react-native";
+import { Asterisk, Sparkles, ArrowUpRight } from "lucide-react-native";
 import { Screen, styles, Button, Reveal, Chip } from "../../src/components/ui";
 import { RouteArt } from "../../src/components/RouteArt";
 import { LocationSearch } from "../../src/components/LocationSearch";
@@ -45,12 +45,24 @@ export default function Explore() {
         <View
           style={[
             styles.row,
-            { justifyContent: "space-between", marginBottom: 28 },
+            {
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              columnGap: 12,
+              rowGap: 8,
+              marginBottom: 28,
+            },
           ]}
         >
-          <Text style={[styles.heading, { fontSize: 24 }]}>
-            whimway<Text style={{ color: c.coral }}>✳</Text>
-          </Text>
+          <View
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel="Whimway"
+            style={[styles.row, { gap: 2 }]}
+          >
+            <Text style={[styles.heading, { fontSize: 24 }]}>whimway</Text>
+            <Asterisk size={24} strokeWidth={3} color={c.coral} />
+          </View>
           <Text style={styles.eyebrow}>GOOD DAYS AHEAD</Text>
         </View>
         <Text style={styles.title}>
