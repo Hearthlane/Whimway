@@ -12,3 +12,7 @@ appId: ${APP_ID || 'com.example.whimway'}
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 20000
+- assertVisible: "Saved"
