@@ -13,6 +13,7 @@ import { AppError, providerFetch, requireEnv } from "../errors";
 import type { PlacesProvider, RouteProvider } from "./types";
 import { z } from "zod";
 import { currencyForCountry } from "./currency-data";
+import { providerSignal } from "../server/provider-context";
 export { currencies } from "./currency-data";
 const Money = z.object({
   currencyCode: z.string().optional(),
@@ -86,6 +87,40 @@ const RawPlace = z.object({
 const fields =
   "id,displayName,location,formattedAddress,primaryType,types,googleMapsUri,businessStatus,rating,userRatingCount";
 const detailFields = `${fields},websiteUri,photos,priceRange,currentOpeningHours,regularOpeningHours,addressComponents,accessibilityOptions`;
+const locationFields =
+  "id,displayName,location,formattedAddress,addressComponents";
+const operationReuseLimit = 64;
+function checkOperation() {
+  const signal = providerSignal();
+  if (signal?.aborted)
+    throw signal.reason?.name === "TimeoutError"
+      ? new AppError(
+          "REQUEST_TIMEOUT",
+          "Planning took too long. Try fewer stops or adjust your outing and try again.",
+          504,
+        )
+      : new AppError("REQUEST_CANCELLED", "This request was cancelled.", 499);
+}
+async function reuseWithinOperation<T>(
+  pending: Map<string, Promise<T>>,
+  key: string,
+  load: () => Promise<T>,
+): Promise<T> {
+  checkOperation();
+  let result = pending.get(key);
+  if (!result) {
+    result = load();
+    if (pending.size < operationReuseLimit) pending.set(key, result);
+  }
+  try {
+    const value = await result;
+    checkOperation();
+    return value;
+  } catch (error) {
+    if (pending.get(key) === result) pending.delete(key);
+    throw error;
+  }
+}
 const moneyAmount = (m: z.infer<typeof Money>) =>
   Number(m.units ?? 0) + (m.nanos ?? 0) / 1e9;
 export function normalize(input: unknown, currency: string): CandidatePlace {
@@ -228,6 +263,12 @@ const searches: Record<string, string> = {
   "Surprise me": "interesting things to do",
 };
 export class GooglePlaces implements PlacesProvider {
+  // The API creates a fresh provider for every operation. Never share these
+  // promises across provider instances or persist provider-derived data.
+  private readonly detailsInOperation = new Map<
+    string,
+    Promise<CandidatePlace>
+  >();
   async search(req: PlanRequest, query?: string) {
     const categories = query
       ? [query]
@@ -303,6 +344,14 @@ export class GooglePlaces implements PlacesProvider {
   async details(id: string, currency: string) {
     if (!/^[\w-]+$/.test(id))
       throw new AppError("INVALID_PLACE", "Invalid place ID.");
+    const result = await reuseWithinOperation(
+      this.detailsInOperation,
+      JSON.stringify([id, currency]),
+      () => this.fetchDetails(id, currency),
+    );
+    return structuredClone(result);
+  }
+  private async fetchDetails(id: string, currency: string) {
     try {
       return normalize(
         await call(`places/${encodeURIComponent(id)}`, undefined, detailFields),
@@ -325,7 +374,7 @@ export class GooglePlaces implements PlacesProvider {
       await call(
         `places/${encodeURIComponent(id)}${session ? `?sessionToken=${encodeURIComponent(session)}` : ""}`,
         undefined,
-        `${fields},addressComponents`,
+        locationFields,
       ),
     );
     const country = raw.addressComponents?.find((a) =>
@@ -376,6 +425,10 @@ export async function resolvePoint(point: Point): Promise<Location> {
   };
 }
 export class GoogleRoutes implements RouteProvider {
+  private readonly routesInOperation = new Map<
+    string,
+    Promise<Omit<TravelLeg, "from" | "to">>
+  >();
   async leg(
     from: Point,
     to: Point,
@@ -383,6 +436,28 @@ export class GoogleRoutes implements RouteProvider {
     fromId: string,
     toId: string,
   ): Promise<TravelLeg> {
+    // Key all effective provider options, including precise ordered endpoints.
+    // IDs describe itinerary edges, not the route, and are remapped per caller.
+    const body = JSON.stringify({
+      origin: {
+        location: { latLng: { latitude: from.lat, longitude: from.lng } },
+      },
+      destination: {
+        location: { latLng: { latitude: to.lat, longitude: to.lng } },
+      },
+      travelMode: mode,
+      computeAlternativeRoutes: false,
+      polylineQuality: "OVERVIEW",
+      routingPreference: mode === "DRIVE" ? "TRAFFIC_UNAWARE" : undefined,
+    });
+    const route = await reuseWithinOperation(this.routesInOperation, body, () =>
+      this.computeRoute(body),
+    );
+    return { from: fromId, to: toId, ...route };
+  }
+  private async computeRoute(
+    body: string,
+  ): Promise<Omit<TravelLeg, "from" | "to">> {
     const response = await providerFetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
@@ -393,18 +468,7 @@ export class GoogleRoutes implements RouteProvider {
           "X-Goog-FieldMask":
             "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
         },
-        body: JSON.stringify({
-          origin: {
-            location: { latLng: { latitude: from.lat, longitude: from.lng } },
-          },
-          destination: {
-            location: { latLng: { latitude: to.lat, longitude: to.lng } },
-          },
-          travelMode: mode,
-          computeAlternativeRoutes: false,
-          polylineQuality: "OVERVIEW",
-          routingPreference: mode === "DRIVE" ? "TRAFFIC_UNAWARE" : undefined,
-        }),
+        body,
       },
     );
     const data = z
@@ -458,8 +522,6 @@ export class GoogleRoutes implements RouteProvider {
       );
     }
     return {
-      from: fromId,
-      to: toId,
       minutes: Math.ceil(parseFloat(r.duration) / 60),
       meters: r.distanceMeters,
       polyline: r.polyline.encodedPolyline,

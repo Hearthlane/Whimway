@@ -217,6 +217,7 @@ describe("Prompt intake before required planning answers", () => {
     expect(draft).not.toHaveProperty("duration");
     expect(draft).not.toHaveProperty("location");
     const outbound = JSON.parse(send.mock.calls[0][1].body);
+    expect(outbound.store).toBe(false);
     expect(outbound.text.format.strict).toBe(true);
   });
   it("does not resolve tomorrow in a supplied device timezone", async () => {

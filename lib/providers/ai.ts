@@ -74,6 +74,7 @@ export async function extractPlanningIntent(
   try {
     const response = await aiClient().responses.parse({
       model: aiModel(),
+      store: false,
       input: [
         {
           role: "system",
@@ -144,6 +145,7 @@ export class OpenAIRecommender implements RecommendationProvider {
     const model = aiModel();
     const intent = await client.responses.parse({
       model,
+      store: false,
       input: [
         {
           role: "system",
@@ -179,6 +181,7 @@ export class OpenAIRecommender implements RecommendationProvider {
       );
     const response = await client.responses.parse({
       model,
+      store: false,
       input: [
         {
           role: "system",

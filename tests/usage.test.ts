@@ -120,6 +120,7 @@ describe("Real Responses SDK with synthetic HTTP fixtures", () => {
     expect(send).toHaveBeenCalledTimes(2);
     for (const call of send.mock.calls) {
       const body = JSON.parse(call[1].body);
+      expect(body.store).toBe(false);
       expect(body.text.format.type).toBe("json_schema");
       expect(body.text.format.strict).toBe(true);
     }
