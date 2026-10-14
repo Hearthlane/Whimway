@@ -1,6 +1,6 @@
 # Dependency advisory review
 
-Checked 13 October 2026 using npm audit and the official GitHub advisory records. Advisory counts include propagation through parent packages; they are not counts of independent vulnerabilities. This review does not establish that every reported code path ships in a native application.
+Checked 13 October 2026 using npm audit and the official GitHub advisory records; audit counts and published package versions were rechecked on 14 October after aligning Expo to 57.0.29. Advisory counts include propagation through parent packages; they are not counts of independent vulnerabilities. This review does not establish that every reported code path ships in a native application.
 
 | Dependency tree                               | Before                   | After scoped fix                                                      |
 | --------------------------------------------- | ------------------------ | --------------------------------------------------------------------- |
