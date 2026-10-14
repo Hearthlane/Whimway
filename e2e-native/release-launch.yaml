@@ -9,6 +9,7 @@ tags: [native, release, guest]
     permissions:
       location: deny
       notifications: deny
+- runFlow: helpers/dismiss-pixel-launcher-anr.yaml
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000

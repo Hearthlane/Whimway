@@ -1,14 +1,23 @@
 appId: ${APP_ID || 'com.example.whimway'}
 ---
+- runFlow:
+    file: confirm-whimway-link.yaml
+    env:
+      CANCEL_STALE_LINK: "true"
 - launchApp:
     clearState: true
     permissions:
       location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
       notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
+- runFlow: dismiss-pixel-launcher-anr.yaml
 - extendedWaitUntil:
     visible: "Development Build"
     timeout: 60000
 - openLink: ${EXPO_DEV_URL}
+- runFlow:
+    file: confirm-whimway-link.yaml
+    env:
+      CANCEL_STALE_LINK: "false"
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000
