@@ -99,7 +99,7 @@ tags: [native, fixtures, smoke]
 - killApp
 - launchApp:
     permissions:
-      location: deny
+      location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
       notifications: deny
 - extendedWaitUntil:
     visible: "Development Build|Where are we heading[?]"

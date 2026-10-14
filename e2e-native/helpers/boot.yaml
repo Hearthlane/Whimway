@@ -3,7 +3,7 @@ appId: ${APP_ID || 'com.example.whimway'}
 - launchApp:
     clearState: true
     permissions:
-      location: deny
+      location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
       notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
 - extendedWaitUntil:
     visible: "Development Build"
