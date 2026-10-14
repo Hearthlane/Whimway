@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Only the disposable hosted emulator and explicit synthetic fixture services.
 set -euo pipefail
+export MAESTRO_CLI_NO_ANALYTICS=1
 app_id=com.example.whimway
 dev_url='exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1'
 mkdir -p native-test-artifacts
@@ -23,8 +24,10 @@ adb shell wm size >> native-test-artifacts/android-os.txt
 adb shell wm density >> native-test-artifacts/android-os.txt
 for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
 test -f native-test-artifacts/ready.json
-maestro test --test-output-dir native-results/android -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/smoke.yaml
-maestro test --test-output-dir native-results/android-reminders -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/reminders-allow.yaml
+result=0
+maestro test --test-output-dir native-results/android -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/smoke.yaml || result=1
+maestro test --test-output-dir native-results/android-reminders -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/reminders-allow.yaml || result=1
 adb shell settings put system font_scale 2.0
 adb shell settings get system font_scale > native-test-artifacts/android-large-font-scale.txt
-maestro test --test-output-dir native-results/android-large-text -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/large-text.yaml
+maestro test --test-output-dir native-results/android-large-text -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/large-text.yaml || result=1
+exit "$result"

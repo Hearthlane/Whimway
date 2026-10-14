@@ -23,10 +23,7 @@ tags: [native, fixtures, smoke]
 - tapOn: "Usual budget"
 - eraseText
 - inputText: "80"
-- tapOn:
-    text: "Done editing, dismiss keyboard"
-    optional: true
-- hideKeyboard
+- tapOn: "Done editing, dismiss keyboard"
 - scrollUntilVisible:
     element: "Save my preferences"
     direction: DOWN
@@ -55,10 +52,7 @@ tags: [native, fixtures, smoke]
 - eraseText
 - inputText: "0"
 - takeScreenshot: native-edit-keyboard
-- tapOn:
-    text: "Done editing, dismiss keyboard"
-    optional: true
-- hideKeyboard
+- tapOn: "Done editing, dismiss keyboard"
 - tapOn: "Update my plan"
 - extendedWaitUntil:
     visible: "Some inputs are invalid.*"
@@ -67,10 +61,7 @@ tags: [native, fixtures, smoke]
 - tapOn: "Plan duration"
 - eraseText
 - inputText: "240"
-- tapOn:
-    text: "Done editing, dismiss keyboard"
-    optional: true
-- hideKeyboard
+- tapOn: "Done editing, dismiss keyboard"
 - tapOn: "Update my plan"
 - extendedWaitUntil:
     notVisible: "Make room for your day"

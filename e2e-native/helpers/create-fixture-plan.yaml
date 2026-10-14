@@ -13,7 +13,11 @@ appId: ${APP_ID || 'com.example.whimway'}
     visible: "CF Toronto Eaton Centre"
     timeout: 15000
 - tapOn: "CF Toronto Eaton Centre"
-- hideKeyboard
+- runFlow:
+    when:
+      visible: "Done editing, dismiss keyboard"
+    commands:
+      - tapOn: "Done editing, dismiss keyboard"
 - scrollUntilVisible:
     element: ".*find something good"
     direction: DOWN

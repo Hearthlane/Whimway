@@ -303,13 +303,16 @@ jobs:
           npm ci
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           export PATH="$HOME/.maestro/bin:$PATH"
+          export MAESTRO_CLI_NO_ANALYTICS=1
           defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
           node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
           xcrun simctl install booted apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Whimway.app
           for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
           test -f native-test-artifacts/ready.json
-          maestro test --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml
-          maestro test --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml
+          result=0
+          maestro test --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml || result=1
+          maestro test --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml || result=1
+          exit "$result"
       - name: Retain iOS native runtime evidence
         if: always()
         uses: actions/upload-artifact@v7
