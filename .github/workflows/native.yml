@@ -13,6 +13,8 @@ on:
         "e2e-native/**",
         "scripts/native-build-inputs.mjs",
         "scripts/reuse-native-build.mjs",
+        "scripts/sign-ios-simulator-test-app.sh",
+        "scripts/check-ios-simulator-keychain.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
@@ -31,6 +33,8 @@ on:
         "e2e-native/**",
         "scripts/native-build-inputs.mjs",
         "scripts/reuse-native-build.mjs",
+        "scripts/sign-ios-simulator-test-app.sh",
+        "scripts/check-ios-simulator-keychain.mjs",
         "scripts/start-native-test-services.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
@@ -264,7 +268,8 @@ jobs:
         run: |
           cp ios-devices.json ios/devices.json
           node -e 'const cp=require("node:child_process"); const r=cp.spawnSync("xcrun",["simctl","bootstatus",process.env.WHIMWAY_SIMULATOR_ID,"-b"],{stdio:"inherit",timeout:600000}); if(r.error)throw r.error; process.exit(r.status??1)'
-          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" ios/build/Build/Products/Release-iphonesimulator/Whimway.app
+          WHIMWAY_BINARY_SOURCE_SHA='${{ steps.reuse_ios_release.outputs.binary_source_sha || github.event.pull_request.head.sha || github.sha }}' bash ../../scripts/sign-ios-simulator-test-app.sh release ios/build/Build/Products/Release-iphonesimulator/Whimway.app ios/whimway-ios-simulator.tar.gz
+          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/release/Whimway.app"
           xcrun simctl launch "$WHIMWAY_SIMULATOR_ID" com.example.whimway > ios/launch.txt
           sleep 5
           xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
@@ -309,11 +314,13 @@ jobs:
           trap 'xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size large >/dev/null 2>&1 || true' EXIT
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size large
           node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
-          xcrun simctl install booted apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Whimway.app
+          WHIMWAY_BINARY_SOURCE_SHA='${{ steps.reuse_ios_debug.outputs.binary_source_sha || github.event.pull_request.head.sha || github.sha }}' bash scripts/sign-ios-simulator-test-app.sh debug apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Whimway.app apps/mobile/ios/whimway-ios-simulator-debug.tar.gz
+          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/debug/Whimway.app"
           for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
           test -f native-test-artifacts/ready.json
           result=0
           maestro test --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml || result=1
+          node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json || result=1
           maestro test --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml || result=1
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size accessibility-extra-extra-extra-large
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size > native-test-artifacts/ios-content-size.txt
@@ -328,6 +335,7 @@ jobs:
             native-results
             native-test-services.log
             native-test-artifacts
+            !native-test-artifacts/ios-simulator-runtime/**/Whimway.app/**
             apps/mobile/ios/native-debug-build.log
           retention-days: 7
       - name: Retain native compiler evidence

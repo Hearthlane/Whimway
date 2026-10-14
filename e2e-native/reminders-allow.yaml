@@ -26,11 +26,11 @@ tags: [native, fixtures, reminders]
 - repeat:
     times: 8
     while:
-      notVisible: "Profile"
+      notVisible: "^Profile(, tab, 3 of 3)?$"
     commands:
       - tapOn: "Back"
-- assertVisible: "Profile"
-- tapOn: "Profile"
+- assertVisible: "^Profile(, tab, 3 of 3)?$"
+- tapOn: "^Profile(, tab, 3 of 3)?$"
 - scrollUntilVisible:
     element: "1 outing.*upcoming reminders.*"
     direction: DOWN

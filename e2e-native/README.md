@@ -1,6 +1,6 @@
 # Native development-client smoke flows
 
-These are authored Maestro flows for actual iOS/Android native views. **Execution is pending until a runner produces a pass report.** They are not browser tests and do not use fake map keys or enable fixtures in production builds. All tested venue/price/route data is explicitly synthetic; no cloud messages or live provider calls are expected.
+These are Maestro flows for actual iOS/Android native views. Execution results apply only to the source and scope recorded in [the validation checklist](../docs/mobile-checklist.md). They are not browser tests and do not use fake map keys or enable fixtures in production builds. All tested venue/price/route data is explicitly synthetic; no cloud messages or live provider calls are expected.
 
 Use the dedicated development-client app (`com.example.whimway` unless overridden), a running fixture Next backend and a running native Metro development server. The boot helper clears this test app's local data. Keep these flows separate from a production install/account. The standalone Release compilation-check app cannot load a development server or show the fixture toggle.
 
@@ -29,6 +29,10 @@ Run `reminders-allow.yaml` with the same platform arguments after the main flow.
 The SDK-57 development-client URL deliberately uses the legacy `expo-development-client/?url=` form. Disable flags remove developer overlays only for this test launch and do not alter Whimway's production guards. [Expo development-client launch URLs](https://docs.expo.dev/develop/development-builds/development-workflows/)
 
 Use an English simulator/emulator and enable its software keyboard. Android CI can set `show_ime_with_hard_keyboard=1`; iOS simulator should disconnect the hardware keyboard. The optional keyboard Done tap handles platforms where no software keyboard is displayed, so inspect screenshots and report actual keyboard coverage rather than inferring it. OS Back is run only on Android, using the documented hardware command. [Maestro hardware keys](https://docs.maestro.dev/reference/commands-available/presskey)
+
+Tab selectors accept the observed Android labels and iOS combined labels, such as `Profile, tab, 3 of 3`. The boot helper also rejects the specific Expo notification Keychain entitlement error. It does not dismiss or hide application warnings.
+
+Hosted iOS compilation retains the original simulator archives. Before installation, `scripts/sign-ios-simulator-test-app.sh` creates a separate guarded simulator-only runtime copy and gives it a local ad-hoc signature with a private default Keychain group. This uses no developer certificate, provisioning profile or store signing; Apple documents simulator [Sign to Run Locally](https://developer.apple.com/forums/thread/826882) and [Keychain access groups](https://developer.apple.com/documentation/security/sharing-access-to-keychain-items-among-a-collection-of-apps). Signature, entitlements and original binary provenance are retained separately. `scripts/check-ios-simulator-keychain.mjs` exercises the native module's registration read and installation-ID write/read in the actual Debug app, returning only success booleans. These checks must pass on a hosted simulator before the entitlement repair is considered verified.
 
 Retain Maestro command reports, screenshots, device/OS/build metadata, commit SHA, Metro/backend logs and native crash logs. A YAML file that parses is not a passed flow. Record compile, installation, launch and each journey separately in `docs/mobile-checklist.md` after inspecting runner output.
 

@@ -21,6 +21,8 @@ const runtimeFiles = new Set([
   "scripts/native-build-inputs.mjs",
   "scripts/test-database.mjs",
   "scripts/reuse-native-build.mjs",
+  "scripts/sign-ios-simulator-test-app.sh",
+  "scripts/check-ios-simulator-keychain.mjs",
   workflowPath,
 ]);
 

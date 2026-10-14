@@ -15,7 +15,9 @@ export default function AuthCallback() {
   }, [url]);
   return (
     <Screen>
-      <Text style={styles.title}>Opening your account…</Text>
+      <Text maxFontSizeMultiplier={2} style={styles.title}>
+        Opening your account…
+      </Text>
       <Notice message={error} error />
       {error ? (
         <Button

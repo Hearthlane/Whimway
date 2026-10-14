@@ -14,12 +14,12 @@ tags: [native, release, guest]
     visible: "Where are we heading[?]"
     timeout: 120000
 - extendedWaitUntil:
-    visible: "Profile"
+    visible: "^Profile(, tab, 3 of 3)?$"
     timeout: 20000
-- assertVisible: "Saved"
+- assertVisible: "^Saved(, tab, 2 of 3)?$"
 - assertNotVisible: "Use synthetic development fixtures"
 - takeScreenshot: android-release-explore
-- tapOn: "Profile"
+- tapOn: "^Profile(, tab, 3 of 3)?$"
 - extendedWaitUntil:
     visible: "Guest, with all the good stuff."
     timeout: 20000
@@ -33,12 +33,12 @@ tags: [native, release, guest]
     direction: UP
     timeout: 30000
 - takeScreenshot: android-release-profile
-- tapOn: "Saved"
+- tapOn: "^Saved(, tab, 2 of 3)?$"
 - extendedWaitUntil:
     visible: "Your next good day lives here."
     timeout: 30000
 - takeScreenshot: android-release-saved
-- tapOn: "Explore"
+- tapOn: "^Explore(, tab, 1 of 3)?$"
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 20000

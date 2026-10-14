@@ -13,9 +13,9 @@ tags: [native, fixtures, smoke]
 - extendedWaitUntil:
     visible: "Location is off.*"
     timeout: 10000
-- tapOn: "Saved"
+- tapOn: "^Saved(, tab, 2 of 3)?$"
 - assertVisible: "Your next good day lives here."
-- tapOn: "Profile"
+- tapOn: "^Profile(, tab, 3 of 3)?$"
 - assertVisible: "Guest, with all the good stuff."
 - scrollUntilVisible:
     element: "Usual budget"
@@ -32,7 +32,7 @@ tags: [native, fixtures, smoke]
     element: "Preferences saved on this device."
     direction: UP
 - takeScreenshot: native-profile-preferences
-- tapOn: "Explore"
+- tapOn: "^Explore(, tab, 1 of 3)?$"
 - startRecording:
     path: "${maestro.platform}-planning-motion"
     label: "Record native question transitions and itinerary reveal"
@@ -115,7 +115,7 @@ tags: [native, fixtures, smoke]
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000
-- tapOn: "Saved"
+- tapOn: "^Saved(, tab, 2 of 3)?$"
 - extendedWaitUntil:
     visible: "A day with a little more whim.*"
     timeout: 20000

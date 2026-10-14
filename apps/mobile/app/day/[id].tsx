@@ -298,7 +298,7 @@ export default function DayScreen() {
     return (
       <Screen>
         <Header title="YOUR DAY" />
-        <Text style={styles.title}>
+        <Text maxFontSizeMultiplier={2} style={styles.title}>
           {loading ? "Opening your day…" : "Getting your day ready…"}
         </Text>
         <Notice message={error} error />
@@ -355,7 +355,10 @@ export default function DayScreen() {
       </View>
       {current ? (
         <>
-          <Text style={[styles.title, { fontSize: 32, lineHeight: 36 }]}>
+          <Text
+            maxFontSizeMultiplier={2}
+            style={[styles.title, { fontSize: 32, lineHeight: 36 }]}
+          >
             {current.place.name}
           </Text>
           <Text style={[styles.body, { fontSize: 14, lineHeight: 20 }]}>
@@ -454,7 +457,9 @@ export default function DayScreen() {
         </>
       ) : (
         <>
-          <Text style={styles.title}>That’s a day{"\n"}worth keeping.</Text>
+          <Text maxFontSizeMultiplier={2} style={styles.title}>
+            That’s a day{"\n"}worth keeping.
+          </Text>
           <Text style={styles.body}>
             {progress.completed.length} moments enjoyed. Your plan stays in
             Saved.

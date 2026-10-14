@@ -401,7 +401,10 @@ export default function Saved() {
   return (
     <Screen>
       <Text style={styles.eyebrow}>GOOD DAYS, KEPT CLOSE</Text>
-      <Text style={[styles.title, { marginVertical: 20 }]}>
+      <Text
+        maxFontSizeMultiplier={2}
+        style={[styles.title, { marginVertical: 20 }]}
+      >
         A little collection{"\n"}of possibilities.
       </Text>
       <View style={[styles.row, { flexWrap: "wrap", marginBottom: 14 }]}>

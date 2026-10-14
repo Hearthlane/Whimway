@@ -494,7 +494,7 @@ export default function Planner() {
           </Text>
         ) : null}
         <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 22 }}>
-          <Text style={styles.title}>
+          <Text maxFontSizeMultiplier={2} style={styles.title}>
             {ready ? "Your day,\nyour way." : headings[step]}
           </Text>
           {step === "location" ? (

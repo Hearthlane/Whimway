@@ -6,6 +6,7 @@ import {
   Switch,
   Pressable,
   Keyboard,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Asterisk, Sparkles, ArrowUpRight, MapPin } from "lucide-react-native";
@@ -23,6 +24,7 @@ import {
 } from "../../src/core/planning";
 export default function Explore() {
   const { draft, setDraft, preferences } = useApp();
+  const { fontScale } = useWindowDimensions();
   const [prompt, setPrompt] = useState("");
   const [entry, setEntry] = useState<"place" | "idea">("place");
   const [location, setLocation] = useState<Location>();
@@ -68,12 +70,20 @@ export default function Explore() {
             accessibilityLabel="Whimway"
             style={[styles.row, { gap: 2 }]}
           >
-            <Text style={[styles.heading, { fontSize: 24 }]}>whimway</Text>
+            <Text
+              maxFontSizeMultiplier={2}
+              style={[styles.heading, { fontSize: 24 }]}
+            >
+              whimway
+            </Text>
             <Asterisk size={24} strokeWidth={3} color={c.coral} />
           </View>
           <Text style={styles.eyebrow}>GOOD DAYS AHEAD</Text>
         </View>
-        <Text style={[styles.title, { fontSize: 36, lineHeight: 40 }]}>
+        <Text
+          maxFontSizeMultiplier={2}
+          style={[styles.title, { fontSize: 36, lineHeight: 40 }]}
+        >
           Where are we heading?
         </Text>
         <Text style={[styles.body, { marginTop: 10, marginBottom: 24 }]}>
@@ -82,7 +92,16 @@ export default function Explore() {
       </Reveal>
       <Reveal delay={80}>
         <View style={styles.section}>
-          <View style={[styles.row, { gap: 8, alignItems: "stretch" }]}>
+          <View
+            style={[
+              styles.row,
+              {
+                gap: 8,
+                alignItems: "stretch",
+                flexDirection: fontScale > 1.5 ? "column" : "row",
+              },
+            ]}
+          >
             {(
               [
                 ["place", "Pick a place", MapPin],
@@ -103,7 +122,7 @@ export default function Explore() {
                   setEntry(value);
                 }}
                 style={({ pressed }) => ({
-                  flex: 1,
+                  flex: fontScale > 1.5 ? undefined : 1,
                   minHeight: 52,
                   paddingHorizontal: 12,
                   paddingVertical: 12,
@@ -178,7 +197,7 @@ export default function Explore() {
         <RouteArt />
         <View style={{ gap: 16, marginTop: 26 }}>
           <View style={[styles.row, { justifyContent: "space-between" }]}>
-            <Text style={styles.heading}>Follow a feeling</Text>
+            <Text style={[styles.heading, { flex: 1 }]}>Follow a feeling</Text>
             <ArrowUpRight color={c.ink} size={22} />
           </View>
           <View style={[styles.row, { flexWrap: "wrap" }]}>

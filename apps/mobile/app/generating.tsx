@@ -64,7 +64,10 @@ export default function Generating() {
     <Screen style={{ justifyContent: "center", gap: 26 }}>
       <Reveal>
         <RouteArt animate />
-        <Text style={[styles.title, { marginTop: 32 }]}>
+        <Text
+          maxFontSizeMultiplier={2}
+          style={[styles.title, { marginTop: 32 }]}
+        >
           Making your{"\n"}perfect day…
         </Text>
         <Text style={[styles.body, { marginTop: 16 }]}>

@@ -192,7 +192,10 @@ export default function Profile() {
   return (
     <Screen>
       <Text style={styles.eyebrow}>MORE YOU. MORE YOUR KIND OF DAY.</Text>
-      <Text style={[styles.title, { marginVertical: 20 }]}>
+      <Text
+        maxFontSizeMultiplier={2}
+        style={[styles.title, { marginVertical: 20 }]}
+      >
         Come as{"\n"}you are.
       </Text>
       <View

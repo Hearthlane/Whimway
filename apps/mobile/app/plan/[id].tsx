@@ -316,7 +316,7 @@ export default function PlanScreen() {
     return (
       <Screen>
         <Header title="Your plan" />
-        <Text style={styles.title}>
+        <Text maxFontSizeMultiplier={2} style={styles.title}>
           {loading ? "Opening your day…" : "Let’s reconnect."}
         </Text>
         {loading ? <ActivityIndicator color={c.ink} /> : null}
@@ -443,6 +443,7 @@ export default function PlanScreen() {
               {plan.request.location.name.toUpperCase()}
             </Text>
             <Text
+              maxFontSizeMultiplier={2}
               style={[
                 styles.title,
                 { fontSize: 32, lineHeight: 36, marginVertical: 8 },
