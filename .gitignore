@@ -6,6 +6,9 @@ coverage/
 playwright-report/
 test-results/
 test-results-mobile/
+native-results/
+native-test-artifacts/
+native-test-services.log
 *.tsbuildinfo
 .expo/
 dist/

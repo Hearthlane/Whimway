@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { z } from "zod";
 import type { Itinerary } from "../../../../lib/schema";
+import { recordDiagnostic } from "./diagnostics";
 import {
   DayProgressSchema,
   dayProgressKey,
@@ -33,7 +34,14 @@ let operations: Promise<unknown> = Promise.resolve();
 function serialized<T>(action: () => Promise<T>): Promise<T> {
   const result = operations.then(action, action);
   operations = result.catch(() => undefined);
-  return result;
+  return result.catch((error) => {
+    recordDiagnostic({
+      category: "reminders",
+      code: "REMINDER_FAILED",
+      operation: "reminders",
+    });
+    throw error;
+  });
 }
 async function allSettings(): Promise<Record<string, ReminderSettings>> {
   const raw = await AsyncStorage.getItem(STORE);

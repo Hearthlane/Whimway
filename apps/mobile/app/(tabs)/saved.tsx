@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View, Pressable, Linking } from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { Bookmark, Trash2, ArrowUpRight, Heart } from "lucide-react-native";
@@ -6,6 +6,7 @@ import { api } from "../../src/services/api";
 import {
   getSavedPlans,
   savePlan,
+  saveRecoveredPlan,
   removePlan,
   getFavoritePlaces,
   removeFavoritePlace,
@@ -24,13 +25,19 @@ import {
 import { PlacePhoto } from "../../src/components/PlacePhoto";
 import { RouteArt } from "../../src/components/RouteArt";
 import { useApp } from "../../src/state/AppState";
-import { defaultStart } from "../../src/core/planning";
+import { applySavedPreferences, defaultStart } from "../../src/core/planning";
+import {
+  canUnlockSavedStops,
+  unlockedSavedStops,
+} from "../../src/core/saved-recovery";
+import { referenceOnlyPlan } from "../../src/services/storage-core";
 import { colors as c } from "../../src/design/theme";
 import { safeUrl } from "../../../../lib/geo";
 import type {
   CandidatePlace,
   Location,
   PlanSpec,
+  Itinerary,
 } from "../../../../lib/schema";
 
 export default function Saved() {
@@ -43,11 +50,18 @@ export default function Saved() {
     [busy, setBusy] = useState(false),
     [collection, setCollection] = useState<"plans" | "places">("plans");
   const [visiblePlaces, setVisiblePlaces] = useState(12);
-  const { setDraft, preferences } = useApp();
+  const [openingId, setOpeningId] = useState<string>();
+  const [canCancelOpening, setCanCancelOpening] = useState(false);
+  const [recovery, setRecovery] = useState<PlanSpec>();
+  const opening = useRef<AbortController | null>(null),
+    focused = useRef(false);
+  const openGeneration = useRef(0);
+  const { setDraft, setPlan, preferences } = useApp();
   useFocusEffect(
     useCallback(() => {
       const controller = new AbortController();
       let active = true;
+      focused.current = true;
       setLoading(true);
       setError("");
       setCloud([]);
@@ -90,10 +104,85 @@ export default function Saved() {
       })();
       return () => {
         active = false;
+        focused.current = false;
+        openGeneration.current++;
+        opening.current?.abort();
+        opening.current = null;
+        setOpeningId(undefined);
+        setCanCancelOpening(false);
+        setBusy(false);
         controller.abort();
       };
     }, []),
   );
+  async function openSaved(spec: PlanSpec, unlock = false) {
+    if (busy || opening.current) return;
+    const controller = new AbortController();
+    const generation = ++openGeneration.current;
+    opening.current = controller;
+    setOpeningId(spec.id);
+    setCanCancelOpening(true);
+    setBusy(true);
+    setError("");
+    if (!unlock) setRecovery(undefined);
+    try {
+      const candidate = unlock ? unlockedSavedStops(spec) : spec;
+      const next = await api<Itinerary>("hydrate", candidate, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted || !focused.current) return;
+      if (next.id !== spec.id)
+        throw new Error(
+          "The backend returned a different outing. Please try again.",
+        );
+      if (unlock) {
+        await saveRecoveredPlan(spec, next, controller.signal);
+        // The reference has committed successfully. The retry is complete;
+        // later screen navigation is no longer cancellation of that retry.
+        opening.current = null;
+        setCanCancelOpening(false);
+        setPlans((rows) =>
+          rows.map((row) =>
+            row.id === spec.id ? referenceOnlyPlan(next) : row,
+          ),
+        );
+        setRecovery(undefined);
+      } else {
+        const latest = (await getSavedPlans()).find(
+          (row) => row.id === spec.id,
+        );
+        if (controller.signal.aborted || !focused.current) return;
+        if (
+          !latest ||
+          JSON.stringify(referenceOnlyPlan(latest)) !==
+            JSON.stringify(referenceOnlyPlan(spec))
+        )
+          throw new Error(
+            "Your saved plan changed during this request. Open the latest copy and try again.",
+          );
+      }
+      await setPlan(next, { signal: controller.signal, persist: false });
+      if (focused.current && !controller.signal.aborted)
+        router.push("/plan/" + next.id);
+    } catch (e) {
+      if (!controller.signal.aborted && focused.current) {
+        const failure = e as Error & { code?: string };
+        setError(failure.message);
+        if (unlock || canUnlockSavedStops(spec, failure)) setRecovery(spec);
+      }
+    } finally {
+      if (opening.current === controller) opening.current = null;
+      if (focused.current && openGeneration.current === generation) {
+        setOpeningId(undefined);
+        setCanCancelOpening(false);
+        setBusy(false);
+      }
+    }
+  }
+  function cancelOpening() {
+    opening.current?.abort();
+    // Keep this operation guarded until its cancellation cleanup completes.
+  }
   async function remove() {
     if (!pending || busy) return;
     setBusy(true);
@@ -134,32 +223,18 @@ export default function Saved() {
           ) +
           (ref.demo ? "&demo=true" : ""),
       );
-      const useBudget =
-        preferences?.enabled &&
-        preferences.budgetCurrency === location.currency;
-      setDraft({
-        prompt: "",
-        location,
-        demo: ref.demo,
-        known: [
-          "location",
-          ...(preferences?.enabled && preferences.interests.length
-            ? ["interests"]
-            : []),
-          ...(useBudget ? ["budget"] : []),
-        ],
-        ...defaultStart(location),
-        ...(preferences?.enabled
-          ? {
-              interests: preferences.interests,
-              mode: preferences.mode,
-              dietary: preferences.dietary,
-              accessibility: preferences.accessibility,
-              excludedPlaceIds: preferences.disliked,
-            }
-          : {}),
-        ...(useBudget ? { budget: preferences!.budget } : {}),
-      });
+      setDraft(
+        applySavedPreferences(
+          {
+            prompt: "",
+            location,
+            demo: ref.demo,
+            known: ["location"],
+            ...defaultStart(location),
+          },
+          preferences,
+        ),
+      );
       router.push("/planner");
     } catch (e) {
       setError((e as Error).message);
@@ -238,7 +313,11 @@ export default function Saved() {
                   <Pressable
                     accessibilityLabel={"Delete " + plan.title}
                     accessibilityRole="button"
-                    onPress={() => setPending(plan)}
+                    disabled={busy}
+                    onPress={() => {
+                      setError("");
+                      setPending(plan);
+                    }}
                     style={{ padding: 12 }}
                   >
                     <Trash2 size={18} color={c.ink} />
@@ -246,7 +325,12 @@ export default function Saved() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => router.push("/plan/" + plan.id)}
+                  accessibilityState={{
+                    disabled: busy,
+                    busy: openingId === plan.id,
+                  }}
+                  disabled={busy}
+                  onPress={() => void openSaved(plan)}
                   style={{ gap: 8 }}
                 >
                   <Text style={styles.heading}>{plan.title}</Text>
@@ -254,10 +338,38 @@ export default function Saved() {
                     {plan.request.date} · {plan.stops.length} stops
                   </Text>
                   <View style={styles.row}>
-                    <Text style={styles.label}>Open my day</Text>
+                    <Text style={styles.label}>
+                      {openingId === plan.id
+                        ? "Refreshing your saved day…"
+                        : "Open my day"}
+                    </Text>
                     <ArrowUpRight size={18} color={c.ink} />
                   </View>
                 </Pressable>
+                {recovery?.id === plan.id ? (
+                  <View style={{ gap: 12 }}>
+                    <Text style={styles.body}>
+                      A locked place could not reopen. This retry unlocks this
+                      device’s saved stops; places that are no longer available
+                      may be omitted. Your original stays saved if the retry
+                      fails.
+                    </Text>
+                    <Button
+                      secondary
+                      title="Unlock saved stops and retry"
+                      busy={openingId === plan.id}
+                      disabled={busy}
+                      onPress={() => void openSaved(plan, true)}
+                    />
+                  </View>
+                ) : null}
+                {openingId === plan.id && canCancelOpening ? (
+                  <Button
+                    secondary
+                    title="Cancel opening"
+                    onPress={cancelOpening}
+                  />
+                ) : null}
               </View>
             </Reveal>
           ))}
@@ -298,6 +410,7 @@ export default function Saved() {
         </View>
       ) : null}
       <Sheet
+        error={error}
         visible={!!pending}
         title="Let this plan go?"
         onClose={() => setPending(undefined)}
@@ -394,6 +507,7 @@ function FavoritePlace({
         <Text style={styles.body}>Refreshing current place details…</Text>
       )}
       <Sheet
+        error={error}
         visible={details}
         title={place?.name ?? "Saved place"}
         onClose={() => setDetails(false)}

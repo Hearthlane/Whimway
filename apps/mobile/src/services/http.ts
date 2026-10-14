@@ -59,6 +59,11 @@ export async function requestJson<T>(
     token?: string;
     fetcher?: typeof fetch;
     timeoutMs?: number;
+    reportFailure?: (failure: {
+      code: string;
+      path: string;
+      status?: number;
+    }) => void;
   } = {},
 ): Promise<T> {
   if (
@@ -129,18 +134,30 @@ export async function requestJson<T>(
       );
     return parsed.data;
   } catch (error) {
-    if (controller.signal.aborted)
-      throw new MobileApiError(
-        timedOut
-          ? "Planning took too long. Please try again."
-          : "The request was cancelled.",
-        timedOut ? "TIMEOUT" : "CANCELLED",
-      );
-    if (error instanceof MobileApiError) throw error;
-    throw new MobileApiError(
-      "Could not reach Whimway. Check your connection and backend address.",
-      "NETWORK_ERROR",
-    );
+    const failure = controller.signal.aborted
+      ? new MobileApiError(
+          timedOut
+            ? "Planning took too long. Please try again."
+            : "The request was cancelled.",
+          timedOut ? "TIMEOUT" : "CANCELLED",
+        )
+      : error instanceof MobileApiError
+        ? error
+        : new MobileApiError(
+            "Could not reach Whimway. Check your connection and backend address.",
+            "NETWORK_ERROR",
+          );
+    if (failure.code !== "CANCELLED")
+      try {
+        options.reportFailure?.({
+          code: failure.code,
+          path,
+          status: failure.status,
+        });
+      } catch {
+        /* Reporting must not mask the request failure. */
+      }
+    throw failure;
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", abort);

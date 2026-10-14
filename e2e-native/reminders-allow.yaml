@@ -1,0 +1,36 @@
+appId: ${APP_ID || 'com.example.whimway'}
+name: Native fixture reminders schedule and cancel
+tags: [native, fixtures, reminders]
+---
+- runFlow:
+    file: helpers/boot.yaml
+    env:
+      NOTIFICATION_PERMISSION: allow
+- runFlow: helpers/create-fixture-plan.yaml
+- scrollUntilVisible:
+    element: "Want reminders for your day?"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "Want reminders for your day?"
+- tapOn: "Also remind me before each stop"
+- tapOn: "Yes, remind me"
+- tapOn:
+    text: "Allow"
+    optional: true
+- scrollUntilVisible:
+    element: ".*reminders scheduled.*"
+    direction: UP
+- takeScreenshot: native-reminders-scheduled
+- tapOn: "Back"
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element: "1 outing.*upcoming reminders.*"
+    direction: DOWN
+- tapOn: "Cancel all outing reminders"
+- scrollUntilVisible:
+    element: "All outing reminders cancelled."
+    direction: UP
+- scrollUntilVisible:
+    element: "0 outings.*upcoming reminders.*"
+    direction: DOWN
+- takeScreenshot: native-reminders-cancelled

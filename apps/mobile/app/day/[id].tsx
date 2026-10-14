@@ -490,6 +490,7 @@ export default function DayScreen() {
         onPress={() => setEnding(true)}
       />
       <Sheet
+        error={error}
         visible={ending}
         title="Call it a good day?"
         onClose={() => setEnding(false)}

@@ -66,7 +66,7 @@ The database migration and RLS design remain in `supabase/migrations`. Apply it 
 
 Do not save full provider place records as offline venue truth. Saved references are rehydrated; unavailable venues and offline reopen must present recovery. Prices, opening hours, travel time, admission, accessibility and future holiday availability remain estimates or provider-dependent information.
 
-Destination currency is inferred from the existing common-country table and defaults to USD for country codes outside it. Confirm the displayed currency and use the optional planning details sheet's three-letter currency field when necessary. Changing the code does not convert amounts; check the per-person budget again. Provider price ranges with a different currency are rejected and shown as unknown, avoiding false totals. Expand/verify country coverage before claiming worldwide currency accuracy.
+Destination currency uses pinned CLDR territory data covering 255 codes, with provenance/license in `lib/providers/currency-data.ts` and its accompanying license. Multi-currency territories use the recorded first active tender. Missing or unknown country metadata returns an actionable error instead of silently using USD. Confirm the displayed currency and use the optional planning details sheet's three-letter field when necessary. Changing the code does not convert amounts; check the per-person budget again. Provider price ranges with a different currency remain unknown. Live provider geography and prices still require validation.
 
 ## EAS build profiles and signing
 
@@ -100,6 +100,8 @@ Before public release, replace the existing marked legal drafts with approved pu
 
 Audit included SDK privacy manifests, required-reason declarations and actual permission lists in the generated native projects. Verify the non-exempt-encryption declaration against the final dependency set and distribution. Document data retention/deletion and test account/device deletion. No advertising tracking is implemented; do not add tracking or unrelated permissions as a release shortcut.
 
+The local diagnostic report retains at most 30 allowlisted recent error entries plus app/build/platform metadata. It excludes prompt/plan content, venue identifiers, coordinates, email and tokens, has an explicit clear action, and is sent only when the user invokes the native Share action. It is not automatic remote error collection. Review the final text and receiving support process before any future remote reporting is introduced.
+
 Prepare screenshots from real device/simulator builds, including Explore, adaptive planning, results, Day Mode, Saved and Profile. Capture current required App Store/Play sizes from the store consoles when preparing submission. Use real live-provider data only after credentials and content rights are verified; do not label fixture screenshots as live functionality. Keep the coral winding-W icon and warm splash from `apps/mobile/assets`.
 
 ## Validation commands and release gate
@@ -128,7 +130,9 @@ npx expo config --type public
 npm run release:check
 ```
 
-The GitHub workflow checks contracts, security/planner tests, web regressions, SDK alignment and all-platform JavaScript export. CI upload is an inspectable JavaScript artifact, not an APK/IPA. Final evidence and unresolved checks are maintained in `docs/mobile-checklist.md`.
+The mobile workflow checks contracts, security/planner tests, web regressions, SDK alignment and all-platform JavaScript export. Its export upload is JavaScript, not an APK/IPA. The separate native workflow compiles an Android internal-test APK and an unsigned iOS simulator `.app` on hosted runners, then exercises development clients with the explicit synthetic backend through the `e2e-native` Maestro flows. Native artifacts and results must be checked for the exact source commit; compilation alone does not establish successful OS journeys. Initial Android and iOS compilation has succeeded, with current evidence in [mobile-checklist.md](mobile-checklist.md).
+
+The hosted native build-check mode uses a placeholder HTTPS backend and compiles the real Google iOS adapter without injecting a fake Maps key. Its runtime declares native maps unavailable. This mode is rejected by `release:check`, and its test identifiers/signing are not public-distribution configuration. Development-client journeys load Metro with localhost ports forwarded to the runner and explicitly labeled fixtures; production HTTP/fixture guards stay active. See [native flow instructions](../e2e-native/README.md) for exact parameters and the remaining manual OS/provider checks.
 
 The native-screen browser suite builds an official `expo export --dev --platform web` artifact in the ignored `apps/mobile/dist-qa` directory, then serves it at `http://127.0.0.1:8082` with a local same-origin API proxy. This retains the source's development-only fixture toggle and avoids repeated Metro development-bundle downloads. Run `node scripts/serve-mobile-preview.mjs --build` to inspect the same artifact manually. The server binds only to localhost and is QA tooling, not a deployment server. Production exports keep `__DEV__` false and do not expose the fixture switch.
 
@@ -140,4 +144,4 @@ When inspecting an already running static QA server locally, restart it with `--
 
 See `docs/dependency-advisories.md` for the current security audit. A scoped Xcode UUID override and a provenance-pinned CommonJS adapter of the patched URI decoder address their advisories; unpatched braces/Forge build-tool dependencies remain visible. Do not treat the production backend's zero-advisory result as a clean mobile dependency result.
 
-Run journeys A–G from that checklist on Android and iOS before release. Include OS permission grant/deny/revoke, cold/warm deep links, airplane mode, process death, large text, reduced motion and screen-reader interaction. Test on representative 360 × 800, 390 × 844 and 430 × 932 phone layouts plus a small phone. Only a successfully installed, exercised signed build can close a native build/device check.
+Run journeys A–G from that checklist on Android and iOS before release. Include OS permission grant/deny/revoke, cold/warm deep links, airplane mode, process death, large text, reduced motion and screen-reader interaction. Test on representative 360 × 800, 390 × 844 and 430 × 932 phone layouts plus a small phone. An installed emulator/simulator build can establish the recorded native test behavior; signed physical-device distribution and store readiness remain separate checks.

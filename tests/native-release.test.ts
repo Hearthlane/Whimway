@@ -10,7 +10,7 @@ function check(overrides: Record<string, string> = {}) {
     encoding: "utf8",
     env: {
       ...process.env,
-      EXPO_PUBLIC_API_URL: "https://staging.whimway.test",
+      EXPO_PUBLIC_API_URL: "https://staging.whimway.app",
       GOOGLE_MAPS_ANDROID_KEY: "test-key-android",
       GOOGLE_MAPS_IOS_KEY: "test-key-ios",
       EAS_PROJECT_ID: "00000000-0000-4000-8000-000000000001",
@@ -38,8 +38,9 @@ describe("native distribution configuration gate", () => {
   it("rejects placeholder endpoints, embedded credentials and malformed project UUIDs", () => {
     for (const url of [
       "https://whimway.invalid",
+      "https://whimway.test",
       "https://localhost",
-      "https://user:password@staging.whimway.test",
+      "https://user:password@staging.whimway.app",
     ]) {
       expect(check({ EXPO_PUBLIC_API_URL: url }).status).toBe(1);
     }

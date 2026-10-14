@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -44,12 +44,31 @@ async function noOverflow(page: Page) {
     ),
   ).toBe(true);
 }
+async function auditAccessibility(page: Page, label: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const report = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    report.violations.map((v) => ({
+      id: v.id,
+      targets: v.nodes.map((n) => n.target),
+    })),
+    label,
+  ).toEqual([]);
+}
+
 async function start(page: Page, prompt = "") {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByText("Where are we heading?", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("switch").first().check();
+  await page
+    .getByRole("switch", {
+      name: "Use synthetic development fixtures",
+      exact: true,
+    })
+    .check();
   await page.getByRole("textbox", { name: "Search a place" }).fill("Toronto");
   await page
     .getByRole("button", { name: "CF Toronto Eaton Centre", exact: true })
@@ -399,17 +418,7 @@ test("Preview text contrast and controls meet automated accessibility checks", a
   page,
 }) => {
   async function audit(label: string) {
-    await page.evaluate(() => document.fonts.ready);
-    const report = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
-    expect(
-      report.violations.map((v) => ({
-        id: v.id,
-        targets: v.nodes.map((n) => n.target),
-      })),
-      label,
-    ).toEqual([]);
+    await auditAccessibility(page, label);
   }
   for (const route of ["/", "/saved", "/profile"]) {
     await page.goto(route, { waitUntil: "domcontentloaded" });
@@ -600,4 +609,450 @@ test("Missing live intent and denied browser location preserve guided access", a
     page.getByRole("textbox", { name: "Search a place", exact: true }),
   ).toBeEditable();
   await shot(page, "location-denied-preview-390");
+});
+
+test("Cancelling pending generation preserves choices and never saves a cancelled plan", async ({
+  page,
+}) => {
+  await start(page);
+  await page
+    .getByRole("button", { name: "Food & drinks", exact: true })
+    .click();
+  let release: (route: Route) => void = () => {};
+  const intercepted = new Promise<Route>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/generate", (route) => {
+    release(route);
+  });
+  await page.getByRole("button", { name: "Make my day", exact: true }).click();
+  const pending = await intercepted;
+  await expect(
+    page.getByText("Preparing your outing", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/planner/);
+  await expect(
+    page.getByText("What sounds fun?", { exact: true }),
+  ).toBeVisible();
+  // The network gate exercises cancellation, not a successful simulated plan.
+  await pending.abort("aborted").catch(() => {});
+  await page.unroute("**/api/generate");
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("whimway:native:plans:v1") ?? "[]"),
+    ),
+  ).toEqual([]);
+  const generated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
+  await page.getByRole("button", { name: "Make my day", exact: true }).click();
+  expect((await (await generated).json()).request.interests).toContain(
+    "Food & drinks",
+  );
+  await expect(page).toHaveURL(/\/plan\/[a-f\d-]+/);
+});
+
+test("Offline and failed edits preserve the original plan; Saved hydration can recover", async ({
+  page,
+  context,
+}) => {
+  const generated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
+  await generate(page);
+  const original = await (await generated).json();
+  const labels = await page
+    .getByRole("button", { name: /^Customize / })
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("aria-label")),
+    );
+  await page
+    .getByRole("button", { name: /^Customize / })
+    .nth(1)
+    .click();
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Remove stop", exact: true }).click();
+  await expect(page.getByText(/Could not reach Whimway/).last()).toBeVisible();
+  await context.setOffline(false);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  expect(
+    await page
+      .getByRole("button", { name: /^Customize / })
+      .evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("aria-label")),
+      ),
+  ).toEqual(labels);
+  const reopened = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/hydrate") && response.status() === 200,
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const restored = await (await reopened).json();
+  expect(restored.revision).toBe(original.revision);
+  expect(
+    restored.stops.map((stop: { placeId: string }) => stop.placeId),
+  ).toEqual(original.stops.map((stop: { placeId: string }) => stop.placeId));
+  await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
+    original.stops.length,
+  );
+  await page.route("**/api/hydrate", (route) =>
+    route.abort("internetdisconnected"),
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.getByText(/Could not reach Whimway/)).toBeVisible();
+  await shot(page, "saved-reopen-network-error-390");
+  await page.unroute("**/api/hydrate");
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
+    original.stops.length,
+  );
+});
+
+test.describe("Question motion", () => {
+  test.use({ reducedMotion: "no-preference" });
+  test("Forward and Back keep visible question state and accessible progress synchronized", async ({
+    page,
+  }) => {
+    await start(page);
+    const progress = page.getByRole("progressbar", {
+      name: "Planning progress",
+      exact: true,
+    });
+    await expect(progress).toHaveAttribute("aria-valuenow", "1");
+    await page
+      .getByRole("button", { name: "Food & drinks", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByText("Who’s joining?", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("What sounds fun?", { exact: true }),
+    ).not.toBeVisible();
+    await expect(progress).toHaveAttribute("aria-valuenow", "2");
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await expect(
+      page.getByText("What sounds fun?", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Who’s joining?", { exact: true }),
+    ).not.toBeVisible();
+    await expect(progress).toHaveAttribute("aria-valuenow", "1");
+    const request = page.waitForRequest((request) =>
+      request.url().endsWith("/api/generate"),
+    );
+    await page
+      .getByRole("button", { name: "Make my day", exact: true })
+      .click();
+    expect((await request).postDataJSON().request.interests).toContain(
+      "Food & drinks",
+    );
+    await expect(page).toHaveURL(/\/plan\/[a-f\d-]+/);
+  });
+});
+
+test("Optional personal preferences and avoided places feed the next real fixture request", async ({
+  page,
+}) => {
+  await page.goto("/profile", { waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("switch", {
+      name: "Use saved preferences when planning",
+      exact: true,
+    })
+    .check();
+  await page
+    .getByRole("button", { name: "More personal preferences", exact: true })
+    .click();
+  const preferences = page.getByRole("dialog", {
+    name: "A little more you",
+    exact: true,
+  });
+  await preferences
+    .getByRole("textbox", { name: "Favourite cuisines", exact: true })
+    .fill("Italian");
+  await preferences
+    .getByRole("textbox", { name: "Preferred atmosphere", exact: true })
+    .fill("quiet");
+  await preferences
+    .getByRole("button", { name: "Save my preferences", exact: true })
+    .click();
+  await expect(preferences).not.toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("button", { name: "More personal preferences", exact: true })
+    .click();
+  await expect(
+    preferences.getByRole("textbox", {
+      name: "Favourite cuisines",
+      exact: true,
+    }),
+  ).toHaveValue("Italian");
+  await expect(
+    preferences.getByRole("textbox", {
+      name: "Preferred atmosphere",
+      exact: true,
+    }),
+  ).toHaveValue("quiet");
+  await shot(page, "profile-personal-preferences-390");
+  await auditAccessibility(page, "personal preferences sheet");
+  await preferences.getByRole("button", { name: "Close", exact: true }).click();
+  await start(page);
+  const first = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
+  await page.getByRole("button", { name: "Make my day", exact: true }).click();
+  const plan = await (await first).json();
+  expect(plan.request.prompt).toContain("Italian");
+  expect(plan.request.prompt).toContain("quiet");
+  await page
+    .getByRole("button", { name: /^Customize / })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Avoid this place in future", exact: true })
+    .click();
+  await expect(
+    page.getByText(/Future plans on this device will avoid this place/),
+  ).toBeVisible();
+  await start(page);
+  const next = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
+  await page.getByRole("button", { name: "Make my day", exact: true }).click();
+  const changed = await (await next).json();
+  expect(changed.request.excludedPlaceIds).toContain(plan.stops[0].placeId);
+  expect(
+    changed.stops.map((stop: { placeId: string }) => stop.placeId),
+  ).not.toContain(plan.stops[0].placeId);
+});
+
+test("Local diagnostics report failure codes without private input and can be cleared", async ({
+  page,
+}) => {
+  const privateText =
+    "PRIVATE-PROMPT user@example.com near 43.6532,-79.3832 token-secret-example";
+  await start(page, privateText);
+  await expect(
+    page.getByText(/You can still choose your preferences below/),
+  ).toBeVisible();
+  await page.goto("/profile", { waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("button", { name: "Open diagnostic report", exact: true })
+    .click();
+  const report = page.getByRole("dialog", {
+    name: "Your diagnostic report",
+    exact: true,
+  });
+  await expect(report).toContainText("Whimway diagnostic report");
+  await expect(report).toContainText("HTTP 503");
+  const text = await report.innerText();
+  for (const value of [
+    "PRIVATE-PROMPT",
+    "user@example.com",
+    "43.6532",
+    "token-secret-example",
+  ])
+    expect(text).not.toContain(value);
+  await shot(page, "diagnostics-privacy-390");
+  await auditAccessibility(page, "diagnostic report sheet");
+  await report.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Clear local diagnostics", exact: true })
+    .click();
+  await expect(
+    page.getByText("Local diagnostic history cleared.", { exact: true }),
+  ).toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("button", { name: "Open diagnostic report", exact: true })
+    .click();
+  await expect(report).toContainText("No recent errors recorded.");
+});
+
+test("Shared sheet supports header drag dismissal and remains keyboard-focusable", async ({
+  page,
+}) => {
+  await generate(page);
+  await page.getByRole("button", { name: "Adjust plan", exact: true }).click();
+  const sheet = page.getByRole("dialog", {
+    name: "Make room for your day",
+    exact: true,
+  });
+  await expect(
+    sheet.getByRole("button", { name: "Close", exact: true }),
+  ).toBeFocused();
+  await auditAccessibility(page, "editing sheet");
+  await sheet
+    .getByRole("textbox", { name: "Plan budget", exact: true })
+    .focus();
+  await expect(
+    sheet.getByRole("textbox", { name: "Plan budget", exact: true }),
+  ).toBeFocused();
+  const heading = await sheet
+    .getByRole("heading", { name: "Make room for your day", exact: true })
+    .boundingBox();
+  expect(heading).not.toBeNull();
+  const x = heading!.x + heading!.width / 2,
+    y = heading!.y + heading!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 190, { steps: 12 });
+  await page.mouse.up();
+  await expect(sheet).not.toBeVisible();
+  await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
+    4,
+  );
+});
+
+test("Free planning enforces zero estimated activity cost rather than a soft zero budget", async ({
+  page,
+}) => {
+  await start(page);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  for (let i = 0; i < 3; i++)
+    await page
+      .getByRole("button", { name: "Skip for now", exact: true })
+      .click();
+  await expect(
+    page.getByText("What’s your budget?", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Free", exact: true }).click();
+  const generated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/generate") && response.status() === 200,
+  );
+  await page.getByRole("button", { name: "Make my day", exact: true }).click();
+  const free = await (await generated).json();
+  expect(free.request.budget).toBe(0);
+  expect(free.request.hardBudget).toBe(true);
+  expect(free.cost.high).toBe(0);
+  expect(free.cost.unknown).toBe(0);
+  expect(free.stops.length).toBeGreaterThan(0);
+  await expect(page.getByRole("button", { name: /^Customize / })).toHaveCount(
+    free.stops.length,
+  );
+  await shot(page, "free-plan-390");
+});
+
+test("Saved lock conflict requires explicit unlock and preserves the original on cancelled or failed recovery", async ({
+  page,
+}) => {
+  await generate(page);
+  await page
+    .getByRole("button", { name: /^Customize / })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Lock this stop", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Lock this stop", exact: true }),
+  ).not.toBeVisible();
+  const readSaved = () =>
+    page.evaluate(() =>
+      JSON.parse(localStorage.getItem("whimway:native:plans:v1") ?? "[]"),
+    );
+  const original = await readSaved();
+  expect(
+    original[0].stops.some((stop: { locked: boolean }) => stop.locked),
+  ).toBe(true);
+  let recovery: "hold" | "fail" | "success" = "hold";
+  let release: (route: Route) => void = () => {};
+  const held = new Promise<Route>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/hydrate", async (route) => {
+    const request = route.request().postDataJSON();
+    if (request.stops.some((stop: { locked: boolean }) => stop.locked)) {
+      await route.fulfill({
+        status: 422,
+        json: {
+          error:
+            "A saved locked venue is unavailable. Unlock its stop only if you want to retry.",
+          code: "LOCK_CONFLICT",
+        },
+      });
+    } else if (recovery === "hold") release(route);
+    else if (recovery === "fail")
+      await route.fulfill({
+        status: 503,
+        json: {
+          error:
+            "Recovery is temporarily unavailable. Your original saved outing remains intact.",
+          code: "PROVIDER_TIMEOUT",
+        },
+      });
+    else await route.continue();
+  });
+  async function openSaved() {
+    await page.goto("/saved", { waitUntil: "domcontentloaded" });
+    await page
+      .getByRole("button", { name: /^A day with a little more whim/ })
+      .click();
+    await expect(
+      page.getByText(/A saved locked venue is unavailable/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Unlock saved stops and retry",
+        exact: true,
+      }),
+    ).toBeVisible();
+  }
+  await openSaved();
+  await shot(page, "saved-lock-conflict-390");
+  await auditAccessibility(page, "saved locked-stop recovery");
+  await page
+    .getByRole("button", { name: "Unlock saved stops and retry", exact: true })
+    .click();
+  const pending = await held;
+  expect(
+    pending
+      .request()
+      .postDataJSON()
+      .stops.every((stop: { locked: boolean }) => !stop.locked),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Cancel opening", exact: true })
+    .click();
+  await pending.abort("aborted").catch(() => {});
+  await expect(
+    page.getByRole("button", { name: "Cancel opening", exact: true }),
+  ).not.toBeVisible();
+  expect(await readSaved()).toEqual(original);
+  recovery = "fail";
+  await openSaved();
+  await page
+    .getByRole("button", { name: "Unlock saved stops and retry", exact: true })
+    .click();
+  await expect(
+    page.getByText(/Recovery is temporarily unavailable/),
+  ).toBeVisible();
+  expect(await readSaved()).toEqual(original);
+  recovery = "success";
+  const successful = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/hydrate") && response.status() === 200,
+  );
+  await page
+    .getByRole("button", { name: "Unlock saved stops and retry", exact: true })
+    .click();
+  const repaired = await (await successful).json();
+  expect(
+    repaired.stops.every((stop: { locked: boolean }) => !stop.locked),
+  ).toBe(true);
+  await expect(page).toHaveURL(/\/plan\/[a-f\d-]+/);
+  await expect
+    .poll(async () =>
+      (await readSaved())[0].stops.every(
+        (stop: { locked: boolean }) => !stop.locked,
+      ),
+    )
+    .toBe(true);
 });

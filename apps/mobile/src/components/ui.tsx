@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -9,6 +9,8 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  Keyboard,
+  AccessibilityInfo,
   type ViewStyle,
   type StyleProp,
 } from "react-native";
@@ -19,8 +21,17 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
+  cancelAnimation,
   useReducedMotion,
 } from "react-native-reanimated";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import { scheduleOnRN } from "react-native-worklets";
+import { shouldDismissSheet } from "../core/sheet-gesture";
 import * as Haptics from "expo-haptics";
 import { ArrowLeft, X, ArrowUpRight } from "lucide-react-native";
 import { router } from "expo-router";
@@ -83,11 +94,20 @@ export function Screen({
     >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : Platform.OS === "android"
+              ? "height"
+              : undefined
+        }
       >
         {scroll ? (
           <ScrollView
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={
+              Platform.OS === "ios" ? "interactive" : "on-drag"
+            }
             contentContainerStyle={[
               { padding: 24, paddingBottom: 40, flexGrow: 1 },
               style,
@@ -98,6 +118,7 @@ export function Screen({
         ) : (
           <View style={[{ flex: 1, padding: 24 }, style]}>{children}</View>
         )}
+        <KeyboardDoneBar />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -123,9 +144,10 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
-      accessibilityState={{ disabled: disabled || busy }}
+      accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
       onPress={() => {
+        Keyboard.dismiss();
         void Haptics.selectionAsync().catch(() => {});
         onPress();
       }}
@@ -247,9 +269,11 @@ export function Header({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() =>
-            router.canGoBack() ? router.back() : router.replace("/")
-          }
+          onPress={() => {
+            Keyboard.dismiss();
+            if (router.canGoBack()) router.back();
+            else router.replace("/");
+          }}
           style={{ padding: 12, backgroundColor: c.white, borderRadius: 30 }}
         >
           <ArrowLeft color={c.ink} size={22} />
@@ -284,62 +308,243 @@ export function Sheet({
   title,
   onClose,
   children,
+  error,
 }: {
   visible: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  error?: string;
 }) {
   const reduced = useReducedMotion();
+  const displacement = useSharedValue(0),
+    sheetHeight = useSharedValue(400),
+    closing = useSharedValue(false);
+  const closeRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const closeSheet = useCallback(() => {
+    Keyboard.dismiss();
+    onClose();
+  }, [onClose]);
+  const dismissKeyboard = useCallback(() => Keyboard.dismiss(), []);
+  useEffect(() => {
+    cancelAnimation(displacement);
+    displacement.set(0);
+    closing.set(false);
+  }, [visible, displacement, closing]);
+  useEffect(() => {
+    if (visible && error)
+      scrollRef.current?.scrollTo({ y: 0, animated: !reduced });
+  }, [visible, error, reduced]);
+  const animated = useAnimatedStyle(() => ({
+    transform: [{ translateY: displacement.value }],
+  }));
+  const drag = Gesture.Pan()
+    .activeOffsetY([-12, 12])
+    .failOffsetX([-28, 28])
+    .maxPointers(1)
+    .onStart(() => {
+      scheduleOnRN(dismissKeyboard);
+    })
+    .onUpdate((event) => {
+      displacement.set(Math.max(0, event.translationY));
+    })
+    .onEnd((event) => {
+      if (
+        shouldDismissSheet(
+          event.translationY,
+          event.velocityY,
+          sheetHeight.value,
+        )
+      ) {
+        closing.set(true);
+        if (reduced) scheduleOnRN(closeSheet);
+        else
+          displacement.set(
+            withTiming(sheetHeight.value, { duration: 160 }, (finished) => {
+              if (finished) scheduleOnRN(closeSheet);
+            }),
+          );
+      } else
+        displacement.set(
+          reduced ? 0 : withSpring(0, { damping: 24, stiffness: 280 }),
+        );
+    })
+    .onFinalize(() => {
+      if (!closing.value)
+        displacement.set(
+          reduced ? 0 : withSpring(0, { damping: 24, stiffness: 280 }),
+        );
+    });
+  function focusClose() {
+    if (!closeRef.current) return;
+    if (Platform.OS === "web") closeRef.current.focus();
+    else AccessibilityInfo.sendAccessibilityEvent(closeRef.current, "focus");
+  }
   return (
     <Modal
       visible={visible}
-      animationType={reduced ? "none" : "slide"}
+      animationType={reduced ? "none" : "fade"}
       transparent
-      onRequestClose={onClose}
+      onRequestClose={closeSheet}
+      onShow={focusClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{
-          flex: 1,
-          justifyContent: "flex-end",
-          backgroundColor: "#19263066",
-        }}
-      >
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={onClose}
-          accessibilityLabel="Close sheet"
-          accessibilityRole="button"
-        />
-        <SafeAreaView
-          edges={["bottom"]}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={
+            Platform.OS === "ios"
+              ? "padding"
+              : Platform.OS === "android"
+                ? "height"
+                : undefined
+          }
           style={{
-            backgroundColor: c.paper,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            maxHeight: "85%",
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "#19263066",
           }}
         >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 24, gap: 16 }}
+          <Pressable
+            style={{ flex: 1 }}
+            onPress={closeSheet}
+            accessibilityLabel="Close sheet"
+            accessibilityRole="button"
+          />
+          <Animated.View
+            onLayout={(event) =>
+              sheetHeight.set(event.nativeEvent.layout.height)
+            }
+            accessibilityViewIsModal
+            role={Platform.OS === "web" ? "dialog" : undefined}
+            accessibilityLabel={title}
+            onAccessibilityEscape={closeSheet}
+            style={[
+              {
+                backgroundColor: c.paper,
+                borderTopLeftRadius: 28,
+                borderTopRightRadius: 28,
+                maxHeight: "85%",
+                flexShrink: 1,
+              },
+              animated,
+            ]}
           >
-            <View style={[styles.row, { justifyContent: "space-between" }]}>
-              <Text style={[styles.heading, { flex: 1 }]}>{title}</Text>
-              <Pressable
-                onPress={onClose}
-                accessibilityLabel="Close"
-                accessibilityRole="button"
-                style={{ padding: 12 }}
+            <SafeAreaView
+              edges={["bottom"]}
+              style={{
+                flexShrink: 1,
+                backgroundColor: c.paper,
+                borderTopLeftRadius: 28,
+                borderTopRightRadius: 28,
+              }}
+            >
+              <GestureDetector gesture={drag}>
+                <Animated.View
+                  style={{
+                    paddingHorizontal: 24,
+                    paddingTop: 12,
+                    paddingBottom: 8,
+                  }}
+                >
+                  <View
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                    style={{
+                      width: 40,
+                      height: 4,
+                      borderRadius: 4,
+                      backgroundColor: c.line,
+                      alignSelf: "center",
+                      marginBottom: 10,
+                    }}
+                  />
+                  <View
+                    style={[styles.row, { justifyContent: "space-between" }]}
+                  >
+                    <Text
+                      accessibilityRole="header"
+                      style={[styles.heading, { flex: 1 }]}
+                    >
+                      {title}
+                    </Text>
+                    <Pressable
+                      ref={closeRef}
+                      onPress={closeSheet}
+                      accessibilityLabel="Close"
+                      accessibilityRole="button"
+                      style={{
+                        padding: 12,
+                        minHeight: 44,
+                        minWidth: 44,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <X size={22} color={c.ink} />
+                    </Pressable>
+                  </View>
+                </Animated.View>
+              </GestureDetector>
+              <ScrollView
+                ref={scrollRef}
+                style={{ flexShrink: 1 }}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={
+                  Platform.OS === "ios" ? "interactive" : "on-drag"
+                }
+                contentContainerStyle={{ padding: 24, paddingTop: 8, gap: 16 }}
               >
-                <X size={22} color={c.ink} />
-              </Pressable>
-            </View>
-            {children}
-          </ScrollView>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
+                <Notice message={error} error />
+                {children}
+              </ScrollView>
+              <KeyboardDoneBar />
+            </SafeAreaView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
+}
+function KeyboardDoneBar() {
+  const [visible, setVisible] = useState(Keyboard.isVisible());
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setVisible(true),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setVisible(false),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return visible && Platform.OS !== "web" ? (
+    <View
+      style={{
+        alignItems: "flex-end",
+        backgroundColor: c.paper,
+        borderTopWidth: 1,
+        borderColor: c.line,
+        paddingHorizontal: 16,
+      }}
+    >
+      <Pressable
+        onPress={Keyboard.dismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Done editing, dismiss keyboard"
+        style={{
+          minHeight: 44,
+          minWidth: 64,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={styles.label}>Done</Text>
+      </Pressable>
+    </View>
+  ) : null;
 }

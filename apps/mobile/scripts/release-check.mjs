@@ -23,7 +23,7 @@ try {
       "Production backend URL cannot contain credentials, query or fragment",
     );
   if (
-    /^(localhost|127\.0\.0\.1|\[::1\])$|\.invalid$|\.example$/i.test(
+    /^(localhost|0\.0\.0\.0|127(\.\d{1,3}){3}|\[::1\])$|\.(invalid|example|test|localhost)$/i.test(
       backend.hostname,
     )
   )

@@ -8,10 +8,12 @@ import {
   type Point,
   type TravelLeg,
 } from "../schema";
-import { safeUrl } from "../geo";
+import { safeUrl, decodePolyline } from "../geo";
 import { AppError, providerFetch, requireEnv } from "../errors";
 import type { PlacesProvider, RouteProvider } from "./types";
 import { z } from "zod";
+import { currencyForCountry } from "./currency-data";
+export { currencies } from "./currency-data";
 const Money = z.object({
   currencyCode: z.string().optional(),
   units: z.union([z.string(), z.number()]).optional(),
@@ -84,50 +86,6 @@ const RawPlace = z.object({
 const fields =
   "id,displayName,location,formattedAddress,primaryType,types,googleMapsUri,businessStatus,rating,userRatingCount";
 const detailFields = `${fields},websiteUri,photos,priceRange,currentOpeningHours,regularOpeningHours,addressComponents,accessibilityOptions`;
-export const currencies: Record<string, string> = {
-  CA: "CAD",
-  US: "USD",
-  JP: "JPY",
-  GB: "GBP",
-  FR: "EUR",
-  DE: "EUR",
-  ES: "EUR",
-  IT: "EUR",
-  NL: "EUR",
-  PT: "EUR",
-  IE: "EUR",
-  AT: "EUR",
-  BE: "EUR",
-  FI: "EUR",
-  GR: "EUR",
-  AU: "AUD",
-  NZ: "NZD",
-  IN: "INR",
-  SG: "SGD",
-  KR: "KRW",
-  CN: "CNY",
-  HK: "HKD",
-  TW: "TWD",
-  TH: "THB",
-  MX: "MXN",
-  BR: "BRL",
-  CH: "CHF",
-  SE: "SEK",
-  NO: "NOK",
-  DK: "DKK",
-  PL: "PLN",
-  CZ: "CZK",
-  ZA: "ZAR",
-  AE: "AED",
-  ID: "IDR",
-  MY: "MYR",
-  PH: "PHP",
-  VN: "VND",
-  TR: "TRY",
-  HU: "HUF",
-  IS: "ISK",
-  IL: "ILS",
-};
 const moneyAmount = (m: z.infer<typeof Money>) =>
   Number(m.units ?? 0) + (m.nanos ?? 0) / 1e9;
 export function normalize(input: unknown, currency: string): CandidatePlace {
@@ -142,14 +100,23 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
     "garden",
   ].includes(type);
   const range = p.priceRange;
+  const lower = range?.startPrice ? moneyAmount(range.startPrice) : null;
+  const upper = range?.endPrice ? moneyAmount(range.endPrice) : null;
   const valid = Boolean(
     range?.startPrice &&
     range?.endPrice &&
     range.startPrice.currencyCode === currency &&
-    range.endPrice.currencyCode === currency,
+    range.endPrice.currencyCode === currency &&
+    lower !== null &&
+    upper !== null &&
+    Number.isFinite(lower) &&
+    Number.isFinite(upper) &&
+    lower >= 0 &&
+    upper >= lower,
   );
-  const low = valid ? moneyAmount(range!.startPrice!) : browse ? 0 : null,
-    high = valid ? moneyAmount(range!.endPrice!) : browse ? 0 : null;
+  const freeBrowse = browse && !range;
+  const low = valid ? lower : freeBrowse ? 0 : null,
+    high = valid ? upper : freeBrowse ? 0 : null;
   const hours = p.currentOpeningHours ?? p.regularOpeningHours;
   const timezone = tzLookup(p.location.latitude, p.location.longitude);
   const today = DateTime.now().setZone(timezone).startOf("day");
@@ -208,13 +175,13 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
       low,
       high,
       currency,
-      source: valid ? "provider-range" : browse ? "free-browse" : "unknown",
+      source: valid ? "provider-range" : freeBrowse ? "free-browse" : "unknown",
       confidence: valid
         ? "published-range"
-        : browse
+        : freeBrowse
           ? "category-estimate"
           : "unknown",
-      optional: browse,
+      optional: freeBrowse,
     },
     hours: hours?.weekdayDescriptions ?? [],
     periods,
@@ -369,7 +336,7 @@ export class GooglePlaces implements PlacesProvider {
       name: raw.displayName?.text ?? raw.formattedAddress ?? "Selected area",
       center: { lat: raw.location.latitude, lng: raw.location.longitude },
       timezone: tzLookup(raw.location.latitude, raw.location.longitude),
-      currency: currencies[country ?? ""] ?? "USD",
+      currency: currencyForCountry(country),
     };
   }
 }
@@ -405,7 +372,7 @@ export async function resolvePoint(point: Point): Promise<Location> {
     center: point,
     name: result?.formatted_address ?? "Dropped pin",
     timezone: tzLookup(point.lat, point.lng),
-    currency: currencies[country ?? ""] ?? "USD",
+    currency: currencyForCountry(country),
   };
 }
 export class GoogleRoutes implements RouteProvider {
@@ -445,9 +412,18 @@ export class GoogleRoutes implements RouteProvider {
         routes: z
           .array(
             z.object({
-              duration: z.string().regex(/^\d+(\.\d+)?s$/),
+              duration: z
+                .string()
+                .regex(/^\d+(\.\d+)?s$/)
+                .refine((value) => Number.isFinite(parseFloat(value))),
               distanceMeters: z.number().nonnegative(),
-              polyline: z.object({ encodedPolyline: z.string().min(1) }),
+              polyline: z.object({
+                encodedPolyline: z
+                  .string()
+                  .min(1)
+                  .max(250000)
+                  .regex(/^[\x3f-\x7e]+$/),
+              }),
             }),
           )
           .min(1),
@@ -460,6 +436,27 @@ export class GoogleRoutes implements RouteProvider {
         422,
       );
     const r = data.data.routes[0];
+    try {
+      const points = decodePolyline(r.polyline.encodedPolyline);
+      const alreadyThere =
+        points.length === 1 &&
+        r.distanceMeters === 0 &&
+        parseFloat(r.duration) === 0;
+      if (
+        (!alreadyThere && points.length < 2) ||
+        points.length > 30000 ||
+        points.some(
+          (point) => Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180,
+        )
+      )
+        throw new Error("Invalid route geometry");
+    } catch {
+      throw new AppError(
+        "NO_ROUTE",
+        "The routing service returned unusable route geometry. Try another travel mode or destination.",
+        422,
+      );
+    }
     return {
       from: fromId,
       to: toId,

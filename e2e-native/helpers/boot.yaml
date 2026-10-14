@@ -1,0 +1,11 @@
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- launchApp:
+    clearState: true
+    permissions:
+      location: deny
+      notifications: ${NOTIFICATION_PERMISSION || 'deny'}
+- openLink: ${EXPO_DEV_URL}
+- extendedWaitUntil:
+    visible: "Where are we heading?"
+    timeout: 120000

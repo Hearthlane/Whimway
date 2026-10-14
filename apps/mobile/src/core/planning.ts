@@ -5,6 +5,7 @@ import {
   type PlanningIntent,
 } from "../../../../lib/schema";
 import { localStart } from "../../../../lib/time";
+import type { Preferences } from "../services/storage-core";
 
 export const steps = [
   "location",
@@ -24,7 +25,69 @@ export type Draft = Partial<PlanRequest> & {
   dateChoice?: PlanningIntent["dateChoice"];
   preferenceFields?: string[];
   savedBudget?: { amount: number; currency: string };
+  savedPersonalization?: { cuisines: string; atmosphere: string };
 };
+export function applySavedPreferences(
+  draft: Draft,
+  preferences?: Preferences,
+): Draft {
+  if (!preferences) return draft;
+  const next = { ...draft },
+    known = new Set(draft.known),
+    fields = new Set(draft.preferenceFields ?? []);
+  next.excludedPlaceIds = [
+    ...new Set([...(draft.excludedPlaceIds ?? []), ...preferences.disliked]),
+  ].slice(0, 100);
+  if (!preferences.enabled) return next;
+  for (const key of [
+    "interests",
+    "mode",
+    "dietary",
+    "accessibility",
+  ] as const) {
+    if (draft[key] === undefined) {
+      Object.assign(next, { [key]: preferences[key] });
+      fields.add(key);
+      if (key === "interests" && preferences.interests.length)
+        known.add("interests");
+    }
+  }
+  next.savedPersonalization = {
+    cuisines: preferences.cuisines,
+    atmosphere: preferences.atmosphere,
+  };
+  if (draft.budget === undefined && preferences.budgetCurrency) {
+    next.savedBudget = {
+      amount: preferences.budget,
+      currency: preferences.budgetCurrency,
+    };
+    fields.add("budget");
+    if (draft.location?.currency === preferences.budgetCurrency) {
+      next.budget = preferences.budget;
+      known.add("budget");
+    }
+  }
+  return { ...next, known: [...known], preferenceFields: [...fields] };
+}
+export function plannerPrompt(
+  draft: Pick<Draft, "prompt" | "savedPersonalization">,
+): string {
+  const notes = [
+    draft.savedPersonalization?.cuisines
+      ? `Preferred cuisines: ${draft.savedPersonalization.cuisines}.`
+      : "",
+    draft.savedPersonalization?.atmosphere
+      ? `Preferred atmosphere: ${draft.savedPersonalization.atmosphere}.`
+      : "",
+  ].filter(Boolean);
+  if (!notes.length) return draft.prompt;
+  const addition = `${draft.prompt ? "\n\n" : ""}Saved preferences (use only when compatible with the request above): ${notes.join(" ")}`;
+  // The person's current request always wins. Do not truncate it to fit an
+  // optional saved preference into the API's bounded prompt field.
+  return draft.prompt.length + addition.length <= 1500
+    ? draft.prompt + addition
+    : draft.prompt;
+}
 export function remainingSteps(draft: Draft): Step[] {
   return steps.filter((step) =>
     step === "location" ? !draft.location : !draft.known.includes(step),
@@ -40,8 +103,12 @@ export function choosePreferences(draft: Draft, patch: Partial<Draft>): Draft {
     }
   }
   return {
-    ...draft, ...patch, known: [...known],
-    preferenceFields: draft.preferenceFields?.filter(key => !Object.hasOwn(patch, key)),
+    ...draft,
+    ...patch,
+    known: [...known],
+    preferenceFields: draft.preferenceFields?.filter(
+      (key) => !Object.hasOwn(patch, key),
+    ),
     savedBudget: Object.hasOwn(patch, "budget") ? undefined : draft.savedBudget,
   };
 }
@@ -85,11 +152,12 @@ export function requestFromDraft(
     interests: ["Surprise me"],
     duration: 240,
     budget: budgetPresets(draft.location.currency)[1],
-    hardBudget: false,
     participants: draft.companion === "date" ? 2 : 1,
     mode: "WALK",
     ...defaults,
     ...supplied,
+    hardBudget: draft.budget === 0 ? true : (draft.hardBudget ?? false),
+    prompt: plannerPrompt(draft),
     area: {
       center: draft.location.center,
       radius: draft.area?.radius ?? 2000,
@@ -161,7 +229,8 @@ export function withLocation(
   const next = { ...draft, location, ...timing };
   const known = new Set(draft.known);
   const preferenceBudget = draft.preferenceFields?.includes("budget") === true;
-  const explicitBudget = known.has("budget") && draft.budget !== undefined && !preferenceBudget;
+  const explicitBudget =
+    known.has("budget") && draft.budget !== undefined && !preferenceBudget;
   if (!explicitBudget && draft.savedBudget) {
     if (draft.savedBudget.currency === location.currency) {
       next.budget = draft.savedBudget.amount;
@@ -182,7 +251,9 @@ export function applyIntent(
   let next = { ...draft };
   const known = new Set(draft.known);
   const preferenceFields = new Set(draft.preferenceFields ?? []);
-  const hasDateChoice = known.has("date") && (draft.date !== undefined || draft.dateChoice !== undefined);
+  const hasDateChoice =
+    known.has("date") &&
+    (draft.date !== undefined || draft.dateChoice !== undefined);
   for (const key of [
     "interests",
     "companion",
@@ -196,8 +267,13 @@ export function applyIntent(
     "accessibility",
     "startTime",
   ] as const) {
-    const chosen = known.has(key) && draft[key] !== undefined && !preferenceFields.has(key);
-    const chosenGroup = key === "participants" && known.has("companion") && draft.participants !== undefined && !preferenceFields.has("companion");
+    const chosen =
+      known.has(key) && draft[key] !== undefined && !preferenceFields.has(key);
+    const chosenGroup =
+      key === "participants" &&
+      known.has("companion") &&
+      draft.participants !== undefined &&
+      !preferenceFields.has("companion");
     if (result[key] !== undefined && !chosen && !chosenGroup) {
       Object.assign(next, { [key]: result[key] });
       preferenceFields.delete(key);

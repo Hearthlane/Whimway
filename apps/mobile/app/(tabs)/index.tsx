@@ -8,7 +8,12 @@ import { LocationSearch } from "../../src/components/LocationSearch";
 import { useApp } from "../../src/state/AppState";
 import { colors as c } from "../../src/design/theme";
 import type { Location } from "../../../../lib/schema";
-import { defaultStart } from "../../src/core/planning";
+import {
+  applySavedPreferences,
+  choosePreferences,
+  defaultStart,
+  type Draft,
+} from "../../src/core/planning";
 export default function Explore() {
   const { draft, setDraft, preferences } = useApp();
   const [prompt, setPrompt] = useState("");
@@ -17,46 +22,21 @@ export default function Explore() {
   const [selecting, setSelecting] = useState(false);
   function start(interest?: string) {
     if (selecting) return;
-    const known = [
-      ...(location ? ["location"] : []),
-      ...(preferences?.enabled && preferences.interests.length
-        ? ["interests"]
-        : []),
-    ];
-    setDraft({
-      prompt,
-      location,
-      demo,
-      known,
-      preferenceFields: preferences?.enabled ? ["interests", "budget"] : [],
-      ...(location ? defaultStart(location) : {}),
-      ...(preferences?.enabled
-        ? {
-            interests: preferences.interests,
-            mode: preferences.mode,
-            dietary: preferences.dietary,
-            accessibility: preferences.accessibility,
-            excludedPlaceIds: preferences.disliked,
-            ...(preferences.budgetCurrency
-              ? {
-                  savedBudget: {
-                    amount: preferences.budget,
-                    currency: preferences.budgetCurrency,
-                  },
-                }
-              : {}),
-            ...(location?.currency === preferences.budgetCurrency
-              ? { budget: preferences.budget }
-              : {}),
-          }
-        : {}),
-      ...(interest
-        ? {
-            interests: [interest as "Food & drinks"],
-            known: [...new Set([...known, "interests"])],
-          }
-        : {}),
-    });
+    let next: Draft = applySavedPreferences(
+      {
+        prompt,
+        location,
+        demo,
+        known: location ? ["location"] : [],
+        ...(location ? defaultStart(location) : {}),
+      },
+      preferences,
+    );
+    if (interest)
+      next = choosePreferences(next, {
+        interests: [interest as "Food & drinks"],
+      });
+    setDraft(next);
     router.push("/planner");
   }
   return (

@@ -8,6 +8,11 @@ const forbidden = [
   "WRITE_EXTERNAL_STORAGE",
   "SCHEDULE_EXACT_ALARM",
   "USE_EXACT_ALARM",
+  "USE_BIOMETRIC",
+  "USE_FINGERPRINT",
+  "SYSTEM_ALERT_WINDOW",
+  "FOREGROUND_SERVICE",
+  "FOREGROUND_SERVICE_LOCATION",
 ];
 for (const permission of forbidden)
   if (permissions.includes(`android.permission.${permission}`))
@@ -16,6 +21,14 @@ for (const permission of forbidden)
     );
 if (!permissions.includes("android.permission.ACCESS_FINE_LOCATION"))
   throw new Error("Compiled APK is missing foreground location support");
+if (!permissions.includes("android.permission.POST_NOTIFICATIONS"))
+  throw new Error("Compiled APK is missing opt-in reminder support");
+if (
+  permissions.includes(
+    "com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE",
+  )
+)
+  throw new Error("Compiled APK contains unused install-referrer permission");
 console.log(
-  "Compiled APK permission scope verified: foreground location, no background/microphone/storage/exact alarms.",
+  "Compiled APK permission scope verified: foreground location and opt-in reminders; no background location, microphone, storage, exact alarms, biometrics, overlays, persistent location service or install referrer.",
 );

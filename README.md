@@ -2,7 +2,7 @@
 
 Whimway now includes a genuine **React Native / Expo iOS and Android app** in apps/mobile, alongside the existing Next.js backend and web client. The native app uses Expo Router, Reanimated, Gesture Handler, native Google maps, foreground location, local reminders, secure optional authentication and shared validated planning contracts. It is not a WebView.
 
-Start with [native run and build instructions](docs/mobile-release.md), [the audit](docs/mobile-audit.md), [API contracts](docs/mobile-api.md), [verification checklist](docs/mobile-checklist.md) and [dependency advisories](docs/dependency-advisories.md). Android/iOS JavaScript bundles and native project generation do not establish device or signing readiness. Live providers, hosted accounts and signed device builds require external configuration.
+Start with [native run and build instructions](docs/mobile-release.md), [the audit](docs/mobile-audit.md), [API contracts](docs/mobile-api.md), [verification checklist](docs/mobile-checklist.md), [requirements mapping](docs/mobile-requirements.md) and [dependency advisories](docs/dependency-advisories.md). Hosted runners compile actual Android APK and iOS simulator apps and retain native test evidence separately from JavaScript exports. Consult the checklist for the verified commit and each test result. Live providers, hosted accounts and signed device builds require external configuration.
 
 ```powershell
 # Terminal 1 — backend

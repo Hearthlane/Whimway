@@ -4,7 +4,7 @@ Captured locally on 13 October 2026 with Playwright Chromium. These images are b
 
 `baseline/` contains the retained Next.js frontend at 390 × 844, with explicit synthetic development fixtures where needed. `observations.json` records original page height and horizontal overflow measurements. Reproduce with the fixture backend running and `node scripts/capture-web-audit.mjs`.
 
-`mobile-preview/` contains the actual React Native screen source rendered through RN Web from an official development export. The local QA server forwards same-origin API requests to the existing backend. Discovery, generation, hydration and edits use its explicit synthetic fixture adapter; no live Places/photos/routes or AI success is implied. Only the complete-prompt test mocks a validated `/api/intent` response because OpenAI credentials are absent. The separate missing-intent test exercises the actual unavailable-service response.
+`mobile-preview/` contains the actual React Native screen source rendered through RN Web from an official development export. The local QA server forwards same-origin API requests to the existing backend. Discovery, generation, successful hydration and edits use its explicit synthetic fixture adapter; no live Places/photos/routes or AI success is implied. The complete-prompt test mocks a validated `/api/intent` response because OpenAI credentials are absent. The separate missing-intent test exercises the actual unavailable-service response. Recovery tests additionally hold/abort requests or mock explicit `LOCK_CONFLICT` and provider-timeout failures; successful unlocked retry returns to the actual fixture backend. These mocks exercise UI failure/cancellation behavior, not provider availability.
 
 | Evidence                                               | Capture                                                                                       |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
@@ -17,5 +17,9 @@ Captured locally on 13 October 2026 with Playwright Chromium. These images are b
 | Guest collection and real hydrated favorite references | `saved-empty-430.png`, `saved-plan-390.png`, `favorite-places-390.png`                        |
 | Profile preferences and optional account               | `profile-430.png`                                                                             |
 | Opt-in reminders and recoverable errors                | `reminders-390.png`, `generation-error-390.png`, `location-denied-preview-390.png`            |
+| Device-only personal preferences and avoided places    | `profile-personal-preferences-390.png`                                                        |
+| Allowlisted local diagnostics without private input    | `diagnostics-privacy-390.png`                                                                 |
+| Hard zero-budget fixture plan                          | `free-plan-390.png`                                                                           |
+| Network retry and explicit locked-stop recovery        | `saved-reopen-network-error-390.png`, `saved-lock-conflict-390.png`                           |
 
 RN Web uses an internal scroll view, so these captures show the viewport or selected scroll position rather than measuring the entire native screen's content height. Enlarged browser text is a layout sample, not an Android/iOS fontScale or VoiceOver/TalkBack test. Placeholder stop photographs are explicitly labeled synthetic; map fallback lists are not live maps. Real device checks must cover native safe areas, keyboards, maps/attribution, OS location and notification dialogs, hardware back, gestures, process recovery and performance.

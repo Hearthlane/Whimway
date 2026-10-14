@@ -27,7 +27,13 @@ export const interests = [
   "Hidden gems",
   "Surprise me",
 ] as const;
-export const companions = ["solo", "date", "friends", "family", "group"] as const;
+export const companions = [
+  "solo",
+  "date",
+  "friends",
+  "family",
+  "group",
+] as const;
 export const energies = ["chill", "balanced", "active"] as const;
 export const vibes = [
   "budget-friendly",
@@ -49,8 +55,14 @@ export type IntentRequest = z.infer<typeof IntentRequest>;
 export const PlanningIntent = z.object({
   locationQuery: z.string().min(1).max(200).optional(),
   dateChoice: z.enum(["today", "tomorrow", "flexible", "specific"]).optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
   duration: z.number().int().min(60).max(720).optional(),
   budget: z.number().min(0).max(1000000).optional(),
   participants: z.number().int().min(1).max(20).optional(),
@@ -234,7 +246,7 @@ export const Selection = z.object({
     .array(
       z.object({
         placeId: z.string(),
-        minutes: z.number().int().min(15).max(180),
+        minutes: z.number().int().min(15).max(240),
         reason: z.string().max(240),
       }),
     )

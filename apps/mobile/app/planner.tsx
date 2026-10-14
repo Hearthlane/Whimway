@@ -1,14 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Text, View, Pressable, TextInput, Platform } from "react-native";
-import { router } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Text,
+  View,
+  Pressable,
+  TextInput,
+  Platform,
+  BackHandler,
+} from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { DateTime } from "luxon";
 import * as Haptics from "expo-haptics";
 import { ArrowLeft, Coffee, Compass, Zap } from "lucide-react-native";
 import Animated, {
   FadeInRight,
+  FadeInLeft,
   FadeOutLeft,
+  FadeOutRight,
+  useAnimatedStyle,
+  useSharedValue,
   useReducedMotion,
+  withTiming,
 } from "react-native-reanimated";
 import {
   Screen,
@@ -50,10 +62,43 @@ const headings: Record<Step, string> = {
   date: "When’s the adventure?",
   duration: "How long are we out?",
 };
+function ProgressSegment({
+  active,
+  reduced,
+}: {
+  active: boolean;
+  reduced: boolean;
+}) {
+  const progress = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    progress.set(
+      reduced ? Number(active) : withTiming(Number(active), { duration: 220 }),
+    );
+  }, [active, reduced, progress]);
+  const fill = useAnimatedStyle(() => ({ opacity: progress.value }));
+  return (
+    <View
+      style={{
+        flex: 1,
+        height: 4,
+        borderRadius: 3,
+        backgroundColor: c.line,
+        overflow: "hidden",
+      }}
+    >
+      <Animated.View style={[{ flex: 1, backgroundColor: c.ink }, fill]} />
+    </View>
+  );
+}
 export default function Planner() {
   const { draft, setDraft } = useApp();
   const [queue, setQueue] = useState<Step[]>(() => remainingSteps(draft));
   const [index, setIndex] = useState(0);
+  const [transition, setTransition] = useState<{
+    index: number;
+    direction: "forward" | "back";
+  }>();
+  const moving = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [intent, setIntent] = useState<PlanningIntent>();
@@ -64,6 +109,43 @@ export default function Planner() {
   const reduced = useReducedMotion();
   const step = queue[index];
   const ready = !step;
+  // Commit the new exit direction before changing the keyed question. This
+  // keeps the outgoing card and the incoming card moving in the same direction.
+  useEffect(() => {
+    if (!transition) return;
+    if (reduced) {
+      setIndex(transition.index);
+      moving.current = false;
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      setIndex(transition.index);
+      moving.current = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [transition, reduced]);
+  const move = useCallback(
+    (nextIndex: number, direction: "forward" | "back") => {
+      if (moving.current) return;
+      moving.current = true;
+      setTransition({ index: nextIndex, direction });
+    },
+    [],
+  );
+  const back = useCallback(() => {
+    if (index > 0) move(index - 1, "back");
+    else router.back();
+  }, [index, move]);
+  useFocusEffect(
+    useCallback(() => {
+      const listener = BackHandler.addEventListener("hardwareBackPress", () => {
+        if (index === 0) return false;
+        back();
+        return true;
+      });
+      return () => listener.remove();
+    }, [index, back]),
+  );
   useEffect(() => {
     current.current = draft;
   }, [draft]);
@@ -154,7 +236,7 @@ export default function Planner() {
       ...current,
       known: [...new Set([...current.known, step])],
     }));
-    setIndex((i) => i + 1);
+    move(index + 1, "forward");
   }
   function generate() {
     try {
@@ -195,7 +277,7 @@ export default function Planner() {
         <Pressable
           accessibilityLabel="Back"
           accessibilityRole="button"
-          onPress={() => (index > 0 ? setIndex(index - 1) : router.back())}
+          onPress={back}
           style={{ padding: 12, backgroundColor: c.white, borderRadius: 24 }}
         >
           <ArrowLeft color={c.ink} size={22} />
@@ -205,17 +287,21 @@ export default function Planner() {
           {Math.min(index + 1, queue.length)} / {queue.length}
         </Text>
       </View>
-      <View style={[styles.row, { gap: 5, marginBottom: 30 }]}>
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="Planning progress"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(1, queue.length)}
+        aria-valuenow={ready ? Math.max(1, queue.length) : index + 1}
+        accessibilityValue={{
+          min: 0,
+          max: Math.max(1, queue.length),
+          now: ready ? Math.max(1, queue.length) : index + 1,
+        }}
+        style={[styles.row, { gap: 5, marginBottom: 30 }]}
+      >
         {queue.map((s, i) => (
-          <View
-            key={s}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 3,
-              backgroundColor: i <= index ? c.ink : c.line,
-            }}
-          />
+          <ProgressSegment key={s} active={i <= index} reduced={reduced} />
         ))}
       </View>
       <Notice message={error || validation} error />
@@ -230,8 +316,20 @@ export default function Planner() {
       <Animated.View
         pointerEvents={busy ? "none" : "auto"}
         key={step || "ready"}
-        entering={reduced ? undefined : FadeInRight.duration(250)}
-        exiting={reduced ? undefined : FadeOutLeft.duration(150)}
+        entering={
+          reduced
+            ? undefined
+            : transition?.direction === "back"
+              ? FadeInLeft.duration(250)
+              : FadeInRight.duration(250)
+        }
+        exiting={
+          reduced
+            ? undefined
+            : transition?.direction === "back"
+              ? FadeOutRight.duration(150)
+              : FadeOutLeft.duration(150)
+        }
         style={{ gap: 22 }}
       >
         <Text style={styles.title}>
@@ -593,6 +691,7 @@ export default function Planner() {
         ) : null}
       </Animated.View>
       <Sheet
+        error={error || validation}
         visible={advanced}
         title="The little details"
         onClose={() => setAdvanced(false)}

@@ -19,6 +19,22 @@ export const PreferencesSchema = z.object({
 });
 export type Preferences = z.infer<typeof PreferencesSchema>;
 export const defaultPreferences: Preferences = PreferencesSchema.parse({});
+export function rememberPlacePreference(
+  previous: Preferences,
+  placeId: string,
+): Preferences {
+  if (!placeId.trim() || placeId.length > 250)
+    throw new Error("Choose a valid place to avoid in future plans.");
+  return PreferencesSchema.parse({
+    ...previous,
+    disliked: [
+      ...new Set([
+        ...previous.disliked.filter((id) => id !== placeId),
+        placeId,
+      ]),
+    ].slice(-100),
+  });
+}
 export function preferenceSyncDecision(
   local: Preferences,
   cloud: Preferences,

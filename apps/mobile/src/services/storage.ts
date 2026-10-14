@@ -8,6 +8,7 @@ import {
   PreferencesSchema,
   defaultPreferences,
   preferenceSyncDecision,
+  rememberPlacePreference,
   parseSavedPlans,
   referenceOnlyPlan,
   type DayProgress,
@@ -15,6 +16,8 @@ import {
   type FavoritePlaceRef,
 } from "./storage-core";
 import { cancelPlanReminders } from "./notifications";
+import { recordDiagnostic } from "./diagnostics";
+import { commitRecoveredSavedPlan } from "../core/saved-recovery";
 
 export {
   DayProgressSchema,
@@ -39,6 +42,11 @@ async function setItem(key: string, value: string) {
   try {
     await AsyncStorage.setItem(key, value);
   } catch {
+    recordDiagnostic({
+      category: "storage",
+      code: "LOCAL_STORAGE_ERROR",
+      operation: "device-storage",
+    });
     throw new Error(
       "Device storage is full or unavailable. Your open plan is still available.",
     );
@@ -58,6 +66,23 @@ export async function savePlan(plan: Itinerary | PlanSpec): Promise<void> {
       ),
     );
   });
+}
+export function saveRecoveredPlan(
+  original: PlanSpec,
+  recovered: Itinerary,
+  signal?: AbortSignal,
+): Promise<void> {
+  return write(() =>
+    commitRecoveredSavedPlan(
+      original,
+      recovered,
+      {
+        read: getSavedPlans,
+        write: (plans) => setItem(PLANS, JSON.stringify(plans)),
+      },
+      signal,
+    ),
+  );
 }
 export async function removePlan(id: string): Promise<void> {
   return write(async () => {
@@ -79,6 +104,14 @@ export async function getPreferences(): Promise<Preferences> {
 export async function savePreferences(preferences: Preferences): Promise<void> {
   const selected = PreferencesSchema.parse(preferences);
   await write(() => setItem(PREFS, JSON.stringify(selected)));
+}
+export function rememberDislikedPlace(placeId: string): Promise<Preferences> {
+  return write(async () => {
+    const previous = await getPreferences(),
+      next = rememberPlacePreference(previous, placeId);
+    await setItem(PREFS, JSON.stringify(next));
+    return next;
+  });
 }
 export async function adoptAccountPreferences(
   cloud: Preferences,

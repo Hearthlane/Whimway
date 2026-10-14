@@ -6,6 +6,7 @@ import { hoursCheck } from "./hours";
 export { hoursCheck } from "./hours";
 import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
+import { preferenceScore, retrievalPreferences } from "./providers/preferences";
 import type {
   CandidatePlace,
   Itinerary,
@@ -32,6 +33,9 @@ export function costTotal(places: CandidatePlace[]) {
 export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
   return dedupe(places).filter(
     (p) =>
+      !["CLOSED_PERMANENTLY", "CLOSED_TEMPORARILY"].includes(
+        p.businessStatus ?? "",
+      ) &&
       !request.excludedPlaceIds.includes(p.id) &&
       (!request.area.locked ||
         inside(p.point, request.area.center, request.area.radius)) &&
@@ -114,13 +118,24 @@ export async function schedule(
           "Too many route calculations. Try fewer stops.",
           422,
         );
-      leg = await routes.leg(
-        previous,
-        place.point,
-        req.mode,
-        previousId,
-        place.id,
-      );
+      try {
+        leg = await routes.leg(
+          previous,
+          place.point,
+          req.mode,
+          previousId,
+          place.id,
+        );
+      } catch (error) {
+        if (!(error instanceof AppError) || error.code !== "NO_ROUTE")
+          throw error;
+        skip(
+          ref,
+          "NO_ROUTE",
+          "A destination has no usable route in your selected travel mode. Replace it or choose another mode.",
+        );
+        continue;
+      }
     }
     const arrival = cursor.plus({ minutes: leg?.minutes ?? 0 });
     const departure = arrival.plus({ minutes: ref.minutes });
@@ -198,6 +213,13 @@ export async function schedule(
       message: `${cost.unknown} stop${cost.unknown === 1 ? " has" : "s have"} unknown prices. The budget cannot be confirmed.`,
       severity: "warning",
     });
+  if (stops.some((stop) => stop.place.price.confidence === "category-estimate"))
+    issues.push({
+      code: "BROWSING_ESTIMATE",
+      message:
+        "Browsing costs are category estimates, not verified free admission. Entry fees, optional purchases and other extras may cost more; confirm with venues.",
+      severity: "warning",
+    });
   if (cost.high > req.budget)
     issues.push({
       code: "OVER_BUDGET",
@@ -234,7 +256,9 @@ export async function schedule(
     });
   if (
     issues.some((i) =>
-      ["CLOSED", "TOO_LONG", "INVALID_PLACE", "BUDGET"].includes(i.code),
+      ["CLOSED", "TOO_LONG", "INVALID_PLACE", "BUDGET", "NO_ROUTE"].includes(
+        i.code,
+      ),
     )
   )
     issues.push({
@@ -274,27 +298,25 @@ export class Planner {
         422,
       );
     const locked = previous?.stops.filter((s) => s.locked) ?? [];
-    const focus: PlanRequest["interests"][number] | undefined =
-      action?.includes("More food")
-        ? "Food & drinks"
-        : action?.includes("More hidden gems")
-          ? "Hidden gems"
-          : action?.includes("More exciting")
-            ? "Interactive fun"
-            : action?.includes("More relaxing")
-              ? "Relaxation"
-              : undefined;
-    const retrievalRequest = focus
-      ? {
-          ...request,
-          interests: [focus, ...request.interests.filter((i) => i !== focus)],
-        }
-      : request;
+    const retrievalRequest = retrievalPreferences(request, action);
     const found = await this.places.search(retrievalRequest);
     const lockedPlaces = await Promise.all(
-      locked.map((s) =>
-        this.places.details(s.placeId, request.location.currency),
-      ),
+      locked.map(async (s) => {
+        try {
+          return await this.places.details(
+            s.placeId,
+            request.location.currency,
+          );
+        } catch (error) {
+          if (error instanceof AppError && error.code === "PLACE_UNAVAILABLE")
+            throw new AppError(
+              "LOCK_CONFLICT",
+              "A locked destination is no longer available. Unlock it and choose a replacement before remixing.",
+              422,
+            );
+          throw error;
+        }
+      }),
     );
     let candidates = candidatesFor({ ...request, hardBudget: false }, [
       ...found,
@@ -307,7 +329,13 @@ export class Planner {
         422,
       );
     // Hydrate a bounded shortlist before AI selection, so hours and cost are provider data.
-    candidates.sort((a, b) => quality(b) - quality(a));
+    candidates.sort(
+      (a, b) =>
+        quality(b) +
+        preferenceScore(request, b, action) -
+        quality(a) -
+        preferenceScore(request, a, action),
+    );
     const shortlist = diverseShortlist(candidates, lockedPlaces, 10);
     candidates = candidatesFor(
       request,
@@ -317,6 +345,16 @@ export class Planner {
         ),
       ),
     );
+    if (
+      locked.some(
+        (stop) => !candidates.some((place) => place.id === stop.placeId),
+      )
+    )
+      throw new AppError(
+        "LOCK_CONFLICT",
+        "A locked destination is closed or fails the current area, budget or access constraints. Unlock it and choose a replacement before remixing.",
+        422,
+      );
     if (!candidates.length)
       throw new AppError(
         "NO_SUITABLE_PLACES",
@@ -346,6 +384,18 @@ export class Planner {
         throw new AppError(
           "INVALID_AI_OUTPUT",
           "The planner returned too many destinations for a new outing.",
+          502,
+        );
+      if (
+        selection.stops.some(
+          (stop) =>
+            stop.minutes > 180 &&
+            !locked.some((lock) => lock.placeId === stop.placeId),
+        )
+      )
+        throw new AppError(
+          "INVALID_AI_OUTPUT",
+          "A new destination visit exceeds the supported planning duration.",
           502,
         );
       const ids = new Set(candidates.map((p) => p.id));
@@ -387,7 +437,7 @@ export class Planner {
         if (
           !(e instanceof AppError) ||
           attempt === 1 ||
-          !["CLOSED", "TOO_LONG", "BUDGET"].includes(e.code)
+          !["CLOSED", "TOO_LONG", "BUDGET", "NO_ROUTE"].includes(e.code)
         )
           throw e;
         action = `${action ?? ""} Repair the proposed schedule: ${e.message}`;
@@ -414,9 +464,18 @@ export class Planner {
   async explore(request: PlanRequest, query?: string) {
     const basic = candidatesFor(
       { ...request, hardBudget: false },
-      await this.places.search(request, query),
+      await this.places.search(
+        query ? request : retrievalPreferences(request),
+        query,
+      ),
     );
-    basic.sort((a, b) => quality(b) - quality(a));
+    basic.sort(
+      (a, b) =>
+        quality(b) +
+        preferenceScore(request, b) -
+        quality(a) -
+        preferenceScore(request, a),
+    );
     const detailed = await Promise.all(
       diverseShortlist(basic, [], 10).map((p) =>
         this.places.details(p.id, request.location.currency),

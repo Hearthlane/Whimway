@@ -6,6 +6,9 @@ import {
 } from "@supabase/supabase-js";
 import { AppState, Platform } from "react-native";
 import { secureSessionStorage } from "./secure-storage";
+import * as Crypto from "expo-crypto";
+import { ensurePkceCrypto } from "./pkce-crypto";
+import { recordDiagnostic } from "./diagnostics";
 
 let client: SupabaseClient | null | undefined;
 export const authRedirectUrl = "whimway://auth/callback";
@@ -15,27 +18,49 @@ export function getAuthClient(): SupabaseClient | null {
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL,
     key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return (client = null);
-  client = createClient(url, key, {
-    auth: {
-      storage: secureSessionStorage,
-      autoRefreshToken: true,
-      persistSession: Platform.OS !== "web",
-      detectSessionInUrl: false,
-      flowType: "pkce",
-      lock: processLock,
-    },
-  });
+  try {
+    if (Platform.OS !== "web")
+      ensurePkceCrypto(globalThis, {
+        fill: (values) => Crypto.getRandomValues(values),
+        uuid: Crypto.randomUUID,
+        sha256: (data) =>
+          Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, data),
+      });
+    client = createClient(url, key, {
+      auth: {
+        storage: secureSessionStorage,
+        autoRefreshToken: true,
+        persistSession: Platform.OS !== "web",
+        detectSessionInUrl: false,
+        flowType: "pkce",
+        lock: processLock,
+      },
+    });
+  } catch {
+    recordDiagnostic({
+      category: "auth",
+      code: "AUTH_FAILED",
+      operation: "session",
+    });
+    return (client = null);
+  }
   return client;
 }
 export async function getAccessToken(): Promise<string | undefined> {
   const auth = getAuthClient();
   if (!auth) return undefined;
-  const { data, error } = await auth.auth.getSession();
-  if (error)
-    throw new Error(
-      "Your account session could not be restored. Sign in again or continue as a guest.",
-    );
-  return data.session?.access_token;
+  try {
+    const { data, error } = await auth.auth.getSession();
+    if (error) throw error;
+    return data.session?.access_token;
+  } catch {
+    recordDiagnostic({
+      category: "auth",
+      code: "AUTH_SESSION_ERROR",
+      operation: "session",
+    });
+    return undefined;
+  }
 }
 export async function requestSignIn(email: string): Promise<void> {
   const auth = getAuthClient();
@@ -47,10 +72,16 @@ export async function requestSignIn(email: string): Promise<void> {
     email: email.trim(),
     options: { emailRedirectTo: authRedirectUrl },
   });
-  if (error)
+  if (error) {
+    recordDiagnostic({
+      category: "auth",
+      code: "AUTH_FAILED",
+      operation: "sign-in",
+    });
     throw new Error(
       "Could not send a sign-in link. Check your email and try again.",
     );
+  }
 }
 export async function completeAuthCallback(value: string): Promise<void> {
   const auth = getAuthClient();
@@ -81,10 +112,16 @@ export async function completeAuthCallback(value: string): Promise<void> {
     code,
     flowId ? { flowId } : undefined,
   );
-  if (error)
+  if (error) {
+    recordDiagnostic({
+      category: "auth",
+      code: "AUTH_FAILED",
+      operation: "sign-in",
+    });
     throw new Error(
       "This link could not sign you in. Open a fresh link on the device that requested it.",
     );
+  }
 }
 export async function signOut(): Promise<void> {
   const auth = getAuthClient();

@@ -1,4 +1,4 @@
-name: Whimway native compilation
+name: Whimway native builds and UI checks
 
 on:
   pull_request:
@@ -7,15 +7,19 @@ on:
         "apps/mobile/**",
         "packages/**",
         "lib/**",
+        "e2e-native/**",
+        "scripts/start-native-test-services.mjs",
         ".github/workflows/native.yml",
       ]
   push:
-    branches: [main, "codex/**"]
+    branches: [main]
     paths:
       [
         "apps/mobile/**",
         "packages/**",
         "lib/**",
+        "e2e-native/**",
+        "scripts/start-native-test-services.mjs",
         ".github/workflows/native.yml",
       ]
   workflow_dispatch:
@@ -35,7 +39,7 @@ env:
 jobs:
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: apps/mobile
@@ -50,6 +54,13 @@ jobs:
           cache-dependency-path: apps/mobile/package-lock.json
       - name: Install compatible mobile dependencies
         run: npm ci
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: native-gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/package-lock.json') }}
+          restore-keys: native-gradle-${{ runner.os }}-
       - name: Use installed JDK 17 and report toolchain
         run: |
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
@@ -61,7 +72,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+          ./gradlew :app:assembleDebug :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
       - name: Inspect compiled permissions and package
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions android/app/build/outputs/apk/release/app-release.apk > android/permissions.txt
@@ -73,8 +84,49 @@ jobs:
           name: android-native-compilation-apk
           path: |
             apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
             apps/mobile/android/permissions.txt
             apps/mobile/android/package.txt
+          retention-days: 7
+      - name: Prepare native fixture runtime
+        working-directory: .
+        run: |
+          npm ci
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          test -e /dev/kvm
+          sudo chown "$USER" /dev/kvm
+          sudo chmod 600 /dev/kvm
+          node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
+      - name: Exercise actual Android views in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          ram-size: 2048M
+          disable-animations: false
+          enable-hw-keyboard: false
+          emulator-boot-timeout: 600
+          script: |
+            adb reverse tcp:3000 tcp:3000
+            adb reverse tcp:8081 tcp:8081
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            adb install apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
+            test -f native-test-artifacts/ready.json
+            maestro test --test-output-dir native-results/android -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml
+            maestro test --test-output-dir native-results/android-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml
+      - name: Retain Android native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-runtime
+          path: |
+            native-results
+            native-test-services.log
+            native-test-artifacts
           retention-days: 7
       - name: Retain compiler logs on failure
         if: failure()
@@ -85,7 +137,7 @@ jobs:
           retention-days: 7
   ios:
     runs-on: macos-26
-    timeout-minutes: 50
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: apps/mobile
@@ -102,6 +154,13 @@ jobs:
         run: |
           xcodebuild -version
           pod --version
+      - name: Start iPhone simulator migration while the app compiles
+        run: |
+          xcrun simctl list devices available -j > ios-devices.json
+          IOS_SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          SIMULATOR_ID=$(node -e 'const fs=require("node:fs"); const sdk=process.argv[1].replaceAll(".","-"); const entries=Object.entries(JSON.parse(fs.readFileSync("ios-devices.json")).devices).filter(([runtime])=>runtime.endsWith("iOS-"+sdk)); const phone=entries.flatMap(([,devices])=>devices).find(d=>d.isAvailable&&d.name==="iPhone 17"&&d.state==="Shutdown"); if(!phone)throw Error("No iPhone 17 for the selected stable SDK"); process.stdout.write(phone.udid)' "$IOS_SDK_VERSION")
+          echo "WHIMWAY_SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_ID"
       - name: Install compatible mobile dependencies
         run: npm ci
       - name: Generate iOS project and install pods
@@ -110,20 +169,21 @@ jobs:
           cd ios
           pod install
       - name: Compile iOS simulator app without signing credentials
+        id: ios_compile
         run: |
-          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build > ios/native-build.log 2>&1
-      - name: Launch the actual simulator app and capture first frame
-        run: |
-          xcrun simctl list devices available -j > ios/devices.json
-          SIMULATOR_ID=$(node -e 'const fs=require("node:fs"); const devices=Object.values(JSON.parse(fs.readFileSync("ios/devices.json")).devices).flat(); const phone=devices.find(d=>d.isAvailable&&d.name==="iPhone 17"&&d.state==="Shutdown"); if(!phone)throw Error("No available iPhone 17 simulator"); process.stdout.write(phone.udid)')
-          xcrun simctl boot "$SIMULATOR_ID"
-          xcrun simctl bootstatus "$SIMULATOR_ID" -b
-          xcrun simctl install "$SIMULATOR_ID" ios/build/Build/Products/Release-iphonesimulator/Whimway.app
-          xcrun simctl launch "$SIMULATOR_ID" com.example.whimway > ios/launch.txt
-          sleep 5
-          xcrun simctl io "$SIMULATOR_ID" screenshot ios/native-smoke.png
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-build.log 2>&1
           tar -czf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator Whimway.app
+      - name: Launch the actual simulator app and capture first frame
+        timeout-minutes: 12
+        run: |
+          cp ios-devices.json ios/devices.json
+          node -e 'const cp=require("node:child_process"); const r=cp.spawnSync("xcrun",["simctl","bootstatus",process.env.WHIMWAY_SIMULATOR_ID,"-b"],{stdio:"inherit",timeout:600000}); if(r.error)throw r.error; process.exit(r.status??1)'
+          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" ios/build/Build/Products/Release-iphonesimulator/Whimway.app
+          xcrun simctl launch "$WHIMWAY_SIMULATOR_ID" com.example.whimway > ios/launch.txt
+          sleep 5
+          xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
       - name: Retain simulator app and runtime evidence
+        if: always() && steps.ios_compile.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: ios-native-simulator-app
@@ -132,6 +192,33 @@ jobs:
             apps/mobile/ios/native-smoke.png
             apps/mobile/ios/launch.txt
             apps/mobile/ios/devices.json
+          retention-days: 7
+      - name: Compile a simulator development client
+        run: |
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-debug-build.log 2>&1
+      - name: Prepare and exercise actual iOS development views
+        working-directory: .
+        run: |
+          npm ci
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          export PATH="$HOME/.maestro/bin:$PATH"
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
+          xcrun simctl install booted apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Whimway.app
+          for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
+          test -f native-test-artifacts/ready.json
+          maestro test --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml
+          maestro test --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml
+      - name: Retain iOS native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-runtime
+          path: |
+            native-results
+            native-test-services.log
+            native-test-artifacts
+            apps/mobile/ios/native-debug-build.log
           retention-days: 7
       - name: Retain native compiler evidence
         if: always()

@@ -8,6 +8,7 @@ import {
 } from "../schema";
 import { distance } from "../geo";
 import { AppError } from "../errors";
+import { preferenceScore } from "./preferences";
 import type {
   PlacesProvider,
   RecommendationProvider,
@@ -162,6 +163,10 @@ export class FixtureAI implements RecommendationProvider {
     const available = candidates.filter(
       (p) => !locked.some((l) => l.placeId === p.id),
     );
+    available.sort(
+      (a, b) =>
+        preferenceScore(req, b, action) - preferenceScore(req, a, action),
+    );
     if (action?.includes("cheaper"))
       available.sort(
         (a, b) => (a.price.high ?? Infinity) - (b.price.high ?? Infinity),
@@ -171,7 +176,7 @@ export class FixtureAI implements RecommendationProvider {
         (a, b) =>
           Number(b.types.includes("park")) - Number(a.types.includes("park")),
       );
-    if (action) available.reverse();
+    if (action === "Surprise me") available.reverse();
     const n = action?.includes("shorter") ? 2 : 4;
     return {
       title:

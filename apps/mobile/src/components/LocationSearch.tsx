@@ -230,6 +230,7 @@ export function LocationSearch({
       </View>
       <Notice message={error} error />
       <Sheet
+        error={error}
         visible={map}
         title="Drop your starting pin"
         onClose={() => setMap(false)}

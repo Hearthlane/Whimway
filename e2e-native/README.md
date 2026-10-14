@@ -1,0 +1,33 @@
+# Native development-client smoke flows
+
+These are authored Maestro flows for actual iOS/Android native views. **Execution is pending until a runner produces a pass report.** They are not browser tests and do not use fake map keys or enable fixtures in production builds. All tested venue/price/route data is explicitly synthetic; no cloud messages or live provider calls are expected.
+
+Use the dedicated development-client app (`com.example.whimway` unless overridden), a running fixture Next backend and a running native Metro development server. The boot helper clears this test app's local data. Keep these flows separate from a production install/account. The standalone Release compilation-check app cannot load a development server or show the fixture toggle.
+
+`smoke.yaml` covers Explore/Saved/Profile, local budget preferences, denied location, adaptive fixture planning, Android hardware Back (visible Back on iOS), sheet-header drag dismissal, invalid-edit error shown inside a keyboard sheet, successful retry, notification opt-in/denied state, Day completion and process-restored progress. `reminders-allow.yaml` covers a granted native permission state, actual local scheduling counts and cancellation. Delivery timing, notification taps, live native maps/attribution and physical haptics remain separate device checks.
+
+From the root, start the backend with `WHIMWAY_DEMO_MODE=true`, `NEXT_PUBLIC_WHIMWAY_DEMO_MODE=true`, `DAILY_GUEST_GENERATIONS=100`, `DAILY_REMIX_LIMIT=100`, `GLOBAL_DAILY_PROVIDER_LIMIT=1000` and `APP_ORIGIN` unset. Start Metro from `apps/mobile` using `npx expo start --dev-client --port 8081`, with `EXPO_PUBLIC_API_URL=http://127.0.0.1:3000` for Android or `http://localhost:3000` for the iOS simulator. Local HTTP is allowed only by development source; production remains HTTPS-only.
+
+Install the Debug/development-client APK or simulator development `.app`, then run, for example:
+
+For the Android emulator, forward both development ports first: `adb reverse tcp:3000 tcp:3000` and `adb reverse tcp:8081 tcp:8081`. The flow uses the same localhost origin as the iOS simulator and runner.
+
+```bash
+maestro test --test-output-dir native-results/android \
+  -e APP_ID=com.example.whimway \
+  -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' \
+  e2e-native/smoke.yaml
+
+maestro test --test-output-dir native-results/ios \
+  -e APP_ID=com.example.whimway \
+  -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' \
+  e2e-native/smoke.yaml
+```
+
+Run `reminders-allow.yaml` with the same platform arguments after the main flow. Maestro permission settings are explicit; iOS notification prompts can be handled automatically by the tool, so a granted state is not evidence of a manually granted first-use dialog. The denied flow must actually reach the app's denied message to pass. Also perform a fresh manual grant/deny check with tool auto-handling disabled. [Maestro permission behavior](https://docs.maestro.dev/maestro-flows/flow-control-and-logic/permissions)
+
+The SDK-57 development-client URL deliberately uses the legacy `expo-development-client/?url=` form. Disable flags remove developer overlays only for this test launch and do not alter Whimway's production guards. [Expo development-client launch URLs](https://docs.expo.dev/develop/development-builds/development-workflows/)
+
+Use an English simulator/emulator and enable its software keyboard. Android CI can set `show_ime_with_hard_keyboard=1`; iOS simulator should disconnect the hardware keyboard. The optional keyboard Done tap handles platforms where no software keyboard is displayed, so inspect screenshots and report actual keyboard coverage rather than inferring it. OS Back is run only on Android, using the documented hardware command. [Maestro hardware keys](https://docs.maestro.dev/reference/commands-available/presskey)
+
+Retain Maestro command reports, screenshots, device/OS/build metadata, commit SHA, Metro/backend logs and native crash logs. A YAML file that parses is not a passed flow. Record compile, installation, launch and each journey separately in `docs/mobile-checklist.md` after inspecting runner output.

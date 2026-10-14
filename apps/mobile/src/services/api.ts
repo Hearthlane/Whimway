@@ -8,6 +8,7 @@ import {
   PlanningIntent,
 } from "../../../../lib/schema";
 import { getAccessToken } from "./auth";
+import { recordDiagnostic } from "./diagnostics";
 import { Platform } from "react-native";
 import { PreferencesSchema } from "./storage-core";
 import {
@@ -85,10 +86,23 @@ export async function api<T>(
   const method = options.method ?? (data === undefined ? "GET" : "POST");
   const schema =
     options.schema ?? (responseSchema(path, method) as z.ZodType<T>);
-  return requestJson(getApiBaseUrl(), path, schema, data, {
-    ...options,
-    token: await getAccessToken(),
-  });
+  try {
+    return await requestJson(getApiBaseUrl(), path, schema, data, {
+      ...options,
+      token: await getAccessToken(),
+      reportFailure: (failure) =>
+        recordDiagnostic({
+          category: "api",
+          code: failure.code,
+          operation: failure.path,
+          status: failure.status,
+        }),
+    });
+  } catch (error) {
+    if (error instanceof MobileApiError && error.code === "API_NOT_CONFIGURED")
+      recordDiagnostic({ category: "api", code: error.code, operation: path });
+    throw error;
+  }
 }
 
 export function apiPhotoUrl(name: string) {

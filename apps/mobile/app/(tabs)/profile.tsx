@@ -29,6 +29,11 @@ import { api } from "../../src/services/api";
 import { useApp } from "../../src/state/AppState";
 import { interests } from "../../../../lib/schema";
 import { colors as c } from "../../src/design/theme";
+import {
+  clearDiagnostics,
+  getDiagnosticReport,
+  shareDiagnosticReport,
+} from "../../src/services/diagnostics";
 
 export default function Profile() {
   const [prefs, setPrefs] = useState<Preferences>(defaultPreferences),
@@ -44,6 +49,8 @@ export default function Profile() {
     [favorites, setFavorites] = useState(0),
     [deleting, setDeleting] = useState(false);
   const dirty = useRef(false);
+  const [advanced, setAdvanced] = useState(false),
+    [diagnosticReport, setDiagnosticReport] = useState<string>();
   const { refreshPreferences } = useApp();
   const auth = getAuthClient();
   function apply(value: Preferences) {
@@ -134,7 +141,7 @@ export default function Profile() {
     }, [auth, refreshPreferences]),
   );
   async function run(work: () => Promise<unknown>, result: string) {
-    if (busy) return;
+    if (busy) return false;
     setBusy(true);
     setError("");
     setMessage("");
@@ -142,8 +149,10 @@ export default function Profile() {
       await work();
       setMessage(result);
       await refreshPreferences();
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -256,7 +265,9 @@ export default function Profile() {
           </>
         ) : (
           <Text style={styles.body}>
-            {Platform.OS === "web" ? "Account sign-in is available in the native iOS and Android app. Device preferences work in this browser preview." : "Account sync is unavailable until the service is configured. Device saves work now."}
+            {Platform.OS === "web"
+              ? "Account sign-in is available in the native iOS and Android app. Device preferences work in this browser preview."
+              : "Account sync is unavailable until the service is configured. Device saves work now."}
           </Text>
         )}
       </View>
@@ -377,6 +388,14 @@ export default function Profile() {
         />
         <Button
           secondary
+          title="More personal preferences"
+          onPress={() => {
+            setError("");
+            setAdvanced(true);
+          }}
+        />
+        <Button
+          secondary
           title="Reset preferences"
           busy={busy}
           onPress={() =>
@@ -388,6 +407,38 @@ export default function Profile() {
               apply(defaultPreferences);
               setAccountPrefs(undefined);
             }, "Preferences reset.")
+          }
+        />
+      </View>
+      <View style={styles.divider} />
+      <View style={styles.section}>
+        <Text style={styles.heading}>Need a hand?</Text>
+        <Text style={styles.body}>
+          A diagnostic report includes this app’s version, platform and recent
+          error codes. It leaves out your plans, account details and precise
+          location.
+        </Text>
+        <Button
+          secondary
+          title="Open diagnostic report"
+          onPress={() =>
+            void getDiagnosticReport()
+              .then(setDiagnosticReport)
+              .catch(() =>
+                setError(
+                  "The diagnostic report could not open. Please try again.",
+                ),
+              )
+          }
+        />
+        <Button
+          secondary
+          title="Clear local diagnostics"
+          onPress={() =>
+            void run(
+              () => clearDiagnostics(),
+              "Local diagnostic history cleared.",
+            )
           }
         />
       </View>
@@ -445,6 +496,7 @@ export default function Profile() {
       </Text>
       <Sheet
         visible={deleting}
+        error={error}
         title="Delete your account?"
         onClose={() => setDeleting(false)}
       >
@@ -471,6 +523,96 @@ export default function Profile() {
           disabled={busy}
           onPress={() => setDeleting(false)}
         />
+      </Sheet>
+      <Sheet
+        visible={advanced}
+        error={error}
+        title="A little more you"
+        onClose={() => setAdvanced(false)}
+      >
+        <TextInput
+          accessibilityLabel="Favourite cuisines"
+          style={styles.input}
+          maxLength={200}
+          value={prefs.cuisines}
+          placeholder="Favourite cuisines (optional)"
+          onChangeText={(cuisines) => change({ cuisines })}
+        />
+        <TextInput
+          accessibilityLabel="Preferred atmosphere"
+          style={styles.input}
+          maxLength={200}
+          value={prefs.atmosphere}
+          placeholder="Quiet, lively, cosy… (optional)"
+          onChangeText={(atmosphere) => change({ atmosphere })}
+        />
+        <Text style={styles.body}>
+          {prefs.disliked.length} place{prefs.disliked.length === 1 ? "" : "s"}{" "}
+          avoided in future plans. Remember a place from its stop menu.
+        </Text>
+        {prefs.disliked.length ? (
+          <Button
+            secondary
+            title="Forget avoided places"
+            onPress={() => change({ disliked: [] })}
+          />
+        ) : null}
+        <Text style={[styles.body, { fontSize: 13 }]}>
+          Cuisine and atmosphere preferences apply when Use my saved preferences
+          is on. Places you choose to avoid stay excluded until you clear this
+          list.
+        </Text>
+        <Button
+          title="Save my preferences"
+          busy={busy}
+          onPress={() =>
+            void run(
+              save,
+              signedIn
+                ? "Preferences saved on this device and account."
+                : "Preferences saved on this device.",
+            ).then((saved) => {
+              if (saved) setAdvanced(false);
+            })
+          }
+        />
+      </Sheet>
+      <Sheet
+        visible={diagnosticReport !== undefined}
+        error={error}
+        title="Your diagnostic report"
+        onClose={() => setDiagnosticReport(undefined)}
+      >
+        <Text
+          selectable
+          style={[
+            styles.body,
+            {
+              fontSize: 13,
+              lineHeight: 20,
+              fontFamily: "monospace",
+              color: c.ink,
+            },
+          ]}
+        >
+          {diagnosticReport}
+        </Text>
+        {Platform.OS !== "web" ? (
+          <Button
+            title="Share this report"
+            onPress={() =>
+              void shareDiagnosticReport().catch(() =>
+                setError(
+                  "Your phone could not open the share menu. You can select and copy the report text.",
+                ),
+              )
+            }
+          />
+        ) : (
+          <Text style={styles.body}>
+            Select and copy this report if you want to send it to support.
+          </Text>
+        )}
       </Sheet>
     </Screen>
   );

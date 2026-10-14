@@ -44,7 +44,11 @@ import {
   cancelPlanReminders,
 } from "../../src/services/notifications";
 import { sharePlan, shareCloudPlan } from "../../src/services/share";
-import { savePlan, saveFavoritePlace } from "../../src/services/storage";
+import {
+  savePlan,
+  saveFavoritePlace,
+  rememberDislikedPlace,
+} from "../../src/services/storage";
 import { colors as c } from "../../src/design/theme";
 import {
   remixActions,
@@ -55,8 +59,9 @@ import {
   type PlanRequest,
 } from "../../../../lib/schema";
 import { money, timeLabel } from "../../../../lib/time";
+import { toggleStopLock } from "../../src/core/plan-edit";
 export default function PlanScreen() {
-  const { reminderError } = useApp();
+  const { reminderError, refreshPreferences } = useApp();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { plan, setPlan, loading, error, setError, reload } = usePlan(id);
   const [selected, setSelected] = useState<string>();
@@ -486,6 +491,7 @@ export default function PlanScreen() {
                     accessibilityLabel={"Customize " + stop.place.name}
                     disabled={busy}
                     onPress={() => {
+                      setError("");
                       setMenu(stop);
                       setVisit(String(stop.minutes));
                     }}
@@ -568,6 +574,7 @@ export default function PlanScreen() {
         </ScrollView>
       )}
       <Sheet
+        error={error}
         visible={!!menu && !add}
         title={menu?.place.name || "Your stop"}
         onClose={() => {
@@ -592,17 +599,37 @@ export default function PlanScreen() {
             />
             <Button
               secondary
-              title={menu.locked ? "Unlock stop" : "Lock this stop"}
+              title="Avoid this place in future"
               disabled={busy}
               onPress={() =>
-                void edit(
-                  plan.stops.map((s) =>
-                    s.placeId === menu.placeId
-                      ? { ...s, locked: !s.locked }
-                      : s,
-                  ),
-                )
+                void rememberDislikedPlace(menu.placeId)
+                  .then(() => refreshPreferences())
+                  .then(() => {
+                    setMessage(
+                      "Future plans on this device will avoid this place. Clear avoided places in Profile.",
+                    );
+                    setMenu(undefined);
+                  })
+                  .catch((e) => setError(e.message))
               }
+            />
+            <Button
+              secondary
+              title={menu.locked ? "Unlock stop" : "Lock this stop"}
+              disabled={busy}
+              onPress={() => {
+                const wasLocked = menu.locked;
+                void operation(async () =>
+                  toggleStopLock(plan, menu.placeId),
+                ).then((done) => {
+                  if (done)
+                    setMessage(
+                      wasLocked
+                        ? "Stop unlocked. You can change it again."
+                        : "Stop locked. It stays yours when you remix.",
+                    );
+                });
+              }}
             />
             <Button
               secondary
@@ -679,6 +706,7 @@ export default function PlanScreen() {
         ) : null}
       </Sheet>
       <Sheet
+        error={error}
         visible={remix}
         title="Same day. A new feeling."
         onClose={() => {
@@ -708,6 +736,7 @@ export default function PlanScreen() {
         ))}
       </Sheet>
       <Sheet
+        error={error}
         visible={add}
         title={menu ? "A fresh alternative" : "One more good stop"}
         onClose={() => {
@@ -741,6 +770,7 @@ export default function PlanScreen() {
         ) : null}
       </Sheet>
       <Sheet
+        error={error}
         visible={settings}
         title="Make room for your day"
         onClose={() => {
@@ -787,6 +817,7 @@ export default function PlanScreen() {
         />
       </Sheet>
       <Sheet
+        error={error}
         visible={reminders}
         title="A little nudge for your day?"
         onClose={() => setReminders(false)}
@@ -834,6 +865,7 @@ export default function PlanScreen() {
         />
       </Sheet>
       <Sheet
+        error={error}
         visible={share}
         title="Take a friend along"
         onClose={() => setShare(false)}
@@ -860,6 +892,7 @@ export default function PlanScreen() {
         />
       </Sheet>
       <Sheet
+        error={error}
         visible={saveSheet}
         title="Keep this good day"
         onClose={() => setSaveSheet(false)}

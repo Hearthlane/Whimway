@@ -1,0 +1,55 @@
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- scrollUntilVisible:
+    element: "Use synthetic development fixtures"
+    direction: DOWN
+- tapOn: "Use synthetic development fixtures"
+- scrollUntilVisible:
+    element: "Search a place"
+    direction: UP
+- tapOn: "Search a place"
+- inputText: "Toronto"
+- extendedWaitUntil:
+    visible: "CF Toronto Eaton Centre"
+    timeout: 15000
+- tapOn: "CF Toronto Eaton Centre"
+- hideKeyboard
+- scrollUntilVisible:
+    element: ".*find something good"
+    direction: DOWN
+- tapOn: ".*find something good"
+- assertVisible: "What sounds fun?"
+- tapOn: "Food & drinks"
+- scrollUntilVisible:
+    element: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- assertVisible: "Who.*joining.*"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Back"
+- assertVisible: "What sounds fun?"
+- scrollUntilVisible:
+    element: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- scrollUntilVisible:
+    element: "Skip for now"
+    direction: DOWN
+- tapOn: "Skip for now"
+- assertVisible: "What.*energy today.*"
+- scrollUntilVisible:
+    element: "Make my day"
+    direction: DOWN
+- tapOn: "Make my day"
+- extendedWaitUntil:
+    visible: "Start my day"
+    timeout: 90000
+- assertVisible: "Development fixture.*"
