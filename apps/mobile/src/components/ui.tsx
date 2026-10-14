@@ -82,11 +82,18 @@ export function Screen({
   children,
   scroll = true,
   style,
+  scrollResetKey,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   style?: StyleProp<ViewStyle>;
+  scrollResetKey?: string;
 }) {
+  const scrollView = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (scrollResetKey !== undefined)
+      scrollView.current?.scrollTo({ y: 0, animated: false });
+  }, [scrollResetKey]);
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: c.paper }}
@@ -104,6 +111,7 @@ export function Screen({
       >
         {scroll ? (
           <ScrollView
+            ref={scrollView}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={
               Platform.OS === "ios" ? "interactive" : "on-drag"

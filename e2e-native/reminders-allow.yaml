@@ -22,6 +22,13 @@ tags: [native, fixtures, reminders]
     direction: UP
 - takeScreenshot: native-reminders-scheduled
 - tapOn: "Back"
+- repeat:
+    times: 8
+    while:
+      notVisible: "Profile"
+    commands:
+      - tapOn: "Back"
+- assertVisible: "Profile"
 - tapOn: "Profile"
 - scrollUntilVisible:
     element: "1 outing.*upcoming reminders.*"

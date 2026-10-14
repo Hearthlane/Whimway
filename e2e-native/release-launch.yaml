@@ -1,0 +1,44 @@
+# Standalone Release guest surfaces on a disposable software-GPU CI emulator.
+# This flow does not use Metro, synthetic controls, credentials or live venues.
+appId: ${APP_ID || 'com.example.whimway'}
+name: Standalone Android Release guest probe
+tags: [native, release, guest]
+---
+- launchApp:
+    clearState: true
+    permissions:
+      location: deny
+      notifications: deny
+- extendedWaitUntil:
+    visible: "Where are we heading[?]"
+    timeout: 120000
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 20000
+- assertVisible: "Saved"
+- assertNotVisible: "Use synthetic development fixtures"
+- takeScreenshot: android-release-explore
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible: "Guest, with all the good stuff."
+    timeout: 20000
+- scrollUntilVisible:
+    element: "Save my preferences"
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: android-release-profile-scrolled
+- scrollUntilVisible:
+    element: "Guest, with all the good stuff."
+    direction: UP
+    timeout: 30000
+- takeScreenshot: android-release-profile
+- tapOn: "Saved"
+- extendedWaitUntil:
+    visible: "Your next good day lives here."
+    timeout: 30000
+- takeScreenshot: android-release-saved
+- tapOn: "Explore"
+- extendedWaitUntil:
+    visible: "Where are we heading[?]"
+    timeout: 20000
+- assertNotVisible: "Use synthetic development fixtures"

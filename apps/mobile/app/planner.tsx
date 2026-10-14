@@ -267,7 +267,7 @@ export default function Planner() {
   }
   const amounts = budgetPresets(draft.location?.currency || "CAD");
   return (
-    <Screen>
+    <Screen scrollResetKey={`${queue.join(",")}:${step ?? "ready"}`}>
       <View
         style={[
           styles.row,

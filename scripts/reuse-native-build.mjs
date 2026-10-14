@@ -1,5 +1,7 @@
 // Reuse only actual binaries from this repository/branch's native workflow.
-// Any missing provenance, source difference, or API failure falls back to build.
+// Release binaries must embed the same source. Only the iOS development client
+// can accept JS/TS screen changes, because it loads current source from Metro.
+// Missing provenance, native changes, or API failures fall back to build.
 import { appendFileSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -21,11 +23,13 @@ const runtimeFiles = new Set([
   workflowPath,
 ]);
 
-export function allowedReuseChange(file) {
+export function allowedReuseChange(file, target = "strict") {
   return (
     file.startsWith("docs/") ||
     file.startsWith("e2e-native/") ||
-    runtimeFiles.has(file)
+    file.startsWith("e2e-mobile/") ||
+    runtimeFiles.has(file) ||
+    (target === "ios-debug" && /^apps\/mobile\/(app|src)\/.+\.tsx?$/.test(file))
   );
 }
 function git(args, cwd) {
@@ -37,7 +41,12 @@ function git(args, cwd) {
   });
   return !result.error && result.status === 0 ? result.stdout : null;
 }
-export function sourceCompatibility(sourceSha, currentSha, cwd = root) {
+export function sourceCompatibility(
+  sourceSha,
+  currentSha,
+  cwd = root,
+  target = "strict",
+) {
   if (!shaPattern.test(sourceSha ?? "") || !shaPattern.test(currentSha ?? ""))
     return { compatible: false, reason: "source-unavailable" };
   for (const sha of new Set([sourceSha, currentSha])) {
@@ -61,7 +70,7 @@ export function sourceCompatibility(sourceSha, currentSha, cwd = root) {
   const changed = [
     ...new Set((committed + working).split("\0").filter(Boolean)),
   ];
-  return changed.every(allowedReuseChange)
+  return changed.every((file) => allowedReuseChange(file, target))
     ? { compatible: true, changed_files: changed.length }
     : { compatible: false, reason: "application-source-changed" };
 }
@@ -183,6 +192,8 @@ const fallback = (reason) => ({
   artifact_id: "",
   run_id: "",
   source_sha: "",
+  binary_source_sha: "",
+  source_mode: "",
   reason,
 });
 
@@ -275,7 +286,12 @@ export async function findReusableBuild(
     for (const artifact of candidates) {
       if (Date.now() >= deadline) return fallback("lookup-unavailable");
       const sourceSha = artifact.workflow_run.head_sha;
-      const comparison = sourceCompatibility(sourceSha, currentSha, cwd);
+      const comparison = sourceCompatibility(
+        sourceSha,
+        currentSha,
+        cwd,
+        target,
+      );
       if (!comparison.compatible) continue;
       const sourceWorkflow = git(["show", `${sourceSha}:${workflowPath}`], cwd);
       const currentWorkflow = readFileSync(
@@ -308,6 +324,9 @@ export async function findReusableBuild(
         artifact_id: artifact.id,
         run_id: run.id,
         source_sha: sourceSha,
+        binary_source_sha: sourceSha,
+        source_mode:
+          target === "ios-debug" ? "metro-current-source" : "embedded-source",
         current_sha: currentSha,
         artifact_name: name,
         changed_files: comparison.changed_files,
@@ -329,7 +348,14 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   if (env.GITHUB_OUTPUT)
     appendFileSync(
       env.GITHUB_OUTPUT,
-      ["reused", "artifact_id", "run_id", "source_sha"]
+      [
+        "reused",
+        "artifact_id",
+        "run_id",
+        "source_sha",
+        "binary_source_sha",
+        "source_mode",
+      ]
         .map((key) => `${key}=${result[key]}\n`)
         .join(""),
     );

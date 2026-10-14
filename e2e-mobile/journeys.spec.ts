@@ -218,36 +218,46 @@ test("Small-phone planner remains reachable with a 200 percent browser text samp
   await start(page);
   // A browser approximation of enlarged text, not an Android/iOS fontScale test.
   await page.evaluate(() => {
-    const text = [
-      ...document.querySelectorAll<HTMLElement>(
-        "div,span,input,textarea,button",
-      ),
-    ].filter(
-      (element) =>
-        element.matches("input,textarea") ||
-        [...element.childNodes].some(
-          (node) =>
-            node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+    const enlarged = new WeakSet<HTMLElement>();
+    function enlargeText() {
+      const text = [
+        ...document.querySelectorAll<HTMLElement>(
+          "div,span,input,textarea,button",
         ),
-    );
-    const values = text.map((element) => ({
-      element,
-      font: getComputedStyle(element).fontSize,
-      line: getComputedStyle(element).lineHeight,
-    }));
-    for (const { element, font, line } of values) {
-      element.style.setProperty(
-        "font-size",
-        `${parseFloat(font) * 2}px`,
-        "important",
+      ].filter(
+        (element) =>
+          !enlarged.has(element) &&
+          (element.matches("input,textarea") ||
+            [...element.childNodes].some(
+              (node) =>
+                node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+            )),
       );
-      if (line !== "normal")
+      const values = text.map((element) => ({
+        element,
+        font: getComputedStyle(element).fontSize,
+        line: getComputedStyle(element).lineHeight,
+      }));
+      for (const { element, font, line } of values) {
+        enlarged.add(element);
         element.style.setProperty(
-          "line-height",
-          `${parseFloat(line) * 2}px`,
+          "font-size",
+          `${parseFloat(font) * 2}px`,
           "important",
         );
+        if (line !== "normal")
+          element.style.setProperty(
+            "line-height",
+            `${parseFloat(line) * 2}px`,
+            "important",
+          );
+      }
     }
+    enlargeText();
+    new MutationObserver(enlargeText).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   });
   await noOverflow(page);
   await shot(page, "planner-large-text-top-preview-375");
@@ -271,6 +281,17 @@ test("Small-phone planner remains reachable with a 200 percent browser text samp
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(375);
   await shot(page, "planner-large-text-preview-375");
+  const next = page.getByRole("button", { name: "Next", exact: true });
+  await next.scrollIntoViewIfNeeded();
+  await next.click();
+  await expect(
+    page.getByText("Who’s joining?", { exact: true }),
+  ).toBeInViewport({ ratio: 1 });
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(
+    page.getByText("What sounds fun?", { exact: true }),
+  ).toBeInViewport({ ratio: 1 });
+  await make.scrollIntoViewIfNeeded();
   await make.click();
   await expect(page).toHaveURL(/\/plan\/[a-f\d-]+/);
 });
