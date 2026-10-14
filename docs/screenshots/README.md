@@ -1,6 +1,6 @@
-# Browser visual evidence
+# Mobile visual evidence
 
-Captured locally on 13 October 2026 with Playwright Chromium. These images are browser artifacts, not device or store screenshots. The source audit and outstanding device checks are in [mobile-audit.md](../mobile-audit.md) and [mobile-checklist.md](../mobile-checklist.md).
+Browser captures were created locally on 13 October 2026 with Playwright Chromium. Native simulator captures are separately identified below. These are development/QA evidence, not store screenshots. The source audit and outstanding device checks are in [mobile-audit.md](../mobile-audit.md) and [mobile-checklist.md](../mobile-checklist.md).
 
 `baseline/` contains the retained Next.js frontend at 390 × 844, with explicit synthetic development fixtures where needed. `observations.json` records original page height and horizontal overflow measurements. Reproduce with the fixture backend running and `node scripts/capture-web-audit.mjs`.
 
@@ -23,3 +23,9 @@ Captured locally on 13 October 2026 with Playwright Chromium. These images are b
 | Network retry and explicit locked-stop recovery        | `saved-reopen-network-error-390.png`, `saved-lock-conflict-390.png`                           |
 
 RN Web uses an internal scroll view, so these captures show the viewport or selected scroll position rather than measuring the entire native screen's content height. Enlarged browser text is a layout sample, not an Android/iOS fontScale or VoiceOver/TalkBack test. Placeholder stop photographs are explicitly labeled synthetic; map fallback lists are not live maps. Real device checks must cover native safe areas, keyboards, maps/attribution, OS location and notification dialogs, hardware back, gestures, process recovery and performance.
+
+## Initial actual iOS simulator capture
+
+`native-ios/explore-869a8fb.png` is a 1206 × 2622 screenshot from the actual installed iOS Release simulator app in [native run 38489794771](https://github.com/Hearthlane/Whimway/actions/runs/38489794771), commit `869a8fb3dc033bd6180c292aad89d5e458c98353`. The `ios-native-simulator-app` artifact (ID `11862510795`) includes this image, the unsigned `.app` archive and `launch.txt` showing `com.example.whimway: 83217`. Compile, install, launch and upload succeeded before the overall job was cancelled during post-setup-node cleanup.
+
+This capture proves the initial native Explore launch, including its actual safe area and persistent tabs. It exposed Apple rendering the text asterisk as a green emoji badge; current source replaces that glyph with a coral vector icon and permits header wrapping. The screenshot intentionally preserves the observed older source. It does not prove the subsequent brand fix, complete native journeys, live providers, signed device distribution or final-source runtime behavior.

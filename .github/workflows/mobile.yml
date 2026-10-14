@@ -38,6 +38,8 @@ jobs:
           npm run lint
       - name: Planner, provider, security and mobile core tests
         run: npm test
+      - name: Database ownership and share RLS in isolated PostgreSQL
+        run: npm run test:db
       - name: Production backend bundle
         run: npm run build
       - name: Mobile typecheck and SDK version alignment
