@@ -34,7 +34,7 @@ tags: [native, fixtures, smoke]
 - takeScreenshot: native-profile-preferences
 - tapOn: "Explore"
 - startRecording:
-    path: "../native-results/${maestro.platform}-planning-motion"
+    path: "${maestro.platform}-planning-motion"
     label: "Record native question transitions and itinerary reveal"
 - runFlow: helpers/create-fixture-plan.yaml
 - takeScreenshot: native-itinerary
