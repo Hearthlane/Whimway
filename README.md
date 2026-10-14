@@ -4,7 +4,7 @@ Whimway now includes a genuine **React Native / Expo iOS and Android app** in ap
 
 Start with [native run and build instructions](docs/mobile-release.md), [the audit](docs/mobile-audit.md), [API contracts](docs/mobile-api.md), [verification checklist](docs/mobile-checklist.md) and [dependency advisories](docs/dependency-advisories.md). Android/iOS JavaScript bundles and native project generation do not establish device or signing readiness. Live providers, hosted accounts and signed device builds require external configuration.
 
-~~~powershell
+```powershell
 # Terminal 1 — backend
 npm ci
 npm run dev
@@ -13,7 +13,7 @@ cd apps/mobile
 npm ci
 # Configure .env.local from .env.example: API address + platform maps keys.
 npm start
-~~~
+```
 
 The original web application and its provider, database and security logic remain below.
 
@@ -89,6 +89,7 @@ Share links require signing in and cloud-saving a live plan. They do not expose 
 ## Tests and production
 
 ```sh
+npm ci --prefix apps/mobile
 npm run typecheck
 npm run lint
 npm test

@@ -336,6 +336,7 @@ export default function DayScreen() {
       </View>
       <View
         accessibilityRole="progressbar"
+        accessibilityLabel="Outing progress"
         accessibilityValue={{
           min: 0,
           max: plan.stops.length,

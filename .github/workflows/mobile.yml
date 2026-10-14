@@ -3,7 +3,7 @@ name: Whimway mobile and backend checks
 on:
   pull_request:
   push:
-    branches: [main, 'codex/**']
+    branches: [main, "codex/**"]
 
 permissions:
   contents: read

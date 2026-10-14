@@ -1,14 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Text,
-  View,
-  Pressable,
-  TextInput,
-  Platform,
-} from "react-native";
+import { Text, View, Pressable, TextInput, Platform } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { DateTime } from "luxon";
+import * as Haptics from "expo-haptics";
 import { ArrowLeft, Coffee, Compass, Zap } from "lucide-react-native";
 import Animated, {
   FadeInRight,
@@ -348,7 +343,10 @@ export default function Planner() {
                 key={value}
                 accessibilityRole="button"
                 accessibilityState={{ selected: draft.energy === value }}
-                onPress={() => update({ energy: value })}
+                onPress={() => {
+                  void Haptics.selectionAsync().catch(() => {});
+                  update({ energy: value });
+                }}
                 style={[
                   styles.row,
                   {
@@ -609,6 +607,28 @@ export default function Planner() {
           onChangeText={(startTime) => update({ startTime })}
           placeholder="11:00"
         />
+        <Text style={styles.label}>Destination currency</Text>
+        <TextInput
+          accessibilityLabel="Destination currency code"
+          style={styles.input}
+          autoCapitalize="characters"
+          maxLength={3}
+          value={draft.location?.currency}
+          onChangeText={(value) => {
+            if (draft.location)
+              update({
+                location: {
+                  ...draft.location,
+                  currency: value.toUpperCase().replace(/[^A-Z]/g, ""),
+                },
+              });
+          }}
+          placeholder="CAD, EUR, JPY…"
+        />
+        <Text style={[styles.body, { fontSize: 12 }]}>
+          Confirm the currency for your destination. Changing it does not
+          convert amounts.
+        </Text>
         <View style={styles.row}>
           {(["WALK", "DRIVE"] as const).map((mode) => (
             <Chip

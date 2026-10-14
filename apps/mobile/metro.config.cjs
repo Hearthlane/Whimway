@@ -2,11 +2,42 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 const config = getDefaultConfig(__dirname);
-config.watchFolders = [path.resolve(__dirname, "../..")];
+const repositoryRoot = path.resolve(__dirname, "../..");
+config.watchFolders = [repositoryRoot];
 // Keep React and native packages on the mobile app's compatible SDK versions.
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, "node_modules"),
-  path.resolve(__dirname, "../../node_modules"),
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, "node_modules")];
+// Watch shared source, not server bundles, browser traces, captured images,
+// generated native projects, or the independent web client's dependencies.
+// Those frequently-written trees otherwise cause continuous Metro invalidation.
+const escapePattern = (value) => value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+const ignored = [
+  ".next",
+  ".git",
+  "node_modules",
+  "docs/screenshots",
+  "test-results",
+  "test-results-mobile",
+  "playwright-report",
+  "apps/mobile/dist",
+  "apps/mobile/test-dist",
+  "apps/mobile/dist-qa",
+  "apps/mobile/android",
+  "apps/mobile/ios",
+];
+config.resolver.blockList = [
+  ...(Array.isArray(config.resolver.blockList)
+    ? config.resolver.blockList
+    : config.resolver.blockList
+      ? [config.resolver.blockList]
+      : []),
+  ...ignored.map(
+    (directory) =>
+      new RegExp(
+        "^" +
+          escapePattern(path.resolve(repositoryRoot, directory)) +
+          "(?:[\\\\/].*)?$",
+      ),
+  ),
 ];
 // Local browser inspection of the native UI uses the same API origin. This
 // development-only proxy is not included in Expo exports or native binaries.

@@ -178,7 +178,7 @@ export function Chip({
     transform: [{ scale: scale.value }],
   }));
   return (
-    <Animated.View style={animated}>
+    <Animated.View style={[animated, { maxWidth: "100%" }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected }}
@@ -200,7 +200,7 @@ export function Chip({
           minHeight: 48,
         }}
       >
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { flexShrink: 1 }]}>{label}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -255,7 +255,9 @@ export function Header({
           <ArrowLeft color={c.ink} size={22} />
         </Pressable>
       ) : null}
-      <Text style={styles.label}>{title || "WHIMWAY"}</Text>
+      <Text style={[styles.label, { flexShrink: 1, textAlign: "center" }]}>
+        {title || "WHIMWAY"}
+      </Text>
       <View style={{ width: 44 }} />
     </View>
   );
@@ -296,7 +298,8 @@ export function Sheet({
       transparent
       onRequestClose={onClose}
     >
-      <View
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{
           flex: 1,
           justifyContent: "flex-end",
@@ -336,7 +339,7 @@ export function Sheet({
             {children}
           </ScrollView>
         </SafeAreaView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

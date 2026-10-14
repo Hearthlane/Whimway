@@ -9,7 +9,7 @@ export default defineConfig({
   expect: { timeout: 20000 },
   reporter: "list",
   use: {
-    baseURL: "http://localhost:8081",
+    baseURL: "http://127.0.0.1:8082",
     viewport: { width: 390, height: 844 },
     reducedMotion: "reduce",
     trace: "retain-on-failure",
@@ -30,12 +30,11 @@ export default defineConfig({
       },
     },
     {
-      command: "npm run web --prefix apps/mobile",
-      url: "http://localhost:8081",
+      command: "node scripts/serve-mobile-preview.mjs --build",
+      url: "http://127.0.0.1:8082",
       reuseExistingServer: !process.env.CI,
       timeout: 180000,
       env: {
-        EXPO_PUBLIC_API_URL: "http://localhost:8081",
         EXPO_NO_TELEMETRY: "1",
       },
     },

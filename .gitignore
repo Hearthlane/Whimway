@@ -9,6 +9,7 @@ test-results-mobile/
 *.tsbuildinfo
 .expo/
 dist/
+dist-qa/
 apps/mobile/android/
 apps/mobile/ios/
 *.jks
