@@ -35,7 +35,7 @@ import { shouldDismissSheet } from "../core/sheet-gesture";
 import * as Haptics from "expo-haptics";
 import { ArrowLeft, X, ArrowUpRight } from "lucide-react-native";
 import { router } from "expo-router";
-import { colors as c, fonts } from "../design/theme";
+import { colors as c, fonts, mobilePreviewWidth } from "../design/theme";
 export const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.display,
@@ -433,6 +433,11 @@ export function Sheet({
                 borderTopRightRadius: 28,
                 maxHeight: "85%",
                 flexShrink: 1,
+              },
+              Platform.OS === "web" && {
+                width: "100%",
+                maxWidth: mobilePreviewWidth,
+                alignSelf: "center",
               },
               animated,
             ]}

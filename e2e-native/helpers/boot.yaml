@@ -1,9 +1,6 @@
 appId: ${APP_ID || 'com.example.whimway'}
 ---
-- runFlow:
-    file: confirm-whimway-link.yaml
-    env:
-      CANCEL_STALE_LINK: "true"
+- runFlow: cancel-stale-whimway-link.yaml
 - launchApp:
     clearState: true
     permissions:
@@ -14,10 +11,7 @@ appId: ${APP_ID || 'com.example.whimway'}
     visible: "Development Build"
     timeout: 60000
 - openLink: ${EXPO_DEV_URL}
-- runFlow:
-    file: confirm-whimway-link.yaml
-    env:
-      CANCEL_STALE_LINK: "false"
+- runFlow: open-whimway-link.yaml
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000

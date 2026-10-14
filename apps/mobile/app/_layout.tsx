@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { Stack, router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -13,7 +13,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { initializeNotifications } from "../src/services/notifications";
 import { AppProvider } from "../src/state/AppState";
-import { colors } from "../src/design/theme";
+import { colors, mobilePreviewWidth } from "../src/design/theme";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function Layout() {
@@ -45,31 +45,43 @@ export default function Layout() {
   }, [loaded, error]);
   if (!loaded && !error) return null;
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <AppProvider>
-            <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.paper },
-                animation: reduced ? "none" : "slide_from_right",
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="planner" />
-              <Stack.Screen
-                name="generating"
-                options={{ gestureEnabled: false }}
-              />
-              <Stack.Screen name="plan/[id]" />
-              <Stack.Screen name="day/[id]" />
-              <Stack.Screen name="auth/callback" />
-            </Stack>
-          </AppProvider>
-        </ErrorBoundary>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <View style={{ flex: 1, backgroundColor: "#E8E5DF" }}>
+      <GestureHandlerRootView
+        style={[
+          { flex: 1 },
+          Platform.OS === "web" && {
+            width: "100%",
+            maxWidth: mobilePreviewWidth,
+            alignSelf: "center",
+            boxShadow: "0 0 40px #19263014",
+          },
+        ]}
+      >
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <AppProvider>
+              <StatusBar style="dark" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.paper },
+                  animation: reduced ? "none" : "slide_from_right",
+                }}
+              >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="planner" />
+                <Stack.Screen
+                  name="generating"
+                  options={{ gestureEnabled: false }}
+                />
+                <Stack.Screen name="plan/[id]" />
+                <Stack.Screen name="day/[id]" />
+                <Stack.Screen name="auth/callback" />
+              </Stack>
+            </AppProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </View>
   );
 }

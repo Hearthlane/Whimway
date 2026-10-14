@@ -1,7 +1,14 @@
 import React, { useState } from "react";
-import { Text, View, TextInput, Switch } from "react-native";
+import {
+  Text,
+  View,
+  TextInput,
+  Switch,
+  Pressable,
+  Keyboard,
+} from "react-native";
 import { router } from "expo-router";
-import { Asterisk, Sparkles, ArrowUpRight } from "lucide-react-native";
+import { Asterisk, Sparkles, ArrowUpRight, MapPin } from "lucide-react-native";
 import { Screen, styles, Button, Reveal, Chip } from "../../src/components/ui";
 import { RouteArt } from "../../src/components/RouteArt";
 import { LocationSearch } from "../../src/components/LocationSearch";
@@ -17,6 +24,7 @@ import {
 export default function Explore() {
   const { draft, setDraft, preferences } = useApp();
   const [prompt, setPrompt] = useState("");
+  const [entry, setEntry] = useState<"place" | "idea">("place");
   const [location, setLocation] = useState<Location>();
   const [demo, setDemo] = useState(false);
   const [selecting, setSelecting] = useState(false);
@@ -50,7 +58,7 @@ export default function Explore() {
               flexWrap: "wrap",
               columnGap: 12,
               rowGap: 8,
-              marginBottom: 28,
+              marginBottom: 24,
             },
           ]}
         >
@@ -65,23 +73,64 @@ export default function Explore() {
           </View>
           <Text style={styles.eyebrow}>GOOD DAYS AHEAD</Text>
         </View>
-        <Text style={styles.title}>
-          A little whim.{"\n"}A whole{" "}
-          <Text style={{ color: "#A13A2D" }}>good day.</Text>
+        <Text style={[styles.title, { fontSize: 36, lineHeight: 40 }]}>
+          Where are we heading?
         </Text>
-        <Text style={[styles.body, { marginTop: 12, marginBottom: 24 }]}>
-          Real places. Your kind of adventure.
+        <Text style={[styles.body, { marginTop: 10, marginBottom: 24 }]}>
+          A little whim. A whole good day.
         </Text>
       </Reveal>
       <Reveal delay={80}>
         <View style={styles.section}>
-          <Text style={styles.heading}>Where are we heading?</Text>
-          <LocationSearch
-            value={location}
-            onChange={setLocation}
-            demo={demo}
-            onBusyChange={setSelecting}
-          />
+          <View style={[styles.row, { gap: 8 }]}>
+            {(
+              [
+                ["place", "Pick a place", MapPin],
+                ["idea", "Describe a day", Sparkles],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <Pressable
+                key={value}
+                accessibilityRole="button"
+                accessibilityState={{
+                  selected: entry === value,
+                  disabled: selecting,
+                }}
+                aria-pressed={entry === value}
+                disabled={selecting}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setEntry(value);
+                }}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 52,
+                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: entry === value ? c.ink : c.line,
+                  backgroundColor: entry === value ? c.lilac : c.white,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Icon size={18} color={c.ink} />
+                <Text style={[styles.label, { flexShrink: 1 }]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={{ display: entry === "place" ? "flex" : "none" }}>
+            <LocationSearch
+              value={location}
+              onChange={setLocation}
+              demo={demo}
+              onBusyChange={setSelecting}
+            />
+          </View>
           <View
             style={[
               styles.row,
@@ -90,6 +139,7 @@ export default function Explore() {
                 backgroundColor: c.lilac,
                 borderRadius: 20,
                 padding: 16,
+                display: entry === "idea" ? "flex" : "none",
               },
             ]}
           >
@@ -100,7 +150,7 @@ export default function Explore() {
               accessibilityLabel="Describe your ideal outing"
               value={prompt}
               onChangeText={setPrompt}
-              placeholder="Or tell me your perfect day…"
+              placeholder="A slow morning, good coffee, a little fresh air…"
               placeholderTextColor={c.muted}
               style={[
                 styles.body,

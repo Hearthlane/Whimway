@@ -79,10 +79,14 @@ async function start(page: Page, prompt = "") {
   await expect(
     page.getByText("CF Toronto Eaton Centre", { exact: true }),
   ).toBeVisible();
-  if (prompt)
+  if (prompt) {
+    await page
+      .getByRole("button", { name: "Describe a day", exact: true })
+      .click();
     await page
       .getByRole("textbox", { name: "Describe your ideal outing" })
       .fill(prompt);
+  }
   await page
     .getByRole("button", {
       name: prompt ? "Make it my kind of day" : "Let’s find something good",
@@ -118,6 +122,18 @@ test("Explore, Saved and Profile render at representative portrait widths", asyn
     await expect(
       page.getByText("Where are we heading?", { exact: true }),
     ).toBeVisible();
+    const action = await page
+      .getByRole("button", {
+        name: "Let’s find something good",
+        exact: true,
+      })
+      .boundingBox();
+    const navigation = await page
+      .getByRole("tab", { name: "Explore", exact: true })
+      .boundingBox();
+    expect(action).not.toBeNull();
+    expect(navigation).not.toBeNull();
+    expect(action!.y + action!.height).toBeLessThan(navigation!.y);
     if (width === 375) {
       const search = page.getByRole("textbox", {
         name: "Search a place",
@@ -158,6 +174,57 @@ test("Explore, Saved and Profile render at representative portrait widths", asyn
   ).toHaveValue("80");
   await noOverflow(page);
   await shot(page, "profile-430");
+});
+
+test("Wide preview keeps a portrait canvas and Explore preserves both entry choices", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const search = page.getByRole("textbox", {
+    name: "Search a place",
+    exact: true,
+  });
+  const idea = page.getByRole("textbox", {
+    name: "Describe your ideal outing",
+    exact: true,
+  });
+  const explore = page.getByRole("tab", { name: "Explore", exact: true });
+  const pick = page.getByRole("button", { name: "Pick a place", exact: true });
+  const describe = page.getByRole("button", {
+    name: "Describe a day",
+    exact: true,
+  });
+  const tabs = await page.getByRole("tablist").boundingBox();
+  expect(tabs).not.toBeNull();
+  expect(tabs!.width).toBe(430);
+  expect(tabs!.x).toBe((1280 - 430) / 2);
+  await expect(pick).toHaveAttribute("aria-pressed", "true");
+  await expect(idea).not.toBeVisible();
+  await search.fill("My unfinished search");
+  await describe.click();
+  await expect(search).not.toBeVisible();
+  await expect(describe).toHaveAttribute("aria-pressed", "true");
+  await idea.fill("A quiet afternoon with coffee");
+  await pick.click();
+  await expect(search).toHaveValue("My unfinished search");
+  await describe.click();
+  await expect(idea).toHaveValue("A quiet afternoon with coffee");
+  await noOverflow(page);
+  await shot(page, "explore-portrait-canvas-1280");
+  await auditAccessibility(page, "portrait Explore entry choices");
+  await explore.click();
+  await page.goto("/profile", { waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("button", { name: "More personal preferences", exact: true })
+    .click();
+  const sheet = await page
+    .getByRole("dialog", { name: "A little more you", exact: true })
+    .boundingBox();
+  expect(sheet).not.toBeNull();
+  expect(sheet!.width).toBe(430);
+  expect(sheet!.x).toBe(tabs!.x);
+  await shot(page, "profile-portrait-sheet-1280");
 });
 
 test("Guided planning skips, preserves Back state, generates early and reopens from Saved", async ({
@@ -202,6 +269,7 @@ test("Guided planning skips, preserves Back state, generates early and reopens f
   });
   await balanced.click();
   await expect(balanced).toHaveAttribute("aria-pressed", "true");
+  await auditAccessibility(page, "selected energy choices and planner details");
   await shot(page, "planner-energy-390");
   const submitted = page.waitForRequest((request) =>
     request.url().endsWith("/api/generate"),

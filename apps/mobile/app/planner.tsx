@@ -23,8 +23,6 @@ import {
 import Animated, {
   FadeInRight,
   FadeInLeft,
-  FadeOutLeft,
-  FadeOutRight,
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
@@ -264,43 +262,13 @@ function EnergyChoice({
     </Animated.View>
   );
 }
-function ProgressSegment({
-  active,
-  reduced,
-}: {
-  active: boolean;
-  reduced: boolean;
-}) {
-  const progress = useSharedValue(active ? 1 : 0);
-  useEffect(() => {
-    progress.set(
-      reduced ? Number(active) : withTiming(Number(active), { duration: 220 }),
-    );
-  }, [active, reduced, progress]);
-  const fill = useAnimatedStyle(() => ({ opacity: progress.value }));
-  return (
-    <View
-      style={{
-        flex: 1,
-        height: 4,
-        borderRadius: 3,
-        backgroundColor: c.line,
-        overflow: "hidden",
-      }}
-    >
-      <Animated.View style={[{ flex: 1, backgroundColor: c.ink }, fill]} />
-    </View>
-  );
-}
 export default function Planner() {
   const { draft, setDraft } = useApp();
   const [queue, setQueue] = useState<Step[]>(() => remainingSteps(draft));
-  const [index, setIndex] = useState(0);
-  const [transition, setTransition] = useState<{
+  const [{ index, direction }, setPage] = useState<{
     index: number;
     direction: "forward" | "back";
-  }>();
-  const moving = useRef(false);
+  }>({ index: 0, direction: "forward" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [intent, setIntent] = useState<PlanningIntent>();
@@ -313,26 +281,12 @@ export default function Planner() {
   const largeText = useWindowDimensions().fontScale > 1.3;
   const step = queue[index];
   const ready = !step;
-  // Commit the new exit direction before changing the keyed question. This
-  // keeps the outgoing card and the incoming card moving in the same direction.
-  useEffect(() => {
-    if (!transition) return;
-    if (reduced) {
-      setIndex(transition.index);
-      moving.current = false;
-      return;
-    }
-    const frame = requestAnimationFrame(() => {
-      setIndex(transition.index);
-      moving.current = false;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [transition, reduced]);
+  const questionKey = `${queue.join(",")}:${step ?? "ready"}`;
   const move = useCallback(
     (nextIndex: number, direction: "forward" | "back") => {
-      if (moving.current) return;
-      moving.current = true;
-      setTransition({ index: nextIndex, direction });
+      setPage((page) =>
+        page.index === nextIndex ? page : { index: nextIndex, direction },
+      );
     },
     [],
   );
@@ -379,7 +333,7 @@ export default function Planner() {
         );
         setDraft(next);
         setQueue(remainingSteps(next));
-        setIndex(0);
+        setPage({ index: 0, direction: "forward" });
       })
       .catch((e) => {
         if (!controller.signal.aborted)
@@ -408,7 +362,7 @@ export default function Planner() {
       );
       setDraft(next);
       setQueue(remainingSteps(next));
-      setIndex(0);
+      setPage({ index: 0, direction: "forward" });
       setError((e as Error).message);
     }
   }
@@ -471,434 +425,447 @@ export default function Planner() {
   }
   const amounts = budgetPresets(draft.location?.currency || "CAD");
   return (
-    <Screen scrollResetKey={`${queue.join(",")}:${step ?? "ready"}`}>
-      <View
-        style={[
-          styles.row,
-          { justifyContent: "space-between", marginBottom: 24 },
-        ]}
-      >
-        <Pressable
-          accessibilityLabel="Back"
-          accessibilityRole="button"
-          onPress={back}
-          style={{ padding: 12, backgroundColor: c.white, borderRadius: 24 }}
-        >
-          <ArrowLeft color={c.ink} size={22} />
-        </Pressable>
-        <Text style={styles.eyebrow}>YOUR KIND OF DAY</Text>
-        <Text style={styles.label}>
-          {Math.min(index + 1, queue.length)} / {queue.length}
-        </Text>
-      </View>
-      <View
-        accessibilityRole="progressbar"
-        accessibilityLabel="Planning progress"
-        aria-valuemin={0}
-        aria-valuemax={Math.max(1, queue.length)}
-        aria-valuenow={ready ? Math.max(1, queue.length) : index + 1}
-        accessibilityValue={{
-          min: 0,
-          max: Math.max(1, queue.length),
-          now: ready ? Math.max(1, queue.length) : index + 1,
-        }}
-        style={[styles.row, { gap: 5, marginBottom: 30 }]}
-      >
-        {queue.map((s, i) => (
-          <ProgressSegment key={s} active={i <= index} reduced={reduced} />
-        ))}
-      </View>
-      <Notice message={error || validation} error />
-      {busy ? (
-        <Text
-          accessibilityLiveRegion="polite"
-          style={[styles.body, { marginBottom: 20 }]}
-        >
-          Reading your idea…
-        </Text>
-      ) : null}
+    <Screen scrollResetKey={questionKey}>
+      {/* Remove the outgoing page immediately. The header, progress and
+          question enter as one native view, so no old question can remain
+          underneath the next page's counter. */}
       <Animated.View
-        pointerEvents={busy ? "none" : "auto"}
-        key={step || "ready"}
+        key={questionKey}
+        collapsable={false}
         entering={
           reduced
             ? undefined
-            : transition?.direction === "back"
+            : direction === "back"
               ? FadeInLeft.duration(250)
               : FadeInRight.duration(250)
         }
-        exiting={
-          reduced
-            ? undefined
-            : transition?.direction === "back"
-              ? FadeOutRight.duration(150)
-              : FadeOutLeft.duration(150)
-        }
-        style={{ gap: 22 }}
       >
-        <Text style={styles.title}>
-          {ready ? "Your day,\nyour way." : headings[step]}
-        </Text>
-        {step === "location" ? (
-          <LocationSearch
-            value={draft.location}
-            onChange={chooseLocation}
-            demo={draft.demo}
-            initialQuery={intent?.locationQuery}
-          />
-        ) : null}
-        {step === "interests" ? (
-          <View style={[styles.row, { flexWrap: "wrap" }]}>
-            {interests.map((label, i) => (
-              <Chip
-                key={label}
-                label={
-                  label === "Interactive fun"
-                    ? "Games & entertainment"
-                    : label === "Outdoors"
-                      ? "Nature & outdoors"
-                      : label
-                }
-                selected={draft.interests?.includes(label)}
-                color={[c.mint, c.sun, c.lavender, c.peach][i % 4]}
-                onPress={() => toggle("interests", label)}
-              />
-            ))}
-          </View>
-        ) : null}
-        {step === "companion" ? (
-          <>
-            <View style={[styles.row, { flexWrap: "wrap" }]}>
-              {[
-                ["solo", "Just me"],
-                ["date", "A date"],
-                ["friends", "Friends"],
-                ["family", "Family"],
-                ["group", "A group"],
-              ].map(([value, label]) => (
-                <Chip
-                  key={value}
-                  label={label}
-                  selected={draft.companion === value}
-                  onPress={() =>
-                    update({
-                      companion: value as Draft["companion"],
-                      participants:
-                        value === "solo" ? 1 : value === "date" ? 2 : 4,
-                    })
-                  }
-                />
-              ))}
-            </View>
-            {draft.companion && draft.companion !== "solo" ? (
-              <View style={styles.row}>
-                <Text style={styles.label}>People</Text>
-                <Chip
-                  label="−"
-                  onPress={() =>
-                    update({
-                      participants: Math.max(1, (draft.participants || 2) - 1),
-                    })
-                  }
-                />
-                <Text style={styles.heading}>{draft.participants || 2}</Text>
-                <Chip
-                  label="+"
-                  onPress={() =>
-                    update({
-                      participants: Math.min(20, (draft.participants || 2) + 1),
-                    })
-                  }
-                />
-              </View>
-            ) : null}
-          </>
-        ) : null}
-        {step === "energy" ? (
-          <View
-            style={[
-              styles.row,
-              { flexWrap: "wrap", alignItems: "stretch", gap: 12 },
-            ]}
+        <View
+          style={[
+            styles.row,
+            { justifyContent: "space-between", marginBottom: 24 },
+          ]}
+        >
+          <Pressable
+            accessibilityLabel="Back"
+            accessibilityRole="button"
+            onPress={back}
+            style={{ padding: 12, backgroundColor: c.white, borderRadius: 24 }}
           >
-            {(["chill", "balanced", "active"] as const).map((value) => (
-              <EnergyChoice
-                key={value}
-                value={value}
-                selected={draft.energy === value}
-                largeText={largeText}
-                onPress={() => update({ energy: value })}
-              />
-            ))}
-          </View>
-        ) : null}
-        {step === "vibes" ? (
-          <>
-            <Text style={styles.body}>Pick up to three.</Text>
-            <View style={[styles.row, { flexWrap: "wrap" }]}>
-              {[
-                ["budget-friendly", "Budget-friendly"],
-                ["romantic", "Cute & romantic"],
-                ["exciting", "Exciting"],
-                ["cozy", "Cozy"],
-                ["trendy", "Trendy"],
-                ["hidden-gems", "Hidden gems"],
-                ["luxurious", "Luxurious"],
-                ["anything", "Anything goes"],
-              ].map(([value, label]) => (
-                <Chip
-                  key={value}
-                  label={label}
-                  selected={draft.vibes?.includes(
-                    value as NonNullable<Draft["vibes"]>[number],
-                  )}
-                  onPress={() => toggle("vibes", value)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
-        {step === "budget" ? (
-          <>
-            <Text style={styles.body}>
-              Estimated spending per person ·{" "}
-              {draft.location?.currency || "local currency"}
-            </Text>
-            <View style={[styles.row, { flexWrap: "wrap" }]}>
-              {[
-                ["Free", 0],
-                ["Affordable", amounts[0]],
-                ["Moderate", amounts[1]],
-                ["Treat myself", amounts[2]],
-              ].map(([label, value]) => (
-                <Chip
-                  key={label}
-                  label={String(label)}
-                  selected={draft.budget === value}
-                  onPress={() => update({ budget: Number(value) })}
-                />
-              ))}
-            </View>
-            <TextInput
-              style={styles.input}
-              accessibilityLabel="Custom budget per person"
-              keyboardType="decimal-pad"
-              placeholder="Custom amount"
-              value={draft.budget === undefined ? "" : String(draft.budget)}
-              onChangeText={(value) =>
-                update({ budget: value === "" ? undefined : Number(value) })
-              }
-            />
-          </>
-        ) : null}
-        {step === "date" ? (
-          <>
-            <Text style={styles.body}>
-              {draft.location?.timezone}. You can change the start time below.
-            </Text>
-            <View style={[styles.row, { flexWrap: "wrap" }]}>
-              {["Today", "Tomorrow", "I’m flexible"].map((label) => (
-                <Chip
-                  key={label}
-                  label={label}
-                  selected={
-                    draft.dateChoice ===
-                    (label === "I’m flexible"
-                      ? "flexible"
-                      : label === "Today"
-                        ? "today"
-                        : "tomorrow")
-                  }
-                  onPress={() => chooseDate(label)}
-                />
-              ))}
-            </View>
-            <Button
-              secondary
-              title={draft.date || "Pick a date"}
-              onPress={() => setPicking(true)}
-            />
-            {picking ? (
-              Platform.OS === "web" ? (
-                <TextInput
-                  accessibilityLabel="Outing date YYYY-MM-DD"
-                  style={styles.input}
-                  value={draft.date}
-                  placeholder="YYYY-MM-DD"
-                  onChangeText={(date) =>
-                    update({ date, dateChoice: "specific" })
-                  }
-                />
-              ) : (
-                <DateTimePicker
-                  value={
-                    new Date(
-                      (draft.date && DateTime.fromISO(draft.date).isValid
-                        ? draft.date
-                        : DateTime.now().toISODate()) + "T12:00:00",
-                    )
-                  }
-                  mode="date"
-                  onChange={(_, date) => {
-                    setPicking(false);
-                    if (date)
-                      update({
-                        date: DateTime.fromJSDate(date).toISODate()!,
-                        dateChoice: "specific",
-                      });
-                  }}
-                />
-              )
-            ) : null}
-          </>
-        ) : null}
-        {step === "duration" ? (
-          <>
-            <View style={[styles.row, { flexWrap: "wrap" }]}>
-              {[
-                ["A quick outing", 90],
-                ["A few hours", 240],
-                ["Half a day", 360],
-                ["All day", 600],
-              ].map(([label, value]) => (
-                <Chip
-                  key={label}
-                  label={String(label)}
-                  selected={draft.duration === value}
-                  onPress={() => update({ duration: Number(value) })}
-                />
-              ))}
-            </View>
-            <TextInput
-              style={styles.input}
-              accessibilityLabel="Custom duration in minutes"
-              keyboardType="number-pad"
-              placeholder="Custom minutes (60–720)"
-              value={draft.duration === undefined ? "" : String(draft.duration)}
-              onChangeText={(value) =>
-                update({ duration: value === "" ? undefined : Number(value) })
-              }
-            />
-          </>
-        ) : null}
-        {summary ? (
-          <View
-            style={{
-              borderColor: c.line,
-              borderWidth: 1,
-              borderRadius: 16,
-              padding: 12,
-              gap: 5,
-            }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Review day details"
-              accessibilityState={{ expanded: summaryOpen }}
-              aria-expanded={summaryOpen}
-              onPress={() => setSummaryOpen((open) => !open)}
-              style={[styles.row, { minHeight: 44, gap: 12 }]}
-            >
-              <View style={{ flex: 1, gap: 3 }}>
-                <Text style={styles.label}>{summary.location.name}</Text>
-                <Text style={[styles.body, { fontSize: 12, lineHeight: 18 }]}>
-                  {summary.duration / 60} hours · {summary.location.currency}{" "}
-                  {summary.budget} / person
-                </Text>
-              </View>
-              <ChevronDown
-                size={20}
-                color={c.ink}
-                style={{
-                  transform: [{ rotate: summaryOpen ? "180deg" : "0deg" }],
-                }}
-              />
-            </Pressable>
-            {summaryOpen ? (
-              <Animated.View
-                entering={reduced ? undefined : FadeInDown.duration(160)}
-                style={{ gap: 5, paddingTop: 8 }}
-              >
-                <Text style={styles.body}>
-                  {summary.date} at {summary.startTime} ·{" "}
-                  {summary.mode === "WALK" ? "Walking" : "Driving"}
-                </Text>
-                {!draft.known.includes("date") ||
-                !draft.known.includes("duration") ||
-                !draft.known.includes("budget") ? (
-                  <Text style={[styles.body, { fontSize: 12 }]}>
-                    Unchosen details use these starting choices. Adjust them
-                    anytime.
-                  </Text>
-                ) : null}
-                {draft.dateChoice === "flexible" ? (
-                  <Text style={[styles.body, { fontSize: 12 }]}>
-                    Using tomorrow for route and opening-hour checks.
-                  </Text>
-                ) : null}
-              </Animated.View>
-            ) : null}
-          </View>
-        ) : null}
-        {!ready ? (
-          <Button
-            title={step === "location" ? "That’s the place" : "Next"}
-            onPress={next}
-            disabled={busy || (step === "location" && !draft.location)}
-          />
-        ) : null}
-        {step && step !== "location" ? (
-          <View
-            style={{
-              flexDirection: largeText ? "column" : "row",
-              alignItems: "stretch",
-              gap: 12,
-            }}
-          >
-            <Pressable
-              onPress={next}
-              accessibilityRole="button"
+            <ArrowLeft color={c.ink} size={22} />
+          </Pressable>
+          <Text style={styles.eyebrow}>YOUR KIND OF DAY</Text>
+          <Text style={styles.label}>
+            {Math.min(index + 1, queue.length)} / {queue.length}
+          </Text>
+        </View>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel="Planning progress"
+          aria-valuemin={0}
+          aria-valuemax={Math.max(1, queue.length)}
+          aria-valuenow={ready ? Math.max(1, queue.length) : index + 1}
+          accessibilityValue={{
+            min: 0,
+            max: Math.max(1, queue.length),
+            now: ready ? Math.max(1, queue.length) : index + 1,
+          }}
+          style={[styles.row, { gap: 5, marginBottom: 30 }]}
+        >
+          {queue.map((s, i) => (
+            <View
+              key={s}
               style={{
-                flex: largeText ? undefined : 1,
-                padding: 14,
-                minHeight: 48,
-                alignItems: "center",
-                justifyContent: "center",
+                flex: 1,
+                height: 4,
+                borderRadius: 3,
+                backgroundColor: i <= index ? c.ink : c.line,
+              }}
+            />
+          ))}
+        </View>
+        <Notice message={error || validation} error />
+        {busy ? (
+          <Text
+            accessibilityLiveRegion="polite"
+            style={[styles.body, { marginBottom: 20 }]}
+          >
+            Reading your idea…
+          </Text>
+        ) : null}
+        <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 22 }}>
+          <Text style={styles.title}>
+            {ready ? "Your day,\nyour way." : headings[step]}
+          </Text>
+          {step === "location" ? (
+            <LocationSearch
+              value={draft.location}
+              onChange={chooseLocation}
+              demo={draft.demo}
+              initialQuery={intent?.locationQuery}
+            />
+          ) : null}
+          {step === "interests" ? (
+            <View style={[styles.row, { flexWrap: "wrap" }]}>
+              {interests.map((label, i) => (
+                <Chip
+                  key={label}
+                  label={
+                    label === "Interactive fun"
+                      ? "Games & entertainment"
+                      : label === "Outdoors"
+                        ? "Nature & outdoors"
+                        : label
+                  }
+                  selected={draft.interests?.includes(label)}
+                  color={[c.mint, c.sun, c.lavender, c.peach][i % 4]}
+                  onPress={() => toggle("interests", label)}
+                />
+              ))}
+            </View>
+          ) : null}
+          {step === "companion" ? (
+            <>
+              <View style={[styles.row, { flexWrap: "wrap" }]}>
+                {[
+                  ["solo", "Just me"],
+                  ["date", "A date"],
+                  ["friends", "Friends"],
+                  ["family", "Family"],
+                  ["group", "A group"],
+                ].map(([value, label]) => (
+                  <Chip
+                    key={value}
+                    label={label}
+                    selected={draft.companion === value}
+                    onPress={() =>
+                      update({
+                        companion: value as Draft["companion"],
+                        participants:
+                          value === "solo" ? 1 : value === "date" ? 2 : 4,
+                      })
+                    }
+                  />
+                ))}
+              </View>
+              {draft.companion && draft.companion !== "solo" ? (
+                <View style={styles.row}>
+                  <Text style={styles.label}>People</Text>
+                  <Chip
+                    label="−"
+                    onPress={() =>
+                      update({
+                        participants: Math.max(
+                          1,
+                          (draft.participants || 2) - 1,
+                        ),
+                      })
+                    }
+                  />
+                  <Text style={styles.heading}>{draft.participants || 2}</Text>
+                  <Chip
+                    label="+"
+                    onPress={() =>
+                      update({
+                        participants: Math.min(
+                          20,
+                          (draft.participants || 2) + 1,
+                        ),
+                      })
+                    }
+                  />
+                </View>
+              ) : null}
+            </>
+          ) : null}
+          {step === "energy" ? (
+            <View
+              style={[
+                styles.row,
+                { flexWrap: "wrap", alignItems: "stretch", gap: 12 },
+              ]}
+            >
+              {(["chill", "balanced", "active"] as const).map((value) => (
+                <EnergyChoice
+                  key={value}
+                  value={value}
+                  selected={draft.energy === value}
+                  largeText={largeText}
+                  onPress={() => update({ energy: value })}
+                />
+              ))}
+            </View>
+          ) : null}
+          {step === "vibes" ? (
+            <>
+              <Text style={styles.body}>Pick up to three.</Text>
+              <View style={[styles.row, { flexWrap: "wrap" }]}>
+                {[
+                  ["budget-friendly", "Budget-friendly"],
+                  ["romantic", "Cute & romantic"],
+                  ["exciting", "Exciting"],
+                  ["cozy", "Cozy"],
+                  ["trendy", "Trendy"],
+                  ["hidden-gems", "Hidden gems"],
+                  ["luxurious", "Luxurious"],
+                  ["anything", "Anything goes"],
+                ].map(([value, label]) => (
+                  <Chip
+                    key={value}
+                    label={label}
+                    selected={draft.vibes?.includes(
+                      value as NonNullable<Draft["vibes"]>[number],
+                    )}
+                    onPress={() => toggle("vibes", value)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
+          {step === "budget" ? (
+            <>
+              <Text style={styles.body}>
+                Estimated spending per person ·{" "}
+                {draft.location?.currency || "local currency"}
+              </Text>
+              <View style={[styles.row, { flexWrap: "wrap" }]}>
+                {[
+                  ["Free", 0],
+                  ["Affordable", amounts[0]],
+                  ["Moderate", amounts[1]],
+                  ["Treat myself", amounts[2]],
+                ].map(([label, value]) => (
+                  <Chip
+                    key={label}
+                    label={String(label)}
+                    selected={draft.budget === value}
+                    onPress={() => update({ budget: Number(value) })}
+                  />
+                ))}
+              </View>
+              <TextInput
+                style={styles.input}
+                accessibilityLabel="Custom budget per person"
+                keyboardType="decimal-pad"
+                placeholder="Custom amount"
+                value={draft.budget === undefined ? "" : String(draft.budget)}
+                onChangeText={(value) =>
+                  update({ budget: value === "" ? undefined : Number(value) })
+                }
+              />
+            </>
+          ) : null}
+          {step === "date" ? (
+            <>
+              <Text style={styles.body}>
+                {draft.location?.timezone}. You can change the start time below.
+              </Text>
+              <View style={[styles.row, { flexWrap: "wrap" }]}>
+                {["Today", "Tomorrow", "I’m flexible"].map((label) => (
+                  <Chip
+                    key={label}
+                    label={label}
+                    selected={
+                      draft.dateChoice ===
+                      (label === "I’m flexible"
+                        ? "flexible"
+                        : label === "Today"
+                          ? "today"
+                          : "tomorrow")
+                    }
+                    onPress={() => chooseDate(label)}
+                  />
+                ))}
+              </View>
+              <Button
+                secondary
+                title={draft.date || "Pick a date"}
+                onPress={() => setPicking(true)}
+              />
+              {picking ? (
+                Platform.OS === "web" ? (
+                  <TextInput
+                    accessibilityLabel="Outing date YYYY-MM-DD"
+                    style={styles.input}
+                    value={draft.date}
+                    placeholder="YYYY-MM-DD"
+                    onChangeText={(date) =>
+                      update({ date, dateChoice: "specific" })
+                    }
+                  />
+                ) : (
+                  <DateTimePicker
+                    value={
+                      new Date(
+                        (draft.date && DateTime.fromISO(draft.date).isValid
+                          ? draft.date
+                          : DateTime.now().toISODate()) + "T12:00:00",
+                      )
+                    }
+                    mode="date"
+                    onChange={(_, date) => {
+                      setPicking(false);
+                      if (date)
+                        update({
+                          date: DateTime.fromJSDate(date).toISODate()!,
+                          dateChoice: "specific",
+                        });
+                    }}
+                  />
+                )
+              ) : null}
+            </>
+          ) : null}
+          {step === "duration" ? (
+            <>
+              <View style={[styles.row, { flexWrap: "wrap" }]}>
+                {[
+                  ["A quick outing", 90],
+                  ["A few hours", 240],
+                  ["Half a day", 360],
+                  ["All day", 600],
+                ].map(([label, value]) => (
+                  <Chip
+                    key={label}
+                    label={String(label)}
+                    selected={draft.duration === value}
+                    onPress={() => update({ duration: Number(value) })}
+                  />
+                ))}
+              </View>
+              <TextInput
+                style={styles.input}
+                accessibilityLabel="Custom duration in minutes"
+                keyboardType="number-pad"
+                placeholder="Custom minutes (60–720)"
+                value={
+                  draft.duration === undefined ? "" : String(draft.duration)
+                }
+                onChangeText={(value) =>
+                  update({ duration: value === "" ? undefined : Number(value) })
+                }
+              />
+            </>
+          ) : null}
+          {summary ? (
+            <View
+              style={{
+                borderColor: c.line,
+                borderWidth: 1,
+                borderRadius: 16,
+                padding: 12,
+                gap: 5,
               }}
             >
-              <Text style={styles.label}>Skip for now</Text>
-            </Pressable>
-            {draft.location ? (
-              <View style={{ flex: largeText ? undefined : 1 }}>
-                <Button
-                  title="Make my day"
-                  secondary
-                  icon={false}
-                  onPress={generate}
-                  disabled={busy || !summary}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Review day details"
+                accessibilityState={{ expanded: summaryOpen }}
+                aria-expanded={summaryOpen}
+                onPress={() => setSummaryOpen((open) => !open)}
+                style={[styles.row, { minHeight: 44, gap: 12 }]}
+              >
+                <View style={{ flex: 1, gap: 3 }}>
+                  <Text style={styles.label}>{summary.location.name}</Text>
+                  <Text style={[styles.body, { fontSize: 12, lineHeight: 18 }]}>
+                    {summary.duration / 60} hours · {summary.location.currency}{" "}
+                    {summary.budget} / person
+                  </Text>
+                </View>
+                <ChevronDown
+                  size={20}
+                  color={c.ink}
+                  style={{
+                    transform: [{ rotate: summaryOpen ? "180deg" : "0deg" }],
+                  }}
                 />
-              </View>
-            ) : null}
-          </View>
-        ) : draft.location ? (
-          <Button
-            title="Make my day"
-            secondary={!ready}
-            onPress={generate}
-            disabled={busy || !summary}
-          />
-        ) : null}
-        {draft.location ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setAdvanced(true)}
-            style={{ padding: 12 }}
-          >
-            <Text style={[styles.label, { textAlign: "center" }]}>
-              Fine-tune time, travel & area
-            </Text>
-          </Pressable>
-        ) : null}
+              </Pressable>
+              {summaryOpen ? (
+                <Animated.View
+                  entering={reduced ? undefined : FadeInDown.duration(160)}
+                  style={{ gap: 5, paddingTop: 8 }}
+                >
+                  <Text style={styles.body}>
+                    {summary.date} at {summary.startTime} ·{" "}
+                    {summary.mode === "WALK" ? "Walking" : "Driving"}
+                  </Text>
+                  {!draft.known.includes("date") ||
+                  !draft.known.includes("duration") ||
+                  !draft.known.includes("budget") ? (
+                    <Text style={[styles.body, { fontSize: 12 }]}>
+                      Unchosen details use these starting choices. Adjust them
+                      anytime.
+                    </Text>
+                  ) : null}
+                  {draft.dateChoice === "flexible" ? (
+                    <Text style={[styles.body, { fontSize: 12 }]}>
+                      Using tomorrow for route and opening-hour checks.
+                    </Text>
+                  ) : null}
+                </Animated.View>
+              ) : null}
+            </View>
+          ) : null}
+          {!ready ? (
+            <Button
+              title={step === "location" ? "That’s the place" : "Next"}
+              onPress={next}
+              disabled={busy || (step === "location" && !draft.location)}
+            />
+          ) : null}
+          {step && step !== "location" ? (
+            <View
+              style={{
+                flexDirection: largeText ? "column" : "row",
+                alignItems: "stretch",
+                gap: 12,
+              }}
+            >
+              <Pressable
+                onPress={next}
+                accessibilityRole="button"
+                style={{
+                  flex: largeText ? undefined : 1,
+                  padding: 14,
+                  minHeight: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={styles.label}>Skip for now</Text>
+              </Pressable>
+              {draft.location ? (
+                <View style={{ flex: largeText ? undefined : 1 }}>
+                  <Button
+                    title="Make my day"
+                    secondary
+                    icon={false}
+                    onPress={generate}
+                    disabled={busy || !summary}
+                  />
+                </View>
+              ) : null}
+            </View>
+          ) : draft.location ? (
+            <Button
+              title="Make my day"
+              secondary={!ready}
+              onPress={generate}
+              disabled={busy || !summary}
+            />
+          ) : null}
+          {draft.location ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setAdvanced(true)}
+              style={{ padding: 12 }}
+            >
+              <Text style={[styles.label, { textAlign: "center" }]}>
+                Fine-tune time, travel & area
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       </Animated.View>
       <Sheet
         error={error || validation}

@@ -11,6 +11,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.muted,
+        tabBarLabelPosition: "below-icon",
         tabBarStyle: {
           backgroundColor: colors.paper,
           borderTopColor: colors.line,

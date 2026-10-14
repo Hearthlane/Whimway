@@ -1,0 +1,22 @@
+# Accept only the observed iOS confirmation after requesting this app's dev link.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            visible: '^Open in [“"]Whimway[”"][?]$'
+          commands:
+            - takeScreenshot: ios-system-whimway-link-confirmation
+            - tapOn:
+                text: "^Open$"
+                below:
+                  text: '^Open in [“"]Whimway[”"][?]$'
+                label: "Open only the requested Whimway development link"
+            - extendedWaitUntil:
+                notVisible: '^Open in [“"]Whimway[”"][?]$'
+                timeout: 10000

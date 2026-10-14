@@ -1,5 +1,4 @@
-# Handle only the observed iOS confirmation for this app's requested dev link.
-# Cancel a stale prompt before a fresh reset; accept only after requesting a link.
+# Cancel only a leftover own-app link confirmation before resetting the app.
 appId: ${APP_ID || 'com.example.whimway'}
 ---
 - runFlow:
@@ -12,12 +11,12 @@ appId: ${APP_ID || 'com.example.whimway'}
           when:
             visible: '^Open in [“"]Whimway[”"][?]$'
           commands:
-            - takeScreenshot: ios-system-whimway-link-confirmation
+            - takeScreenshot: ios-system-stale-whimway-link
             - tapOn:
-                text: "${typeof CANCEL_STALE_LINK !== 'undefined' && CANCEL_STALE_LINK === 'true' ? '^Cancel$' : '^Open$'}"
+                text: "^Cancel$"
                 below:
                   text: '^Open in [“"]Whimway[”"][?]$'
-                label: "Respond only to the iOS Open-in-Whimway confirmation"
+                label: "Cancel only the stale Whimway development link"
             - extendedWaitUntil:
                 notVisible: '^Open in [“"]Whimway[”"][?]$'
                 timeout: 10000

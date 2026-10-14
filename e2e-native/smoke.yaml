@@ -111,10 +111,7 @@ tags: [native, fixtures, smoke]
     visible: "Development Build|Where are we heading[?]"
     timeout: 60000
 - openLink: ${EXPO_DEV_URL}
-- runFlow:
-    file: helpers/confirm-whimway-link.yaml
-    env:
-      CANCEL_STALE_LINK: "false"
+- runFlow: helpers/open-whimway-link.yaml
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000
