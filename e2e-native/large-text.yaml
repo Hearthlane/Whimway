@@ -1,0 +1,26 @@
+appId: ${APP_ID || 'com.example.whimway'}
+name: Native Android font-scale 2.0 outing
+tags: [native, fixtures, accessibility]
+---
+- runFlow: helpers/boot.yaml
+- takeScreenshot: native-large-text-explore
+- runFlow: helpers/create-fixture-plan.yaml
+- takeScreenshot: native-large-text-itinerary
+- scrollUntilVisible:
+    element: "Adjust plan"
+    direction: DOWN
+- tapOn: "Adjust plan"
+- assertVisible: "Make room for your day"
+- scrollUntilVisible:
+    element: "Update my plan"
+    direction: DOWN
+- takeScreenshot: native-large-text-sheet
+- tapOn: "Close"
+- scrollUntilVisible:
+    element: "Start my day"
+    direction: UP
+- tapOn: "Start my day"
+- scrollUntilVisible:
+    element: ".*done here.*"
+    direction: DOWN
+- takeScreenshot: native-large-text-day
