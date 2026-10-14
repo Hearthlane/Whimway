@@ -413,6 +413,7 @@ test("Editing preserves locks and updates itinerary revision; live progress pers
   await expect(
     page.getByText("0 DONE · 0 SKIPPED", { exact: true }),
   ).toBeVisible();
+  await auditAccessibility(page, "Day progress and guidance layout");
   await shot(page, "day-390");
   await page
     .getByRole("button", { name: "I’m done here ✓", exact: true })

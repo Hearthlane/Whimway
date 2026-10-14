@@ -355,18 +355,17 @@ export default function DayScreen() {
       </View>
       {current ? (
         <>
-          <Text style={styles.title}>{current.place.name}</Text>
-          <Text style={styles.body}>{current.place.address}</Text>
-          <RouteMap
-            plan={plan}
-            selectedId={current.placeId}
-            userLocation={location}
-            showUserLocation={following}
-            guideLeg={leg}
-            style={{ height: 290, borderRadius: 24 }}
-          />
-          {plan.demo ? (
-            <Notice message="Development fixture. Map positions and route estimates do not describe a real outing." />
+          <Text style={[styles.title, { fontSize: 32, lineHeight: 36 }]}>
+            {current.place.name}
+          </Text>
+          <Text style={[styles.body, { fontSize: 14, lineHeight: 20 }]}>
+            {current.place.address}
+          </Text>
+          {next ? (
+            <Text style={[styles.body, { fontSize: 13, lineHeight: 19 }]}>
+              <Text style={styles.label}>UP NEXT · </Text>
+              {next.place.name} · {next.minutes} min
+            </Text>
           ) : null}
           <View
             style={[
@@ -390,6 +389,24 @@ export default function DayScreen() {
             Time until your planned finish: {clock} min. Spending is estimated,
             not tracked.
           </Text>
+          {plan.demo ? (
+            <Text
+              style={[
+                styles.body,
+                { fontSize: 12, lineHeight: 18, color: c.error },
+              ]}
+            >
+              Development fixture · Synthetic stops and estimates.
+            </Text>
+          ) : null}
+          <RouteMap
+            plan={plan}
+            selectedId={current.placeId}
+            userLocation={location}
+            showUserLocation={following}
+            guideLeg={leg}
+            style={{ height: 290, borderRadius: 24 }}
+          />
           {leg?.verified ? (
             <Text style={styles.label}>
               {Math.round(leg.minutes)} min{" "}
@@ -434,22 +451,6 @@ export default function DayScreen() {
             disabled={finishing}
             onPress={() => void finish(true)}
           />
-          {next ? (
-            <View
-              style={{
-                padding: 20,
-                backgroundColor: c.lilac,
-                borderRadius: 22,
-                gap: 8,
-              }}
-            >
-              <Text style={styles.eyebrow}>UP NEXT</Text>
-              <Text style={styles.heading}>{next.place.name}</Text>
-              <Text style={styles.body}>
-                {next.minutes} min · {next.reason}
-              </Text>
-            </View>
-          ) : null}
         </>
       ) : (
         <>

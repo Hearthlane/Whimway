@@ -231,7 +231,7 @@ export function LocationSearch({
           placeholderTextColor={c.muted}
           style={[
             styles.input,
-            Platform.OS === "web" && { outlineWidth: 0 },
+            Platform.OS === "web" && { outlineWidth: 0, outlineStyle: "solid" },
             {
               flex: 1,
               borderWidth: 0,
