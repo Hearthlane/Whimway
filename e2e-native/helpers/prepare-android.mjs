@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 
 const appId = "com.example.whimway";
-const scopes = new Set(["smoke", "reminders", "large-text"]);
+const scopes = new Set(["smoke", "reminders", "large-text", "release"]);
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const ownPackage = /(?:^|[^\w.])com\.example\.whimway(?=$|[^\w.])/;
 
@@ -107,7 +107,7 @@ export async function prepareAndroidApp({
     !scopes.has(scope)
   )
     throw Error(
-      "Android reset requires a disposable CI emulator and a known Debug scope.",
+      "Android reset requires a disposable CI emulator and a known native scope.",
     );
   const directory = path.join(
     repository,
@@ -222,7 +222,7 @@ if (
   try {
     if (process.argv.length !== 4)
       throw Error(
-        "Usage: prepare-android.mjs emulator-serial smoke|reminders|large-text",
+        "Usage: prepare-android.mjs emulator-serial smoke|reminders|large-text|release",
       );
     const evidence = await prepareAndroidApp({
       serial: process.argv[2],

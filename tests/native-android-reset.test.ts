@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import {
+  readFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -104,6 +112,93 @@ function fixture(snapshots: Snapshot[] = [quiet]) {
     run,
     proof: () => JSON.parse(files.get("reset-evidence.json") || "{}"),
   };
+}
+
+// Execute the actual runner's shell branches with isolated fake executables.
+// No adb, Maestro, APK install, emulator or app process is started by this test.
+function runNativeRunner(override: Record<string, string> = {}) {
+  const directory = mkdtempSync(path.join(tmpdir(), "whimway-release-reset-"));
+  try {
+    mkdirSync(path.join(directory, "native-test-artifacts"), {
+      recursive: true,
+    });
+    writeFileSync(
+      path.join(directory, "native-test-artifacts/ready.json"),
+      "{}",
+    );
+    const release = path.join(
+      directory,
+      "apps/mobile/android/app/build/outputs/apk/release/app-release.apk",
+    );
+    mkdirSync(path.dirname(release), { recursive: true });
+    writeFileSync(release, "isolated runner fixture");
+    const stubs = `
+record() { printf '%s\\n' "$*" >> harness-trace.txt; }
+adb() {
+  record "adb $*"
+  if [[ "$1" == get-serialno ]]; then printf 'emulator-5554\\n'; return 0; fi
+  [[ "$1" == -s && "$2" == emulator-5554 ]] || return 99
+  shift 2
+  case "$*" in
+    "shell cmd package resolve-activity "*)
+      printf '%s\\n' "\${HARNESS_ACTIVITY:-com.example.whimway/.MainActivity}" ;;
+    "shell am start -W -n "*)
+      printf 'Status: ok\\n'; return "\${HARNESS_COLD_STATUS:-0}" ;;
+  esac
+  return 0
+}
+node() {
+  record "node $*"
+  if [[ "\${3:-}" == release ]]; then return "\${HARNESS_RESET_STATUS:-0}"; fi
+  return 0
+}
+maestro() {
+  record "maestro $*"
+  if [[ "$*" == *e2e-native/release-launch.yaml ]]; then return "\${HARNESS_FLOW_STATUS:-0}"; fi
+  return 0
+}
+`;
+    const runner = readFileSync(
+      path.join(root, "scripts/run-android-native-qa.sh"),
+      "utf8",
+    ).replaceAll("\r\n", "\n");
+    const bash =
+      process.platform === "win32"
+        ? path.join(
+            process.env.ProgramFiles || "C:/Program Files",
+            "Git/bin/bash.exe",
+          )
+        : "bash";
+    const result = spawnSync(bash, ["--noprofile", "--norc", "-s"], {
+      cwd: directory,
+      input: stubs + runner,
+      encoding: "utf8",
+      timeout: 10000,
+      env: { ...process.env, CI: "true", ...override },
+    });
+    if (result.error) throw result.error;
+    return {
+      status: result.status,
+      stderr: result.stderr,
+      trace: readFileSync(path.join(directory, "harness-trace.txt"), "utf8")
+        .trim()
+        .split(/\r?\n/),
+      coldStart: readFileSync(
+        path.join(
+          directory,
+          "native-test-artifacts/android-release-activity-cold-start.txt",
+        ),
+        "utf8",
+      ),
+    };
+  } finally {
+    if (
+      path.resolve(path.dirname(directory)) !== path.resolve(tmpdir()) ||
+      !path.basename(directory).startsWith("whimway-release-reset-")
+    )
+      throw Error("Refusing cleanup outside the runner test directory.");
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 describe("Android fixture reset and task teardown", () => {
@@ -368,11 +463,26 @@ describe("Android fixture reset and task teardown", () => {
     expect(proof.observations.length - lastBusy - 1).toBeGreaterThanOrEqual(5);
     expect(proof.stable_quiet_ms).toBeGreaterThanOrEqual(2000);
   });
+  it("accepts Release only after its old package process/task removal stays quiet for two continuous seconds", async () => {
+    const f = fixture([busy, quiet, quiet, busy, quiet]);
+    const proof = await prepareAndroidApp({ ...f.options, scope: "release" });
+    expect(proof).toMatchObject({ prepared: true, scope: "release" });
+    expect(proof.stable_quiet_ms).toBeGreaterThanOrEqual(2000);
+    expect(
+      proof.observations.map((state) => state.quiet).lastIndexOf(false),
+    ).toBe(3);
+    expect(
+      f.run.mock.calls.filter(([, args]) => args.includes("clear")),
+    ).toHaveLength(1);
+    expect(f.run.mock.calls.some(([, args]) => args.includes("start"))).toBe(
+      false,
+    );
+  });
   it.each([
     { serial: "R58physical" },
     { serial: "emulator-5554;evil" },
     { env: { CI: "false" } },
-    { scope: "release" },
+    { scope: "unsupported" },
   ])(
     "refuses non-CI, physical, malformed, or unsupported targets before issuing adb %#",
     async (override) => {
@@ -418,25 +528,30 @@ describe("Android fixture reset and task teardown", () => {
     expect(f.run).toHaveBeenCalledTimes(1);
     expect([...f.files.values()]).toContain("device unavailable");
   });
-  it("fails a persistent pending task within the overall deadline without launching or retrying clear", async () => {
-    const f = fixture([busy]);
-    await expect(prepareAndroidApp(f.options)).rejects.toThrow(
-      "did not become stably quiet",
-    );
-    expect(f.proof()).toMatchObject({ prepared: false });
-    expect(f.proof().observations.length).toBeLessThanOrEqual(60);
-    expect(f.proof().observations.at(-1).elapsed_ms).toBeLessThanOrEqual(30000);
-    expect(
-      f.run.mock.calls.filter(([, args]) => args.includes("clear")),
-    ).toHaveLength(1);
-  });
-  it("passes the host-prepared sentinel only after successful Debug resets and preserves manual/iOS defaults", () => {
+  it.each(["smoke", "release"])(
+    "fails %s with a persistent pending task within the overall deadline without launching or retrying clear",
+    async (scope) => {
+      const f = fixture([busy]);
+      await expect(prepareAndroidApp({ ...f.options, scope })).rejects.toThrow(
+        "did not become stably quiet",
+      );
+      expect(f.proof()).toMatchObject({ prepared: false });
+      expect(f.proof().observations.length).toBeLessThanOrEqual(60);
+      expect(f.proof().observations.at(-1).elapsed_ms).toBeLessThanOrEqual(
+        30000,
+      );
+      expect(
+        f.run.mock.calls.filter(([, args]) => args.includes("clear")),
+      ).toHaveLength(1);
+    },
+  );
+  it("passes the host-prepared sentinel only after successful native resets and preserves manual/iOS defaults", () => {
     const runner = readFileSync(
       path.join(root, "scripts/run-android-native-qa.sh"),
       "utf8",
     );
-    expect(runner.match(/-e ANDROID_HOST_PREPARED=1/g)).toHaveLength(3);
-    for (const scope of ["smoke", "reminders", "large-text"])
+    expect(runner.match(/-e ANDROID_HOST_PREPARED=1/g)).toHaveLength(4);
+    for (const scope of ["smoke", "reminders", "large-text", "release"])
       expect(runner).toContain(
         `if node e2e-native/helpers/prepare-android.mjs "$emulator_serial" ${scope}; then`,
       );
@@ -465,6 +580,143 @@ describe("Android fixture reset and task teardown", () => {
     expect(branches[1].commands[0].launchApp).toMatchObject({
       clearState: false,
       stopApp: false,
+    });
+  });
+
+  it("launches Release only after APK replacement and successful host preparation, without another clear/stop", () => {
+    const execution = runNativeRunner();
+    expect(execution.status, execution.stderr).toBe(0);
+    const releaseInstall = execution.trace.findIndex((line) =>
+      line.includes(
+        "install apps/mobile/android/app/build/outputs/apk/release/app-release.apk",
+      ),
+    );
+    const releaseReset = execution.trace.findIndex(
+      (line) =>
+        line ===
+        "node e2e-native/helpers/prepare-android.mjs emulator-5554 release",
+    );
+    const coldStart = execution.trace.findIndex((line) =>
+      line.includes("shell am start -W -n com.example.whimway/.MainActivity"),
+    );
+    const releaseFlow = execution.trace.findIndex(
+      (line) =>
+        line.startsWith("maestro ") &&
+        line.includes("e2e-native/release-launch.yaml"),
+    );
+    expect(releaseInstall).toBeGreaterThan(-1);
+    expect(releaseReset).toBeGreaterThan(releaseInstall);
+    expect(coldStart).toBeGreaterThan(releaseReset);
+    expect(releaseFlow).toBeGreaterThan(coldStart);
+    expect(execution.trace[releaseFlow]).toContain(
+      "-e ANDROID_HOST_PREPARED=1",
+    );
+    expect(
+      execution.trace
+        .slice(releaseReset + 1)
+        .some((line) => /shell (?:am force-stop|pm clear)/.test(line)),
+    ).toBe(false);
+    expect(
+      execution.trace.filter((line) => line.includes("shell am start -W")),
+    ).toHaveLength(1);
+    expect(execution.coldStart).toContain("Status: ok");
+  });
+
+  it("fails a refused Release reset without resolving, launching or running a Release UI flow", () => {
+    const execution = runNativeRunner({ HARNESS_RESET_STATUS: "1" });
+    expect(execution.status).toBe(1);
+    expect(
+      execution.trace.some((line) => line.includes("resolve-activity")),
+    ).toBe(false);
+    expect(
+      execution.trace.some((line) => line.includes("shell am start -W")),
+    ).toBe(false);
+    expect(
+      execution.trace.some((line) =>
+        line.includes("e2e-native/release-launch.yaml"),
+      ),
+    ).toBe(false);
+    expect(execution.coldStart).toContain(
+      "no cold launch or UI probe attempted",
+    );
+    expect(
+      execution.trace.some((line) =>
+        line.includes("shell dumpsys meminfo com.example.whimway"),
+      ),
+    ).toBe(true);
+  });
+
+  it.each([
+    ["foreign launcher", { HARNESS_ACTIVITY: "com.another.app/.MainActivity" }],
+    ["failed native cold launch", { HARNESS_COLD_STATUS: "1" }],
+  ])(
+    "retains a %s failure without launching the Release Maestro flow",
+    (_name, override) => {
+      const execution = runNativeRunner(override);
+      expect(execution.status).toBe(1);
+      expect(
+        execution.trace.some((line) =>
+          line.includes("e2e-native/release-launch.yaml"),
+        ),
+      ).toBe(false);
+      expect(
+        execution.trace.filter((line) =>
+          line.endsWith("emulator-5554 release"),
+        ),
+      ).toHaveLength(1);
+      expect(
+        execution.trace.some((line) =>
+          line.includes("shell dumpsys gfxinfo com.example.whimway"),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it("retains a genuine Release UI failure with one probe and no automatic relaunch", () => {
+    const execution = runNativeRunner({ HARNESS_FLOW_STATUS: "1" });
+    expect(execution.status).toBe(1);
+    expect(
+      execution.trace.filter((line) =>
+        line.includes("e2e-native/release-launch.yaml"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      execution.trace.filter((line) => line.includes("shell am start -W")),
+    ).toHaveLength(1);
+  });
+
+  it("uses a no-clear/no-stop prepared Release branch while preserving the clean manual launch and real 120-second Explore assertion", () => {
+    const release = yaml.load(
+      readFileSync(
+        path.join(root, "e2e-native/release-launch.yaml"),
+        "utf8",
+      ).split(/\r?\n---\r?\n/)[1],
+    ) as {
+      runFlow?: {
+        when: Record<string, unknown>;
+        commands: { launchApp: Record<string, unknown> }[];
+      };
+      extendedWaitUntil?: { visible: string; timeout: number };
+    }[];
+    const branches = release
+      .filter((command) => command.runFlow?.commands?.[0]?.launchApp)
+      .map((command) => command.runFlow!);
+    expect(branches).toHaveLength(2);
+    expect(branches[0].when.true).toContain("ANDROID_HOST_PREPARED !== '1'");
+    expect(branches[0].commands[0].launchApp.clearState).toBe(true);
+    expect(branches[0].commands[0].launchApp.stopApp).toBeUndefined();
+    expect(branches[1].when).toMatchObject({ platform: "Android" });
+    expect(branches[1].when.true).toContain("ANDROID_HOST_PREPARED === '1'");
+    expect(branches[1].commands[0].launchApp).toEqual({
+      clearState: false,
+      stopApp: false,
+      permissions: { location: "deny", notifications: "deny" },
+    });
+    expect(
+      release.find((command) => command.extendedWaitUntil)?.extendedWaitUntil,
+    ).toEqual({
+      visible: "Where are we heading[?]",
+      timeout: 120000,
     });
   });
 });

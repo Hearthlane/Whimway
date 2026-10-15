@@ -88,13 +88,23 @@ device_adb install apps/mobile/android/app/build/outputs/apk/release/app-release
 release_installed=true
 echo 'Standalone Release APK installed; diagnostics refer to Release only.' > native-test-artifacts/android-release-probe-state.txt
 device_adb shell settings get system font_scale > native-test-artifacts/android-release-font-scale.txt
-device_adb shell am force-stop "$app_id"
-activity=$(device_adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$app_id" | tr -d '\r' | tail -n 1)
-if [[ "$activity" == "$app_id/"* ]]; then
-  device_adb shell am start -W -n "$activity" > native-test-artifacts/android-release-activity-cold-start.txt 2>&1 || result=1
+# Release needs the same observed teardown as Debug. Do not clear or stop the
+# measured launch again in Maestro: an old task's delayed kill can otherwise
+# terminate the new Release process before it attaches (retained run38805051576).
+if node e2e-native/helpers/prepare-android.mjs "$emulator_serial" release; then
+  activity=$(device_adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$app_id" | tr -d '\r' | tail -n 1)
+  if [[ "$activity" == "$app_id/"* ]]; then
+    if device_adb shell am start -W -n "$activity" > native-test-artifacts/android-release-activity-cold-start.txt 2>&1; then
+      maestro test --test-output-dir native-results/android-release -e APP_ID="$app_id" -e ANDROID_HOST_PREPARED=1 e2e-native/release-launch.yaml || result=1
+    else
+      result=1
+    fi
+  else
+    echo 'Could not resolve the installed Release launcher activity.' > native-test-artifacts/android-release-activity-cold-start.txt
+    result=1
+  fi
 else
-  echo 'Could not resolve the installed Release launcher activity.' > native-test-artifacts/android-release-activity-cold-start.txt
+  echo 'Release app/task teardown did not become stably quiet; no cold launch or UI probe attempted.' > native-test-artifacts/android-release-activity-cold-start.txt
   result=1
 fi
-maestro test --test-output-dir native-results/android-release -e APP_ID="$app_id" e2e-native/release-launch.yaml || result=1
 exit "$result"
