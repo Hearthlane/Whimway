@@ -21,6 +21,26 @@ const target = {
   webSocketDebuggerUrl:
     "ws://127.0.0.1:8081/inspector/debug?device=simulator&page=1",
 };
+// Shape emitted by installed RN 0.86.3 InspectorPackagerConnection.cpp:257-278
+// and dev-middleware InspectorProxy.js:175-205: modern C++ pages omit vm. Expo's
+// headless middleware disables multiple-debugger support without adding vm.
+const modernTarget = {
+  id: target.id,
+  title: "com.example.whimway (CI Simulator)",
+  description: "React Native Bridgeless [C++ connection]",
+  appId: "com.example.whimway",
+  type: "node",
+  webSocketDebuggerUrl: target.webSocketDebuggerUrl,
+  deviceName: "CI Simulator",
+  reactNative: {
+    logicalDeviceId: "simulator",
+    capabilities: {
+      nativePageReloads: true,
+      nativeSourceCodeFetching: false,
+      supportsMultipleDebuggers: false,
+    },
+  },
+};
 
 // Executes the helper's actual Runtime.evaluate expressions in an isolated JS
 // context. These mocks verify probe boundaries; they establish no OS capability.
@@ -94,6 +114,78 @@ function runtime(
 }
 
 describe("native iOS Keychain probe diagnostics", () => {
+  it("accepts the installed modern producer's absent vm only with nativePageReloads, while retaining actual Hermes verification", async () => {
+    expect(Object.hasOwn(modernTarget, "vm")).toBe(false);
+    expect(selectWhimwayTarget([modernTarget], endpoint)?.toString()).toBe(
+      target.webSocketDebuggerUrl,
+    );
+    expect(
+      selectWhimwayTarget([{ ...modernTarget, vm: "" }], endpoint)?.toString(),
+    ).toBe(target.webSocketDebuggerUrl);
+    // Discovery is not engine proof. The native expression still refuses a
+    // target whose actual running JS environment has no HermesInternal.
+    const error = await runtime({ hermes: false })
+      .check()
+      .catch((caught: unknown) => caught);
+    expect(checkDiagnostic(error)).toEqual({
+      stage: "module",
+      reason: "hermes-not-initialized",
+    });
+  });
+  it.each([
+    { ...modernTarget, reactNative: { logicalDeviceId: "simulator" } },
+    {
+      ...modernTarget,
+      reactNative: {
+        ...modernTarget.reactNative,
+        capabilities: { nativePageReloads: false },
+      },
+    },
+    { ...modernTarget, vm: "", reactNative: { logicalDeviceId: "simulator" } },
+    { ...modernTarget, vm: "V8" },
+    { ...modernTarget, vm: "JavaScriptCore" },
+    { ...modernTarget, vm: "unknown" },
+    { ...modernTarget, vm: null },
+    { ...modernTarget, vm: undefined },
+    { ...modernTarget, type: "page" },
+    { ...modernTarget, appId: "com.other.app" },
+  ])(
+    "rejects absent modern capabilities, explicit unknown/non-Hermes vm or foreign target metadata %#",
+    (metadata) => {
+      expect(selectWhimwayTarget([metadata], endpoint)).toBeNull();
+    },
+  );
+  it("retains exact modern target identity, device binding and local debugger URL guards", () => {
+    for (const metadata of [
+      { ...modernTarget, id: "another-1" },
+      {
+        ...modernTarget,
+        reactNative: {
+          ...modernTarget.reactNative,
+          logicalDeviceId: "another",
+        },
+      },
+      {
+        ...modernTarget,
+        webSocketDebuggerUrl:
+          "ws://example.com:8081/inspector/debug?device=simulator&page=1",
+      },
+      {
+        ...modernTarget,
+        webSocketDebuggerUrl: target.webSocketDebuggerUrl + "&extra=1",
+      },
+      {
+        ...modernTarget,
+        webSocketDebuggerUrl: target.webSocketDebuggerUrl + "#fragment",
+      },
+    ])
+      expect(() => selectWhimwayTarget([metadata], endpoint)).toThrow(
+        "unsafe-debugger-endpoint",
+      );
+    expect(() =>
+      selectWhimwayTarget([modernTarget, modernTarget], endpoint),
+    ).toThrow("ambiguous-whimway-target");
+  });
   it.each([undefined, null, secret])(
     "accepts Expo's documented absent/string registration state %# without exporting it",
     async (registration) => {

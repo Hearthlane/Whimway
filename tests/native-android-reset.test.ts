@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import {
   androidResetState,
   prepareAndroidApp,
@@ -38,6 +39,35 @@ const historicalFocus = {
     "utf8",
   ),
 };
+// Exact failed-before-launch process/task dumps from hosted Android14 run
+// 38670492664. Message 11/12 is a queue index; what=4 hides package warnings.
+const queuedWarnings = [
+  {
+    scope: "smoke",
+    processHash:
+      "5cceb8282290a8583245c83bab255ef6c2d43faf416f42ec581802a66efaed55",
+    taskHash:
+      "05bd28582beefb51437f51c448a52975362633c6f2a089e291efb28c106fec07",
+  },
+  {
+    scope: "reminders",
+    processHash:
+      "21382ce43bab279892f88b39be14d94d0bc52a015d5289b8301931145fe0e06a",
+    taskHash:
+      "85391c77ae96af10b122bb72870e4f6f69fa1e9e796c616cf0e24281560723f6",
+  },
+].map((source) => {
+  const directory = path.join(
+    root,
+    "tests/fixtures/android-reset-38670492664",
+    source.scope,
+  );
+  return {
+    ...source,
+    processes: readFileSync(path.join(directory, "processes.txt"), "utf8"),
+    tasks: readFileSync(path.join(directory, "tasks.txt"), "utf8"),
+  };
+});
 
 function fixture(snapshots: Snapshot[] = [quiet]) {
   let time = 0,
@@ -77,6 +107,136 @@ function fixture(snapshots: Snapshot[] = [quiet]) {
 }
 
 describe("Android fixture reset and task teardown", () => {
+  it.each(queuedWarnings)(
+    "recognizes the actual retained $scope warning-dismissal queue without a live package task",
+    ({ processes, tasks, processHash, taskHash }) => {
+      expect(createHash("sha256").update(processes).digest("hex")).toBe(
+        processHash,
+      );
+      expect(createHash("sha256").update(tasks).digest("hex")).toBe(taskHash);
+      expect(tasks).toMatch(
+        /Message \d+: \{ when=-\d+ms what=4 obj=com\.example\.whimway target=com\.android\.server\.wm\.AppWarnings\$UiHandler \}/,
+      );
+      expect(androidResetState(processes, tasks)).toEqual({
+        processes: 0,
+        tasks: 0,
+        activities: 0,
+        pending_kill: false,
+        quiet: true,
+      });
+      expect(
+        androidResetState(
+          processes.replace(/\r?\n/g, "\r\n"),
+          tasks.replace(/\r?\n/g, "\r\n"),
+        ),
+      ).toMatchObject({ quiet: true });
+    },
+  );
+  it.each(queuedWarnings)(
+    "requires continuous two-second quiet and one clear for the retained $scope queue",
+    async (snapshot) => {
+      const f = fixture([snapshot, snapshot, busy, snapshot]);
+      const proof = await prepareAndroidApp({
+        ...f.options,
+        scope: snapshot.scope,
+      });
+      const lastBusy = proof.observations
+        .map((value) => value.quiet)
+        .lastIndexOf(false);
+      expect(lastBusy).toBe(2);
+      expect(proof.stable_quiet_ms).toBeGreaterThanOrEqual(2000);
+      expect(proof.observations.length - lastBusy - 1).toBeGreaterThanOrEqual(
+        5,
+      );
+      expect(proof).toMatchObject({ prepared: true, scope: snapshot.scope });
+      expect(
+        f.run.mock.calls.filter(([, args]) => args.includes("clear")),
+      ).toHaveLength(1);
+      expect(f.run.mock.calls.some(([, args]) => args.includes("start"))).toBe(
+        false,
+      );
+    },
+  );
+  it.each(queuedWarnings)(
+    "retains all live package guards alongside the known $scope warning queue",
+    ({ processes, tasks }) => {
+      expect(
+        androidResetState(
+          processes +
+            "8180 com.example.whimway\n8181 com.example.whimway:worker\n",
+          tasks,
+        ),
+      ).toMatchObject({ processes: 2, quiet: false });
+      expect(
+        androidResetState(
+          processes,
+          tasks +
+            "\n  * Task{old #10 type=standard A=10192:com.example.whimway}\n",
+        ),
+      ).toMatchObject({ tasks: 1, activities: 0, quiet: false });
+      expect(
+        androidResetState(
+          processes,
+          tasks + "\nActivityRecord{old com.example.whimway/.MainActivity}\n",
+        ),
+      ).toMatchObject({ activities: 1, tasks: 0, quiet: false });
+      expect(
+        androidResetState(
+          processes,
+          tasks.replace(
+            "obj=com.example.whimway",
+            "obj=ActivityRecord{old com.example.whimway/.MainActivity}",
+          ),
+        ),
+      ).toMatchObject({ activities: 1, quiet: false });
+      expect(androidResetState(processes, tasks + pendingTask)).toMatchObject({
+        tasks: 1,
+        activities: 1,
+        pending_kill: true,
+        quiet: false,
+      });
+    },
+  );
+  it.each(queuedWarnings)(
+    "fails closed on unknown or extended package queue forms beside the retained $scope snapshot",
+    ({ processes, tasks }) => {
+      const original = tasks.match(
+        /^[ \t]*Message \d+: \{ when=-\d+ms what=4 obj=com\.example\.whimway target=com\.android\.server\.wm\.AppWarnings\$UiHandler \}[ \t]*\r?$/m,
+      )?.[0];
+      expect(original).toBeTruthy();
+      for (const changed of [
+        original!.replace("what=4", "what=5"),
+        original!.replace("what=4", "what=14"),
+        original!.replace(
+          "AppWarnings$UiHandler",
+          "AppWarnings$UnknownHandler",
+        ),
+        original!.replace(
+          "AppWarnings$UiHandler",
+          "ActivityTaskSupervisor$UiHandler",
+        ),
+        original!.replace(
+          "obj=com.example.whimway",
+          "obj=com.example.whimway:worker",
+        ),
+        original!.replace("what=4", "what=4 arg1=1"),
+        original!.replace("what=4", "callback=com.example.whimway what=4"),
+        original!.replace(/when=-\d+ms/, "when=unrecognized"),
+        original! + " extra-state=true",
+        "unknown-prefix " + original!,
+      ]) {
+        expect(() =>
+          androidResetState(processes, tasks.replace(original!, changed)),
+        ).toThrow("Unrecognized package-specific");
+      }
+      expect(() =>
+        androidResetState(
+          processes,
+          tasks + "\nunknown-format com.example.whimway\n",
+        ),
+      ).toThrow("Unrecognized package-specific");
+    },
+  );
   it("recognizes the actual retained historical-focus snapshot without mistaking it for a live task", () => {
     expect(historicalFocus.tasks).toContain(
       "mLastFocusedRootTask=Task{b8f2cc1 #10 type=standard A=10192:com.example.whimway}",

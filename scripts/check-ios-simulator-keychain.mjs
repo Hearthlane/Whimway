@@ -68,10 +68,11 @@ export function selectWhimwayTarget(targets, endpoint) {
       target.type === "node" &&
       target.reactNative &&
       typeof target.reactNative === "object" &&
-      // RN 0.86 advertises its modern bridgeless HostTarget with an empty VM
-      // label; the actual Hermes engine is checked inside that process below.
+      // RN 0.86's modern C++ connection omits vm from its page description;
+      // older modern targets can send an empty label. Both require the modern
+      // capability. The actual Hermes engine is checked inside that process.
       (target.vm === "Hermes" ||
-        (target.vm === "" &&
+        ((!("vm" in target) || target.vm === "") &&
           target.reactNative.capabilities?.nativePageReloads === true)),
   );
   if (ownTargets.length > 1) throw new Error("ambiguous-whimway-target");

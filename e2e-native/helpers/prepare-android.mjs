@@ -40,10 +40,20 @@ export function androidResetState(processes, activities) {
   // Ignore only its observed Android 14 format for the unknown-reference check;
   // actual Task/ActivityRecord/process/pending-kill observations remain intact.
   // AOSP TaskDisplayArea.java mLastFocusedRootTask; CI run38664294144 line141.
-  const currentReferences = activities.replace(
-    /^[ \t]*mLastFocusedRootTask=Task\{[a-f0-9]+ #\d+ type=standard A=\d+:com\.example\.whimway\}[ \t]*\r?$/gm,
-    "",
-  );
+  const currentReferences = activities
+    .replace(
+      /^[ \t]*mLastFocusedRootTask=Task\{[a-f0-9]+ #\d+ type=standard A=\d+:com\.example\.whimway\}[ \t]*\r?$/gm,
+      "",
+    )
+    // pm clear also queues AppWarnings' package-dialog dismissal. Android14
+    // AppWarnings.java UiHandler what=4 accepts a String package name; it does
+    // not represent a process, task, ActivityRecord or deferred process kill.
+    // Only remove the exact observed queue-row shape from unknown references.
+    // Retained run38670492664 smoke/reminders; primary source in fixture README.
+    .replace(
+      /^[ \t]*Message \d+: \{ when=-\d+ms what=4 obj=com\.example\.whimway target=com\.android\.server\.wm\.AppWarnings\$UiHandler \}[ \t]*\r?$/gm,
+      "",
+    );
   if (
     ownPackage.test(currentReferences) &&
     !ownTasks.length &&
