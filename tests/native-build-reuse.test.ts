@@ -763,7 +763,7 @@ describe("Original compiler-source provenance through GitHub job metadata", () =
     for (const target of ["ios-release", "ios-debug"])
       expect(workflowCompatibility(unsigned, current, target)).toBe(false);
     expect(current).toContain(
-      "node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json || result=1",
+      "node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json 2> native-test-artifacts/ios-keychain-diagnostics.json || result=1",
     );
     expect(current).toContain("name: Collect bounded iOS startup diagnostics");
   });

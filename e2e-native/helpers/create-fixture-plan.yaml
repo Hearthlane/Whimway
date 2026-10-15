@@ -1,13 +1,57 @@
 appId: ${APP_ID || 'com.example.whimway'}
 ---
-- scrollUntilVisible:
-    element: "Use synthetic development fixtures"
-    direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # At the largest iOS text size the default center swipe starts inside the
+      # tall primary action. Use the ScrollView's inset padding, above tabs.
+      - repeat:
+          times: 12
+          while:
+            notVisible: "Use synthetic development fixtures"
+          commands:
+            - swipe:
+                start: 96%, 75%
+                end: 96%, 25%
+                duration: 700
+      - assertVisible: "Use synthetic development fixtures"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Use synthetic development fixtures"
+          direction: DOWN
 - tapOn: "Use synthetic development fixtures"
-- scrollUntilVisible:
-    element: "Search a place"
-    direction: UP
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # The retained failed tap was at y61, behind the safe-area header even
+      # though accessibility considered the field visible. Center before focus.
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: UP
+          centerElement: true
+          timeout: 30000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: UP
 - tapOn: "Search a place"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "Search a place"
+            focused: true
+          timeout: 10000
 - inputText: "Toronto"
 - extendedWaitUntil:
     visible: "CF Toronto Eaton Centre"

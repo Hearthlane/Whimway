@@ -1,0 +1,91 @@
+{
+  "run": "38664294144",
+  "artifact": "11942903927",
+  "description": "Exact selected node attributes from retained Maestro failure hierarchies; no synthetic app state.",
+  "reminders": {
+    "source": "ios-reminders/2026-10-15_015953/Native fixture reminders schedule and cancel/screen-hierarchy/step-035-assertCondition-CF_Toronto_Eaton_Centre.json",
+    "nodes": [
+      {
+        "accessibilityText": "Whimway",
+        "bounds": "[0,0][402,874]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Search a place",
+        "hintText": "City, neighbourhood, anywhere…",
+        "bounds": "[73,34][361,88]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Let’s find something good",
+        "bounds": "[24,161][378,217]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Use synthetic development fixtures",
+        "value": "1",
+        "text": "1",
+        "bounds": "[24,652][87,680]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "true"
+      },
+      {
+        "accessibilityText": "Explore, tab, 1 of 3",
+        "bounds": "[0,780][134,832]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "true",
+        "checked": "false"
+      }
+    ]
+  },
+  "largeText": {
+    "source": "ios-large-text/2026-10-15_020218/Native large-text outing/screen-hierarchy/step-030-scrollUntilVisible-Use_synthetic_develop.json",
+    "nodes": [
+      {
+        "accessibilityText": "Whimway",
+        "bounds": "[0,0][402,874]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Search a place",
+        "hintText": "City, neighbourhood, anywhere…",
+        "bounds": "[73,97][361,204]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Let’s find something good",
+        "bounds": "[24,388][378,645]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Explore, tab, 1 of 3",
+        "bounds": "[0,780][134,832]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "true",
+        "checked": "false"
+      }
+    ]
+  }
+}

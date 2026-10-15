@@ -27,9 +27,22 @@ appId: ${APP_ID || 'com.example.whimway'}
     timeout: 60000
 - openLink: ${EXPO_DEV_URL}
 - runFlow: open-whimway-link.yaml
-- extendedWaitUntil:
-    visible: "Where are we heading[?]"
-    timeout: 120000
+# The first retained iOS Metro bundle took 132.9s. Bound only that platform's
+# cold startup; this still fails on the actual heading rather than sleeping.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: "Where are we heading[?]"
+          timeout: 300000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "Where are we heading[?]"
+          timeout: 120000
 - assertNotVisible: "(?s).*ERR_NOTIFICATIONS_KEYCHAIN_ACCESS.*"
 - extendedWaitUntil:
     visible: "^Profile(, tab, 3 of 3)?$"
