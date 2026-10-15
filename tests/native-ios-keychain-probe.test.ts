@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createContext, runInContext } from "node:vm";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+import { createServer, type IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
 import {
   checkDiagnostic,
   checkKeychain,
@@ -114,6 +117,135 @@ function runtime(
 }
 
 describe("native iOS Keychain probe diagnostics", () => {
+  it("sends the validated loopback Origin through Node's real WebSocket and satisfies the installed RN handshake guard", async () => {
+    const require = createRequire(
+      new URL("../apps/mobile/package.json", import.meta.url),
+    );
+    const middleware =
+      require.resolve("@react-native/dev-middleware/package.json");
+    const InspectorProxy = require(
+      fileURLToPath(
+        new URL(
+          "./dist/inspector-proxy/InspectorProxy.js",
+          pathToFileURL(middleware),
+        ),
+      ),
+    ).default;
+    type TestSocket = {
+      send: (value: string) => void;
+      on: (name: string, listener: (value: Buffer) => void) => void;
+      terminate: () => void;
+    };
+    type TestServer = {
+      removeAllListeners: (name: string) => void;
+      on: (name: string, listener: (socket: TestSocket) => void) => void;
+      emit: (
+        name: string,
+        socket: TestSocket,
+        request: IncomingMessage,
+      ) => void;
+      handleUpgrade: (
+        request: IncomingMessage,
+        socket: Duplex,
+        head: Buffer,
+        listener: (client: TestSocket) => void,
+      ) => void;
+      clients: Set<TestSocket>;
+      close: (callback: () => void) => void;
+    };
+    const server = createServer();
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const address = server.address();
+    if (!address || typeof address === "string")
+      throw new Error("Expected a loopback TCP address.");
+    const origin = `http://127.0.0.1:${address.port}`;
+    let rejected = 0;
+    const proxy = new InspectorProxy(
+      new URL(origin),
+      undefined,
+      {},
+      {
+        error() {
+          rejected += 1;
+        },
+      },
+    );
+    const endpoints = proxy.createWebSocketListeners() as Record<
+      string,
+      TestServer
+    >;
+    const inspector = endpoints["/inspector/debug"];
+    // Keep the installed verifyClient origin guard unchanged. Replace only
+    // native-device handling with an intentional CDP refusal: this transport
+    // test must never fabricate successful native Keychain evidence.
+    inspector.removeAllListeners("connection");
+    inspector.on("connection", (socket) =>
+      socket.on("message", (raw) => {
+        const message = JSON.parse(raw.toString());
+        socket.send(
+          JSON.stringify({
+            id: message.id,
+            result: { result: { value: false } },
+          }),
+        );
+      }),
+    );
+    const origins: (string | undefined)[] = [];
+    server.on("upgrade", (request, socket, head) => {
+      origins.push(request.headers.origin);
+      inspector.handleUpgrade(request, socket, head, (client) =>
+        inspector.emit("connection", client, request),
+      );
+    });
+    const url = new URL(
+      `ws://127.0.0.1:${address.port}/inspector/debug?device=fixture&page=1`,
+    );
+    try {
+      const blocked = new WebSocket(url);
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error("Missing rejected-handshake event.")),
+          2000,
+        );
+        blocked.addEventListener(
+          "error",
+          () => {
+            clearTimeout(timer);
+            resolve();
+          },
+          { once: true },
+        );
+        blocked.addEventListener(
+          "open",
+          () => {
+            clearTimeout(timer);
+            reject(new Error("Missing Origin was accepted."));
+          },
+          { once: true },
+        );
+      });
+      const rejectedBefore = rejected;
+      const attemptsBefore = origins.length;
+      expect(rejectedBefore).toBeGreaterThan(0);
+      expect(origins.every((value) => value === undefined)).toBe(true);
+      await expect(checkKeychain(url)).rejects.toThrow(
+        "native-check-start-failed",
+      );
+      expect(origins.length).toBeGreaterThan(attemptsBefore);
+      expect(
+        origins.slice(attemptsBefore).every((value) => value === origin),
+      ).toBe(true);
+      expect(rejected).toBe(rejectedBefore);
+    } finally {
+      for (const endpoint of Object.values(endpoints)) {
+        for (const socket of endpoint.clients) socket.terminate();
+        await new Promise<void>((resolve) => endpoint.close(resolve));
+      }
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
   it("accepts the installed modern producer's absent vm only with nativePageReloads, while retaining actual Hermes verification", async () => {
     expect(Object.hasOwn(modernTarget, "vm")).toBe(false);
     expect(selectWhimwayTarget([modernTarget], endpoint)?.toString()).toBe(

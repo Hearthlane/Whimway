@@ -150,7 +150,16 @@ tags: [native, fixtures, smoke]
 - extendedWaitUntil:
     visible: "Where are we heading[?]"
     timeout: 120000
-- tapOn: "^Saved(, tab, 2 of 3)?$"
+- takeScreenshot: native-explore-before-progress-restore
+# The retained iOS post-relaunch tap completed while Explore remained selected.
+# Retry only this idempotent tab interaction if its hierarchy does not change.
+- tapOn:
+    text: "^Saved(, tab, 2 of 3)?$"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "GOOD DAYS, KEPT CLOSE"
+    timeout: 10000
+- takeScreenshot: native-saved-before-progress-restore
 - extendedWaitUntil:
     visible: "A day with a little more whim.*"
     timeout: 20000

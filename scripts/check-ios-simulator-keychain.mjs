@@ -135,7 +135,7 @@ const expression = `(async () => {
 
 /**
  * @param {URL} socketUrl
- * @param {new (url: string) => Pick<WebSocket, "readyState" | "addEventListener" | "send" | "close">} Socket
+ * @param {new (url: string, options?: {headers: {Origin: string}}) => Pick<WebSocket, "readyState" | "addEventListener" | "send" | "close">} Socket
  */
 export async function checkKeychain(socketUrl, Socket = WebSocket) {
   // Recheck transport even when this function is imported independently.
@@ -150,7 +150,12 @@ export async function checkKeychain(socketUrl, Socket = WebSocket) {
   )
     throw new Error("unsafe-debugger-endpoint");
   return new Promise((resolve, reject) => {
-    const socket = new Socket(socketUrl.toString());
+    // RN 0.86's InspectorProxy requires an Origin even on loopback. Node 24's
+    // built-in Undici WebSocket supports the documented WebSocketInit headers
+    // extension. Derive this only from the revalidated local HTTP endpoint.
+    const socket = new Socket(socketUrl.toString(), {
+      headers: { Origin: endpoint.origin },
+    });
     let settled = false;
     let poll,
       requestId = 0,

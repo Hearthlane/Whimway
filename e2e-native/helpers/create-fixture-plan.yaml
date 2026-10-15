@@ -187,7 +187,32 @@ appId: ${APP_ID || 'com.example.whimway'}
     element: "Make my day"
     direction: DOWN
 - tapOn: "Make my day"
+# At iOS's largest accessibility size the generated title is visible while
+# Start my day is below the viewport. Confirm generation, read the fixture
+# disclosure, then actually scroll to the CTA instead of waiting at the top.
+- extendedWaitUntil:
+    visible: "A day with a little more whim.*"
+    timeout: 90000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element: "Development fixture.*"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- assertVisible: "Development fixture.*"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+      - takeScreenshot: native-plan-start-ready
 - extendedWaitUntil:
     visible: "Start my day"
     timeout: 90000
-- assertVisible: "Development fixture.*"
