@@ -747,4 +747,24 @@ describe("Original compiler-source provenance through GitHub job metadata", () =
     for (const file of ["native-smoke.png", "launch.txt", "devices.json"])
       expect(runtimeUpload).toContain(`apps/mobile/ios/${file}`);
   });
+  it("requires fresh iOS products when enabling Xcode Simulator entitlement packaging without changing Android compilation", () => {
+    const current = readFileSync(
+      path.join(repository, ".github/workflows/native.yml"),
+      "utf8",
+    );
+    const unsigned = current.replaceAll(
+      "CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-",
+      "CODE_SIGNING_ALLOWED=NO",
+    );
+    expect(
+      current.match(/CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-/g),
+    ).toHaveLength(2);
+    expect(workflowCompatibility(unsigned, current, "android")).toBe(true);
+    for (const target of ["ios-release", "ios-debug"])
+      expect(workflowCompatibility(unsigned, current, target)).toBe(false);
+    expect(current).toContain(
+      "node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json || result=1",
+    );
+    expect(current).toContain("name: Collect bounded iOS startup diagnostics");
+  });
 });

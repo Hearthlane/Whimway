@@ -191,7 +191,7 @@ jobs:
       # arrive; the next run can reuse its retained, source-checked app.
       cancel-in-progress: false
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: apps/mobile
@@ -257,7 +257,7 @@ jobs:
         id: ios_compile
         if: steps.reuse_ios_release.outputs.reused != 'true'
         run: |
-          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-build.log 2>&1
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build > ios/native-build.log 2>&1
           tar -czf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator Whimway.app
       - name: Unpack verified Release simulator app
         if: steps.reuse_ios_release.outputs.reused == 'true'
@@ -266,13 +266,53 @@ jobs:
           cp .expo/native-reuse/release/whimway-ios-simulator.tar.gz ios/whimway-ios-simulator.tar.gz
           tar -xzf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator
       - name: Launch the actual simulator app and capture first frame
-        timeout-minutes: 12
+        timeout-minutes: 14
         run: |
           cp ios-devices.json ios/devices.json
           node -e 'const cp=require("node:child_process"); const r=cp.spawnSync("xcrun",["simctl","bootstatus",process.env.WHIMWAY_SIMULATOR_ID,"-b"],{stdio:"inherit",timeout:600000}); if(r.error)throw r.error; process.exit(r.status??1)'
           WHIMWAY_BINARY_SOURCE_SHA='${{ steps.reuse_ios_release.outputs.binary_source_sha || github.event.pull_request.head.sha || github.sha }}' bash ../../scripts/sign-ios-simulator-test-app.sh release ios/build/Build/Products/Release-iphonesimulator/Whimway.app ios/whimway-ios-simulator.tar.gz
           xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/release/Whimway.app"
-          xcrun simctl launch "$WHIMWAY_SIMULATOR_ID" com.example.whimway > ios/launch.txt
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          import path from 'node:path';
+          import { setTimeout } from 'node:timers/promises';
+          const directory = path.join(process.env.GITHUB_WORKSPACE, 'native-test-artifacts/ios-launch');
+          mkdirSync(directory, { recursive: true });
+          const simulator = process.env.WHIMWAY_SIMULATOR_ID;
+          const evidence = { simulator, attempts: [], springboard: [] };
+          const run = (name, args, timeout = 10000) => {
+            const result = spawnSync('xcrun', args, { encoding: 'utf8', timeout, maxBuffer: 2 * 1024 * 1024 });
+            writeFileSync(path.join(directory, name + '.stdout.txt'), result.stdout || '');
+            writeFileSync(path.join(directory, name + '.stderr.txt'), result.stderr || '');
+            return { status: result.status, signal: result.signal, error: result.error?.code || null, stdout: result.stdout || '', stderr: result.stderr || '' };
+          };
+          // Boot completion alone does not record FrontBoard/SpringBoard state.
+          // Record a bounded readiness observation; unknown OS service labels
+          // remain diagnostic evidence rather than a substitute app assertion.
+          for (let i = 0; i < 6; i++) {
+            const result = run('springboard-' + (i + 1), ['simctl', 'spawn', simulator, 'launchctl', 'list']);
+            const ready = result.status === 0 && result.stdout.split('\n').some(line => /^\s*[1-9]\d*\s+-?\d+\s+com\.apple\.SpringBoard\s*$/.test(line));
+            evidence.springboard.push({ time: new Date().toISOString(), status: result.status, observed_live_pid: ready, error: result.error });
+            if (ready || i === 5) break;
+            await setTimeout(2000);
+          }
+          let launched = false;
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const time = new Date().toISOString();
+            const result = run('launch-' + attempt, ['simctl', 'launch', simulator, 'com.example.whimway'], 45000);
+            evidence.attempts.push({ attempt, time, status: result.status, signal: result.signal, error: result.error });
+            writeFileSync('ios/launch.txt', evidence.attempts.map(value => JSON.stringify(value)).join('\n') + '\n' + result.stdout + result.stderr);
+            if (result.status === 0) { launched = true; break; }
+            // Retry only the observed generic service denial. A specific
+            // security/dyld/crash report must remain a failure immediately.
+            const genericDenial = /FBSOpenApplicationServiceErrorDomain/.test(result.stderr) && /SBMainWorkspace/.test(result.stderr) && !/security|invalid code signature|dyld|crash|inadequate entitlements/i.test(result.stderr);
+            if (!genericDenial || attempt === 2) break;
+            await setTimeout(5000);
+          }
+          writeFileSync(path.join(directory, 'launch-evidence.json'), JSON.stringify({ ...evidence, launched }, null, 2) + '\n');
+          if (!launched) throw Error('Simulator launch failed; retained all attempts and startup diagnostics.');
+          NODE
           sleep 5
           xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
       - name: Retain simulator app and runtime evidence
@@ -290,7 +330,7 @@ jobs:
         id: ios_debug_compile
         if: steps.reuse_ios_debug.outputs.reused != 'true'
         run: |
-          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > ios/native-debug-build.log 2>&1
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build > ios/native-debug-build.log 2>&1
           tar -czf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator Whimway.app
       - name: Unpack verified Debug simulator app
         if: steps.reuse_ios_debug.outputs.reused == 'true'
@@ -328,6 +368,51 @@ jobs:
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size > native-test-artifacts/ios-content-size.txt
           maestro test --test-output-dir native-results/ios-large-text -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/large-text.yaml || result=1
           exit "$result"
+      - name: Collect bounded iOS startup diagnostics
+        if: always()
+        timeout-minutes: 4
+        working-directory: .
+        run: |
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+          import { homedir } from 'node:os';
+          import path from 'node:path';
+          const simulator = process.env.WHIMWAY_SIMULATOR_ID;
+          if (!/^[A-Fa-f0-9-]{36}$/.test(simulator || '')) throw Error('Expected the selected CI simulator ID.');
+          const directory = path.join(process.env.GITHUB_WORKSPACE, 'native-test-artifacts/ios-startup-diagnostics');
+          mkdirSync(directory, { recursive: true });
+          const commands = [];
+          const capture = (name, command, args, timeout = 15000) => {
+            const result = spawnSync(command, args, { encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024 });
+            writeFileSync(path.join(directory, name + '.stdout.txt'), result.stdout || '');
+            writeFileSync(path.join(directory, name + '.stderr.txt'), result.stderr || '');
+            commands.push({ name, time: new Date().toISOString(), status: result.status, signal: result.signal, error: result.error?.code || null });
+            return result;
+          };
+          capture('devices', 'xcrun', ['simctl', 'list', 'devices', 'available', '-j']);
+          capture('services', 'xcrun', ['simctl', 'spawn', simulator, 'launchctl', 'list']);
+          capture('installed-app', 'xcrun', ['simctl', 'appinfo', simulator, 'com.example.whimway']);
+          capture('final-screen', 'xcrun', ['simctl', 'io', simulator, 'screenshot', path.join(directory, 'final-screen.png')]);
+          const predicate = 'process == "Whimway" OR eventMessage CONTAINS[c] "com.example.whimway" OR ((process == "SpringBoard" OR process == "runningboardd" OR process == "amfid" OR process == "launchd_sim" OR process == "securityd") AND (messageType == error OR messageType == fault))';
+          capture('simulator-log', 'xcrun', ['simctl', 'spawn', simulator, 'log', 'show', '--style', 'compact', '--last', '5m', '--info', '--debug', '--predicate', predicate], 45000);
+          capture('host-log', '/usr/bin/log', ['show', '--style', 'compact', '--last', '5m', '--info', '--debug', '--predicate', 'process == "Whimway" OR eventMessage CONTAINS[c] "com.example.whimway" OR (process == "CoreSimulatorService" AND (messageType == error OR messageType == fault))'], 45000);
+          const reports = [];
+          const roots = [path.join(homedir(), 'Library/Logs/DiagnosticReports'), path.join(homedir(), 'Library/Developer/CoreSimulator/Devices', simulator, 'data/Library/Logs/CrashReporter')];
+          for (const root of roots) {
+            if (!existsSync(root) || lstatSync(root).isSymbolicLink()) continue;
+            const candidates = [root, path.join(root, 'Retired')].filter(value => existsSync(value) && !lstatSync(value).isSymbolicLink());
+            for (const candidate of candidates) for (const entry of readdirSync(candidate, { withFileTypes: true })) {
+              if (reports.length >= 12 || !entry.isFile() || !/^(Whimway|SpringBoard)[-_].*\.(ips|crash)$/.test(entry.name)) continue;
+              const source = path.join(candidate, entry.name), stat = lstatSync(source);
+              if (stat.size > 4 * 1024 * 1024 || Date.now() - stat.mtimeMs > 60 * 60 * 1000) continue;
+              const target = reports.length + '-' + entry.name;
+              copyFileSync(source, path.join(directory, target));
+              reports.push({ file: target, bytes: stat.size });
+            }
+          }
+          writeFileSync(path.join(directory, 'diagnostics.json'), JSON.stringify({ simulator_only: true, time: new Date().toISOString(), commands, reports }, null, 2) + '\n');
+          NODE
       - name: Retain iOS native runtime evidence
         if: always()
         uses: actions/upload-artifact@v7

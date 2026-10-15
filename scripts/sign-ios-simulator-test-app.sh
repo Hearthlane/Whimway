@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Prepare a separate, locally signed simulator test copy. Never sign the retained
-# compiler product or archive: those remain the binary-reuse source of truth.
+# Verify Xcode's ad-hoc simulator product and prepare a separate runtime copy.
+# Never re-sign the compiler output: Simulator iOS entitlements belong in the
+# linker-created __TEXT sections, distinct from the host macOS code signature.
 set -euo pipefail
 
 fail() { echo "Simulator signing refused: $1" >&2; exit 1; }
@@ -70,7 +71,7 @@ const checkoutSha = checkout.status === 0 ? checkout.stdout.trim() : '';
 if (!/^[a-f0-9]{40}$/.test(checkoutSha)) throw Error('Checkout provenance is unavailable.');
 writeFileSync(path.join(output, 'signing-evidence.json'), JSON.stringify({
   simulator_only: true,
-  signing_mode: 'ad-hoc-local',
+  signing_mode: 'xcode-ad-hoc-verified-copy',
   configuration,
   checkout_sha: checkoutSha,
   binary_source_sha: binarySha || null,
@@ -101,24 +102,59 @@ while IFS= read -r -d '' nested; do
   [[ "$nested" == "$runtime_app" ]] || fail 'Nested app/extension targets are unsupported.'
 done < <(find "$runtime_app" -type d \( -name '*.app' -o -name '*.appex' -o -name '*.xpc' \) -print0)
 
-cat > "$output/simulator-test.entitlements" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>application-identifier</key><string>com.example.whimway</string>
-  <key>keychain-access-groups</key><array><string>com.example.whimway</string></array>
-</dict></plist>
-PLIST
-plutil -lint "$output/simulator-test.entitlements"
-# Never use --deep to sign: frameworks receive no application entitlements.
-while IFS= read -r -d '' nested; do
-  codesign --force --sign - --timestamp=none "$nested"
-done < <(find "$runtime_app" -depth \( \( -type d -name '*.framework' \) -o \( -type f -name '*.dylib' \) \) -print0)
-codesign --force --sign - --timestamp=none --generate-entitlement-der --entitlements "$output/simulator-test.entitlements" "$runtime_app"
 codesign --verify --deep --strict --verbose=2 "$runtime_app" > "$output/verification.txt" 2>&1
 codesign --display --verbose=4 "$runtime_app" > "$output/signature.txt" 2>&1
 codesign --display --entitlements - --xml "$runtime_app" > "$output/runtime-entitlements.plist" 2> "$output/entitlements-display.txt"
-plutil -convert json -o "$output/runtime-entitlements.json" "$output/runtime-entitlements.plist"
+# Release signing may contain no host entitlements at all.
+if [[ -s "$output/runtime-entitlements.plist" ]]; then
+  plutil -convert json -o "$output/runtime-entitlements.json" "$output/runtime-entitlements.plist"
+else
+  printf '{}\n' > "$output/runtime-entitlements.json"
+fi
+
+# Read the compiler-created sections without modifying any Mach-O bytes. The
+# arm64-only compile contract permits only a thin 64-bit little-endian binary.
+node --input-type=module - "$runtime_app/Whimway" "$output" <<'NODE'
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+const [file, output] = process.argv.slice(2), binary = readFileSync(file);
+if (binary.length < 32 || binary.readUInt32LE(0) !== 0xfeedfacf || binary.readUInt32LE(4) !== 0x100000c)
+  throw Error('Expected the arm64 thin Simulator executable.');
+const commandCount = binary.readUInt32LE(16), commandEnd = 32 + binary.readUInt32LE(20);
+if (commandCount > 4096 || commandEnd > binary.length) throw Error('Invalid Mach-O load commands.');
+const sections = new Map();
+const name = offset => binary.subarray(offset, offset + 16).toString('utf8').replace(/\0.*$/s, '');
+let offset = 32;
+for (let i = 0; i < commandCount; i++) {
+  if (offset + 8 > commandEnd) throw Error('Truncated Mach-O command.');
+  const command = binary.readUInt32LE(offset), size = binary.readUInt32LE(offset + 4);
+  if (size < 8 || offset + size > commandEnd) throw Error('Invalid Mach-O command length.');
+  if (command === 0x19) {
+    if (size < 72) throw Error('Truncated Mach-O segment.');
+    const count = binary.readUInt32LE(offset + 64);
+    if (72 + count * 80 > size) throw Error('Truncated Mach-O section table.');
+    for (let j = 0; j < count; j++) {
+      const entry = offset + 72 + j * 80, section = name(entry);
+      if (name(offset + 8) !== '__TEXT' || name(entry + 16) !== '__TEXT' || !['__entitlements', '__ents_der'].includes(section)) continue;
+      const start = binary.readUInt32LE(entry + 48), length = binary.readBigUInt64LE(entry + 40);
+      if (sections.has(section) || length < 1n || length > 262144n || BigInt(start) + length > BigInt(binary.length))
+        throw Error('Invalid or duplicate embedded Simulator entitlement section.');
+      sections.set(section, binary.subarray(start, start + Number(length)));
+    }
+  }
+  offset += size;
+}
+if (offset !== commandEnd || sections.size !== 2) throw Error('Xcode must embed both XML and DER Simulator entitlement sections; unsigned compiler products cannot be repaired by re-signing.');
+const xml = sections.get('__entitlements').toString('utf8').replace(/\0+$/s, '');
+if (!xml.startsWith('<?xml') || !xml.includes('<plist')) throw Error('Invalid embedded Simulator entitlement plist.');
+writeFileSync(path.join(output, 'embedded-entitlements.plist'), xml);
+writeFileSync(path.join(output, 'embedded-entitlements.der'), sections.get('__ents_der'));
+writeFileSync(path.join(output, 'embedded-sections.json'), JSON.stringify(Object.fromEntries([...sections].map(([section, bytes]) => [section, {
+  bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'),
+}])), null, 2) + '\n');
+NODE
+plutil -convert json -o "$output/embedded-entitlements.json" "$output/embedded-entitlements.plist"
 
 node --input-type=module - "$repo" "$output" "$source_app" "$source_archive" <<'NODE'
 import { createHash } from 'node:crypto';
@@ -150,15 +186,23 @@ if (await treeHash(app) !== evidence.original_app_tree_sha256 || await fileHash(
   throw Error('The original compiler product/archive changed during runtime preparation.');
 if (!/^Signature=adhoc$/m.test(readFileSync(path.join(output, 'signature.txt'), 'utf8')))
   throw Error('The runtime signature is not ad hoc.');
-const entitlements = JSON.parse(readFileSync(path.join(output, 'runtime-entitlements.json'), 'utf8'));
-if (Object.keys(entitlements).length !== 2 || entitlements['application-identifier'] !== 'com.example.whimway' ||
-    JSON.stringify(entitlements['keychain-access-groups']) !== JSON.stringify(['com.example.whimway']))
-  throw Error('The runtime entitlements do not match the simulator-only contract.');
+const hostEntitlements = JSON.parse(readFileSync(path.join(output, 'runtime-entitlements.json'), 'utf8'));
+if (Object.entries(hostEntitlements).some(([key, value]) => key !== 'com.apple.security.get-task-allow' || typeof value !== 'boolean'))
+  throw Error('Unexpected host signature entitlements; iOS capabilities must be linker-embedded for Simulator.');
+const embedded = JSON.parse(readFileSync(path.join(output, 'embedded-entitlements.json'), 'utf8'));
+if (embedded['application-identifier'] !== 'com.example.whimway' ||
+    (embedded['keychain-access-groups'] !== undefined && JSON.stringify(embedded['keychain-access-groups']) !== JSON.stringify(['com.example.whimway'])))
+  throw Error('The Xcode-embedded Simulator identity does not match the placeholder app.');
+const runtimeHash = await treeHash(path.join(output, 'Whimway.app'));
+if (runtimeHash !== evidence.original_app_tree_sha256) throw Error('The runtime copy must exactly match the Xcode compiler product.');
 Object.assign(evidence, {
   signature_verified: true,
   originals_unchanged: true,
-  runtime_app_tree_sha256: await treeHash(path.join(output, 'Whimway.app')),
-  runtime_entitlements: entitlements,
+  runtime_copy_unchanged: true,
+  runtime_app_tree_sha256: runtimeHash,
+  host_signature_entitlements: hostEntitlements,
+  simulator_embedded_entitlements: embedded,
+  simulator_embedded_sections: JSON.parse(readFileSync(path.join(output, 'embedded-sections.json'), 'utf8')),
 });
 writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n');
 console.log(JSON.stringify(evidence));
