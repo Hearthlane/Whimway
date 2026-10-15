@@ -173,6 +173,8 @@ describe("native iOS viewport live-driver HTTP bridge", () => {
       fullyVisible: true,
       targetKind: "control",
       sequence: 1,
+      driverPort: port(native),
+      screenBounds: "[0,0][402,874]",
     });
     expect(result.clipBounds).toMatchObject({
       left: 0,

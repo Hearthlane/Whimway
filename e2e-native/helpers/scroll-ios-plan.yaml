@@ -10,9 +10,8 @@ appId: ${APP_ID || 'com.example.whimway'}
       true: ${!output.whimwayPlanViewport.ready}
     commands:
       - assertTrue: ${output.whimwayPlanViewport.direction === 'UP' || output.whimwayPlanViewport.direction === 'DOWN'}
-      - swipe:
-          start: ${output.whimwayPlanViewport.swipe.start}
-          end: ${output.whimwayPlanViewport.swipe.end}
-          duration: 600
+      # Same Maestro XCTest physical gesture via its JS HTTP client; 2.11's
+      # YAML swipe coordinate converter runs before JavaScript evaluation.
+      - runScript: swipe-ios-plan.js
       - runScript: observe-ios-plan.js
 - assertTrue: ${output.whimwayPlanViewport.ready === true}

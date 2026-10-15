@@ -257,6 +257,7 @@ export async function startIOSViewportServer({
     request.once("aborted", abort);
     let deviceBytes;
     let snapshotBytes;
+    let screenBounds;
     let geometry;
     let failure;
     try {
@@ -267,7 +268,7 @@ export async function startIOSViewportServer({
         MAX_DEVICE_BYTES,
         controller.signal,
       );
-      const screenBounds = deviceBounds(parseJSON(deviceBytes));
+      screenBounds = deviceBounds(parseJSON(deviceBytes));
       snapshotBytes = await readDriver(
         driverPort,
         "viewHierarchy",
@@ -307,6 +308,7 @@ export async function startIOSViewportServer({
             observedAt,
             sequence: current,
             driverPort,
+            screenBounds,
             targetText,
             targetKind,
             ...(device ? { device } : {}),
@@ -342,7 +344,15 @@ export async function startIOSViewportServer({
         { flag: "wx", mode: 0o600 },
       );
       if (failure) send(failure.status, { ok: false, reason: failure.reason });
-      else send(200, { ok: true, ...geometry, observedAt, sequence: current });
+      else
+        send(200, {
+          ok: true,
+          ...geometry,
+          observedAt,
+          sequence: current,
+          driverPort,
+          screenBounds,
+        });
     } catch (error) {
       send(error instanceof ObservationError ? error.status : 500, {
         ok: false,

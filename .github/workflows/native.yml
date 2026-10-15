@@ -18,6 +18,7 @@ on:
         "scripts/start-native-test-services.mjs",
         "scripts/native-ios-viewport-server.mjs",
         "scripts/native-plan-viewport.mjs",
+        "scripts/CheckNativeFlows.java",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
@@ -40,6 +41,7 @@ on:
         "scripts/start-native-test-services.mjs",
         "scripts/native-ios-viewport-server.mjs",
         "scripts/native-plan-viewport.mjs",
+        "scripts/CheckNativeFlows.java",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
@@ -70,8 +72,32 @@ jobs:
       - name: Check actual native build inputs changed in this push
         id: inputs
         run: node scripts/native-build-inputs.mjs
-  android:
+  syntax:
     needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install pinned Maestro and report parser version
+        env:
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          version=$("$HOME/.maestro/bin/maestro" --version)
+          printf '%s\n' "$version"
+          test "$version" = "$MAESTRO_VERSION"
+      - name: Convert every native flow with the actual Maestro parser
+        run: |
+          mkdir -p native-parser-classes
+          "$JAVA_HOME_17_X64/bin/javac" --release 17 -d native-parser-classes scripts/CheckNativeFlows.java
+          "$JAVA_HOME_17_X64/bin/java" --enable-native-access=ALL-UNNAMED -cp "native-parser-classes:$HOME/.maestro/lib/*" CheckNativeFlows e2e-native
+  android:
+    needs: [changes, syntax]
     if: needs.changes.outputs.native == 'true'
     concurrency:
       group: native-android-${{ github.ref }}
@@ -149,9 +175,13 @@ jobs:
           retention-days: 7
       - name: Prepare native fixture runtime
         working-directory: .
+        env:
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
           npm ci
           curl -fsSL "https://get.maestro.mobile.dev" | bash
+          "$HOME/.maestro/bin/maestro" --version
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
           test -e /dev/kvm
           sudo chown "$USER" /dev/kvm
@@ -187,7 +217,7 @@ jobs:
           path: apps/mobile/android/build/reports
           retention-days: 7
   ios:
-    needs: changes
+    needs: [changes, syntax]
     if: needs.changes.outputs.native == 'true'
     concurrency:
       group: native-ios-${{ github.ref }}
@@ -353,10 +383,13 @@ jobs:
         working-directory: .
         env:
           WHIMWAY_IOS_UI_OBSERVER: "1"
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
           npm ci
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
           export MAESTRO_CLI_NO_ANALYTICS=1
           defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
           trap 'xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size large >/dev/null 2>&1 || true' EXIT

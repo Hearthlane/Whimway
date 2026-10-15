@@ -143,6 +143,32 @@ describe("Exact server-only native build exceptions", () => {
         false,
       );
   });
+  it("allows only the exact test-flow parser while keeping SDK lock changes strict", () => {
+    const { root, file, commit, base } = fixture();
+    file(
+      "scripts/CheckNativeFlows.java",
+      "// Official Maestro flow conversion only",
+    );
+    const parser = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, parser, root, target).compatible).toBe(
+        true,
+      );
+    expect(nativeInputsChanged(base, parser, root)).toBe(true);
+    // Even an allowed harness path never exempts a changed native SDK contract.
+    file("apps/mobile/package-lock.json", '{"version":"updated-sdk"}');
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, parser, root, target).compatible).toBe(
+        false,
+      );
+    file("apps/mobile/package-lock.json", '{"version":"original-sdk"}');
+    file("scripts/CheckNativeFlowsNative.java", "// Unknown build input");
+    const unknown = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, unknown, root, target).compatible).toBe(
+        false,
+      );
+  });
   it.each([
     "lib/providers/currency-data.ts",
     "lib/providers/google.native.ts",
@@ -395,6 +421,7 @@ describe("Server-only exceptions stay outside the actual mobile dependency graph
       ...deniedProviders,
       "scripts/native-plan-viewport.mjs",
       "scripts/native-ios-viewport-server.mjs",
+      "scripts/CheckNativeFlows.java",
     ])
       expect(graph.visited.has(provider)).toBe(false);
   });

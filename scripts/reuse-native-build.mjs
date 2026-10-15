@@ -33,6 +33,7 @@ const compilationSteps = {
   },
 };
 const runtimeFiles = new Set([
+  "scripts/CheckNativeFlows.java",
   "scripts/start-native-test-services.mjs",
   "scripts/native-ios-viewport-server.mjs",
   "scripts/native-plan-viewport.mjs",
