@@ -1,0 +1,15 @@
+{
+  "run": "38670492664",
+  "job": "116212272992",
+  "artifact": "11945163882",
+  "source": "1bc8e41cae669a7be6853cbb2fff4642fb4c53c2",
+  "report": "native-results/ios/2026-10-15_025648/Native fixture outing smoke/commands.json",
+  "tapLogLine": 286,
+  "screenBounds": "[0,0][402,874]",
+  "scrollViewBounds": "[0,62][402,738]",
+  "saveBounds": "[24,806][378,862]",
+  "budgetBoundsBeforeErase": "[25,496][265,549]",
+  "budgetValueAfterErase": "",
+  "expectedError": "Enter a usual budget from 0 to 1,000,000 per person[.]",
+  "observation": "Default screen-level visibility returned after 926ms while Save was wholly outside its clipped ScrollView. The retained failure screenshot contains the empty budget field but no visible Save action or validation alert. This proves a missed offscreen tap, not a product validation failure or inability to scroll."
+}

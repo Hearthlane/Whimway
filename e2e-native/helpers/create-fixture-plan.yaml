@@ -56,6 +56,13 @@ appId: ${APP_ID || 'com.example.whimway'}
           direction: UP
           centerElement: true
           timeout: 30000
+      # At the largest text size, UP can exhaust centering attempts with Search
+      # still below the ScrollView's clipped bottom. Move back into its viewport.
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
 - runFlow:
     when:
       platform: Android
@@ -70,10 +77,21 @@ appId: ${APP_ID || 'com.example.whimway'}
     commands:
       - extendedWaitUntil:
           visible:
-            text: "Search a place"
-            focused: true
+            id: "^delete$"
           timeout: 10000
+      # iOS AX hasFocus remained false in a retained hierarchy with the real
+      # keyboard and onFocus ring visible. Prove input readiness through UI.
+      - assertVisible: "Done editing, dismiss keyboard"
 - inputText: "Toronto"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          text: "^Toronto$"
+          above:
+            text: "Done editing, dismiss keyboard"
+      - takeScreenshot: native-search-query-entered
 - extendedWaitUntil:
     visible: "CF Toronto Eaton Centre"
     timeout: 15000

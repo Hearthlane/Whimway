@@ -26,6 +26,18 @@ tags: [native, fixtures, smoke]
 - scrollUntilVisible:
     element: "Save my preferences"
     direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # iOS AX exposed this child below its clipped ScrollView; screen-level
+      # visibility alone returned before any real scroll (run38670492664).
+      - scrollUntilVisible:
+          element: "Save my preferences"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- takeScreenshot: native-profile-empty-budget-before-save
 - tapOn: "Save my preferences"
 - assertVisible: "Enter a usual budget from 0 to 1,000,000 per person[.]"
 - assertVisible: "Save my preferences"
@@ -39,6 +51,16 @@ tags: [native, fixtures, smoke]
 - scrollUntilVisible:
     element: "Save my preferences"
     direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element: "Save my preferences"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- takeScreenshot: native-profile-valid-budget-before-save
 - tapOn: "Save my preferences"
 - assertVisible: "Preferences saved on this device."
 - takeScreenshot: native-profile-preferences

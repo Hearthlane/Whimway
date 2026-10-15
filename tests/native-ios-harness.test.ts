@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import observations from "./fixtures/ios-38664294144-viewport.json";
 import switchObservations from "./fixtures/ios-38668397703-switch.json";
+import searchObservations from "./fixtures/ios-38670492664-search.json";
 
 type Command = Record<string, unknown>;
 const require = createRequire(import.meta.url);
@@ -256,7 +257,7 @@ describe("iOS native harness readiness and retained viewport regression", () => 
       expect(p.x).toBeGreaterThan(action.right);
     }
   });
-  it("centers the field and requires real focus before typing instead of accepting the retained clipped/unfocused node", () => {
+  it("centers Search in both directions and requires native keyboard UI before typing instead of trusting the contradicted iOS focus flag", () => {
     const field = observations.reminders.nodes.find(
       (node) => node.accessibilityText === "Search a place",
     )!;
@@ -293,16 +294,88 @@ describe("iOS native harness readiness and retained viewport regression", () => 
         timeout: 30000,
       },
     });
+    expect(center).toContainEqual({
+      scrollUntilVisible: {
+        element: "Search a place",
+        direction: "DOWN",
+        centerElement: true,
+        timeout: 15000,
+      },
+    });
     expect(branch(fixture.slice(tap + 1, typing), "iOS")).toEqual([
       {
         extendedWaitUntil: {
-          visible: { text: "Search a place", focused: true },
+          visible: { id: "^delete$" },
           timeout: 10000,
         },
       },
+      { assertVisible: "Done editing, dismiss keyboard" },
+    ]);
+    expect(branch(fixture.slice(typing), "iOS")).toEqual([
+      {
+        assertVisible: {
+          text: "^Toronto$",
+          above: { text: "Done editing, dismiss keyboard" },
+        },
+      },
+      { takeScreenshot: "native-search-query-entered" },
     ]);
     expect(fixture.slice(typing)).toContainEqual({
       extendedWaitUntil: { visible: "CF Toronto Eaton Centre", timeout: 15000 },
     });
+  });
+  it("distinguishes the actual focused keyboard from a genuinely clipped/missed large-text tap", () => {
+    const label = "Search a place";
+    const focusedField = searchObservations.reminders.nodes.find(
+      (node) => node.accessibilityText === label,
+    )!;
+    expect(focusedField.focused).toBe("false");
+    expect(
+      searchObservations.reminders.nodes.some(
+        (node) => node["resource-id"] === "delete",
+      ),
+    ).toBe(true);
+    expect(
+      searchObservations.reminders.nodes.some(
+        (node) => node.accessibilityText === "Done editing, dismiss keyboard",
+      ),
+    ).toBe(true);
+    const focusedBounds = bounds(focusedField.bounds);
+    const focusedClip = bounds(searchObservations.reminders.ancestorBounds[0]);
+    expect(focusedBounds.bottom).toBeLessThan(focusedClip.bottom);
+    const missedField = searchObservations.largeText.nodes.find(
+      (node) => node.accessibilityText === label,
+    )!;
+    const missedBounds = bounds(missedField.bounds);
+    const missedClip = bounds(searchObservations.largeText.ancestorBounds[0]);
+    expect((missedBounds.top + missedBounds.bottom) / 2).toBeGreaterThan(
+      missedClip.bottom,
+    );
+    expect(
+      searchObservations.largeText.nodes.some(
+        (node) => node.accessibilityText === "Done editing, dismiss keyboard",
+      ),
+    ).toBe(false);
+    expect(
+      searchObservations.largeText.nodes.some(
+        (node) => "resource-id" in node && node["resource-id"] === "delete",
+      ),
+    ).toBe(false);
+  });
+  it("matches the actual entered native query above the keyboard instead of accepting a prediction or untyped placeholder", () => {
+    const label = "Search a place";
+    const typed = searchObservations.enteredQuery.nodes.find(
+      (node) => node.accessibilityText === label,
+    )!;
+    const done = searchObservations.enteredQuery.nodes.find(
+      (node) => node.accessibilityText === "Done editing, dismiss keyboard",
+    )!;
+    expect(typed.text).toBe("Toronto");
+    expect(typed.value).toBe("Toronto");
+    expect(bounds(typed.bounds).bottom).toBeLessThan(bounds(done.bounds).top);
+    const untyped = searchObservations.reminders.nodes.find(
+      (node) => node.accessibilityText === label,
+    )!;
+    expect("text" in untyped ? untyped.text : undefined).not.toBe("Toronto");
   });
 });
