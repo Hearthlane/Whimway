@@ -22,21 +22,34 @@ tags: [native, fixtures, smoke]
     direction: DOWN
 - tapOn: "Usual budget"
 - eraseText
+- tapOn: "Done editing, dismiss keyboard"
+- scrollUntilVisible:
+    element: "Save my preferences"
+    direction: DOWN
+- tapOn: "Save my preferences"
+- assertVisible: "Enter a usual budget from 0 to 1,000,000 per person[.]"
+- assertVisible: "Save my preferences"
+- takeScreenshot: native-profile-save-error
+- scrollUntilVisible:
+    element: "Usual budget"
+    direction: UP
+- tapOn: "Usual budget"
 - inputText: "80"
 - tapOn: "Done editing, dismiss keyboard"
 - scrollUntilVisible:
     element: "Save my preferences"
     direction: DOWN
 - tapOn: "Save my preferences"
-- scrollUntilVisible:
-    element: "Preferences saved on this device."
-    direction: UP
+- assertVisible: "Preferences saved on this device."
 - takeScreenshot: native-profile-preferences
 - tapOn: "^Explore(, tab, 1 of 3)?$"
 - startRecording:
     path: "${maestro.platform}-planning-motion"
     label: "Record native question transitions and itinerary reveal"
-- runFlow: helpers/create-fixture-plan.yaml
+- runFlow:
+    file: helpers/create-fixture-plan.yaml
+    env:
+      VERIFY_CORE_PORTRAIT: "1"
 - takeScreenshot: native-itinerary
 - stopRecording
 - scrollUntilVisible:

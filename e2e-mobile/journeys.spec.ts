@@ -242,9 +242,11 @@ test("Guided planning skips, preserves Back state, generates early and reopens f
   await expect(details).toHaveAttribute("aria-expanded", "false");
   await expect(defaults).not.toBeVisible();
   await details.click();
-  await expect(details).toHaveAttribute("aria-expanded", "true");
   await expect(defaults).toBeVisible();
-  await details.click();
+  await expect(
+    page.getByRole("dialog", { name: "The little details" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(details).toHaveAttribute("aria-expanded", "false");
   await expect(defaults).not.toBeVisible();
   await page
@@ -411,6 +413,7 @@ test("Complete prompt prefills supplied constraints without repeat questions", a
         duration: 240,
         participants: 2,
         companion: "date",
+        energy: "balanced",
         vibes: ["exciting"],
         interests: ["Food & drinks", "Shopping", "Interactive fun"],
         warnings: [],
@@ -419,19 +422,23 @@ test("Complete prompt prefills supplied constraints without repeat questions", a
   );
   await start(
     page,
-    "Plan a fun date around Toronto tomorrow. We have $70 each, four hours and want food, shopping and something exciting.",
+    "Plan a fun date around Toronto tomorrow at a balanced pace. We have $70 each, four hours and want food, shopping and something exciting.",
   );
-  await expect(
-    page.getByText("4 hours · CAD 70 / person", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Ready", { exact: true })).toBeVisible();
   await page
     .getByRole("button", { name: "Review day details", exact: true })
     .click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "The little details", exact: true })
+      .getByText("4 hours · CAD 70 / person", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(/ · Walking$/)).toBeVisible();
   await expect(
     page.getByText("What’s your budget?", { exact: true }),
   ).not.toBeVisible();
   await shot(page, "planner-prompt-prefill-390");
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   const request = page.waitForRequest((request) =>
     request.url().endsWith("/api/generate"),
   );
@@ -439,6 +446,7 @@ test("Complete prompt prefills supplied constraints without repeat questions", a
   const body = (await request).postDataJSON();
   expect(body.request.budget).toBe(70);
   expect(body.request.participants).toBe(2);
+  expect(body.request.energy).toBe("balanced");
   expect(body.request.duration).toBe(240);
   expect(body.request.interests).toEqual(
     expect.arrayContaining(["Food & drinks", "Shopping"]),

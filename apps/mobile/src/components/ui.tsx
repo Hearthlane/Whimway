@@ -83,17 +83,24 @@ export function Screen({
   scroll = true,
   style,
   scrollResetKey,
+  footer,
+  scrollTestID,
+  scrollRef,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   style?: StyleProp<ViewStyle>;
   scrollResetKey?: string;
+  footer?: React.ReactNode;
+  scrollTestID?: string;
+  scrollRef?: React.RefObject<ScrollView | null>;
 }) {
-  const scrollView = useRef<ScrollView>(null);
+  const internalScrollView = useRef<ScrollView>(null);
+  const scrollView = scrollRef ?? internalScrollView;
   useEffect(() => {
     if (scrollResetKey !== undefined)
       scrollView.current?.scrollTo({ y: 0, animated: false });
-  }, [scrollResetKey]);
+  }, [scrollResetKey, scrollView]);
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: c.paper }}
@@ -112,6 +119,8 @@ export function Screen({
         {scroll ? (
           <ScrollView
             ref={scrollView}
+            testID={scrollTestID}
+            style={{ flex: 1 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={
               Platform.OS === "ios" ? "interactive" : "on-drag"
@@ -126,6 +135,7 @@ export function Screen({
         ) : (
           <View style={[{ flex: 1, padding: 24 }, style]}>{children}</View>
         )}
+        {footer}
         <KeyboardDoneBar />
       </KeyboardAvoidingView>
     </SafeAreaView>

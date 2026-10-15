@@ -1,5 +1,13 @@
-import React, { useCallback, useRef, useState } from "react";
-import { Text, View, TextInput, Switch, Linking, Platform } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Text,
+  View,
+  TextInput,
+  Switch,
+  Linking,
+  Platform,
+  type ScrollView,
+} from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { UserRound, Bell, Heart } from "lucide-react-native";
 import {
@@ -39,6 +47,10 @@ export default function Profile() {
   const [prefs, setPrefs] = useState<Preferences>(defaultPreferences),
     [budget, setBudget] = useState(String(defaultPreferences.budget));
   const [currency, setCurrency] = useState("");
+  const [budgetError, setBudgetError] = useState(""),
+    [currencyError, setCurrencyError] = useState("");
+  const [saveError, setSaveError] = useState(""),
+    [saveMessage, setSaveMessage] = useState("");
   const [accountPrefs, setAccountPrefs] = useState<Preferences>();
   const [email, setEmail] = useState(""),
     [signedIn, setSignedIn] = useState(false),
@@ -49,26 +61,79 @@ export default function Profile() {
     [favorites, setFavorites] = useState(0),
     [deleting, setDeleting] = useState(false);
   const dirty = useRef(false);
+  const scrollRef = useRef<ScrollView>(null),
+    saveFeedbackRef = useRef<View>(null),
+    feedbackVersion = useRef(0),
+    focused = useRef(false),
+    feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+      undefined,
+    );
   const [advanced, setAdvanced] = useState(false),
     [diagnosticReport, setDiagnosticReport] = useState<string>();
   const { refreshPreferences } = useApp();
   const auth = getAuthClient();
+  const clearSaveFeedback = useCallback(() => {
+    feedbackVersion.current++;
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    setSaveError("");
+    setSaveMessage("");
+  }, []);
+  const revealSaveFeedback = useCallback(() => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    if (!focused.current || advanced || !(saveError || saveMessage)) return;
+    const version = feedbackVersion.current;
+    feedbackTimer.current = setTimeout(() => {
+      const scroll = scrollRef.current,
+        feedback = saveFeedbackRef.current;
+      if (
+        !focused.current ||
+        version !== feedbackVersion.current ||
+        !scroll ||
+        !feedback
+      )
+        return;
+      // Fabric measures relative to a host ref, not the numeric legacy handle.
+      const content = (
+        scroll as ScrollView & { getInnerViewRef(): View | null }
+      ).getInnerViewRef();
+      if (!content) return;
+      feedback.measureLayout(
+        content,
+        (_x, y) => {
+          if (focused.current && version === feedbackVersion.current)
+            scroll.scrollTo({ y: Math.max(0, y - 12), animated: false });
+        },
+        () => {},
+      );
+    }, 0);
+  }, [advanced, saveError, saveMessage]);
+  useEffect(() => {
+    revealSaveFeedback();
+    return () => {
+      if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    };
+  }, [revealSaveFeedback]);
   function apply(value: Preferences) {
     setPrefs(value);
     setBudget(String(value.budget));
     setCurrency(value.budgetCurrency ?? "");
+    setBudgetError("");
+    setCurrencyError("");
   }
   function change(value: Partial<Preferences>) {
     dirty.current = true;
+    clearSaveFeedback();
     setPrefs((previous) => ({ ...previous, ...value }));
   }
   useFocusEffect(
     useCallback(() => {
+      focused.current = true;
       let active = true,
         generation = 0;
       let controller: AbortController | undefined;
       let callbackTimer: ReturnType<typeof setTimeout> | undefined;
       setError("");
+      clearSaveFeedback();
       void Promise.all([getAllReminderSettings(), getFavoritePlaces()])
         .then(([rows, refs]) => {
           if (active) {
@@ -132,51 +197,76 @@ export default function Profile() {
       });
       if (!auth) void sync();
       return () => {
+        focused.current = false;
+        feedbackVersion.current++;
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
         active = false;
         generation++;
         controller?.abort();
         if (callbackTimer) clearTimeout(callbackTimer);
         subscription?.data.subscription.unsubscribe();
       };
-    }, [auth, refreshPreferences]),
+    }, [auth, refreshPreferences, clearSaveFeedback]),
   );
-  async function run(work: () => Promise<unknown>, result: string) {
+  async function run(
+    work: () => Promise<unknown>,
+    result: string,
+    scope: "general" | "preferences" = "general",
+  ) {
     if (busy) return false;
     setBusy(true);
     setError("");
     setMessage("");
+    clearSaveFeedback();
+    const version = feedbackVersion.current;
     try {
       await work();
-      setMessage(result);
       await refreshPreferences();
+      if (scope === "preferences") {
+        if (!focused.current || version !== feedbackVersion.current)
+          return false;
+        setSaveMessage(result);
+      } else setMessage(result);
       return true;
     } catch (e) {
-      setError((e as Error).message);
+      if (scope === "preferences") {
+        if (focused.current && version === feedbackVersion.current)
+          setSaveError((e as Error).message);
+      } else setError((e as Error).message);
       return false;
     } finally {
       setBusy(false);
     }
   }
   async function save() {
-    if (
+    const invalidBudget =
       !budget.trim() ||
       !Number.isFinite(Number(budget)) ||
       Number(budget) < 0 ||
-      Number(budget) > 1000000
-    )
-      throw new Error("Enter a usual budget from 0 to 1,000,000 per person.");
-    if (currency.trim() && !/^[A-Z]{3}$/.test(currency.trim().toUpperCase()))
-      throw new Error(
-        "Use a three-letter budget currency, such as CAD, USD or JPY.",
-      );
+      Number(budget) > 1000000;
+    const invalidCurrency =
+      !!currency.trim() && !/^[A-Z]{3}$/.test(currency.trim().toUpperCase());
+    const budgetProblem = invalidBudget
+      ? "Enter a usual budget from 0 to 1,000,000 per person."
+      : "";
+    const currencyProblem = invalidCurrency
+      ? "Use a three-letter budget currency, such as CAD, USD or JPY."
+      : "";
+    setBudgetError(budgetProblem);
+    setCurrencyError(currencyProblem);
+    if (budgetProblem || currencyProblem)
+      throw new Error(budgetProblem || currencyProblem);
     const selected = PreferencesSchema.parse({
       ...prefs,
       budget: Number(budget),
       budgetCurrency: currency.trim().toUpperCase() || undefined,
     });
+    const version = feedbackVersion.current;
     await savePreferences(selected);
-    dirty.current = false;
-    apply(selected);
+    if (version === feedbackVersion.current) {
+      dirty.current = false;
+      apply(selected);
+    }
     await refreshPreferences();
     if (signedIn) {
       try {
@@ -190,7 +280,7 @@ export default function Profile() {
     }
   }
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <Text style={styles.eyebrow}>MORE YOU. MORE YOUR KIND OF DAY.</Text>
       <Text
         maxFontSizeMultiplier={2}
@@ -211,7 +301,14 @@ export default function Profile() {
       >
         <UserRound size={30} color={c.ink} />
       </View>
-      <Notice message={error} error />
+      <Notice
+        message={
+          advanced || deleting || diagnosticReport !== undefined
+            ? undefined
+            : error
+        }
+        error
+      />
       <Notice message={message} />
       <View style={styles.section}>
         <Text style={styles.heading}>
@@ -326,16 +423,40 @@ export default function Profile() {
           <TextInput
             style={[styles.input, { flex: 1 }]}
             accessibilityLabel="Usual budget"
+            accessibilityHint={
+              budgetError || "Amount per person, from zero to one million."
+            }
+            {...(Platform.OS === "web"
+              ? {
+                  "aria-invalid": !!budgetError,
+                  "aria-describedby": budgetError
+                    ? "profile-budget-error"
+                    : undefined,
+                }
+              : {})}
             keyboardType="decimal-pad"
             value={budget}
             onChangeText={(value) => {
               dirty.current = true;
               setBudget(value);
+              setBudgetError("");
+              clearSaveFeedback();
             }}
           />
           <TextInput
             style={[styles.input, { width: 100 }]}
             accessibilityLabel="Budget currency code"
+            accessibilityHint={
+              currencyError || "Optional three-letter currency code."
+            }
+            {...(Platform.OS === "web"
+              ? {
+                  "aria-invalid": !!currencyError,
+                  "aria-describedby": currencyError
+                    ? "profile-currency-error"
+                    : undefined,
+                }
+              : {})}
             placeholder="CAD"
             maxLength={3}
             autoCapitalize="characters"
@@ -344,9 +465,27 @@ export default function Profile() {
             onChangeText={(value) => {
               dirty.current = true;
               setCurrency(value.toUpperCase());
+              setCurrencyError("");
+              clearSaveFeedback();
             }}
           />
         </View>
+        {budgetError ? (
+          <Text
+            nativeID="profile-budget-error"
+            style={[styles.body, { color: c.error, fontSize: 13 }]}
+          >
+            {budgetError}
+          </Text>
+        ) : null}
+        {currencyError ? (
+          <Text
+            nativeID="profile-currency-error"
+            style={[styles.body, { color: c.error, fontSize: 13 }]}
+          >
+            {currencyError}
+          </Text>
+        ) : null}
         <Text style={[styles.body, { fontSize: 13 }]}>
           Used only for destinations with this currency. Leave the currency
           blank to choose a budget each time.
@@ -377,23 +516,34 @@ export default function Profile() {
           value={prefs.accessibility}
           onChangeText={(accessibility) => change({ accessibility })}
         />
-        <Button
-          title="Save my preferences"
-          busy={busy}
-          onPress={() =>
-            void run(
-              save,
-              signedIn
-                ? "Preferences saved on this device and account."
-                : "Preferences saved on this device.",
-            )
-          }
-        />
+        <View
+          ref={saveFeedbackRef}
+          collapsable={false}
+          onLayout={revealSaveFeedback}
+          testID="preference-save-feedback"
+        >
+          <Notice message={advanced ? undefined : saveError} error />
+          <Notice message={saveMessage} />
+          <Button
+            title="Save my preferences"
+            busy={busy}
+            onPress={() =>
+              void run(
+                save,
+                signedIn
+                  ? "Preferences saved on this device and account."
+                  : "Preferences saved on this device.",
+                "preferences",
+              )
+            }
+          />
+        </View>
         <Button
           secondary
           title="More personal preferences"
           onPress={() => {
             setError("");
+            clearSaveFeedback();
             setAdvanced(true);
           }}
         />
@@ -529,7 +679,7 @@ export default function Profile() {
       </Sheet>
       <Sheet
         visible={advanced}
-        error={error}
+        error={saveError || error}
         title="A little more you"
         onClose={() => setAdvanced(false)}
       >
@@ -574,6 +724,7 @@ export default function Profile() {
               signedIn
                 ? "Preferences saved on this device and account."
                 : "Preferences saved on this device.",
+              "preferences",
             ).then((saved) => {
               if (saved) setAdvanced(false);
             })

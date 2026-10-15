@@ -23,6 +23,14 @@ appId: ${APP_ID || 'com.example.whimway'}
     direction: DOWN
 - tapOn: ".*find something good"
 - assertVisible: "What sounds fun[?]"
+- runFlow:
+    when:
+      true: ${typeof VERIFY_CORE_PORTRAIT !== 'undefined' && VERIFY_CORE_PORTRAIT === '1'}
+    commands:
+      - assertVisible: "Surprise me"
+      - assertVisible: "Next"
+      - assertVisible: "Back"
+      - takeScreenshot: native-planner-interests
 - tapOn: "Food & drinks"
 - scrollUntilVisible:
     element: "Next"
@@ -54,6 +62,44 @@ appId: ${APP_ID || 'com.example.whimway'}
     direction: DOWN
 - tapOn: "A little of both"
 - takeScreenshot: native-planner-energy
+- runFlow:
+    when:
+      true: ${typeof VERIFY_CORE_PORTRAIT !== 'undefined' && VERIFY_CORE_PORTRAIT === '1'}
+    commands:
+      - assertVisible: "Next"
+      - tapOn: "Next"
+      - assertVisible: "What.*vibe.*"
+      - assertVisible: "Anything goes"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-vibes
+      - tapOn: "Cozy"
+      - tapOn: "Next"
+      - assertVisible: "What.*budget.*"
+      - assertVisible: "Custom budget per person"
+      - tapOn: "Custom budget per person"
+      - eraseText
+      - inputText: "80"
+      - assertVisible: "Back"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-budget-keyboard
+      - tapOn: "Next"
+      - assertVisible: "When.*adventure.*"
+      - assertNotVisible: "Done editing, dismiss keyboard"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-date
+      - tapOn: "Tomorrow"
+      - tapOn: "Next"
+      - assertVisible: "How long.*out.*"
+      - tapOn: "Custom duration in minutes"
+      - eraseText
+      - inputText: "240"
+      - assertVisible: "Back"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-duration-keyboard
+      - tapOn: "Next"
+      - assertVisible: "(?s)Your day,.*your way[.]"
+      - assertNotVisible: "Done editing, dismiss keyboard"
+      - takeScreenshot: native-planner-ready
 - scrollUntilVisible:
     element: "Make my day"
     direction: DOWN

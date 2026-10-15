@@ -31,9 +31,10 @@ import {
 } from "../../src/services/notifications";
 import { api } from "../../src/services/api";
 import {
-  advanceDayProgress,
+  pendingDayStops,
   remainingDayMetrics,
 } from "../../src/services/day-progress";
+import { createDayCompletionCoordinator } from "../../src/services/day-completion";
 import { colors as c } from "../../src/design/theme";
 import { money } from "../../../../lib/time";
 import { distance } from "../../../../lib/geo";
@@ -43,6 +44,14 @@ export default function DayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { plan, loading, error, setError, reload } = usePlan(id);
   const [progress, setProgress] = useState<DayProgress>();
+  const [completion] = useState(() =>
+    createDayCompletionCoordinator({
+      saveProgress: saveDayProgress,
+      updateReminders: updatePlanReminders,
+      cancelReminders: cancelPlanReminders,
+    }),
+  );
+  const [cancellationFailure, setCancellationFailure] = useState<string>();
   const [progressAttempt, setProgressAttempt] = useState(0);
   const [location, setLocation] = useState<Point>();
   const [following, setFollowing] = useState(false),
@@ -55,7 +64,8 @@ export default function DayScreen() {
     [ending, setEnding] = useState(false);
   const routeAbort = useRef<AbortController | null>(null),
     completionPending = useRef(false),
-    screenActive = useRef(false);
+    screenActive = useRef(false),
+    screenGeneration = useRef(0);
   const [now, setNow] = useState(DateTime.now());
   const plannedMode = plan?.request.mode;
   useEffect(() => {
@@ -64,14 +74,20 @@ export default function DayScreen() {
   useFocusEffect(
     useCallback(() => {
       screenActive.current = true;
+      screenGeneration.current += 1;
+      setProgress(undefined);
+      setFinishing(false);
+      setCancellationFailure(completion.cancellationFailure(id));
+      setProgressAttempt((attempt) => attempt + 1);
       return () => {
         screenActive.current = false;
+        screenGeneration.current += 1;
         routeAbort.current?.abort();
         setFollowing(false);
         setLocation(undefined);
         setLeg(undefined);
       };
-    }, []),
+    }, [completion, id]),
   );
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,8 +95,10 @@ export default function DayScreen() {
     }, 30000);
     const sub = AppState.addEventListener("change", (state) => {
       setForeground(state === "active");
-      if (state === "active") setNow(DateTime.now());
-      else routeAbort.current?.abort();
+      if (state === "active") {
+        setNow(DateTime.now());
+        if (screenActive.current) setProgressAttempt((attempt) => attempt + 1);
+      } else routeAbort.current?.abort();
     });
     return () => {
       clearInterval(timer);
@@ -91,9 +109,14 @@ export default function DayScreen() {
   useEffect(() => {
     if (!plan) return;
     let active = true;
-    void getDayProgress(id)
+    const generation = screenGeneration.current;
+    const isActive = () =>
+      active && screenActive.current && screenGeneration.current === generation;
+    void completion
+      .whenIdle(id)
+      .then(() => getDayProgress(id))
       .then(async (saved) => {
-        if (!active) return;
+        if (!isActive()) return;
         const value = reconcileDayProgress(
           saved ?? {
             planId: id,
@@ -104,24 +127,30 @@ export default function DayScreen() {
           plan,
         );
         await saveDayProgress(value);
-        if (!active) return;
+        if (!isActive()) return;
         setProgress(value);
+        if (!pendingDayStops(plan, value).length) {
+          await completion.cancelRemaining(id, isActive);
+          if (isActive())
+            setCancellationFailure(completion.cancellationFailure(id));
+          return;
+        }
         // Day Mode has started. Do not send an outing-start reminder again,
         // including when a plan is edited or hydrated after returning.
         await updatePlanReminders(plan).catch(() => {
-          if (active)
+          if (isActive())
             setMessage(
               "Your day is ready. Reminder updates failed; open plan reminders to retry.",
             );
         });
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (isActive()) setError(e.message);
       });
     return () => {
       active = false;
     };
-  }, [id, plan, progressAttempt, setError]);
+  }, [completion, id, plan, progressAttempt, setError]);
   useEffect(() => {
     if (!following || !foreground) return;
     let stop: (() => void) | undefined,
@@ -202,50 +231,80 @@ export default function DayScreen() {
     }
   }
   async function finish(skipped: boolean) {
-    if (!progress || !current || !plan || completionPending.current) return;
+    if (
+      !progress ||
+      !current ||
+      !plan ||
+      completionPending.current ||
+      !screenActive.current ||
+      AppState.currentState !== "active"
+    )
+      return;
     completionPending.current = true;
+    const generation = screenGeneration.current;
+    const isActive = () =>
+      screenActive.current &&
+      screenGeneration.current === generation &&
+      AppState.currentState === "active";
     setFinishing(true);
     setError("");
-    const updated = advanceDayProgress(
-      plan,
-      progress,
-      current.placeId,
-      skipped ? "skipped" : "completed",
-    );
     try {
-      await saveDayProgress(updated);
-      setProgress(updated);
-      setMessage(
-        skipped
-          ? "Skipped. On to something good."
-          : "A good moment, well spent.",
-      );
-      void Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success,
-      ).catch(() => {});
-      if (
-        plan.stops.some(
-          (s) =>
-            !updated.completed.includes(s.placeId) &&
-            !updated.skipped.includes(s.placeId),
-        )
-      ) {
-        await updatePlanReminders(plan).catch(() =>
+      const result = await completion.finish({
+        plan,
+        progress,
+        placeId: current.placeId,
+        status: skipped ? "skipped" : "completed",
+        isActive,
+        onSaved: (updated) => {
+          setProgress(updated);
           setMessage(
-            "Progress saved. Reminder updates failed; open plan reminders to retry.",
-          ),
-        );
-      } else
-        await cancelPlanReminders(id).catch(() =>
-          setMessage(
-            "Your day is complete. Reminder cancellation failed; retry from Profile.",
-          ),
-        );
+            skipped
+              ? "Skipped. On to something good."
+              : "A good moment, well spent.",
+          );
+          void Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          ).catch(() => {});
+        },
+      });
+      if (!isActive() || result.status !== "saved") return;
+      setCancellationFailure(completion.cancellationFailure(id));
+      if (result.reminderWarning && !result.complete)
+        setMessage(result.reminderWarning);
     } catch (e) {
-      setError((e as Error).message);
+      if (isActive()) setError((e as Error).message);
     } finally {
       completionPending.current = false;
-      setFinishing(false);
+      if (isActive()) setFinishing(false);
+    }
+  }
+  async function retryCancellation() {
+    if (
+      current ||
+      !cancellationFailure ||
+      completionPending.current ||
+      !screenActive.current ||
+      AppState.currentState !== "active"
+    )
+      return;
+    completionPending.current = true;
+    setFinishing(true);
+    const generation = screenGeneration.current;
+    const isActive = () =>
+      screenActive.current &&
+      screenGeneration.current === generation &&
+      AppState.currentState === "active";
+    try {
+      const result = await completion.cancelRemaining(id, isActive);
+      if (!isActive()) return;
+      setCancellationFailure(completion.cancellationFailure(id));
+      if (result.status === "cancelled")
+        setMessage(
+          "Remaining reminders canceled. Your completed progress is saved.",
+        );
+    } finally {
+      completionPending.current = false;
+      if (isActive()) setFinishing(false);
     }
   }
   async function switchMode(mode: "WALK" | "DRIVE") {
@@ -353,6 +412,16 @@ export default function DayScreen() {
           }}
         />
       </View>
+      <Notice message={error} error />
+      <Notice message={message} />
+      <Notice message={cancellationFailure} error />
+      {!current && cancellationFailure ? (
+        <Button
+          title="Cancel remaining reminders"
+          busy={finishing}
+          onPress={() => void retryCancellation()}
+        />
+      ) : null}
       {current ? (
         <>
           <Text
@@ -420,8 +489,6 @@ export default function DayScreen() {
           {location && distance(location, current.place.point) < 75 ? (
             <Notice message="You’re near this stop. Mark it done whenever you’re ready." />
           ) : null}
-          <Notice message={error} error />
-          <Notice message={message} />
           <Button
             title={
               following

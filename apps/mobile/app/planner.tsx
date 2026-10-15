@@ -6,6 +6,7 @@ import {
   TextInput,
   Platform,
   BackHandler,
+  Keyboard,
   useWindowDimensions,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
@@ -23,7 +24,6 @@ import {
 import Animated, {
   FadeInRight,
   FadeInLeft,
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   useReducedMotion,
@@ -274,7 +274,6 @@ export default function Planner() {
   const [intent, setIntent] = useState<PlanningIntent>();
   const [advanced, setAdvanced] = useState(false);
   const [picking, setPicking] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const intake = useRef(draft);
   const current = useRef(draft);
   const reduced = useReducedMotion();
@@ -291,6 +290,7 @@ export default function Planner() {
     [],
   );
   const back = useCallback(() => {
+    Keyboard.dismiss();
     if (index > 0) move(index - 1, "back");
     else router.back();
   }, [index, move]);
@@ -425,11 +425,119 @@ export default function Planner() {
   }
   const amounts = budgetPresets(draft.location?.currency || "CAD");
   return (
-    <Screen scrollResetKey={questionKey}>
+    <Screen
+      scrollResetKey={questionKey}
+      scrollTestID="planner-scroll"
+      style={{ paddingBottom: 16 }}
+      footer={
+        <View
+          testID="planner-footer"
+          style={{
+            backgroundColor: c.paper,
+            borderTopWidth: 1,
+            borderTopColor: c.line,
+            paddingHorizontal: 24,
+            paddingTop: 12,
+            paddingBottom: 12,
+            gap: 4,
+          }}
+        >
+          <View style={[styles.row, { alignItems: "stretch" }]}>
+            <Pressable
+              accessibilityLabel="Back"
+              accessibilityRole="button"
+              onPress={back}
+              style={[
+                styles.row,
+                { minHeight: 56, padding: 12, gap: 8, maxWidth: "38%" },
+              ]}
+            >
+              <ArrowLeft color={c.ink} size={20} />
+              <Text style={[styles.label, { flexShrink: 1 }]}>Back</Text>
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Button
+                title={
+                  ready
+                    ? "Make my day"
+                    : step === "location"
+                      ? "That’s the place"
+                      : "Next"
+                }
+                onPress={ready ? generate : next}
+                disabled={
+                  busy ||
+                  (ready ? !summary : step === "location" && !draft.location)
+                }
+              />
+            </View>
+          </View>
+          {!ready && (step !== "location" || draft.location) ? (
+            <View style={[styles.row, { alignItems: "stretch", gap: 8 }]}>
+              {step !== "location" ? (
+                <Pressable
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    next();
+                  }}
+                  accessibilityRole="button"
+                  disabled={busy}
+                  accessibilityState={{ disabled: busy }}
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    minHeight: 44,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={[styles.label, { textAlign: "center" }]}>
+                    Skip for now
+                  </Text>
+                </Pressable>
+              ) : null}
+              {draft.location ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={busy || !summary}
+                  accessibilityState={{ disabled: busy || !summary }}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    void Haptics.selectionAsync().catch(() => {});
+                    generate();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    minHeight: 44,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        textAlign: "center",
+                        textDecorationLine: "underline",
+                        opacity: busy || !summary ? 0.45 : 1,
+                      },
+                    ]}
+                  >
+                    Make my day
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      }
+    >
       {/* Remove the outgoing page immediately. The header, progress and
           question enter as one native view, so no old question can remain
           underneath the next page's counter. */}
       <Animated.View
+        testID="planner-question"
         key={questionKey}
         collapsable={false}
         entering={
@@ -443,21 +551,38 @@ export default function Planner() {
         <View
           style={[
             styles.row,
-            { justifyContent: "space-between", marginBottom: 24 },
+            {
+              justifyContent: "space-between",
+              marginBottom: 12,
+              minHeight: 44,
+              flexWrap: "wrap",
+              gap: 8,
+            },
           ]}
         >
-          <Pressable
-            accessibilityLabel="Back"
-            accessibilityRole="button"
-            onPress={back}
-            style={{ padding: 12, backgroundColor: c.white, borderRadius: 24 }}
-          >
-            <ArrowLeft color={c.ink} size={22} />
-          </Pressable>
           <Text style={styles.eyebrow}>YOUR KIND OF DAY</Text>
           <Text style={styles.label}>
-            {Math.min(index + 1, queue.length)} / {queue.length}
+            {ready ? "Ready" : `${index + 1} / ${queue.length}`}
           </Text>
+          {draft.location ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Review day details"
+              accessibilityState={{ expanded: advanced, disabled: busy }}
+              disabled={busy}
+              aria-expanded={advanced}
+              onPress={() => {
+                Keyboard.dismiss();
+                setAdvanced(true);
+              }}
+              style={[styles.row, { minHeight: 44, padding: 8, gap: 4 }]}
+            >
+              <Text style={styles.label}>Details</Text>
+              <ChevronDown size={18} color={c.ink} />
+            </Pressable>
+          ) : (
+            <View style={{ width: 44 }} />
+          )}
         </View>
         <View
           accessibilityRole="progressbar"
@@ -470,7 +595,7 @@ export default function Planner() {
             max: Math.max(1, queue.length),
             now: ready ? Math.max(1, queue.length) : index + 1,
           }}
-          style={[styles.row, { gap: 5, marginBottom: 30 }]}
+          style={[styles.row, { gap: 5, marginBottom: 20 }]}
         >
           {queue.map((s, i) => (
             <View
@@ -493,8 +618,12 @@ export default function Planner() {
             Reading your idea…
           </Text>
         ) : null}
-        <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 22 }}>
-          <Text maxFontSizeMultiplier={2} style={styles.title}>
+        <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 16 }}>
+          <Text
+            accessibilityRole="header"
+            maxFontSizeMultiplier={2}
+            style={styles.title}
+          >
             {ready ? "Your day,\nyour way." : headings[step]}
           </Text>
           {step === "location" ? (
@@ -508,19 +637,23 @@ export default function Planner() {
           {step === "interests" ? (
             <View style={[styles.row, { flexWrap: "wrap" }]}>
               {interests.map((label, i) => (
-                <Chip
+                <View
                   key={label}
-                  label={
-                    label === "Interactive fun"
-                      ? "Games & entertainment"
-                      : label === "Outdoors"
-                        ? "Nature & outdoors"
-                        : label
-                  }
-                  selected={draft.interests?.includes(label)}
-                  color={[c.mint, c.sun, c.lavender, c.peach][i % 4]}
-                  onPress={() => toggle("interests", label)}
-                />
+                  style={{ flexBasis: largeText ? "100%" : "46%", flexGrow: 1 }}
+                >
+                  <Chip
+                    label={
+                      label === "Interactive fun"
+                        ? "Games & entertainment"
+                        : label === "Outdoors"
+                          ? "Nature & outdoors"
+                          : label
+                    }
+                    selected={draft.interests?.includes(label)}
+                    color={[c.mint, c.sun, c.lavender, c.peach][i % 4]}
+                    onPress={() => toggle("interests", label)}
+                  />
+                </View>
               ))}
             </View>
           ) : null}
@@ -658,7 +791,7 @@ export default function Planner() {
           {step === "date" ? (
             <>
               <Text style={styles.body}>
-                {draft.location?.timezone}. You can change the start time below.
+                {draft.location?.timezone}. Change the start time in Details.
               </Text>
               <View style={[styles.row, { flexWrap: "wrap" }]}>
                 {["Today", "Tomorrow", "I’m flexible"].map((label) => (
@@ -747,123 +880,17 @@ export default function Planner() {
               />
             </>
           ) : null}
-          {summary ? (
-            <View
-              style={{
-                borderColor: c.line,
-                borderWidth: 1,
-                borderRadius: 16,
-                padding: 12,
-                gap: 5,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Review day details"
-                accessibilityState={{ expanded: summaryOpen }}
-                aria-expanded={summaryOpen}
-                onPress={() => setSummaryOpen((open) => !open)}
-                style={[styles.row, { minHeight: 44, gap: 12 }]}
-              >
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={styles.label}>{summary.location.name}</Text>
-                  <Text style={[styles.body, { fontSize: 12, lineHeight: 18 }]}>
-                    {summary.duration / 60} hours · {summary.location.currency}{" "}
-                    {summary.budget} / person
-                  </Text>
-                </View>
-                <ChevronDown
-                  size={20}
-                  color={c.ink}
-                  style={{
-                    transform: [{ rotate: summaryOpen ? "180deg" : "0deg" }],
-                  }}
-                />
-              </Pressable>
-              {summaryOpen ? (
-                <Animated.View
-                  entering={reduced ? undefined : FadeInDown.duration(160)}
-                  style={{ gap: 5, paddingTop: 8 }}
-                >
-                  <Text style={styles.body}>
-                    {summary.date} at {summary.startTime} ·{" "}
-                    {summary.mode === "WALK" ? "Walking" : "Driving"}
-                  </Text>
-                  {!draft.known.includes("date") ||
-                  !draft.known.includes("duration") ||
-                  !draft.known.includes("budget") ? (
-                    <Text style={[styles.body, { fontSize: 12 }]}>
-                      Unchosen details use these starting choices. Adjust them
-                      anytime.
-                    </Text>
-                  ) : null}
-                  {draft.dateChoice === "flexible" ? (
-                    <Text style={[styles.body, { fontSize: 12 }]}>
-                      Using tomorrow for route and opening-hour checks.
-                    </Text>
-                  ) : null}
-                </Animated.View>
-              ) : null}
-            </View>
-          ) : null}
-          {!ready ? (
-            <Button
-              title={step === "location" ? "That’s the place" : "Next"}
-              onPress={next}
-              disabled={busy || (step === "location" && !draft.location)}
-            />
-          ) : null}
-          {step && step !== "location" ? (
-            <View
-              style={{
-                flexDirection: largeText ? "column" : "row",
-                alignItems: "stretch",
-                gap: 12,
-              }}
-            >
-              <Pressable
-                onPress={next}
-                accessibilityRole="button"
-                style={{
-                  flex: largeText ? undefined : 1,
-                  padding: 14,
-                  minHeight: 48,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={styles.label}>Skip for now</Text>
-              </Pressable>
-              {draft.location ? (
-                <View style={{ flex: largeText ? undefined : 1 }}>
-                  <Button
-                    title="Make my day"
-                    secondary
-                    icon={false}
-                    onPress={generate}
-                    disabled={busy || !summary}
-                  />
-                </View>
-              ) : null}
-            </View>
-          ) : draft.location ? (
-            <Button
-              title="Make my day"
-              secondary={!ready}
-              onPress={generate}
-              disabled={busy || !summary}
-            />
-          ) : null}
-          {draft.location ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setAdvanced(true)}
-              style={{ padding: 12 }}
-            >
-              <Text style={[styles.label, { textAlign: "center" }]}>
-                Fine-tune time, travel & area
+          {ready && summary ? (
+            <View style={{ gap: 12 }}>
+              <Text style={styles.heading}>{summary.location.name}</Text>
+              <Text style={styles.body}>
+                {summary.duration / 60} hours · {summary.location.currency}{" "}
+                {summary.budget} / person
               </Text>
-            </Pressable>
+              <Text style={styles.body}>
+                Review the details above, or make room for a little surprise.
+              </Text>
+            </View>
           ) : null}
         </View>
       </Animated.View>
@@ -873,6 +900,32 @@ export default function Planner() {
         title="The little details"
         onClose={() => setAdvanced(false)}
       >
+        {summary ? (
+          <View style={{ gap: 12, marginBottom: 8 }}>
+            <Text style={styles.heading}>{summary.location.name}</Text>
+            <Text style={styles.body}>
+              {summary.duration / 60} hours · {summary.location.currency}{" "}
+              {summary.budget} / person
+            </Text>
+            <Text style={styles.body}>
+              {summary.date} at {summary.startTime} ·{" "}
+              {summary.mode === "WALK" ? "Walking" : "Driving"}
+            </Text>
+            {!draft.known.includes("date") ||
+            !draft.known.includes("duration") ||
+            !draft.known.includes("budget") ? (
+              <Text style={styles.body}>
+                Unchosen details use these starting choices. Adjust them
+                anytime.
+              </Text>
+            ) : null}
+            {draft.dateChoice === "flexible" ? (
+              <Text style={styles.body}>
+                Using tomorrow for route and opening-hour checks.
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <Text style={styles.label}>
           Start time · {draft.location?.timezone}
         </Text>
