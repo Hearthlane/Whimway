@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { execPath } from "node:process";
 import {
   DRIVER_BUNDLE,
   IOS_SCOPES,
@@ -7,12 +12,14 @@ import {
   createIOSScopeTracker,
   fenceIOSScope,
   iosMaestroArguments,
+  iosRunnerDependencies,
   isOwnedMaestroRoot,
   main,
   parseIOSDriverService,
   parseIOSProcessTable,
   readIOSRunnerSnapshot,
   runIOSNativeQA,
+  runIOSHostCommand,
   runOwnedIOSScope,
 } from "../scripts/run-ios-native-qa.mjs";
 
@@ -23,6 +30,19 @@ import {
 const SIMULATOR = "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01";
 const OTHER_SIMULATOR = "20B884BF-749F-4E8B-AFCD-26AB8F1DBD02";
 const STARTED = "Thu Oct 15 22:24:07 2026";
+const temporaryDirectories: string[] = [];
+afterEach(async () => {
+  await Promise.all(
+    temporaryDirectories.splice(0).map(async (directory) => {
+      if (
+        resolve(dirname(directory)) !== resolve(tmpdir()) ||
+        !basename(directory).startsWith("whimway-ios-lifecycle-")
+      )
+        throw Error("Unexpected test cleanup path");
+      await rm(directory, { recursive: true, force: true });
+    }),
+  );
+});
 type Process = ReturnType<typeof parseIOSProcessTable>[number];
 type Snapshot = { processes: Process[]; driverPid: number | null };
 type Scope = (typeof IOS_SCOPES)[number];
@@ -58,6 +78,46 @@ function snapshot(
   driverPid: number | null = null,
 ): Snapshot {
   return { processes, driverPid };
+}
+
+function hostResult(overrides: Record<string, unknown> = {}) {
+  return {
+    status: 0,
+    error: null,
+    code: null,
+    killed: false,
+    signal: null,
+    timedOut: false,
+    deadlineMs: 5000,
+    elapsedMs: 2,
+    startedAt: "2026-10-15T23:31:00.000Z",
+    stdout: "",
+    stderr: "",
+    ...overrides,
+  };
+}
+
+function timedOutService(deadlineMs = 5000) {
+  return hostResult({
+    status: null,
+    error: "command-failed",
+    killed: true,
+    signal: "SIGTERM",
+    timedOut: true,
+    deadlineMs,
+    elapsedMs: deadlineMs + 2,
+  });
+}
+
+function psText(rows: Process[]) {
+  return (
+    rows
+      .map(
+        (row) =>
+          `${row.pid} ${row.ppid} ${row.pgid} ${row.started} ${row.command}`,
+      )
+      .join("\n") + "\n"
+  );
 }
 
 function machine(
@@ -582,6 +642,378 @@ describe("owned XCTest scope teardown and absence fence", () => {
     );
     expect(calls).toEqual([[35427, "SIGTERM"]]);
     expect(clock).toBeGreaterThanOrEqual(3750);
+  });
+});
+
+describe("selected simulator service-read latency and exact attempt provenance", () => {
+  it("retains real execFile timeout, signal and deadline evidence instead of inferring a null status", async () => {
+    const result = await runIOSHostCommand(
+      execPath,
+      ["-e", "setInterval(() => {}, 1000)"],
+      { timeout: 80 },
+    );
+    expect(result).toMatchObject({
+      status: null,
+      code: null,
+      error: "command-failed",
+      killed: true,
+      signal: "SIGTERM",
+      timedOut: true,
+      deadlineMs: 80,
+      stdout: "",
+      stderr: "",
+    });
+    expect(result.elapsedMs).toBeGreaterThanOrEqual(80);
+    expect(Number.isFinite(Date.parse(result.startedAt))).toBe(true);
+  });
+
+  it("distinguishes an actual process exit from timeout and retains both output pipes", async () => {
+    const result = await runIOSHostCommand(
+      execPath,
+      [
+        "-e",
+        "process.stdout.write('out'); process.stderr.write('err'); process.exitCode = 7",
+      ],
+      { timeout: 3000 },
+    );
+    expect(result).toMatchObject({
+      status: 7,
+      code: 7,
+      error: "7",
+      killed: false,
+      signal: null,
+      timedOut: false,
+      deadlineMs: 3000,
+      stdout: "out",
+      stderr: "err",
+    });
+    expect(result.command).toBe(execPath);
+    expect(result.args[0]).toBe("-e");
+  });
+
+  it("retains actual string spawn errors without reclassifying them as a timeout", async () => {
+    const result = await runIOSHostCommand(
+      join(tmpdir(), "whimway-intentionally-nonexistent-ios-probe"),
+      [],
+      { timeout: 1000 },
+    );
+    expect(result).toMatchObject({
+      status: null,
+      code: "ENOENT",
+      error: "ENOENT",
+      killed: false,
+      signal: null,
+      timedOut: false,
+    });
+  });
+
+  it("does not let a known service timeout conceal an invalid process table", async () => {
+    let serviceCalls = 0;
+    await expect(
+      readIOSRunnerSnapshot(
+        SIMULATOR,
+        async (executable: string) => {
+          if (executable === "/bin/ps")
+            return hostResult({ stdout: "unrecognized process record" });
+          serviceCalls++;
+          return timedOutService();
+        },
+        async () => {},
+      ),
+    ).rejects.toThrow("process-row-invalid");
+    expect(serviceCalls).toBe(1);
+  });
+
+  it("uses one fresh full pair after a proven service timeout and returns only the new identities", async () => {
+    let psCalls = 0;
+    let serviceCalls = 0;
+    const deadlines: [string, number][] = [];
+    const attempts: unknown[] = [];
+    const observed = await readIOSRunnerSnapshot(
+      SIMULATOR,
+      async (
+        executable: string,
+        _args: string[],
+        options: { timeout: number },
+      ) => {
+        deadlines.push([executable, options.timeout]);
+        if (executable === "/bin/ps") {
+          psCalls++;
+          return hostResult({
+            stdout: psText([xcode(), runner(psCalls === 1 ? 35427 : 35428)]),
+          });
+        }
+        serviceCalls++;
+        return serviceCalls === 1
+          ? timedOutService()
+          : hostResult({
+              deadlineMs: options.timeout,
+              stdout: `35428 0 ${DRIVER_BUNDLE}\n`,
+            });
+      },
+      async () => {},
+      async (attempt: unknown) => {
+        attempts.push(attempt);
+      },
+    );
+    expect(observed.driverPid).toBe(35428);
+    expect(observed.processes.map((row) => row.pid)).toEqual([15864, 35428]);
+    expect(deadlines).toEqual([
+      ["/bin/ps", 5000],
+      ["xcrun", 5000],
+      ["xcrun", 15000],
+      ["/bin/ps", 5000],
+    ]);
+    expect(attempts).toMatchObject([
+      {
+        attempt: 1,
+        reason: "runner-snapshot-failed",
+        recovery: false,
+        services: { killed: true, signal: "SIGTERM", timedOut: true },
+      },
+      {
+        attempt: 2,
+        reason: null,
+        recovery: true,
+        services: { status: 0, deadlineMs: 15000 },
+      },
+    ]);
+  });
+
+  it.each([
+    hostResult({ status: 1, code: 1, error: "1", stderr: "permission denied" }),
+    hostResult({ status: null, code: null, error: "command-failed" }),
+    hostResult({
+      status: null,
+      code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER",
+      error: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER",
+      killed: true,
+      signal: "SIGTERM",
+    }),
+    hostResult({
+      status: null,
+      code: null,
+      killed: false,
+      signal: "SIGTERM",
+      timedOut: true,
+      elapsedMs: 5002,
+    }),
+    hostResult({
+      status: null,
+      code: null,
+      killed: true,
+      signal: "SIGTERM",
+      timedOut: true,
+      elapsedMs: 4999,
+    }),
+  ])(
+    "does not retry process exit, unknown failure, output overflow or contradictory timeout metadata",
+    async (serviceFailure) => {
+      let services = 0;
+      await expect(
+        readIOSRunnerSnapshot(
+          SIMULATOR,
+          async (executable: string) => {
+            if (executable === "/bin/ps") return hostResult();
+            services++;
+            return serviceFailure;
+          },
+          async () => {},
+        ),
+      ).rejects.toThrow("runner-snapshot-failed");
+      expect(services).toBe(1);
+    },
+  );
+
+  it("bounds consecutive proven service timeouts to two attempts and never starts a journey", async () => {
+    const test = machine();
+    let serviceCalls = 0;
+    test.dependencies.snapshot = () =>
+      readIOSRunnerSnapshot(
+        SIMULATOR,
+        async (
+          executable: string,
+          _args: string[],
+          options: { timeout: number },
+        ) => {
+          if (executable === "/bin/ps") return hostResult();
+          serviceCalls++;
+          return timedOutService(options.timeout);
+        },
+        async () => {},
+      );
+    expect(await runIOSNativeQA(SIMULATOR, test.dependencies)).toBe(1);
+    expect(serviceCalls).toBe(2);
+    expect(test.events.filter((event) => event.startsWith("start:"))).toEqual(
+      [],
+    );
+    expect(test.signals).toEqual([]);
+  });
+
+  it("revalidates a retried signal observation and never signals an identity that became foreign", async () => {
+    const tracker = createIOSScopeTracker(SIMULATOR, 1000);
+    tracker.observe(snapshot([xcode(), runner()], 35427));
+    let serviceCalls = 0;
+    const signals: number[] = [];
+    const dependencies = {
+      now: () => 0,
+      sleep: async () => {},
+      signal: (pid: number) => {
+        signals.push(pid);
+      },
+      snapshot: () =>
+        readIOSRunnerSnapshot(
+          SIMULATOR,
+          async (executable: string) => {
+            if (executable === "/bin/ps")
+              return hostResult({
+                stdout: psText([
+                  xcode(15864, serviceCalls ? 999 : 1000),
+                  runner(),
+                ]),
+              });
+            serviceCalls++;
+            return serviceCalls === 1
+              ? timedOutService()
+              : hostResult({ stdout: `35427 0 ${DRIVER_BUNDLE}\n` });
+          },
+          async () => {},
+        ),
+    };
+    await expect(
+      fenceIOSScope(tracker, 1000, dependencies, { simulator: SIMULATOR }),
+    ).rejects.toThrow("not-owned");
+    expect(serviceCalls).toBe(2);
+    expect(signals).toEqual([]);
+  });
+
+  it("observes process birth after the slow recovered service completes and rejects changes before signalling", async () => {
+    const tracker = createIOSScopeTracker(SIMULATOR, 1000);
+    tracker.observe(snapshot([xcode(), runner()], 35427));
+    let current = xcode();
+    let services = 0;
+    let processReads = 0;
+    let finishService!: () => void;
+    let serviceStarted!: () => void;
+    const heldService = new Promise<void>((resolve) => {
+      finishService = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      serviceStarted = resolve;
+    });
+    const signals: number[] = [];
+    const dependencies = {
+      now: () => 0,
+      sleep: async () => {},
+      signal: (pid: number) => {
+        signals.push(pid);
+      },
+      snapshot: () =>
+        readIOSRunnerSnapshot(
+          SIMULATOR,
+          async (executable: string) => {
+            if (executable === "/bin/ps") {
+              processReads++;
+              return hostResult({ stdout: psText([current, runner()]) });
+            }
+            services++;
+            if (services === 1) return timedOutService();
+            serviceStarted();
+            await heldService;
+            return hostResult({ stdout: `35427 0 ${DRIVER_BUNDLE}\n` });
+          },
+          async () => {},
+        ),
+    };
+    const fencing = fenceIOSScope(tracker, 1000, dependencies, {
+      simulator: SIMULATOR,
+    });
+    const rejected = expect(fencing).rejects.toThrow("owned-pid-reused");
+    await started;
+    expect(processReads).toBe(1);
+    current = { ...current, started: "Thu Oct 15 22:25:00 2026" };
+    finishService();
+    await rejected;
+    expect(processReads).toBe(2);
+    expect(signals).toEqual([]);
+  });
+
+  it("persists every preflight pair with exact failed/recovery output, hashes and command deadline metadata", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "whimway-ios-lifecycle-"));
+    temporaryDirectories.push(directory);
+    let serviceCalls = 0;
+    const dependencies = iosRunnerDependencies(
+      directory,
+      SIMULATOR,
+      async (
+        executable: string,
+        _args: string[],
+        options: { timeout?: number } = {},
+      ) => {
+        if (executable === "/bin/ps")
+          return hostResult({
+            stdout: psText([process(1, "/sbin/launchd", 1, 0)]),
+          });
+        serviceCalls++;
+        return serviceCalls === 1
+          ? timedOutService()
+          : hostResult({
+              deadlineMs: options.timeout,
+              stdout: "PID Status Label\n",
+            });
+      },
+    );
+    await dependencies.snapshot({ scope: "ready", phase: "preflight" });
+    const path = join(
+      directory,
+      "native-test-artifacts",
+      "ios-runner-lifecycle",
+      "ready",
+      "snapshots",
+    );
+    const files = await readdir(path);
+    expect(files.filter((file) => file.endsWith("-attempt.json"))).toHaveLength(
+      2,
+    );
+    const first = JSON.parse(
+      await readFile(join(path, "1-attempt.json"), "utf8"),
+    );
+    const second = JSON.parse(
+      await readFile(join(path, "2-attempt.json"), "utf8"),
+    );
+    expect(first).toMatchObject({
+      simulator: SIMULATOR,
+      phase: "preflight",
+      attempt: 1,
+      reason: "runner-snapshot-failed",
+      commands: {
+        services: {
+          status: null,
+          killed: true,
+          signal: "SIGTERM",
+          timedOut: true,
+          deadlineMs: 5000,
+          stdout: { bytes: 0 },
+          stderr: { bytes: 0 },
+        },
+      },
+    });
+    expect(second).toMatchObject({
+      phase: "preflight",
+      attempt: 2,
+      recovery: true,
+      commands: { services: { status: 0, deadlineMs: 15000 } },
+    });
+    const contents = await readFile(
+      join(path, second.commands.services.stdout.file),
+    );
+    expect(contents.toString()).toBe("PID Status Label\n");
+    expect(createHash("sha256").update(contents).digest("hex")).toBe(
+      second.commands.services.stdout.sha256,
+    );
+    expect(
+      await readFile(join(path, first.commands.ps.stdout.file), "utf8"),
+    ).toContain("/sbin/launchd");
   });
 });
 

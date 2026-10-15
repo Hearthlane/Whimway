@@ -6,7 +6,9 @@
 // https://github.com/mobile-dev-inc/maestro/blob/cli-2.11.0/maestro-ios-driver/src/main/kotlin/xcuitest/installer/LocalXCTestInstaller.kt
 // https://github.com/mobile-dev-inc/maestro/blob/cli-2.11.0/maestro-ios-driver/src/main/kotlin/util/XCRunnerCLIUtils.kt
 import { execFile, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
+import { performance } from "node:perf_hooks";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,6 +18,10 @@ const UUID = /^[A-Fa-f0-9]{8}(?:-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$/;
 const MAX_PROCESSES = 4096;
 const MAX_IDENTITIES = 32;
 const MAX_OUTPUT = 1024 * 1024;
+const SNAPSHOT_TIMEOUT_MS = 5000;
+const SERVICE_RECOVERY_TIMEOUT_MS = 15000;
+const MAX_SNAPSHOT_EVIDENCE = 64;
+const MAX_SNAPSHOT_EVIDENCE_BYTES = 16 * 1024 * 1024;
 const EXPO_URL =
   "exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1";
 export const IOS_SCOPES = Object.freeze([
@@ -239,74 +245,257 @@ export function assertIOSRunnerAbsent(snapshot, simulator) {
     fail("selected-simulator-runner-already-live");
 }
 
-export async function readIOSRunnerSnapshot(simulator, run, sleep) {
+function provenCommandTimeout(result) {
+  return (
+    result.status === null &&
+    result.code === null &&
+    result.killed === true &&
+    result.signal === "SIGTERM" &&
+    result.timedOut === true &&
+    Number.isFinite(result.deadlineMs) &&
+    result.deadlineMs > 0 &&
+    Number.isFinite(result.elapsedMs) &&
+    result.elapsedMs >= result.deadlineMs
+  );
+}
+
+export async function readIOSRunnerSnapshot(
+  simulator,
+  run,
+  sleep,
+  recordAttempt = async (attempt) => {
+    void attempt;
+  },
+) {
   // ps and launchctl cannot be read atomically. A runner can start or exit
   // between them; require a coherent pair before granting any signal rights.
+  let recoveredTimeout = false;
+  let serviceTimeout = SNAPSHOT_TIMEOUT_MS;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const [ps, services] = await Promise.all([
-      run("/bin/ps", ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="]),
-      run("xcrun", ["simctl", "spawn", simulator, "launchctl", "list"]),
-    ]);
-    if (ps.status !== 0 || services.status !== 0)
+    const readProcesses = () =>
+      run("/bin/ps", ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="], {
+        timeout: SNAPSHOT_TIMEOUT_MS,
+      });
+    const readServices = () =>
+      run("xcrun", ["simctl", "spawn", simulator, "launchctl", "list"], {
+        timeout: serviceTimeout,
+      });
+    let ps, services;
+    if (serviceTimeout === SERVICE_RECOVERY_TIMEOUT_MS) {
+      // A parallel ps could be fourteen seconds old by the time a slow
+      // recovered launchctl returns. Observe process birth/command only after
+      // that read completes, including when this snapshot guards a signal.
+      services = await readServices();
+      ps = await readProcesses();
+    } else
+      [ps, services] = await Promise.all([readProcesses(), readServices()]);
+    /** @type {ReturnType<typeof parseIOSProcessTable>} */
+    let processes = [];
+    if (ps.status === 0) {
+      try {
+        processes = parseIOSProcessTable(ps.stdout);
+      } catch (error) {
+        await recordAttempt({
+          attempt: attempt + 1,
+          ps,
+          services,
+          recovery: recoveredTimeout,
+          reason:
+            error instanceof Error ? error.message : "process-table-invalid",
+        });
+        throw error;
+      }
+    }
+    if (ps.status !== 0 || services.status !== 0) {
+      await recordAttempt({
+        attempt: attempt + 1,
+        ps,
+        services,
+        recovery: recoveredTimeout,
+        reason: "runner-snapshot-failed",
+      });
+      // The 1d8 artifact retained two empty failed five-second service reads,
+      // then a successful identical read with a fifteen-second diagnostic bound.
+      // That artifact did not preserve timeout proof. Recover only a newly
+      // proven timeout, once, with an entirely fresh process/service pair.
+      if (
+        ps.status === 0 &&
+        provenCommandTimeout(services) &&
+        !recoveredTimeout &&
+        attempt < 2
+      ) {
+        recoveredTimeout = true;
+        serviceTimeout = SERVICE_RECOVERY_TIMEOUT_MS;
+        await sleep(100);
+        continue;
+      }
       fail("runner-snapshot-failed");
-    const processes = parseIOSProcessTable(ps.stdout);
-    const driverPid = parseIOSDriverService(services.stdout);
-    const drivers = processes.filter((process) =>
-      driverProcess(process, simulator),
-    );
-    if (drivers.length > 1) fail("selected-driver-ambiguous");
-    if (
-      driverPid === null
-        ? drivers.length === 0
-        : drivers.length === 1 && drivers[0].pid === driverPid
-    )
-      return { processes, driverPid };
+    }
+    let driverPid, coherent;
+    try {
+      driverPid = parseIOSDriverService(services.stdout);
+      const drivers = processes.filter((process) =>
+        driverProcess(process, simulator),
+      );
+      if (drivers.length > 1) fail("selected-driver-ambiguous");
+      coherent =
+        driverPid === null
+          ? drivers.length === 0
+          : drivers.length === 1 && drivers[0].pid === driverPid;
+    } catch (error) {
+      await recordAttempt({
+        attempt: attempt + 1,
+        ps,
+        services,
+        recovery: recoveredTimeout,
+        reason: error instanceof Error ? error.message : "snapshot-invalid",
+      });
+      throw error;
+    }
+    await recordAttempt({
+      attempt: attempt + 1,
+      ps,
+      services,
+      recovery: recoveredTimeout,
+      reason: coherent ? null : "driver-service-process-mismatch",
+    });
+    if (coherent) return { processes, driverPid };
+    serviceTimeout = SNAPSHOT_TIMEOUT_MS;
     if (attempt < 2) await sleep(50);
   }
   fail("driver-service-process-mismatch");
 }
 
-function command(command, args, options = {}) {
+export function runIOSHostCommand(command, args, options = {}) {
+  const deadlineMs = options.timeout ?? SNAPSHOT_TIMEOUT_MS;
+  const started = performance.now();
+  const startedAt = new Date().toISOString();
   return new Promise((resolve) => {
     execFile(
       command,
       args,
       {
         encoding: "utf8",
-        timeout: 5000,
+        timeout: deadlineMs,
         maxBuffer: MAX_OUTPUT,
         ...options,
         env: { ...process.env, LC_ALL: "C" },
       },
-      (error, stdout, stderr) =>
+      (error, stdout, stderr) => {
+        const elapsedMs = Math.round(performance.now() - started);
+        const code =
+          typeof error?.code === "number" || typeof error?.code === "string"
+            ? error.code
+            : null;
         resolve({
+          command,
+          args: [...args],
           status: error
             ? typeof error.code === "number"
               ? error.code
               : null
             : 0,
           error: error ? String(error.code ?? "command-failed") : null,
+          code,
+          killed: error?.killed === true,
+          signal: error?.signal ?? null,
+          timedOut:
+            error?.killed === true &&
+            error.signal === "SIGTERM" &&
+            code === null &&
+            elapsedMs >= deadlineMs,
+          deadlineMs,
+          elapsedMs,
+          startedAt,
           stdout: stdout ?? "",
           stderr: stderr ?? "",
-        }),
+        });
+      },
     );
   });
 }
 
-export function iosRunnerDependencies(workspace, simulator) {
+export function iosRunnerDependencies(
+  workspace,
+  simulator,
+  hostCommand = runIOSHostCommand,
+) {
   const directory = join(
     workspace,
     "native-test-artifacts",
     "ios-runner-lifecycle",
   );
   const run = (executable, args, options) =>
-    command(executable, args, { cwd: workspace, ...options });
+    hostCommand(executable, args, { cwd: workspace, ...options });
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  let evidenceCount = 0;
+  let evidenceBytes = 0;
+  const recordSnapshotAttempt = async (context, attempt) => {
+    if (
+      !context ||
+      !IOS_SCOPES.some((scope) => scope.name === context.scope) ||
+      !["preflight", "monitor", "fence", "root-settle"].includes(context.phase)
+    )
+      fail("snapshot-context-invalid");
+    if (context.phase !== "preflight" && !attempt.reason && !attempt.recovery)
+      return;
+    const bytes = [attempt.ps, attempt.services].reduce(
+      (total, result) =>
+        total +
+        Buffer.byteLength(result.stdout) +
+        Buffer.byteLength(result.stderr),
+      0,
+    );
+    if (
+      evidenceCount >= MAX_SNAPSHOT_EVIDENCE ||
+      evidenceBytes + bytes > MAX_SNAPSHOT_EVIDENCE_BYTES
+    )
+      fail("snapshot-evidence-limit");
+    evidenceBytes += bytes;
+    const sequence = ++evidenceCount;
+    const target = join(directory, context.scope, "snapshots");
+    await mkdir(target, { recursive: true });
+    const metadata = {};
+    for (const name of ["ps", "services"]) {
+      const { stdout, stderr, ...details } = attempt[name];
+      const outputs = {};
+      for (const [pipe, value] of Object.entries({ stdout, stderr })) {
+        const file = `${sequence}-${name}.${pipe}.txt`;
+        const buffer = Buffer.from(value);
+        await writeFile(join(target, file), buffer);
+        outputs[pipe] = {
+          file,
+          bytes: buffer.length,
+          sha256: createHash("sha256").update(buffer).digest("hex"),
+        };
+      }
+      metadata[name] = { ...details, ...outputs };
+    }
+    await writeFile(
+      join(target, `${sequence}-attempt.json`),
+      JSON.stringify(
+        {
+          simulator,
+          sequence,
+          phase: context.phase,
+          attempt: attempt.attempt,
+          recovery: attempt.recovery,
+          reason: attempt.reason,
+          commands: metadata,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  };
   return {
     now: Date.now,
     sleep,
     run,
-    snapshot: () => readIOSRunnerSnapshot(simulator, run, sleep),
+    snapshot: (context) =>
+      readIOSRunnerSnapshot(simulator, run, sleep, (attempt) =>
+        recordSnapshotAttempt(context, attempt),
+      ),
     start(scope) {
       const child = spawn("maestro", iosMaestroArguments(scope, simulator), {
         cwd: workspace,
@@ -343,13 +532,13 @@ export function iosRunnerDependencies(workspace, simulator) {
           "processes",
           "/bin/ps",
           ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="],
-          5000,
+          SNAPSHOT_TIMEOUT_MS,
         ],
         [
           "services",
           "xcrun",
           ["simctl", "spawn", simulator, "launchctl", "list"],
-          5000,
+          SERVICE_RECOVERY_TIMEOUT_MS,
         ],
         [
           "simulator-xctest",
@@ -397,7 +586,20 @@ export function iosRunnerDependencies(workspace, simulator) {
               join(target, `${name}.${pipe}.txt`),
               Buffer.from(result[pipe]).subarray(0, MAX_OUTPUT),
             );
-          return { name, status: result.status, error: result.error };
+          return {
+            name,
+            command: result.command,
+            args: result.args,
+            status: result.status,
+            error: result.error,
+            code: result.code,
+            killed: result.killed,
+            signal: result.signal,
+            timedOut: result.timedOut,
+            deadlineMs: result.deadlineMs,
+            elapsedMs: result.elapsedMs,
+            startedAt: result.startedAt,
+          };
         }),
       );
       await writeFile(
@@ -488,9 +690,9 @@ export async function settleIOSMaestroRoot(
   const started = dependencies.now();
   const sent = new Set();
   while (dependencies.now() - started <= 10000) {
-    const current = (await dependencies.snapshot()).processes.find(
-      (row) => row.pid === identity.pid,
-    );
+    const current = (
+      await dependencies.snapshot({ scope: scope.name, phase: "root-settle" })
+    ).processes.find((row) => row.pid === identity.pid);
     if (!current) return;
     if (
       !identityEqual(identity, current) ||
@@ -524,7 +726,8 @@ export async function fenceIOSScope(
   let quietSince = null;
   const sent = new Set();
   while (now() - started <= timeoutMs) {
-    const currentSnapshot = await snapshot();
+    const context = { scope: options.scope?.name, phase: "fence" };
+    const currentSnapshot = await snapshot(context);
     const observed = tracker.observe(currentSnapshot);
     const root =
       options.rootIdentity &&
@@ -554,7 +757,7 @@ export async function fenceIOSScope(
         if (sent.has(key)) continue;
         // Freshly revalidate birth time, command and scope PGID immediately
         // before each individual signal. PID reuse revokes the entire fence.
-        const fresh = await snapshot();
+        const fresh = await snapshot(context);
         const freshOwned = tracker.observe(fresh).live;
         const current =
           process.pid === groupId && options.rootIdentity
@@ -592,7 +795,10 @@ export async function fenceIOSScope(
 
 export async function runOwnedIOSScope(scope, simulator, dependencies) {
   const { snapshot, start, now, sleep, record, diagnose } = dependencies;
-  assertIOSRunnerAbsent(await snapshot(), simulator);
+  assertIOSRunnerAbsent(
+    await snapshot({ scope: scope.name, phase: "preflight" }),
+    simulator,
+  );
   const child = start(scope);
   if (!Number.isSafeInteger(child.pid) || child.pid < 2)
     fail("maestro-start-failed");
@@ -610,7 +816,7 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
   const started = now();
   try {
     while (!exited) {
-      const current = await snapshot();
+      const current = await snapshot({ scope: scope.name, phase: "monitor" });
       const root = current.processes.find(
         (process) => process.pid === child.pid,
       );
