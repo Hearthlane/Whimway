@@ -36,6 +36,7 @@ const runtimeFiles = new Set([
   "scripts/CheckNativeFlows.java",
   "scripts/start-native-test-services.mjs",
   "scripts/native-ios-viewport-server.mjs",
+  "scripts/native-ios-gesture-server.mjs",
   "scripts/native-plan-viewport.mjs",
   "scripts/run-android-native-qa.sh",
   "scripts/native-build-inputs.mjs",

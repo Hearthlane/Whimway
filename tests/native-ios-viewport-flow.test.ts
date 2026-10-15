@@ -26,6 +26,7 @@ function observation(ready = true) {
     fullyVisible: ready,
     driverPort: 7004,
     sequence: 7,
+    observationToken: "dcac7111-57e4-4d92-bec3-4bce0498aa9e",
     observedAt: new Date().toISOString(),
     targetKind: "control",
     screenBounds: "[0,0][402,874]",
@@ -126,7 +127,7 @@ describe("Maestro native viewport observation bridge", () => {
     },
   );
 
-  it("dispatches precisely one real native gesture to the same selected driver and retains its empty200 response", () => {
+  it("sends only the trusted observation identity to the separate one-shot broker", () => {
     const output = observe(observation(false));
     const requests: {
       url: string;
@@ -139,28 +140,32 @@ describe("Maestro native viewport observation bridge", () => {
       http: {
         post: (url: string, options: { body: string; headers: unknown }) => {
           requests.push({ url, options });
-          return { ok: true, status: 200, body: "" };
+          return {
+            ok: true,
+            status: 200,
+            body: JSON.stringify({ ok: true, nativeStatus: 200 }),
+          };
         },
       },
       console: { log: (value: string) => logs.push(value) },
     });
     expect(requests).toHaveLength(1);
-    expect(requests[0].url).toBe("http://127.0.0.1:7004/swipeV2");
+    expect(requests[0].url).toBe("http://127.0.0.1:8767/gesture");
     expect(requests[0].options.headers).toEqual({
       "Content-Type": "application/json",
     });
     expect(JSON.parse(requests[0].options.body)).toEqual({
-      startX: 389.94,
-      startY: 681.72,
-      endX: 389.94,
-      endY: 611.8,
-      duration: 0.6,
-      appIds: ["com.example.whimway"],
+      observationToken: observation(false).observationToken,
     });
     expect(JSON.parse(logs[0])).toMatchObject({
-      source: "maestro-xctest-native-swipe",
+      source: "maestro-xctest-gesture-broker",
       sequence: 7,
-      response: { ok: true, status: 200, body: "", bodyTruncated: false },
+      response: {
+        ok: true,
+        status: 200,
+        body: JSON.stringify({ ok: true, nativeStatus: 200 }),
+        bodyTruncated: false,
+      },
     });
     expect(output.whimwayPlanValidatedSwipe).toBeNull();
   });
@@ -176,7 +181,15 @@ describe("Maestro native viewport observation bridge", () => {
         http: {
           post: () => {
             calls++;
-            return { ok: false, status, body: "native failure" };
+            return {
+              ok: true,
+              status: 200,
+              body: JSON.stringify({
+                ok: false,
+                nativeStatus: status,
+                reason: "native-http-failed",
+              }),
+            };
           },
         },
         console: { log: () => {} },

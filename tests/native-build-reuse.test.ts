@@ -126,6 +126,7 @@ describe("Exact server-only native build exceptions", () => {
     const { root, file, commit, base } = fixture();
     for (const name of [
       "scripts/native-ios-viewport-server.mjs",
+      "scripts/native-ios-gesture-server.mjs",
       "scripts/native-plan-viewport.mjs",
       "e2e-native/helpers/observe-ios-plan.js",
     ])
@@ -182,6 +183,7 @@ describe("Exact server-only native build exceptions", () => {
     "package-lock.json",
     "tsconfig.json",
     "unknown-native-input.ts",
+    "scripts/native-ios-gesture-server.native.mjs",
   ])(
     "keeps the shared/native/config/dependency or unknown path %s strict",
     (name) => {
@@ -421,6 +423,7 @@ describe("Server-only exceptions stay outside the actual mobile dependency graph
       ...deniedProviders,
       "scripts/native-plan-viewport.mjs",
       "scripts/native-ios-viewport-server.mjs",
+      "scripts/native-ios-gesture-server.mjs",
       "scripts/CheckNativeFlows.java",
     ])
       expect(graph.visited.has(provider)).toBe(false);

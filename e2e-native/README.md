@@ -24,9 +24,22 @@ maestro test --driver-host-port 7002 --test-output-dir native-results/ios \
   e2e-native/smoke.yaml
 ```
 
-The iOS plan helpers also require the local viewport observer on port 8766. Hosted CI starts it with the test services. For a manual run alongside your existing backend/Metro, start it separately with `node --input-type=module -e "import {startIOSViewportServer} from './scripts/native-ios-viewport-server.mjs'; await startIOSViewportServer({artifactDirectory:'native-test-artifacts/ios-plan-viewport'});"`. Keep the explicitly selected Maestro driver port and `IOS_DRIVER_PORT` identical (allowed ports: 7001–7004).
+The iOS plan helpers also require the local viewport observer on port 8766 and the separate gesture broker on port 8767. Hosted CI starts both with the test services. For a manual run alongside your existing backend/Metro, start them together in another terminal:
 
-CI pins Maestro 2.11.0 and converts every flow with its actual `YamlCommandReader.readCommands` before native compilation. The shallow `check-syntax` command misses eager coordinate-conversion errors. Its YAML swipe converter does not defer expressions, so the iOS plan loop uses Maestro's JavaScript HTTP client to call the same driver's `/swipeV2` native gesture route with freshly observed, clipped and damped points. The observer only reads hierarchy/device information. Gesture responses are retained in Maestro logs, and a failed or timed-out gesture is never replayed. Taps remain real Maestro `tapOn` commands using absolute integer points revalidated after rounding. The loop permits at most 20 gestures and still requires the actual sheet/Day assertions. [Maestro 2.11 swipe implementation](https://github.com/mobile-dev-inc/Maestro/blob/cli-2.11.0/maestro-ios-xctest-runner/maestro-driver-iosUITests/Routes/Handlers/SwipeRouteHandlerV2.swift)
+```bash
+node --input-type=module -e "
+import {startIOSViewportServer} from './scripts/native-ios-viewport-server.mjs';
+import {startIOSGestureBroker} from './scripts/native-ios-gesture-server.mjs';
+const observer = await startIOSViewportServer({artifactDirectory:'native-test-artifacts/ios-plan-viewport'});
+await startIOSGestureBroker({consumeObservation:observer.consumeObservation,artifactDirectory:'native-test-artifacts/ios-plan-gestures'});
+"
+```
+
+Keep the explicitly selected Maestro driver port and `IOS_DRIVER_PORT` identical (allowed ports: 7001–7004).
+
+CI pins Maestro 2.11.0 and converts every flow with its actual `YamlCommandReader.readCommands` before native compilation. The shallow `check-syntax` command misses eager coordinate-conversion errors. Its YAML swipe converter does not defer expressions, so the iOS plan loop obtains fresh, clipped and damped points from the observer. That observer only reads hierarchy/device information and issues a short-lived, single-use observation token. The JavaScript helper sends only this token to the separate broker, which consumes the trusted observation before making one native `/swipeV2` request to the same driver. Taps remain real Maestro `tapOn` commands using absolute integer points revalidated after rounding. The loop permits at most 20 gestures and still requires the actual sheet/Day assertions. [Maestro 2.11 swipe implementation](https://github.com/mobile-dev-inc/Maestro/blob/cli-2.11.0/maestro-ios-xctest-runner/maestro-driver-iosUITests/Routes/Handlers/SwipeRouteHandlerV2.swift)
+
+An isolated run of the actual Maestro 2.11 JavaScript runtime showed its generic HTTP client automatically replaying a direct native HTTP 408 response before JavaScript could reject it. The broker uses Node's HTTP client without retries and caches each identity's in-flight or completed result, including after a client disconnect, native timeout or lost connection. Driver outcomes use HTTP 200 envelopes with an explicit success/failure field, preventing HTTP-408 replay while preserving failure assertions. Repeated requests for the same identity never dispatch another gesture. Bounded native status/body evidence is retained in `native-test-artifacts/ios-plan-gestures`, with response summaries in Maestro logs. This isolated transport regression is separate from actual simulator UI execution.
 
 Run `reminders-allow.yaml` with the same platform arguments after the main flow. Maestro permission settings are explicit; iOS notification prompts can be handled automatically by the tool, so a granted state is not evidence of a manually granted first-use dialog. The denied flow must actually reach the app's denied message to pass. Also perform a fresh manual grant/deny check with tool auto-handling disabled. [Maestro permission behavior](https://docs.maestro.dev/maestro-flows/flow-control-and-logic/permissions)
 

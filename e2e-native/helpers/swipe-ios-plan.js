@@ -1,7 +1,8 @@
 /* global IOS_DRIVER_PORT, http, output */
 // Maestro 2.11 eagerly parses YAML swipe coordinates before JS evaluation.
-// Its supported JS HTTP client invokes the SAME XCTest native gesture route,
-// once, using the read-only observer's current clipped and damped geometry.
+// The generic HTTP client can replay a native408 before JS sees the response.
+// Send only the server-issued identity to the separate one-shot local broker;
+// it consumes trusted geometry and deduplicates even transport-level retries.
 var whimwayProof = output.whimwayPlanValidatedSwipe;
 var whimwayCurrent = output.whimwayPlanViewport;
 var whimwayPort = String(IOS_DRIVER_PORT);
@@ -17,7 +18,12 @@ if (
   whimwayProof.observedAt !== whimwayCurrent.observedAt ||
   !Number.isFinite(whimwayTime) ||
   whimwayTime < -1000 ||
-  whimwayTime > 10000
+  whimwayTime > 10000 ||
+  typeof whimwayProof.observationToken !== "string" ||
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+    whimwayProof.observationToken,
+  ) ||
+  whimwayProof.observationToken !== whimwayCurrent.observationToken
 )
   throw new Error("Native swipe proof was invalid or stale");
 var whimwayPayload = whimwayProof.payload;
@@ -60,18 +66,15 @@ if (
 // Clear before dispatch: a failed/408 call may already have executed and must
 // never be replayed. The loop obtains a new actual AX snapshot afterward.
 output.whimwayPlanValidatedSwipe = null;
-var whimwayResponse = http.post(
-  "http://127.0.0.1:" + whimwayPort + "/swipeV2",
-  {
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(whimwayPayload),
-  },
-);
+var whimwayResponse = http.post("http://127.0.0.1:8767/gesture", {
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ observationToken: whimwayProof.observationToken }),
+});
 var whimwayBody =
   typeof whimwayResponse.body === "string" ? whimwayResponse.body : "";
 console.log(
   JSON.stringify({
-    source: "maestro-xctest-native-swipe",
+    source: "maestro-xctest-gesture-broker",
     driverPort: Number(whimwayPort),
     sequence: whimwayProof.sequence,
     payload: whimwayPayload,
@@ -84,4 +87,7 @@ console.log(
   }),
 );
 if (whimwayResponse.ok !== true || whimwayResponse.status !== 200)
+  throw new Error("Native swipe failed");
+var whimwayResult = JSON.parse(whimwayBody);
+if (whimwayResult.ok !== true || whimwayResult.nativeStatus !== 200)
   throw new Error("Native swipe failed");

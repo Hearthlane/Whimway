@@ -10,6 +10,7 @@ const MAX_NODES = 12000;
 const MAX_DEPTH = 100;
 const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024;
 const MAX_OBSERVATIONS = 256;
+const MAX_ISSUED_OBSERVATION_BYTES = 1024 * 1024;
 const TARGETS = new Map([
   ["Start my day", "control"],
   ["Adjust plan", "control"],
@@ -162,18 +163,39 @@ function evidence(bytes, filename) {
   };
 }
 
+function freezeDeep(value) {
+  if (record(value) || Array.isArray(value)) {
+    for (const child of Object.values(value)) freezeDeep(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+/**
+ * @typedef {Readonly<{
+ * observationToken:string, driverPort:number, observedAt:string, issuedAt:number,
+ * sequence:number, screenBounds:string, targetText:string, targetKind:string,
+ * geometry:Readonly<ReturnType<typeof analyzePlanViewport>>
+ * }>} IOSViewportObservation
+ * @typedef {import('node:http').Server & {
+ * consumeObservation:(observationToken:unknown)=>IOSViewportObservation
+ * }} IOSViewportServer
+ */
+
 /**
  * Internal Maestro API bridge. Only reads /deviceInfo and /viewHierarchy from
- * explicitly selected same-simulator driver ports; Maestro still does all UI
- * gestures/taps. requestTimeoutMs is bounded and injectable for transport tests.
- * @param {{artifactDirectory:string,port?:number,allowedDriverPorts?:number[],requestTimeoutMs?:number}} options
- * @returns {Promise<import('node:http').Server>}
+ * explicitly selected same-simulator driver ports. HTTP remains read-only;
+ * the separate gesture broker can synchronously consume an issued observation
+ * once, obtaining immutable geometry without accepting client coordinates.
+ * @param {{artifactDirectory:string,port?:number,allowedDriverPorts?:number[],requestTimeoutMs?:number,observationTtlMs?:number}} options
+ * @returns {Promise<IOSViewportServer>}
  */
 export async function startIOSViewportServer({
   artifactDirectory,
   port = 8766,
   allowedDriverPorts = [7001, 7002, 7003, 7004],
   requestTimeoutMs = 15000,
+  observationTtlMs = 10000,
 }) {
   if (
     typeof artifactDirectory !== "string" ||
@@ -186,7 +208,10 @@ export async function startIOSViewportServer({
     new Set(allowedDriverPorts).size !== allowedDriverPorts.length ||
     !Number.isInteger(requestTimeoutMs) ||
     requestTimeoutMs < 50 ||
-    requestTimeoutMs > 30000
+    requestTimeoutMs > 30000 ||
+    !Number.isInteger(observationTtlMs) ||
+    observationTtlMs < 50 ||
+    observationTtlMs > 15000
   )
     throw new Error("Invalid native viewport server configuration.");
   const directory = resolve(artifactDirectory);
@@ -194,6 +219,9 @@ export async function startIOSViewportServer({
   const session = `${Date.now()}-${randomUUID().slice(0, 8)}`;
   let sequence = 0;
   let retainedBytes = 0;
+  let issuedBytes = 0;
+  const issued = new Map();
+  const latestByDriver = new Map();
   let busy = false;
   const server = createServer(async (request, response) => {
     const send = (status, value) => {
@@ -210,7 +238,7 @@ export async function startIOSViewportServer({
     if (
       request.method !== "GET" ||
       request.headers.host !== `127.0.0.1:${actualPort}` ||
-      request.headers.origin ||
+      request.headers.origin !== undefined ||
       request.headers["content-length"] ||
       request.headers["transfer-encoding"] ||
       !request.url ||
@@ -249,8 +277,9 @@ export async function startIOSViewportServer({
       return send(503, { ok: false, reason: "observation-limit" });
     busy = true;
     const current = ++sequence;
+    latestByDriver.set(driverPort, current);
     const prefix = `${session}-${String(current).padStart(3, "0")}-driver-${driverPort}`;
-    const observedAt = new Date().toISOString();
+    let observedAt = new Date().toISOString();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
     const abort = () => controller.abort();
@@ -269,6 +298,9 @@ export async function startIOSViewportServer({
         controller.signal,
       );
       screenBounds = deviceBounds(parseJSON(deviceBytes));
+      // Timestamp before requesting AX, so a slow response/artifact write
+      // cannot make an old snapshot appear freshly observed at token issue.
+      observedAt = new Date().toISOString();
       snapshotBytes = await readDriver(
         driverPort,
         "viewHierarchy",
@@ -297,6 +329,7 @@ export async function startIOSViewportServer({
       request.removeListener("aborted", abort);
     }
     try {
+      const observationToken = failure ? undefined : randomUUID();
       const device =
         deviceBytes && evidence(deviceBytes, `${prefix}-device-info.json`);
       const snapshot =
@@ -311,6 +344,7 @@ export async function startIOSViewportServer({
             screenBounds,
             targetText,
             targetKind,
+            ...(observationToken ? { observationToken } : {}),
             ...(device ? { device } : {}),
             ...(snapshot ? { snapshot } : {}),
             ...(failure
@@ -344,7 +378,26 @@ export async function startIOSViewportServer({
         { flag: "wx", mode: 0o600 },
       );
       if (failure) send(failure.status, { ok: false, reason: failure.reason });
-      else
+      else {
+        const proof = freezeDeep({
+          observationToken,
+          driverPort,
+          observedAt,
+          issuedAt: Date.now(),
+          sequence: current,
+          screenBounds,
+          targetText,
+          targetKind,
+          geometry,
+        });
+        const proofBytes = Buffer.byteLength(JSON.stringify(proof));
+        if (
+          issued.size >= MAX_OBSERVATIONS ||
+          issuedBytes + proofBytes > MAX_ISSUED_OBSERVATION_BYTES
+        )
+          reject("issued-observation-limit", 503);
+        issuedBytes += proofBytes;
+        issued.set(observationToken, { proof, consumed: false });
         send(200, {
           ok: true,
           ...geometry,
@@ -352,7 +405,9 @@ export async function startIOSViewportServer({
           sequence: current,
           driverPort,
           screenBounds,
+          observationToken,
         });
+      }
     } catch (error) {
       send(error instanceof ObservationError ? error.status : 500, {
         ok: false,
@@ -364,6 +419,37 @@ export async function startIOSViewportServer({
     } finally {
       busy = false;
     }
+  });
+  // Not an HTTP route: only the separately bound loopback gesture broker gets
+  // this capability. Consume before any asynchronous work or native dispatch.
+  server.consumeObservation = (observationToken) => {
+    if (!server.listening) reject("observation-server-closed", 503);
+    if (
+      typeof observationToken !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        observationToken,
+      )
+    )
+      reject("observation-token-invalid", 400);
+    const entry = issued.get(observationToken);
+    if (!entry) reject("observation-token-unknown", 400);
+    if (entry.consumed) reject("observation-token-consumed", 409);
+    // Mark rejected stale observations unusable too; no later caller can
+    // reinterpret a stale or superseded snapshot as permission to gesture.
+    entry.consumed = true;
+    const now = Date.now();
+    if (
+      now - entry.proof.issuedAt >= observationTtlMs ||
+      now - Date.parse(entry.proof.observedAt) >= observationTtlMs
+    )
+      reject("observation-token-expired", 409);
+    if (latestByDriver.get(entry.proof.driverPort) !== entry.proof.sequence)
+      reject("observation-token-superseded", 409);
+    return entry.proof;
+  };
+  server.on("close", () => {
+    issued.clear();
+    latestByDriver.clear();
   });
   server.headersTimeout = 5000;
   server.requestTimeout = 35000;

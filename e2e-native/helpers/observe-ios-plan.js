@@ -115,6 +115,13 @@ if (whimwayViewport.ready) {
     whimwayViewport.tapPoint = null;
   }
 } else {
+  if (
+    typeof whimwayViewport.observationToken !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      whimwayViewport.observationToken,
+    )
+  )
+    throw new Error("Native swipe observation identity was invalid");
   var whimwayStart = whimwayPercentPoint(
     whimwayViewport.swipe && whimwayViewport.swipe.start,
   );
@@ -134,6 +141,7 @@ if (whimwayViewport.ready) {
   )
     throw new Error("Native swipe direction or distance was invalid");
   output.whimwayPlanValidatedSwipe = {
+    observationToken: whimwayViewport.observationToken,
     driverPort: whimwayViewport.driverPort,
     sequence: whimwayViewport.sequence,
     observedAt: whimwayViewport.observedAt,
