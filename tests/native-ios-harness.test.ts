@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import observations from "./fixtures/ios-38664294144-viewport.json";
+import switchObservations from "./fixtures/ios-38668397703-switch.json";
 
 type Command = Record<string, unknown>;
 const require = createRequire(import.meta.url);
@@ -46,6 +47,102 @@ function inside(
 }
 
 describe("iOS native harness readiness and retained viewport regression", () => {
+  it("centers the actual OFF switch retained near the bottom edge before attempting to enable it", () => {
+    const observed = switchObservations.largeText.attributes;
+    expect(observed.checked).toBe("false");
+    expect(observed.value).toBe("0");
+    const box = bounds(observed.bounds);
+    const screen = bounds(switchObservations.screenBounds);
+    expect((box.top + box.bottom) / 2).toBe(749);
+    expect(box.top).toBeGreaterThan(screen.bottom * 0.7);
+    const flow = commands("e2e-native/helpers/create-fixture-plan.yaml");
+    const ios = branch(flow, "iOS");
+    expect(ios).toContainEqual({
+      scrollUntilVisible: {
+        element: observed.accessibilityText,
+        direction: "DOWN",
+        centerElement: true,
+        timeout: 15000,
+      },
+    });
+    const conditionalTapIndex = flow.findIndex((entry) => {
+      const nested = entry.runFlow as {
+        when?: { visible?: { text?: string } };
+      };
+      return nested?.when?.visible?.text === observed.accessibilityText;
+    });
+    expect(conditionalTapIndex).toBeGreaterThan(0);
+    expect(flow.slice(0, conditionalTapIndex)).toContainEqual({
+      runFlow: { when: { platform: "iOS" }, commands: ios },
+    });
+  });
+  it.each([
+    [false, true, 1],
+    [true, true, 0],
+  ])(
+    "sets the real fixture switch ON without inverting retained state: checked=%s",
+    (initial, tapWorks, expectedTaps) => {
+      const label = "Use synthetic development fixtures";
+      const flow = commands("e2e-native/helpers/create-fixture-plan.yaml");
+      const conditional = flow.find((entry) => {
+        const nested = entry.runFlow as {
+          when?: { visible?: { text?: string } };
+        };
+        return nested?.when?.visible?.text === label;
+      })?.runFlow as {
+        when: { visible: { text: string; checked: boolean } };
+        commands: { tapOn: { text: string; checked: boolean } }[];
+      };
+      expect(conditional.when.visible).toEqual({ text: label, checked: false });
+      expect(conditional.commands).toEqual([
+        { tapOn: { text: label, checked: false } },
+      ]);
+      // Apply the parsed flow's selector/tap semantics to both real Switch
+      // states. The retained hierarchy already proves ON is a possible input.
+      expect(
+        observations.reminders.nodes.find(
+          (node) => node.accessibilityText === label,
+        )?.checked,
+      ).toBe("true");
+      let checked = initial,
+        taps = 0;
+      if (checked === conditional.when.visible.checked) {
+        for (const command of conditional.commands) {
+          if (command.tapOn.checked === checked) {
+            taps += 1;
+            if (tapWorks) checked = !checked;
+          }
+        }
+      }
+      expect(taps).toBe(expectedTaps);
+      expect(checked).toBe(true);
+      expect(flow).not.toContainEqual({ tapOn: label });
+    },
+  );
+  it("requires checked:true before search and retains a screenshot rather than continuing from unknown or OFF state", () => {
+    const flow = commands("e2e-native/helpers/create-fixture-plan.yaml");
+    const assertion = flow.findIndex(
+      (entry) =>
+        (entry.assertVisible as { text?: string })?.text ===
+        "Use synthetic development fixtures",
+    );
+    const search = flow.findIndex((entry) => entry.tapOn === "Search a place");
+    expect(assertion).toBeGreaterThan(0);
+    expect(assertion).toBeLessThan(search);
+    const selector = flow[assertion].assertVisible as {
+      text: string;
+      checked: boolean;
+    };
+    expect(selector).toEqual({
+      text: "Use synthetic development fixtures",
+      checked: true,
+    });
+    expect(flow[assertion + 1]).toEqual({
+      takeScreenshot: "native-fixtures-enabled",
+    });
+    for (const checked of [undefined, false])
+      expect(checked === selector.checked).toBe(false);
+  });
   it("gates the native probe on actual cold-start UI readiness before the fresh main journey, retaining either failure", () => {
     const workflow = read(".github/workflows/native.yml");
     const gate = workflow.indexOf(

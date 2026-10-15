@@ -15,6 +15,13 @@ appId: ${APP_ID || 'com.example.whimway'}
                 start: 96%, 75%
                 end: 96%, 25%
                 duration: 700
+      # The next retained run found the switch OFF at y735-763, close to tabs.
+      # Move it away from the edge before any state-dependent toggle tap.
+      - scrollUntilVisible:
+          element: "Use synthetic development fixtures"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
       - assertVisible: "Use synthetic development fixtures"
 - runFlow:
     when:
@@ -23,7 +30,21 @@ appId: ${APP_ID || 'com.example.whimway'}
       - scrollUntilVisible:
           element: "Use synthetic development fixtures"
           direction: DOWN
-- tapOn: "Use synthetic development fixtures"
+# Set the real UI to ON without assuming its starting state. Never blindly
+# invert the switch or type without confirming it.
+- runFlow:
+    when:
+      visible:
+        text: "Use synthetic development fixtures"
+        checked: false
+    commands:
+      - tapOn:
+          text: "Use synthetic development fixtures"
+          checked: false
+- assertVisible:
+    text: "Use synthetic development fixtures"
+    checked: true
+- takeScreenshot: native-fixtures-enabled
 - runFlow:
     when:
       platform: iOS
