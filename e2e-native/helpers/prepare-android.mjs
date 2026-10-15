@@ -36,7 +36,19 @@ export function androidResetState(processes, activities) {
       /ActivityRecord\{[^\r\n}]*\bcom\.example\.whimway\//g,
     ),
   ];
-  if (ownPackage.test(activities) && !ownTasks.length && !ownActivities.length)
+  // TaskDisplayArea retains this historical focus pointer after task removal.
+  // Ignore only its observed Android 14 format for the unknown-reference check;
+  // actual Task/ActivityRecord/process/pending-kill observations remain intact.
+  // AOSP TaskDisplayArea.java mLastFocusedRootTask; CI run38664294144 line141.
+  const currentReferences = activities.replace(
+    /^[ \t]*mLastFocusedRootTask=Task\{[a-f0-9]+ #\d+ type=standard A=\d+:com\.example\.whimway\}[ \t]*\r?$/gm,
+    "",
+  );
+  if (
+    ownPackage.test(currentReferences) &&
+    !ownTasks.length &&
+    !ownActivities.length
+  )
     throw Error("Unrecognized package-specific Android task state.");
   const pendingKill = ownTasks.some((task) => {
     const end =

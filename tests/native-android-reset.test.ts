@@ -25,6 +25,19 @@ const busyProcesses =
 type Snapshot = { processes: string; tasks: string };
 const quiet = { processes: quietProcesses, tasks: quietTasks };
 const busy = { processes: busyProcesses, tasks: pendingTask };
+// Retained Android14/API34 snapshots from hosted run38664294144; only trailing
+// line padding is normalized. No Whimway process/task was still alive before
+// this rejected large-text launch.
+const historicalFocus = {
+  processes: readFileSync(
+    path.join(root, "tests/fixtures/android-reset-38664294144/processes.txt"),
+    "utf8",
+  ),
+  tasks: readFileSync(
+    path.join(root, "tests/fixtures/android-reset-38664294144/tasks.txt"),
+    "utf8",
+  ),
+};
 
 function fixture(snapshots: Snapshot[] = [quiet]) {
   let time = 0,
@@ -64,6 +77,71 @@ function fixture(snapshots: Snapshot[] = [quiet]) {
 }
 
 describe("Android fixture reset and task teardown", () => {
+  it("recognizes the actual retained historical-focus snapshot without mistaking it for a live task", () => {
+    expect(historicalFocus.tasks).toContain(
+      "mLastFocusedRootTask=Task{b8f2cc1 #10 type=standard A=10192:com.example.whimway}",
+    );
+    expect(
+      androidResetState(historicalFocus.processes, historicalFocus.tasks),
+    ).toEqual({
+      processes: 0,
+      tasks: 0,
+      activities: 0,
+      pending_kill: false,
+      quiet: true,
+    });
+  });
+  it("still requires at least two stable seconds when the retained historical-focus snapshot repeats", async () => {
+    const f = fixture([historicalFocus]);
+    const proof = await prepareAndroidApp({
+      ...f.options,
+      scope: "large-text",
+    });
+    expect(proof).toMatchObject({ prepared: true, scope: "large-text" });
+    expect(proof.stable_quiet_ms).toBeGreaterThanOrEqual(2000);
+    expect(
+      f.run.mock.calls.filter(([, args]) => args.includes("clear")),
+    ).toHaveLength(1);
+  });
+  it("does not ignore a live own process, task, activity or pending kill beside the historical focus field", () => {
+    expect(
+      androidResetState(
+        historicalFocus.processes + "\n8180 com.example.whimway\n",
+        historicalFocus.tasks,
+      ),
+    ).toMatchObject({ processes: 1, quiet: false });
+    expect(
+      androidResetState(
+        historicalFocus.processes,
+        historicalFocus.tasks + pendingTask,
+      ),
+    ).toMatchObject({
+      tasks: 1,
+      activities: 1,
+      pending_kill: true,
+      quiet: false,
+    });
+  });
+  it("still rejects other unknown package references and altered historical-field formats", () => {
+    for (const tasks of [
+      historicalFocus.tasks + "\nunknown-format com.example.whimway\n",
+      historicalFocus.tasks.replace(
+        "mLastFocusedRootTask=",
+        "mUnknownFocusedRootTask=",
+      ),
+      historicalFocus.tasks.replace(
+        "mLastFocusedRootTask=",
+        "unrecognized mLastFocusedRootTask=",
+      ),
+      historicalFocus.tasks.replace(
+        "A=10192:com.example.whimway}",
+        "A=10192:com.example.whimway unexpected=true}",
+      ),
+    ])
+      expect(() => androidResetState(historicalFocus.processes, tasks)).toThrow(
+        "Unrecognized package-specific",
+      );
+  });
   it("observes current and child processes plus the old task's pending kill, excluding another package", () => {
     expect(androidResetState(busyProcesses, pendingTask)).toEqual({
       processes: 2,
