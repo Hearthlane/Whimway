@@ -1,11 +1,26 @@
 appId: ${APP_ID || 'com.example.whimway'}
 ---
 - runFlow: cancel-stale-whimway-link.yaml
-- launchApp:
-    clearState: true
-    permissions:
-      location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
-      notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
+- runFlow:
+    when:
+      true: ${maestro.platform !== 'android' || typeof ANDROID_HOST_PREPARED === 'undefined' || ANDROID_HOST_PREPARED !== '1'}
+    commands:
+      - launchApp:
+          clearState: true
+          permissions:
+            location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
+            notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
+- runFlow:
+    when:
+      platform: Android
+      true: ${typeof ANDROID_HOST_PREPARED !== 'undefined' && ANDROID_HOST_PREPARED === '1'}
+    commands:
+      - launchApp:
+          clearState: false
+          stopApp: false
+          permissions:
+            location: deny
+            notifications: "${typeof NOTIFICATION_PERMISSION === 'undefined' ? 'deny' : NOTIFICATION_PERMISSION}"
 - runFlow: dismiss-pixel-launcher-anr.yaml
 - extendedWaitUntil:
     visible: "Development Build"

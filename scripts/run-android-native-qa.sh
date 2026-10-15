@@ -56,11 +56,24 @@ device_adb shell dumpsys SurfaceFlinger | sed -n '/GLES:/p' > native-test-artifa
 for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
 test -f native-test-artifacts/ready.json
 result=0
-maestro test --test-output-dir native-results/android -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/smoke.yaml || result=1
-maestro test --test-output-dir native-results/android-reminders -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/reminders-allow.yaml || result=1
-device_adb shell settings put system font_scale 2.0
-device_adb shell settings get system font_scale > native-test-artifacts/android-large-font-scale.txt
-maestro test --test-output-dir native-results/android-large-text -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" e2e-native/large-text.yaml || result=1
+if node e2e-native/helpers/prepare-android.mjs "$emulator_serial" smoke; then
+  maestro test --test-output-dir native-results/android -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" -e ANDROID_HOST_PREPARED=1 e2e-native/smoke.yaml || result=1
+else
+  result=1
+fi
+if node e2e-native/helpers/prepare-android.mjs "$emulator_serial" reminders; then
+  maestro test --test-output-dir native-results/android-reminders -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" -e ANDROID_HOST_PREPARED=1 e2e-native/reminders-allow.yaml || result=1
+else
+  result=1
+fi
+if node e2e-native/helpers/prepare-android.mjs "$emulator_serial" large-text; then
+  # Change the font only after the preceding app/task has fully stopped.
+  device_adb shell settings put system font_scale 2.0
+  device_adb shell settings get system font_scale > native-test-artifacts/android-large-font-scale.txt
+  maestro test --test-output-dir native-results/android-large-text -e APP_ID="$app_id" -e EXPO_DEV_URL="$dev_url" -e ANDROID_HOST_PREPARED=1 e2e-native/large-text.yaml || result=1
+else
+  result=1
+fi
 # Preserve the complete Debug session before replacing it. The emulator is
 # disposable; never uninstall an app from a physical or non-CI device.
 capture debug
