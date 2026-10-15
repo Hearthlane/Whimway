@@ -122,6 +122,27 @@ describe("Exact server-only native build exceptions", () => {
       expect(nativeInputsChanged(base, current, root)).toBe(false);
     },
   );
+  it("replays exact native viewport observer files without relabelling product binaries or exempting adjacent scripts", () => {
+    const { root, file, commit, base } = fixture();
+    for (const name of [
+      "scripts/native-ios-viewport-server.mjs",
+      "scripts/native-plan-viewport.mjs",
+      "e2e-native/helpers/observe-ios-plan.js",
+    ])
+      file(name, "// Native UI observation only");
+    const harness = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, harness, root, target).compatible).toBe(
+        true,
+      );
+    expect(nativeInputsChanged(base, harness, root)).toBe(true);
+    file("scripts/native-plan-viewport.native.mjs", "// Unknown build input");
+    const unknown = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, unknown, root, target).compatible).toBe(
+        false,
+      );
+  });
   it.each([
     "lib/providers/currency-data.ts",
     "lib/providers/google.native.ts",
@@ -370,7 +391,11 @@ describe("Server-only exceptions stay outside the actual mobile dependency graph
       "lib/storage.ts",
     ])
       expect(graph.visited.has(shared)).toBe(true);
-    for (const provider of deniedProviders)
+    for (const provider of [
+      ...deniedProviders,
+      "scripts/native-plan-viewport.mjs",
+      "scripts/native-ios-viewport-server.mjs",
+    ])
       expect(graph.visited.has(provider)).toBe(false);
   });
   it.each(["ai", "google"])(

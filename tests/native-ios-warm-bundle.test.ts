@@ -242,7 +242,7 @@ describe("bounded local iOS Metro preparation", () => {
     );
     expect(warm).toBeLessThan(
       workflow.indexOf(
-        "if maestro test --test-output-dir native-results/ios-ready",
+        "if maestro test --driver-host-port 7001 --test-output-dir native-results/ios-ready",
       ),
     );
     expect(workflow.slice(0, workflow.indexOf("  ios:"))).not.toContain(

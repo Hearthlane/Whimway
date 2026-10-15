@@ -1,0 +1,27 @@
+{
+  "run": "38750438975",
+  "artifact": "11987126144",
+  "sourceRevision": "e1db62b",
+  "screenUnits": "iOS points (402x874), not 1206x2622 screenshot pixels",
+  "extraction": "Only the exact ancestor path to plan-timeline and matching target nodes is retained. Attributes and bounds are copied without modification; unrelated siblings are removed.",
+  "files": [
+    {
+      "fixture": "main-start.json",
+      "sha256": "3226212a7a7938083d43446df04b9b1776789d605b35df2a73ac70db230fa7ba",
+      "sourcePath": "native-results/ios/2026-10-15_152746/Native fixture outing smoke/screen-hierarchy/step-207-assertCondition-0_DONE.0_SKIPPED.json",
+      "sourceSha256": "9980349c060c67e7556ddc22cd07802ec6b21969e4e2d6cd194f9c89845d3abb"
+    },
+    {
+      "fixture": "large-adjust.json",
+      "sha256": "3c208d46f15bd4adef6fd736ec369698155e2cd07e6b92e378de42ed0269977b",
+      "sourcePath": "native-results/ios-large-text/2026-10-15_154223/Native large-text outing/screen-hierarchy/step-163-assertCondition-Make_room_for_your_day.json",
+      "sourceSha256": "a9b6b52d0647b592e7696f37e7a9e274f9a304693abfdc3e43c86f3e9ca699a7"
+    },
+    {
+      "fixture": "large-disclosure.json",
+      "sha256": "2bba1b32ad99f5504b0825d6414cd0cdbfd70b2f6e37058fba7381b40c43f1e7",
+      "sourcePath": "native-results/ios-large-text/2026-10-15_154223/Native large-text outing/screen-hierarchy/step-163-assertCondition-Make_room_for_your_day.json",
+      "sourceSha256": "a9b6b52d0647b592e7696f37e7a9e274f9a304693abfdc3e43c86f3e9ca699a7"
+    }
+  ]
+}

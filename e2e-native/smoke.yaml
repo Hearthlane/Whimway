@@ -123,10 +123,23 @@ tags: [native, fixtures, smoke]
     direction: UP
 - assertNotVisible: ".*Custom sound.*"
 - takeScreenshot: native-reminders-denied
-- scrollUntilVisible:
-    element: "Start my day"
-    direction: UP
-- tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+      - tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TAP_SCREENSHOT_NAME: "native-day-start-before-tap"
 - assertVisible: "0 DONE.*0 SKIPPED"
 - scrollUntilVisible:
     element: ".*done here.*"
@@ -167,6 +180,19 @@ tags: [native, fixtures, smoke]
 - extendedWaitUntil:
     visible: "Start my day"
     timeout: 20000
-- tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TAP_SCREENSHOT_NAME: "native-restored-day-start-before-tap"
 - assertVisible: "1 DONE.*0 SKIPPED"
 - takeScreenshot: native-progress-restored

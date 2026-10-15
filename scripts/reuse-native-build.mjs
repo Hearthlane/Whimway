@@ -34,6 +34,8 @@ const compilationSteps = {
 };
 const runtimeFiles = new Set([
   "scripts/start-native-test-services.mjs",
+  "scripts/native-ios-viewport-server.mjs",
+  "scripts/native-plan-viewport.mjs",
   "scripts/run-android-native-qa.sh",
   "scripts/native-build-inputs.mjs",
   "scripts/test-database.mjs",

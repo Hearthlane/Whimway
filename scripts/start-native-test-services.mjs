@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { startIOSViewportServer } from "./native-ios-viewport-server.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const mobile = path.join(root, "apps/mobile");
@@ -39,9 +40,12 @@ function start(name, args, cwd, env) {
   });
 }
 let stopping = false;
+let iosViewport;
 function shutdown(code) {
   if (stopping) return;
   stopping = true;
+  iosViewport?.close();
+  iosViewport?.closeAllConnections();
   for (const child of processes) child.kill("SIGTERM");
   process.exitCode = code;
 }
@@ -110,12 +114,25 @@ for (const url of [
     break;
   }
 }
+if (!stopping && process.env.WHIMWAY_IOS_UI_OBSERVER === "1") {
+  try {
+    if (process.platform !== "darwin")
+      throw new Error("Expected an iOS runner");
+    iosViewport = await startIOSViewportServer({
+      artifactDirectory: path.join(artifacts, "ios-plan-viewport"),
+    });
+  } catch {
+    console.error("The local native viewport observer could not start.");
+    shutdown(1);
+  }
+}
 if (!stopping) {
   writeFileSync(
     readyFile,
     JSON.stringify({
       backend: true,
       metro: true,
+      iosViewport: Boolean(iosViewport),
       mode: "synthetic",
       at: new Date().toISOString(),
     }),

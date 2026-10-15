@@ -202,7 +202,7 @@ appId: ${APP_ID || 'com.example.whimway'}
           file: scroll-ios-plan.yaml
           env:
             TARGET_TEXT: "Development fixture.*"
-            SCROLL_DIRECTION: "DOWN"
+            TARGET_KIND: "readOnly"
       - takeScreenshot: native-generated-fixture-disclosure
 - assertVisible: "Development fixture.*"
 - runFlow:
@@ -213,7 +213,7 @@ appId: ${APP_ID || 'com.example.whimway'}
           file: scroll-ios-plan.yaml
           env:
             TARGET_TEXT: "Start my day"
-            SCROLL_DIRECTION: "DOWN"
+            TARGET_KIND: "control"
       - takeScreenshot: native-plan-start-ready
 - extendedWaitUntil:
     visible: "Start my day"

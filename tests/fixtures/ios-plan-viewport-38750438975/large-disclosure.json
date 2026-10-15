@@ -1,0 +1,293 @@
+{
+  "screenBounds": "[0,0][402,874]",
+  "targetText": "^Development fixture.*",
+  "targetKind": "readOnly",
+  "hierarchy": {
+    "attributes": {
+      "bounds": "[0,0][0,0]",
+      "enabled": "false",
+      "focused": "false",
+      "selected": "false",
+      "checked": "false"
+    },
+    "children": [
+      {
+        "attributes": {
+          "accessibilityText": "Whimway",
+          "bounds": "[0,0][402,874]",
+          "enabled": "true",
+          "focused": "false",
+          "selected": "false",
+          "checked": "false"
+        },
+        "children": [
+          {
+            "attributes": {
+              "bounds": "[0,0][402,874]",
+              "enabled": "true",
+              "focused": "false",
+              "selected": "false",
+              "checked": "false"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "bounds": "[0,0][402,874]",
+                  "enabled": "true",
+                  "focused": "false",
+                  "selected": "false",
+                  "checked": "false"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "bounds": "[0,0][402,874]",
+                      "enabled": "true",
+                      "focused": "false",
+                      "selected": "false",
+                      "checked": "false"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "bounds": "[0,0][402,874]",
+                          "enabled": "true",
+                          "focused": "false",
+                          "selected": "false",
+                          "checked": "false"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "bounds": "[0,0][402,874]",
+                              "enabled": "true",
+                              "focused": "false",
+                              "selected": "false",
+                              "checked": "false"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "bounds": "[0,0][402,874]",
+                                  "enabled": "true",
+                                  "focused": "false",
+                                  "selected": "false",
+                                  "checked": "false"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "bounds": "[0,0][402,874]",
+                                      "enabled": "true",
+                                      "focused": "false",
+                                      "selected": "false",
+                                      "checked": "false"
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "bounds": "[0,0][402,874]",
+                                          "enabled": "true",
+                                          "focused": "false",
+                                          "selected": "false",
+                                          "checked": "false"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "bounds": "[0,0][402,874]",
+                                              "enabled": "true",
+                                              "focused": "false",
+                                              "selected": "false",
+                                              "checked": "false"
+                                            },
+                                            "children": [
+                                              {
+                                                "attributes": {
+                                                  "bounds": "[0,0][402,874]",
+                                                  "enabled": "true",
+                                                  "focused": "false",
+                                                  "selected": "false",
+                                                  "checked": "false"
+                                                },
+                                                "children": [
+                                                  {
+                                                    "attributes": {
+                                                      "bounds": "[0,0][402,874]",
+                                                      "enabled": "true",
+                                                      "focused": "false",
+                                                      "selected": "false",
+                                                      "checked": "false"
+                                                    },
+                                                    "children": [
+                                                      {
+                                                        "attributes": {
+                                                          "bounds": "[0,0][402,874]",
+                                                          "enabled": "true",
+                                                          "focused": "false",
+                                                          "selected": "false",
+                                                          "checked": "false"
+                                                        },
+                                                        "children": [
+                                                          {
+                                                            "attributes": {
+                                                              "bounds": "[0,0][402,874]",
+                                                              "enabled": "true",
+                                                              "focused": "false",
+                                                              "selected": "false",
+                                                              "checked": "false"
+                                                            },
+                                                            "children": [
+                                                              {
+                                                                "attributes": {
+                                                                  "bounds": "[0,0][402,874]",
+                                                                  "enabled": "true",
+                                                                  "focused": "false",
+                                                                  "selected": "false",
+                                                                  "checked": "false"
+                                                                },
+                                                                "children": [
+                                                                  {
+                                                                    "attributes": {
+                                                                      "bounds": "[0,0][402,874]",
+                                                                      "enabled": "true",
+                                                                      "focused": "false",
+                                                                      "selected": "false",
+                                                                      "checked": "false"
+                                                                    },
+                                                                    "children": [
+                                                                      {
+                                                                        "attributes": {
+                                                                          "bounds": "[0,0][402,874]",
+                                                                          "enabled": "true",
+                                                                          "focused": "false",
+                                                                          "selected": "false",
+                                                                          "checked": "false"
+                                                                        },
+                                                                        "children": [
+                                                                          {
+                                                                            "attributes": {
+                                                                              "bounds": "[0,0][402,874]",
+                                                                              "enabled": "true",
+                                                                              "focused": "false",
+                                                                              "selected": "false",
+                                                                              "checked": "false"
+                                                                            },
+                                                                            "children": [
+                                                                              {
+                                                                                "attributes": {
+                                                                                  "resource-id": "plan-timeline",
+                                                                                  "bounds": "[0,472][402,840]",
+                                                                                  "enabled": "true",
+                                                                                  "focused": "false",
+                                                                                  "selected": "false",
+                                                                                  "checked": "false"
+                                                                                },
+                                                                                "children": [
+                                                                                  {
+                                                                                    "attributes": {
+                                                                                      "bounds": "[0,472][402,840]",
+                                                                                      "enabled": "true",
+                                                                                      "focused": "false",
+                                                                                      "selected": "false",
+                                                                                      "checked": "false"
+                                                                                    },
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "attributes": {
+                                                                                          "bounds": "[0,-643][402,10627]",
+                                                                                          "enabled": "true",
+                                                                                          "focused": "false",
+                                                                                          "selected": "false",
+                                                                                          "checked": "false"
+                                                                                        },
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "attributes": {
+                                                                                              "bounds": "[0,-643][402,10627]",
+                                                                                              "enabled": "true",
+                                                                                              "focused": "false",
+                                                                                              "selected": "false",
+                                                                                              "checked": "false"
+                                                                                            },
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "attributes": {
+                                                                                                  "bounds": "[24,-637][378,720]",
+                                                                                                  "enabled": "true",
+                                                                                                  "focused": "false",
+                                                                                                  "selected": "false",
+                                                                                                  "checked": "false"
+                                                                                                },
+                                                                                                "children": [
+                                                                                                  {
+                                                                                                    "attributes": {
+                                                                                                      "accessibilityText": "Development fixture · Places, prices and travel are synthetic. Not a real outing.",
+                                                                                                      "bounds": "[24,-303][378,82]",
+                                                                                                      "enabled": "true",
+                                                                                                      "focused": "false",
+                                                                                                      "selected": "false",
+                                                                                                      "checked": "false"
+                                                                                                    },
+                                                                                                    "children": [
+                                                                                                      {
+                                                                                                        "attributes": {
+                                                                                                          "accessibilityText": "Development fixture · Places, prices and travel are synthetic. Not a real outing.",
+                                                                                                          "bounds": "[24,-303][378,82]",
+                                                                                                          "enabled": "true",
+                                                                                                          "focused": "false",
+                                                                                                          "selected": "false",
+                                                                                                          "checked": "false"
+                                                                                                        }
+                                                                                                      }
+                                                                                                    ]
+                                                                                                  }
+                                                                                                ]
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

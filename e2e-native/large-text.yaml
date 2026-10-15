@@ -18,24 +18,15 @@ tags: [native, fixtures, accessibility]
       platform: iOS
     commands:
       - runFlow:
-          file: helpers/scroll-ios-plan.yaml
+          file: helpers/tap-ios-plan.yaml
           env:
             TARGET_TEXT: "Adjust plan"
-            SCROLL_DIRECTION: "DOWN"
+            TAP_SCREENSHOT_NAME: "native-large-text-adjust-before-tap"
 - runFlow:
     when:
       platform: Android
     commands:
       - tapOn: "Adjust plan"
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - takeScreenshot: native-large-text-adjust-before-tap
-      - tapOn:
-          text: "Adjust plan"
-          below:
-            id: "plan-timeline"
 - assertVisible: "Make room for your day"
 - scrollUntilVisible:
     element: "Update my plan"
@@ -54,24 +45,15 @@ tags: [native, fixtures, accessibility]
       platform: iOS
     commands:
       - runFlow:
-          file: helpers/scroll-ios-plan.yaml
+          file: helpers/tap-ios-plan.yaml
           env:
             TARGET_TEXT: "Start my day"
-            SCROLL_DIRECTION: "UP"
+            TAP_SCREENSHOT_NAME: "native-large-text-start-before-tap"
 - runFlow:
     when:
       platform: Android
     commands:
       - tapOn: "Start my day"
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - takeScreenshot: native-large-text-start-before-tap
-      - tapOn:
-          text: "Start my day"
-          below:
-            id: "plan-timeline"
 - scrollUntilVisible:
     element: ".*done here.*"
     direction: DOWN

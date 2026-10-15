@@ -189,13 +189,13 @@ describe("iOS native harness readiness and retained viewport regression", () => 
   it("gates the native probe on actual cold-start UI readiness before the fresh main journey, retaining either failure", () => {
     const workflow = read(".github/workflows/native.yml");
     const gate = workflow.indexOf(
-      "if maestro test --test-output-dir native-results/ios-ready",
+      "if maestro test --driver-host-port 7001 --test-output-dir native-results/ios-ready",
     );
     const probe = workflow.indexOf(
       "node scripts/check-ios-simulator-keychain.mjs",
     );
     const journey = workflow.indexOf(
-      "maestro test --test-output-dir native-results/ios -e",
+      "maestro test --driver-host-port 7002 --test-output-dir native-results/ios -e",
     );
     expect(gate).toBeGreaterThan(0);
     expect(probe).toBeGreaterThan(gate);

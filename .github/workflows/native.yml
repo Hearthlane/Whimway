@@ -16,6 +16,8 @@ on:
         "scripts/sign-ios-simulator-test-app.sh",
         "scripts/check-ios-simulator-keychain.mjs",
         "scripts/start-native-test-services.mjs",
+        "scripts/native-ios-viewport-server.mjs",
+        "scripts/native-plan-viewport.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
@@ -36,6 +38,8 @@ on:
         "scripts/sign-ios-simulator-test-app.sh",
         "scripts/check-ios-simulator-keychain.mjs",
         "scripts/start-native-test-services.mjs",
+        "scripts/native-ios-viewport-server.mjs",
+        "scripts/native-plan-viewport.mjs",
         "scripts/run-android-native-qa.sh",
         "scripts/verify-native-permissions.mjs",
         ".github/workflows/native.yml",
@@ -347,6 +351,8 @@ jobs:
           retention-days: 7
       - name: Prepare and exercise actual iOS development views
         working-directory: .
+        env:
+          WHIMWAY_IOS_UI_OBSERVER: "1"
         run: |
           npm ci
           curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -362,18 +368,18 @@ jobs:
           test -f native-test-artifacts/ready.json
           node e2e-native/helpers/warm-ios-bundle.mjs
           result=0
-          if maestro test --test-output-dir native-results/ios-ready -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/ios-ready.yaml; then
+          if maestro test --driver-host-port 7001 --test-output-dir native-results/ios-ready -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7001 -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/ios-ready.yaml; then
             node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json 2> native-test-artifacts/ios-keychain-diagnostics.json || result=1
           else
             result=1
             printf '%s\n' '{"registrationRead":false,"installationRead":false,"installationStable":false}' > native-test-artifacts/ios-keychain-proof.json
             printf '%s\n' '{"stage":"ui-readiness","reason":"app-not-ready"}' > native-test-artifacts/ios-keychain-diagnostics.json
           fi
-          maestro test --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml || result=1
-          maestro test --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml || result=1
+          maestro test --driver-host-port 7002 --test-output-dir native-results/ios -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7002 -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/smoke.yaml || result=1
+          maestro test --driver-host-port 7003 --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7003 -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/reminders-allow.yaml || result=1
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size accessibility-extra-extra-extra-large
           xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size > native-test-artifacts/ios-content-size.txt
-          maestro test --test-output-dir native-results/ios-large-text -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/large-text.yaml || result=1
+          maestro test --driver-host-port 7004 --test-output-dir native-results/ios-large-text -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7004 -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/large-text.yaml || result=1
           exit "$result"
       - name: Collect bounded iOS startup diagnostics
         if: always()
