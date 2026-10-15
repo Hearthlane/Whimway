@@ -45,7 +45,8 @@ export default function Generating() {
     void run();
     const back = BackHandler.addEventListener("hardwareBackPress", () => {
       controller.abort();
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace("/planner");
       return true;
     });
     return () => {
@@ -58,7 +59,8 @@ export default function Generating() {
   }, [attempt]);
   function cancel() {
     active.current?.abort();
-    router.back();
+    if (router.canGoBack()) router.back();
+    else router.replace("/planner");
   }
   return (
     <Screen style={{ justifyContent: "center", gap: 26 }}>

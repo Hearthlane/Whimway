@@ -292,7 +292,8 @@ export default function Planner() {
   const back = useCallback(() => {
     Keyboard.dismiss();
     if (index > 0) move(index - 1, "back");
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace("/");
   }, [index, move]);
   useFocusEffect(
     useCallback(() => {

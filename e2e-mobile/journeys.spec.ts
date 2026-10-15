@@ -230,6 +230,13 @@ test("Wide preview keeps a portrait canvas and Explore preserves both entry choi
 test("Guided planning skips, preserves Back state, generates early and reopens from Saved", async ({
   page,
 }) => {
+  // A direct entry or reload has no in-app history to pop.
+  await page.goto("/planner", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("textbox", { name: "Search a place", exact: true }),
+  ).toBeEditable();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
   await start(page);
   const details = page.getByRole("button", {
     name: "Review day details",
@@ -773,6 +780,14 @@ test("Missing live intent and denied browser location preserve guided access", a
 test("Cancelling pending generation preserves choices and never saves a cancelled plan", async ({
   page,
 }) => {
+  await page.goto("/generating", { waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("button", { name: "Back to my choices", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/planner$/);
+  await expect(
+    page.getByRole("textbox", { name: "Search a place", exact: true }),
+  ).toBeEditable();
   await start(page);
   await page
     .getByRole("button", { name: "Food & drinks", exact: true })
