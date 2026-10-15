@@ -15,13 +15,14 @@ appId: ${APP_ID || 'com.example.whimway'}
                 start: 96%, 75%
                 end: 96%, 25%
                 duration: 700
-      # The next retained run found the switch OFF at y735-763, close to tabs.
-      # Move it away from the edge before any state-dependent toggle tap.
-      - scrollUntilVisible:
-          element: "Use synthetic development fixtures"
-          direction: DOWN
-          centerElement: true
-          timeout: 15000
+      # The retained 52 run already had the switch fully visible at y652-680.
+      # Default center swipes left its bounds unchanged and timed out.
+      # One extra gutter swipe uses any remaining range before the real tap;
+      # at the bottom it leaves the already accessible switch in place.
+      - swipe:
+          start: 96%, 75%
+          end: 96%, 25%
+          duration: 700
       - assertVisible: "Use synthetic development fixtures"
 - runFlow:
     when:

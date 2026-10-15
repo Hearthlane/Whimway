@@ -500,7 +500,7 @@ export default function PlanScreen() {
               />
             </View>
           </Reveal>
-          <View style={[styles.row, { gap: 8 }]}>
+          <View style={[styles.row, { gap: 8, flexWrap: "wrap" }]}>
             <PlanTool label="Day Remix ✦" onPress={() => setRemix(true)} />
             <PlanTool
               label="Adjust plan"
@@ -1031,7 +1031,9 @@ function PlanTool({ label, onPress }: { label: string; onPress: () => void }) {
         onPress();
       }}
       style={({ pressed }) => ({
-        flex: 1,
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: "auto",
         minHeight: 44,
         paddingHorizontal: 8,
         paddingVertical: 10,

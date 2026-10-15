@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import observations from "./fixtures/ios-38664294144-viewport.json";
 import switchObservations from "./fixtures/ios-38668397703-switch.json";
 import searchObservations from "./fixtures/ios-38670492664-search.json";
+import visibleSwitch from "./fixtures/ios-38742724011-switch.json";
 
 type Command = Record<string, unknown>;
 const require = createRequire(import.meta.url);
@@ -48,7 +49,7 @@ function inside(
 }
 
 describe("iOS native harness readiness and retained viewport regression", () => {
-  it("centers the actual OFF switch retained near the bottom edge before attempting to enable it", () => {
+  it("uses the inset gutter before attempting to enable the actual OFF switch retained near the bottom edge", () => {
     const observed = switchObservations.largeText.attributes;
     expect(observed.checked).toBe("false");
     expect(observed.value).toBe("0");
@@ -59,11 +60,10 @@ describe("iOS native harness readiness and retained viewport regression", () => 
     const flow = commands("e2e-native/helpers/create-fixture-plan.yaml");
     const ios = branch(flow, "iOS");
     expect(ios).toContainEqual({
-      scrollUntilVisible: {
-        element: observed.accessibilityText,
-        direction: "DOWN",
-        centerElement: true,
-        timeout: 15000,
+      swipe: {
+        start: "96%, 75%",
+        end: "96%, 25%",
+        duration: 700,
       },
     });
     const conditionalTapIndex = flow.findIndex((entry) => {
@@ -75,6 +75,48 @@ describe("iOS native harness readiness and retained viewport regression", () => 
     expect(conditionalTapIndex).toBeGreaterThan(0);
     expect(flow.slice(0, conditionalTapIndex)).toContainEqual({
       runFlow: { when: { platform: "iOS" }, commands: ios },
+    });
+  });
+  it("does not time out centering an already fully visible OFF switch, while preserving the safe gutter and ON gate", () => {
+    const box = bounds(visibleSwitch.switch.bounds);
+    const viewport = bounds(visibleSwitch.scrollViewBounds);
+    const screen = bounds(visibleSwitch.screenBounds);
+    expect(box.top).toBeGreaterThan(viewport.top);
+    expect(box.bottom).toBeLessThan(viewport.bottom);
+    expect(visibleSwitch.switch.checked).toBe("false");
+    expect(visibleSwitch.centering.status).toBe("FAILED");
+    expect(visibleSwitch.centering.duration).toBeGreaterThanOrEqual(
+      visibleSwitch.centering.timeout,
+    );
+    expect(visibleSwitch.centering.tapReached).toBe(false);
+    expect(visibleSwitch.centering.attempts).toHaveLength(5);
+    for (const attempt of visibleSwitch.centering.attempts) {
+      expect(attempt.bounds).toBe(visibleSwitch.switch.bounds);
+      expect(attempt.visibility).toBe(1);
+    }
+    const ios = branch(
+      commands("e2e-native/helpers/create-fixture-plan.yaml"),
+      "iOS",
+    );
+    expect(ios.some((entry) => entry.scrollUntilVisible)).toBe(false);
+    const settle = ios.at(-2)?.swipe as {
+      start: string;
+      end: string;
+      duration: number;
+    };
+    expect(settle).toEqual({
+      start: visibleSwitch.discovery.start,
+      end: visibleSwitch.discovery.end,
+      duration: visibleSwitch.discovery.duration,
+    });
+    for (const value of [settle.start, settle.end]) {
+      const [x, y] = value.split(",").map((item) => parseFloat(item) / 100);
+      expect(
+        inside({ x: screen.right * x, y: screen.bottom * y }, viewport),
+      ).toBe(true);
+    }
+    expect(ios.at(-1)).toEqual({
+      assertVisible: visibleSwitch.switch.accessibilityText,
     });
   });
   it.each([

@@ -37,7 +37,8 @@ export function PlacePhoto({
       ) : (
         <View
           style={{
-            height,
+            minHeight: height,
+            padding: 16,
             borderRadius: 22,
             backgroundColor: c.mint,
             justifyContent: "center",
@@ -46,7 +47,12 @@ export function PlacePhoto({
           }}
         >
           <MapPin color={c.ink} size={36} />
-          <Text style={[styles.label, { fontSize: 12 }]}>
+          <Text
+            style={[
+              styles.label,
+              { fontSize: 12, textAlign: "center", maxWidth: "100%" },
+            ]}
+          >
             {demo ? "SYNTHETIC PLACE · NO VENUE PHOTO" : "A PLACE TO DISCOVER"}
           </Text>
         </View>

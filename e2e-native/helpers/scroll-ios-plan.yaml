@@ -1,6 +1,8 @@
 # The largest iOS header can put the timeline below screen center. Keep both
 # swipe points in its lower gutter; do not repeatedly swipe the static toolbar.
 # TARGET_TEXT is a real visible control/disclosure, never injected app state.
+# Maestro's below selector compares top coordinates. Require the target below
+# the actual timeline's top, rejecting AX children clipped behind the header.
 appId: ${APP_ID || 'com.example.whimway'}
 ---
 - assertTrue: ${SCROLL_DIRECTION === 'DOWN' || SCROLL_DIRECTION === 'UP'}
@@ -9,11 +11,27 @@ appId: ${APP_ID || 'com.example.whimway'}
 - repeat:
     times: 20
     while:
-      notVisible: ${TARGET_TEXT}
+      notVisible:
+        text: ${TARGET_TEXT}
+        below:
+          id: "plan-timeline"
     commands:
+      - evalScript: ${output.whimwayPlanTargetAboveViewport = false}
       - runFlow:
           when:
-            true: ${SCROLL_DIRECTION === 'DOWN'}
+            visible: ${TARGET_TEXT}
+          commands:
+            - runFlow:
+                when:
+                  notVisible:
+                    text: ${TARGET_TEXT}
+                    below:
+                      id: "plan-timeline"
+                commands:
+                  - evalScript: ${output.whimwayPlanTargetAboveViewport = true}
+      - runFlow:
+          when:
+            true: ${!output.whimwayPlanTargetAboveViewport && SCROLL_DIRECTION === 'DOWN'}
           commands:
             - swipe:
                 start: 96%, 88%
@@ -21,10 +39,13 @@ appId: ${APP_ID || 'com.example.whimway'}
                 duration: 600
       - runFlow:
           when:
-            true: ${SCROLL_DIRECTION === 'UP'}
+            true: ${output.whimwayPlanTargetAboveViewport || SCROLL_DIRECTION === 'UP'}
           commands:
             - swipe:
                 start: 96%, 72%
                 end: 96%, 88%
                 duration: 600
-- assertVisible: ${TARGET_TEXT}
+- assertVisible:
+    text: ${TARGET_TEXT}
+    below:
+      id: "plan-timeline"

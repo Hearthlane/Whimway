@@ -22,7 +22,20 @@ tags: [native, fixtures, accessibility]
           env:
             TARGET_TEXT: "Adjust plan"
             SCROLL_DIRECTION: "DOWN"
-- tapOn: "Adjust plan"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Adjust plan"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - takeScreenshot: native-large-text-adjust-before-tap
+      - tapOn:
+          text: "Adjust plan"
+          below:
+            id: "plan-timeline"
 - assertVisible: "Make room for your day"
 - scrollUntilVisible:
     element: "Update my plan"
@@ -45,7 +58,20 @@ tags: [native, fixtures, accessibility]
           env:
             TARGET_TEXT: "Start my day"
             SCROLL_DIRECTION: "UP"
-- tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - takeScreenshot: native-large-text-start-before-tap
+      - tapOn:
+          text: "Start my day"
+          below:
+            id: "plan-timeline"
 - scrollUntilVisible:
     element: ".*done here.*"
     direction: DOWN
