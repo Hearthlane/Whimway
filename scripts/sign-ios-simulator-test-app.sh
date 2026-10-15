@@ -190,8 +190,11 @@ const hostEntitlements = JSON.parse(readFileSync(path.join(output, 'runtime-enti
 if (Object.entries(hostEntitlements).some(([key, value]) => key !== 'com.apple.security.get-task-allow' || typeof value !== 'boolean'))
   throw Error('Unexpected host signature entitlements; iOS capabilities must be linker-embedded for Simulator.');
 const embedded = JSON.parse(readFileSync(path.join(output, 'embedded-entitlements.json'), 'utf8'));
-if (embedded['application-identifier'] !== 'com.example.whimway' ||
-    (embedded['keychain-access-groups'] !== undefined && JSON.stringify(embedded['keychain-access-groups']) !== JSON.stringify(['com.example.whimway'])))
+// The actual no-team Xcode Simulator product (02ab71e) embeds FAKETEAMID.
+// Accept those existing bytes only; never inject a team or re-sign the product.
+const simulatorIdentifier = embedded['application-identifier'];
+if (!['com.example.whimway', 'FAKETEAMID.com.example.whimway'].includes(simulatorIdentifier) ||
+    (embedded['keychain-access-groups'] !== undefined && JSON.stringify(embedded['keychain-access-groups']) !== JSON.stringify([simulatorIdentifier])))
   throw Error('The Xcode-embedded Simulator identity does not match the placeholder app.');
 const runtimeHash = await treeHash(path.join(output, 'Whimway.app'));
 if (runtimeHash !== evidence.original_app_tree_sha256) throw Error('The runtime copy must exactly match the Xcode compiler product.');
