@@ -96,12 +96,37 @@ appId: ${APP_ID || 'com.example.whimway'}
 - extendedWaitUntil:
     visible: "CF Toronto Eaton Centre"
     timeout: 15000
-- tapOn: "CF Toronto Eaton Centre"
+# iOS AX exposed this result behind the software keyboard in run38805051576:
+# its reported center y566 hit the keyboard below the Done bar (y473–539).
+# Dismiss through the actual UI first, then re-find the result in the expanded
+# viewport. A completed tap alone is not evidence that a place was selected.
 - runFlow:
     when:
       visible: "Done editing, dismiss keyboard"
     commands:
       - tapOn: "Done editing, dismiss keyboard"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: "^delete$"
+          timeout: 10000
+      - assertNotVisible: "Done editing, dismiss keyboard"
+- scrollUntilVisible:
+    element: "CF Toronto Eaton Centre"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: native-search-result-before-selection
+- tapOn: "CF Toronto Eaton Centre"
+# LocationSearch clears its query only after accepting the resolved location.
+# Require that transition and its selected-place label before entering planning.
+- extendedWaitUntil:
+    notVisible: "^Toronto$"
+    timeout: 30000
+- assertVisible: "CF Toronto Eaton Centre"
+- takeScreenshot: native-location-selected
 - scrollUntilVisible:
     element: ".*find something good"
     direction: DOWN

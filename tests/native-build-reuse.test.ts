@@ -170,6 +170,39 @@ describe("Exact server-only native build exceptions", () => {
         false,
       );
   });
+  it("separates the exact external iOS QA runner from compiled app inputs", () => {
+    const { root, file, commit, base } = fixture();
+    file(
+      "scripts/run-ios-native-qa.mjs",
+      "// Host-only XCTest lifecycle fence",
+    );
+    const harness = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, harness, root, target).compatible).toBe(
+        true,
+      );
+    expect(nativeInputsChanged(base, harness, root)).toBe(true);
+    file("apps/mobile/app/index.tsx", "export default 'new portrait layout';");
+    const product = commit();
+    for (const target of ["android", "ios-release"])
+      expect(sourceCompatibility(base, product, root, target).compatible).toBe(
+        false,
+      );
+    expect(
+      sourceCompatibility(base, product, root, "ios-debug").compatible,
+    ).toBe(true);
+    file("apps/mobile/package-lock.json", '{"version":"different-sdk"}');
+    expect(
+      sourceCompatibility(base, product, root, "ios-debug").compatible,
+    ).toBe(false);
+    file("apps/mobile/package-lock.json", '{"version":"original-sdk"}');
+    file("scripts/run-ios-native-qa.native.mjs", "// Unknown build input");
+    const unknown = commit();
+    for (const target of ["android", "ios-release", "ios-debug"])
+      expect(sourceCompatibility(base, unknown, root, target).compatible).toBe(
+        false,
+      );
+  });
   it.each([
     "lib/providers/currency-data.ts",
     "lib/providers/google.native.ts",
@@ -424,6 +457,7 @@ describe("Server-only exceptions stay outside the actual mobile dependency graph
       "scripts/native-plan-viewport.mjs",
       "scripts/native-ios-viewport-server.mjs",
       "scripts/native-ios-gesture-server.mjs",
+      "scripts/run-ios-native-qa.mjs",
       "scripts/CheckNativeFlows.java",
     ])
       expect(graph.visited.has(provider)).toBe(false);
@@ -817,9 +851,17 @@ describe("Original compiler-source provenance through GitHub job metadata", () =
     expect(workflowCompatibility(unsigned, current, "android")).toBe(true);
     for (const target of ["ios-release", "ios-debug"])
       expect(workflowCompatibility(unsigned, current, target)).toBe(false);
-    expect(current).toContain(
-      "node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json 2> native-test-artifacts/ios-keychain-diagnostics.json || result=1",
+    expect(current).toContain("node scripts/run-ios-native-qa.mjs");
+    const runner = readFileSync(
+      path.join(repository, "scripts/run-ios-native-qa.mjs"),
+      "utf8",
     );
+    for (const required of [
+      "scripts/check-ios-simulator-keychain.mjs",
+      "ios-keychain-proof.json",
+      "ios-keychain-diagnostics.json",
+    ])
+      expect(runner).toContain(required);
     expect(current).toContain("name: Collect bounded iOS startup diagnostics");
   });
 });

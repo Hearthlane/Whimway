@@ -57,6 +57,7 @@ export async function requestJson<T>(
   data?: unknown,
   options: RequestOptions<T> & {
     token?: string;
+    resolveToken?: () => Promise<string | undefined>;
     fetcher?: typeof fetch;
     timeoutMs?: number;
     reportFailure?: (failure: {
@@ -83,24 +84,54 @@ export async function requestJson<T>(
     timedOut = true;
     controller.abort();
   }, options.timeoutMs ?? 105000);
+  let rejectInterrupted: (error: Error) => void;
+  const interrupted = new Promise<never>((_resolve, reject) => {
+    rejectInterrupted = reject;
+  });
+  const onInterrupted = () =>
+    rejectInterrupted(new Error("The request was interrupted."));
+  controller.signal.addEventListener("abort", onInterrupted, { once: true });
+  const check = () => {
+    if (controller.signal.aborted)
+      throw new Error("The request was interrupted.");
+  };
+  const wait = async <Value>(work: () => Value | PromiseLike<Value>) => {
+    check();
+    // The race observes late rejection too, even when auth/body promises cannot
+    // themselves be aborted. Work starts only after the pre-abort check; its
+    // result can never resume a cancelled request into the next stage.
+    const value = await Promise.race([
+      Promise.resolve().then(() => {
+        check();
+        return work();
+      }),
+      interrupted,
+    ]);
+    check();
+    return value;
+  };
   try {
+    check();
+    const token = options.resolveToken
+      ? await wait(options.resolveToken)
+      : options.token;
+    check();
     const headers: Record<string, string> = { Accept: "application/json" };
     if (data !== undefined) headers["Content-Type"] = "application/json";
-    if (options.token) headers.Authorization = `Bearer ${options.token}`;
-    const response = await (options.fetcher ?? fetch)(
-      `${baseUrl}/api/${path}`,
-      {
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await wait(() =>
+      (options.fetcher ?? fetch)(`${baseUrl}/api/${path}`, {
         method: options.method ?? (data === undefined ? "GET" : "POST"),
         headers,
         body: data === undefined ? undefined : JSON.stringify(data),
         signal: controller.signal,
         credentials: "omit",
         cache: "no-store",
-      },
+      }),
     );
     let result: unknown;
     try {
-      result = await response.json();
+      result = await wait(() => response.json());
     } catch {
       throw new MobileApiError(
         "The backend returned an unreadable response. Try again.",
@@ -160,6 +191,7 @@ export async function requestJson<T>(
     throw failure;
   } finally {
     clearTimeout(timer);
+    controller.signal.removeEventListener("abort", onInterrupted);
     options.signal?.removeEventListener("abort", abort);
   }
 }

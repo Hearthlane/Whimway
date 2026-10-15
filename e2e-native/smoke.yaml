@@ -177,13 +177,25 @@ tags: [native, fixtures, smoke]
     visible: "A day with a little more whim.*"
     timeout: 20000
 - tapOn: "A day with a little more whim.*"
+# Saved hydrates current provider details before navigation. The retained
+# run38805051576 frame still showed an in-flight /api/hydrate request after
+# 20s. Observe the real destination within the existing API105s deadline plus
+# 10s UI margin; a failed/cancelled opening that remains Saved never passes.
 - extendedWaitUntil:
-    visible: "Start my day"
-    timeout: 20000
+    visible: "YOUR GOOD DAY"
+    timeout: 115000
+- assertNotVisible: ".*Refreshing your saved day.*"
+- assertNotVisible: "Cancel opening"
+- assertVisible:
+    id: "plan-timeline"
 - runFlow:
     when:
       platform: Android
     commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+          timeout: 20000
       - tapOn: "Start my day"
 - runFlow:
     when:

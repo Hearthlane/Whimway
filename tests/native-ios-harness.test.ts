@@ -6,6 +6,7 @@ import observations from "./fixtures/ios-38664294144-viewport.json";
 import switchObservations from "./fixtures/ios-38668397703-switch.json";
 import searchObservations from "./fixtures/ios-38670492664-search.json";
 import visibleSwitch from "./fixtures/ios-38742724011-switch.json";
+import { IOS_SCOPES } from "../scripts/run-ios-native-qa.mjs";
 
 type Command = Record<string, unknown>;
 const require = createRequire(import.meta.url);
@@ -186,32 +187,20 @@ describe("iOS native harness readiness and retained viewport regression", () => 
     for (const checked of [undefined, false])
       expect(checked === selector.checked).toBe(false);
   });
-  it("gates the native probe on actual cold-start UI readiness before the fresh main journey, retaining either failure", () => {
+  it("wires cold-start readiness and the fresh main journey through the owned runner while retaining both boot gates", () => {
     const workflow = read(".github/workflows/native.yml");
-    const gate = workflow.indexOf(
-      "if maestro test --driver-host-port 7001 --test-output-dir native-results/ios-ready",
-    );
-    const probe = workflow.indexOf(
-      "node scripts/check-ios-simulator-keychain.mjs",
-    );
-    const journey = workflow.indexOf(
-      "maestro test --driver-host-port 7002 --test-output-dir native-results/ios -e",
-    );
-    expect(gate).toBeGreaterThan(0);
-    expect(probe).toBeGreaterThan(gate);
-    expect(journey).toBeGreaterThan(probe);
-    expect(workflow.slice(gate, journey)).toContain(
-      '"stage":"ui-readiness","reason":"app-not-ready"',
-    );
-    expect(workflow.slice(gate, journey)).toContain(
-      "else\n            result=1".replaceAll(
-        "\n",
-        workflow.includes("\r\n") ? "\r\n" : "\n",
-      ),
-    );
-    expect(workflow.slice(probe, journey)).toContain(
-      "ios-keychain-diagnostics.json || result=1",
-    );
+    expect(workflow).toContain("node scripts/run-ios-native-qa.mjs");
+    expect(IOS_SCOPES.slice(0, 2)).toEqual([
+      {
+        name: "ready",
+        port: 7001,
+        output: "ios-ready",
+        flow: "ios-ready.yaml",
+      },
+      { name: "main", port: 7002, output: "ios", flow: "smoke.yaml" },
+    ]);
+    // Stateful lifecycle cases exercise success/failure/probe ordering in the
+    // extracted runner; these assertions retain the actual YAML boot contract.
     expect(commands("e2e-native/ios-ready.yaml")).toContainEqual({
       runFlow: "helpers/boot.yaml",
     });

@@ -11,6 +11,7 @@ import {
   Modal,
   Keyboard,
   AccessibilityInfo,
+  useWindowDimensions,
   type ViewStyle,
   type StyleProp,
 } from "react-native";
@@ -338,6 +339,9 @@ export function Sheet({
   error?: string;
 }) {
   const reduced = useReducedMotion();
+  const { height: windowHeight, fontScale } = useWindowDimensions();
+  const [oversizedHeader, setOversizedHeader] = useState(false);
+  const scrollTitle = fontScale > 1.3 || oversizedHeader;
   const displacement = useSharedValue(0),
     sheetHeight = useSharedValue(400),
     closing = useSharedValue(false);
@@ -355,6 +359,9 @@ export function Sheet({
     onClose();
   }, [onClose, beginDismissal]);
   const dismissKeyboard = useCallback(() => Keyboard.dismiss(), []);
+  useEffect(() => {
+    if (!visible) setOversizedHeader(false);
+  }, [visible]);
   useEffect(() => {
     dismissalStarted.set(false);
     cancelAnimation(displacement);
@@ -476,6 +483,20 @@ export function Sheet({
             >
               <GestureDetector gesture={drag}>
                 <Animated.View
+                  testID="sheet-header"
+                  onLayout={(event) => {
+                    // Browser text zoom and long titles can outgrow the fixed
+                    // header even when RN Web reports fontScale=1. Keep this
+                    // choice for the open sheet so moving the title cannot
+                    // oscillate its measurement between header/body widths.
+                    if (
+                      visible &&
+                      !scrollTitle &&
+                      event.nativeEvent.layout.height >
+                        Math.max(112, windowHeight * 0.22)
+                    )
+                      setOversizedHeader(true);
+                  }}
                   style={{
                     paddingHorizontal: 24,
                     paddingTop: 12,
@@ -495,14 +516,23 @@ export function Sheet({
                     }}
                   />
                   <View
-                    style={[styles.row, { justifyContent: "space-between" }]}
+                    style={[
+                      styles.row,
+                      {
+                        justifyContent: scrollTitle
+                          ? "flex-end"
+                          : "space-between",
+                      },
+                    ]}
                   >
-                    <Text
-                      accessibilityRole="header"
-                      style={[styles.heading, { flex: 1 }]}
-                    >
-                      {title}
-                    </Text>
+                    {!scrollTitle ? (
+                      <Text
+                        accessibilityRole="header"
+                        style={[styles.heading, { flex: 1 }]}
+                      >
+                        {title}
+                      </Text>
+                    ) : null}
                     <Pressable
                       ref={closeRef}
                       onPress={closeSheet}
@@ -523,6 +553,7 @@ export function Sheet({
               </GestureDetector>
               <ScrollView
                 ref={scrollRef}
+                testID="sheet-scroll"
                 style={{ flexShrink: 1 }}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={
@@ -531,6 +562,11 @@ export function Sheet({
                 contentContainerStyle={{ padding: 24, paddingTop: 8, gap: 16 }}
               >
                 <Notice message={error} error />
+                {scrollTitle ? (
+                  <Text accessibilityRole="header" style={styles.heading}>
+                    {title}
+                  </Text>
+                ) : null}
                 {children}
               </ScrollView>
               <KeyboardDoneBar />

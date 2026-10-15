@@ -89,7 +89,7 @@ export async function api<T>(
   try {
     return await requestJson(getApiBaseUrl(), path, schema, data, {
       ...options,
-      token: await getAccessToken(),
+      resolveToken: getAccessToken,
       reportFailure: (failure) =>
         recordDiagnostic({
           category: "api",

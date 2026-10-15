@@ -278,6 +278,10 @@ export default function Planner() {
   const current = useRef(draft);
   const reduced = useReducedMotion();
   const largeText = useWindowDimensions().fontScale > 1.3;
+  const [largeNavigationLabel, setLargeNavigationLabel] = useState(false);
+  // Native fontScale selects this immediately. Measure the actual Back label
+  // too, so browser text zoom (RN Web reports fontScale=1) gets the same space.
+  const compactNavigation = largeText || largeNavigationLabel;
   const step = queue[index];
   const ready = !step;
   const questionKey = `${queue.join(",")}:${step ?? "ready"}`;
@@ -425,6 +429,74 @@ export default function Planner() {
     }
   }
   const amounts = budgetPresets(draft.location?.currency || "CAD");
+  const secondaryActions =
+    !ready && (step !== "location" || draft.location) ? (
+      <View
+        style={[
+          styles.row,
+          {
+            alignItems: "stretch",
+            gap: 8,
+            flexDirection: compactNavigation ? "column" : "row",
+          },
+        ]}
+      >
+        {step !== "location" ? (
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              next();
+            }}
+            accessibilityRole="button"
+            disabled={busy}
+            accessibilityState={{ disabled: busy }}
+            style={{
+              flex: compactNavigation ? undefined : 1,
+              padding: 10,
+              minHeight: 44,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={[styles.label, { textAlign: "center" }]}>
+              Skip for now
+            </Text>
+          </Pressable>
+        ) : null}
+        {draft.location ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy || !summary}
+            accessibilityState={{ disabled: busy || !summary }}
+            onPress={() => {
+              Keyboard.dismiss();
+              void Haptics.selectionAsync().catch(() => {});
+              generate();
+            }}
+            style={{
+              flex: compactNavigation ? undefined : 1,
+              padding: 10,
+              minHeight: 44,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={[
+                styles.label,
+                {
+                  textAlign: "center",
+                  textDecorationLine: "underline",
+                  opacity: busy || !summary ? 0.45 : 1,
+                },
+              ]}
+            >
+              Make my day
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+    ) : null;
   return (
     <Screen
       scrollResetKey={questionKey}
@@ -438,30 +510,54 @@ export default function Planner() {
             borderTopWidth: 1,
             borderTopColor: c.line,
             paddingHorizontal: 24,
-            paddingTop: 12,
-            paddingBottom: 12,
+            paddingTop: compactNavigation ? 8 : 12,
+            paddingBottom: compactNavigation ? 8 : 12,
             gap: 4,
           }}
         >
-          <View style={[styles.row, { alignItems: "stretch" }]}>
+          <View
+            style={[
+              styles.row,
+              {
+                alignItems: "stretch",
+                flexWrap: "wrap",
+                gap: compactNavigation ? 8 : 12,
+              },
+            ]}
+          >
             <Pressable
               accessibilityLabel="Back"
               accessibilityRole="button"
               onPress={back}
               style={[
                 styles.row,
-                { minHeight: 56, padding: 12, gap: 8, maxWidth: "38%" },
+                { minHeight: 56, padding: 12, gap: 8, flexShrink: 0 },
               ]}
             >
-              <ArrowLeft color={c.ink} size={20} />
-              <Text style={[styles.label, { flexShrink: 1 }]}>Back</Text>
+              {!compactNavigation ? (
+                <ArrowLeft color={c.ink} size={20} />
+              ) : null}
+              <Text
+                onLayout={(event) =>
+                  setLargeNavigationLabel(event.nativeEvent.layout.height > 32)
+                }
+                style={[styles.label, { flexShrink: 0 }]}
+              >
+                Back
+              </Text>
             </Pressable>
-            <View style={{ flex: 1 }}>
+            <View
+              style={{
+                flexGrow: 1,
+                flexBasis: compactNavigation && ready ? "100%" : 160,
+              }}
+            >
               <Button
+                icon={!compactNavigation}
                 title={
                   ready
                     ? "Make my day"
-                    : step === "location"
+                    : step === "location" && !compactNavigation
                       ? "That’s the place"
                       : "Next"
                 }
@@ -473,64 +569,7 @@ export default function Planner() {
               />
             </View>
           </View>
-          {!ready && (step !== "location" || draft.location) ? (
-            <View style={[styles.row, { alignItems: "stretch", gap: 8 }]}>
-              {step !== "location" ? (
-                <Pressable
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    next();
-                  }}
-                  accessibilityRole="button"
-                  disabled={busy}
-                  accessibilityState={{ disabled: busy }}
-                  style={{
-                    flex: 1,
-                    padding: 10,
-                    minHeight: 44,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={[styles.label, { textAlign: "center" }]}>
-                    Skip for now
-                  </Text>
-                </Pressable>
-              ) : null}
-              {draft.location ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy || !summary}
-                  accessibilityState={{ disabled: busy || !summary }}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    void Haptics.selectionAsync().catch(() => {});
-                    generate();
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: 10,
-                    minHeight: 44,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        textAlign: "center",
-                        textDecorationLine: "underline",
-                        opacity: busy || !summary ? 0.45 : 1,
-                      },
-                    ]}
-                  >
-                    Make my day
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+          {!compactNavigation ? secondaryActions : null}
         </View>
       }
     >
@@ -561,7 +600,9 @@ export default function Planner() {
             },
           ]}
         >
-          <Text style={styles.eyebrow}>YOUR KIND OF DAY</Text>
+          {!compactNavigation ? (
+            <Text style={styles.eyebrow}>YOUR KIND OF DAY</Text>
+          ) : null}
           <Text style={styles.label}>
             {ready ? "Ready" : `${index + 1} / ${queue.length}`}
           </Text>
@@ -894,6 +935,9 @@ export default function Planner() {
             </View>
           ) : null}
         </View>
+        {compactNavigation ? (
+          <View style={{ marginTop: 20 }}>{secondaryActions}</View>
+        ) : null}
       </Animated.View>
       <Sheet
         error={error || validation}

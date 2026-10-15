@@ -241,9 +241,7 @@ describe("bounded local iOS Metro preparation", () => {
       workflow.indexOf("test -f native-test-artifacts/ready.json"),
     );
     expect(warm).toBeLessThan(
-      workflow.indexOf(
-        "if maestro test --driver-host-port 7001 --test-output-dir native-results/ios-ready",
-      ),
+      workflow.indexOf("node scripts/run-ios-native-qa.mjs"),
     );
     expect(workflow.slice(0, workflow.indexOf("  ios:"))).not.toContain(
       "warm-ios-bundle",

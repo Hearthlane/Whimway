@@ -883,7 +883,7 @@ export default function PlanScreen() {
           }}
         />
         <EditFieldError message={editErrors.duration} />
-        <View style={styles.row}>
+        <View style={[styles.row, { flexWrap: "wrap" }]}>
           {(["WALK", "DRIVE"] as const).map((mode) => (
             <Chip
               key={mode}

@@ -34,6 +34,16 @@ async function plan() {
   return schedule(s, fixturePlaces(s.request), new FixtureRoutes());
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((accept, fail) => {
+    resolve = accept;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
+
 describe("Native API contract and request privacy", () => {
   it("requires HTTPS in production and rejects credential-bearing URLs", () => {
     expect(() => validateApiBaseUrl(undefined)).toThrow("EXPO_PUBLIC_API_URL");
@@ -164,6 +174,220 @@ describe("Native API contract and request privacy", () => {
         { fetcher, timeoutMs: 1 },
       ),
     ).rejects.toMatchObject({ code: "TIMEOUT" });
+  });
+
+  it("times out an auth lookup that never finishes without sending HTTP and removes its timer/listener", async () => {
+    vi.useFakeTimers();
+    try {
+      const token = deferred<string | undefined>();
+      const fetcher = vi.fn();
+      const controller = new AbortController();
+      const remove = vi.spyOn(controller.signal, "removeEventListener");
+      const reportFailure = vi.fn();
+      const outcome = requestJson(
+        "https://example.com",
+        "plans",
+        z.object({}),
+        undefined,
+        {
+          resolveToken: () => token.promise,
+          fetcher,
+          signal: controller.signal,
+          timeoutMs: 100,
+          reportFailure,
+        },
+      ).catch((error) => error);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(await outcome).toMatchObject({ code: "TIMEOUT" });
+      expect(fetcher).not.toHaveBeenCalled();
+      expect(reportFailure).toHaveBeenCalledWith({
+        code: "TIMEOUT",
+        path: "plans",
+        status: undefined,
+      });
+      expect(remove).toHaveBeenCalledWith("abort", expect.any(Function));
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(["resolve", "reject"] as const)(
+    "cancels during auth immediately and safely observes a late token %s without sending HTTP",
+    async (settlement) => {
+      const token = deferred<string | undefined>();
+      const started = deferred<void>();
+      const fetcher = vi.fn();
+      const reportFailure = vi.fn();
+      const controller = new AbortController();
+      const unhandled = vi.fn();
+      process.on("unhandledRejection", unhandled);
+      try {
+        const outcome = requestJson(
+          "https://example.com",
+          "plans",
+          z.object({}),
+          undefined,
+          {
+            resolveToken: () => {
+              started.resolve();
+              return token.promise;
+            },
+            fetcher,
+            signal: controller.signal,
+            reportFailure,
+          },
+        ).catch((error) => error);
+        await started.promise;
+        controller.abort();
+        // This settles before the source promise is allowed to finish.
+        expect(await outcome).toMatchObject({ code: "CANCELLED" });
+        if (settlement === "resolve") token.resolve("late-private-token");
+        else token.reject(new Error("late auth failure"));
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        expect(fetcher).not.toHaveBeenCalled();
+        expect(reportFailure).not.toHaveBeenCalled();
+        expect(unhandled).not.toHaveBeenCalled();
+      } finally {
+        process.removeListener("unhandledRejection", unhandled);
+      }
+    },
+  );
+
+  it("checks pre-aborted requests before starting auth or HTTP", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const resolveToken = vi.fn(async () => "private");
+    const fetcher = vi.fn();
+    await expect(
+      requestJson("https://example.com", "plans", z.object({}), undefined, {
+        signal: controller.signal,
+        resolveToken,
+        fetcher,
+      }),
+    ).rejects.toMatchObject({ code: "CANCELLED" });
+    expect(resolveToken).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("uses a successfully resolved bearer token and fails closed if the resolver rejects", async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ id: "ok" }));
+    await expect(
+      requestJson(
+        "https://example.com",
+        "plans",
+        z.object({ id: z.string() }),
+        undefined,
+        {
+          resolveToken: async () => "resolved-private-token",
+          fetcher,
+        },
+      ),
+    ).resolves.toEqual({ id: "ok" });
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://example.com/api/plans",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer resolved-private-token",
+        }),
+        credentials: "omit",
+      }),
+    );
+    fetcher.mockClear();
+    await expect(
+      requestJson("https://example.com", "plans", z.object({}), undefined, {
+        token: "must-not-fall-back",
+        resolveToken: async () => {
+          throw new Error("auth unavailable");
+        },
+        fetcher,
+      }),
+    ).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("shares the original deadline across auth, fetch and body reading, including uncooperative late body promises", async () => {
+    vi.useFakeTimers();
+    try {
+      const token = deferred<string | undefined>();
+      const response = deferred<Response>();
+      const body = deferred<unknown>();
+      const json = vi.fn(() => body.promise);
+      const fetcher = vi.fn(() => response.promise);
+      let failure: { code: string } | undefined;
+      const pending = requestJson(
+        "https://example.com",
+        "plans",
+        z.object({ id: z.string() }),
+        undefined,
+        {
+          resolveToken: () => token.promise,
+          fetcher,
+          timeoutMs: 100,
+        },
+      ).catch((error) => {
+        failure = error;
+      });
+      await vi.advanceTimersByTimeAsync(40);
+      token.resolve("private");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetcher).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(20);
+      response.resolve({ ok: true, status: 200, json } as unknown as Response);
+      await vi.advanceTimersByTimeAsync(39);
+      expect(json).toHaveBeenCalledOnce();
+      expect(failure).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      await pending;
+      expect(failure).toMatchObject({ code: "TIMEOUT" });
+      expect(fetcher.mock.calls[0]).toBeDefined();
+      body.reject(new Error("late body rejection"));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("starts the real api adapter's 105-second lifecycle before its deferred auth lookup", async () => {
+    vi.useFakeTimers();
+    const token = deferred<string | undefined>();
+    const lookup = vi.fn(() => token.promise);
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ ready: true }));
+    vi.doMock("../apps/mobile/src/services/auth", () => ({
+      getAccessToken: lookup,
+    }));
+    vi.doMock("../apps/mobile/node_modules/react-native", () => ({
+      Platform: { OS: "ios" },
+    }));
+    vi.doMock("../apps/mobile/src/services/diagnostics", () => ({
+      recordDiagnostic: vi.fn(),
+    }));
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "https://example.com");
+    vi.stubGlobal("fetch", fetcher);
+    try {
+      const { api } = await import("../apps/mobile/src/services/api");
+      let failure: { code: string } | undefined;
+      const pending = api("status", undefined, {
+        schema: z.object({ ready: z.boolean() }),
+      }).catch((error) => {
+        failure = error;
+      });
+      await vi.advanceTimersByTimeAsync(105000);
+      expect(lookup).toHaveBeenCalledOnce();
+      expect(failure).toMatchObject({ code: "TIMEOUT" });
+      await pending;
+      token.resolve("late-private-token");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetcher).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      vi.doUnmock("../apps/mobile/src/services/auth");
+      vi.doUnmock("../apps/mobile/node_modules/react-native");
+      vi.doUnmock("../apps/mobile/src/services/diagnostics");
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
   });
 });
 
