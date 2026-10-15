@@ -360,6 +360,7 @@ jobs:
           xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/debug/Whimway.app"
           for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
           test -f native-test-artifacts/ready.json
+          node e2e-native/helpers/warm-ios-bundle.mjs
           result=0
           if maestro test --test-output-dir native-results/ios-ready -e APP_ID=com.example.whimway -e 'EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1' e2e-native/ios-ready.yaml; then
             node scripts/check-ios-simulator-keychain.mjs > native-test-artifacts/ios-keychain-proof.json 2> native-test-artifacts/ios-keychain-diagnostics.json || result=1

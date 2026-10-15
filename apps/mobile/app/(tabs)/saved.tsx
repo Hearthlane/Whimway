@@ -138,6 +138,9 @@ export default function Saved() {
           if (!active || controller.signal.aborted) return;
           setPlans(local);
           setFavorites(favoriteRefs);
+          // Device content is ready even when account discovery or cloud sync
+          // is slow. Continue the guarded refresh and surface any failure below.
+          setLoading(false);
           const status = await api<CloudStatus>("status", undefined, {
             signal: controller.signal,
           });
