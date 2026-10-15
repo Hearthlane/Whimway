@@ -42,8 +42,11 @@ jobs:
         run: npm run test:db
       - name: Production backend bundle
         run: npm run build
-      - name: Mobile typecheck and SDK version alignment
+      - name: Mobile typecheck and locked SDK compatibility
         working-directory: apps/mobile
+        env:
+          # Validate installed SDK metadata without moving remote patch advice.
+          EXPO_OFFLINE: "1"
         run: |
           npm run typecheck
           npx expo install --check
