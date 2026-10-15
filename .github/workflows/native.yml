@@ -121,6 +121,7 @@ jobs:
         if: steps.reuse_android.outputs.reused != 'true'
         run: npx expo prebuild --platform android --no-install
       - name: Compile standalone internal-test APK
+        id: android_compile
         if: steps.reuse_android.outputs.reused != 'true'
         run: |
           cd android
@@ -132,6 +133,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk > android/package.txt
           node ../../scripts/verify-native-permissions.mjs android/permissions.txt
       - name: Retain internal APK and manifest evidence
+        if: always() && steps.android_compile.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: android-native-compilation-apk
@@ -274,7 +276,7 @@ jobs:
           sleep 5
           xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
       - name: Retain simulator app and runtime evidence
-        if: always() && (steps.ios_compile.outcome == 'success' || steps.reuse_ios_release.outputs.reused == 'true')
+        if: always() && steps.ios_compile.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: ios-native-simulator-app
@@ -297,7 +299,7 @@ jobs:
           cp .expo/native-reuse/debug/whimway-ios-simulator-debug.tar.gz ios/whimway-ios-simulator-debug.tar.gz
           tar -xzf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator
       - name: Retain compiled simulator development client
-        if: always() && (steps.ios_debug_compile.outcome == 'success' || steps.reuse_ios_debug.outputs.reused == 'true')
+        if: always() && steps.ios_debug_compile.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: ios-native-simulator-debug
@@ -336,6 +338,9 @@ jobs:
             native-test-services.log
             native-test-artifacts
             !native-test-artifacts/ios-simulator-runtime/**/Whimway.app/**
+            apps/mobile/ios/native-smoke.png
+            apps/mobile/ios/launch.txt
+            apps/mobile/ios/devices.json
             apps/mobile/ios/native-debug-build.log
           retention-days: 7
       - name: Retain native compiler evidence

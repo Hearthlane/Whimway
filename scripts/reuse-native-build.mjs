@@ -15,6 +15,23 @@ const artifactNames = {
   "ios-release": "ios-native-simulator-app",
   "ios-debug": "ios-native-simulator-debug",
 };
+const compilationSteps = {
+  android: {
+    job: "android",
+    compile: "Compile standalone internal-test APK",
+    upload: "Retain internal APK and manifest evidence",
+  },
+  "ios-release": {
+    job: "ios",
+    compile: "Compile iOS simulator app without signing credentials",
+    upload: "Retain simulator app and runtime evidence",
+  },
+  "ios-debug": {
+    job: "ios",
+    compile: "Compile a simulator development client",
+    upload: "Retain compiled simulator development client",
+  },
+};
 const runtimeFiles = new Set([
   "scripts/start-native-test-services.mjs",
   "scripts/run-android-native-qa.sh",
@@ -25,6 +42,15 @@ const runtimeFiles = new Set([
   "scripts/check-ios-simulator-keychain.mjs",
   workflowPath,
 ]);
+// The mobile dependency-graph regression proves these exact server modules are
+// unreachable from its source/shared exports. Other lib paths remain strict.
+const serverOnlyProviderFiles = new Set([
+  "lib/providers/ai.ts",
+  "lib/providers/google.ts",
+]);
+export function isServerOnlyProviderChange(file) {
+  return serverOnlyProviderFiles.has(file);
+}
 
 export function allowedReuseChange(file, target = "strict") {
   return (
@@ -33,6 +59,7 @@ export function allowedReuseChange(file, target = "strict") {
     file.startsWith("tests/") ||
     file.startsWith("e2e-native/") ||
     file.startsWith("e2e-mobile/") ||
+    isServerOnlyProviderChange(file) ||
     runtimeFiles.has(file) ||
     (target === "ios-debug" && /^apps\/mobile\/(app|src)\/.+\.tsx?$/.test(file))
   );
@@ -322,8 +349,49 @@ export async function findReusableBuild(
         run.path.split("@")[0] !== workflowPath
       )
         continue;
-      // Upload happens only after successful compilation; later runtime tests
-      // may still be running or may have failed, so run success is not required.
+      // Older workflows also uploaded restored binaries, whose artifact run SHA
+      // is not their compiler SHA. Require the corresponding platform job to
+      // prove this run really compiled AND uploaded this artifact; otherwise
+      // continue back to the original compiled artifact, never infer lineage.
+      const proof = compilationSteps[target];
+      const jobList = await get(
+        `actions/runs/${run.id}/jobs?filter=latest&per_page=100`,
+      );
+      if (
+        !Array.isArray(jobList.jobs) ||
+        !Number.isInteger(jobList.total_count) ||
+        jobList.total_count < 1 ||
+        jobList.total_count > 100 ||
+        jobList.jobs.length !== jobList.total_count
+      )
+        continue;
+      const jobs = jobList.jobs.filter((job) => job?.name === proof.job);
+      if (jobs.length !== 1) continue;
+      const job = jobs[0];
+      if (
+        !positiveId(job.id) ||
+        job.run_id !== run.id ||
+        job.head_sha !== sourceSha ||
+        job.head_branch !== branch ||
+        !Array.isArray(job.steps)
+      )
+        continue;
+      const compile = job.steps.filter((step) => step?.name === proof.compile);
+      const upload = job.steps.filter((step) => step?.name === proof.upload);
+      if (
+        compile.length !== 1 ||
+        upload.length !== 1 ||
+        ![compile[0], upload[0]].every(
+          (step) =>
+            step.status === "completed" &&
+            step.conclusion === "success" &&
+            positiveId(step.number),
+        ) ||
+        compile[0].number >= upload[0].number
+      )
+        continue;
+      // Later runtime tests may still be running or may have failed. Their
+      // result does not change the now-verified original compilation source.
       return {
         reused: true,
         artifact_id: artifact.id,
@@ -334,6 +402,8 @@ export async function findReusableBuild(
           target === "ios-debug" ? "metro-current-source" : "embedded-source",
         current_sha: currentSha,
         artifact_name: name,
+        compilation_job_id: job.id,
+        compilation_step_number: compile[0].number,
         changed_files: comparison.changed_files,
       };
     }
