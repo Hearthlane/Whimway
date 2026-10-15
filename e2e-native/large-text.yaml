@@ -6,9 +6,22 @@ tags: [native, fixtures, accessibility]
 - takeScreenshot: native-large-text-explore
 - runFlow: helpers/create-fixture-plan.yaml
 - takeScreenshot: native-large-text-itinerary
-- scrollUntilVisible:
-    element: "Adjust plan"
-    direction: DOWN
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Adjust plan"
+          direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Adjust plan"
+            SCROLL_DIRECTION: "DOWN"
 - tapOn: "Adjust plan"
 - assertVisible: "Make room for your day"
 - scrollUntilVisible:
@@ -16,9 +29,22 @@ tags: [native, fixtures, accessibility]
     direction: DOWN
 - takeScreenshot: native-large-text-sheet
 - tapOn: "Close"
-- scrollUntilVisible:
-    element: "Start my day"
-    direction: UP
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            SCROLL_DIRECTION: "UP"
 - tapOn: "Start my day"
 - scrollUntilVisible:
     element: ".*done here.*"

@@ -197,21 +197,22 @@ appId: ${APP_ID || 'com.example.whimway'}
     when:
       platform: iOS
     commands:
-      - scrollUntilVisible:
-          element: "Development fixture.*"
-          direction: DOWN
-          centerElement: true
-          timeout: 15000
+      - runFlow:
+          file: scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Development fixture.*"
+            SCROLL_DIRECTION: "DOWN"
+      - takeScreenshot: native-generated-fixture-disclosure
 - assertVisible: "Development fixture.*"
 - runFlow:
     when:
       platform: iOS
     commands:
-      - scrollUntilVisible:
-          element: "Start my day"
-          direction: DOWN
-          centerElement: true
-          timeout: 15000
+      - runFlow:
+          file: scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            SCROLL_DIRECTION: "DOWN"
       - takeScreenshot: native-plan-start-ready
 - extendedWaitUntil:
     visible: "Start my day"

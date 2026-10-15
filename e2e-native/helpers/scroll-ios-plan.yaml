@@ -1,0 +1,30 @@
+# The largest iOS header can put the timeline below screen center. Keep both
+# swipe points in its lower gutter; do not repeatedly swipe the static toolbar.
+# TARGET_TEXT is a real visible control/disclosure, never injected app state.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- assertTrue: ${SCROLL_DIRECTION === 'DOWN' || SCROLL_DIRECTION === 'UP'}
+- assertVisible:
+    id: "plan-timeline"
+- repeat:
+    times: 20
+    while:
+      notVisible: ${TARGET_TEXT}
+    commands:
+      - runFlow:
+          when:
+            true: ${SCROLL_DIRECTION === 'DOWN'}
+          commands:
+            - swipe:
+                start: 96%, 88%
+                end: 96%, 72%
+                duration: 600
+      - runFlow:
+          when:
+            true: ${SCROLL_DIRECTION === 'UP'}
+          commands:
+            - swipe:
+                start: 96%, 72%
+                end: 96%, 88%
+                duration: 600
+- assertVisible: ${TARGET_TEXT}

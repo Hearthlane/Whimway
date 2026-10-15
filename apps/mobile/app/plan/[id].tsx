@@ -339,7 +339,12 @@ export default function PlanScreen() {
         <View
           style={[
             styles.row,
-            { justifyContent: "space-between", marginBottom: 4 },
+            {
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              rowGap: 8,
+              marginBottom: 4,
+            },
           ]}
         >
           <Chip label={map ? "Timeline" : "Map"} onPress={() => setMap(!map)} />
@@ -355,9 +360,9 @@ export default function PlanScreen() {
             accessibilityRole="button"
             accessibilityLabel="Share plan"
             onPress={() => setShare(true)}
-            style={{ padding: 12 }}
+            style={{ padding: 12, maxWidth: "100%" }}
           >
-            <Text style={styles.label}>Share ↗</Text>
+            <Text style={[styles.label, { flexShrink: 1 }]}>Share ↗</Text>
           </Pressable>
         </View>
       </View>
@@ -431,6 +436,7 @@ export default function PlanScreen() {
       ) : (
         <ScrollView
           ref={scroll}
+          testID="plan-timeline"
           contentContainerStyle={{
             padding: 24,
             paddingTop: 6,
