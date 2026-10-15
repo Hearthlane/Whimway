@@ -264,20 +264,26 @@ export function LocationSearch({
           accessibilityRole="button"
           onPress={() => void resolve()}
           disabled={actionBusy}
-          style={[styles.row, { minHeight: 44 }]}
+          style={[
+            styles.row,
+            { minHeight: 44, maxWidth: "100%", flexShrink: 1 },
+          ]}
         >
           <LocateFixed size={17} color={c.ink} />
-          <Text style={styles.label}>Near me</Text>
+          <Text style={[styles.label, { flexShrink: 1 }]}>Near me</Text>
         </Pressable>
         {Platform.OS !== "web" ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => setMap(true)}
             disabled={actionBusy}
-            style={[styles.row, { minHeight: 44 }]}
+            style={[
+              styles.row,
+              { minHeight: 44, maxWidth: "100%", flexShrink: 1 },
+            ]}
           >
             <Map size={17} color={c.ink} />
-            <Text style={styles.label}>Choose on map</Text>
+            <Text style={[styles.label, { flexShrink: 1 }]}>Choose on map</Text>
           </Pressable>
         ) : null}
       </View>

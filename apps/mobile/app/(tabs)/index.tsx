@@ -184,6 +184,7 @@ export default function Explore() {
           </View>
           <Button
             disabled={selecting}
+            icon={fontScale <= 1.5}
             title={
               prompt.trim()
                 ? "Make it my kind of day"
