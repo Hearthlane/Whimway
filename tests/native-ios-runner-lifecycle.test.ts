@@ -5,6 +5,7 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { execPath } from "node:process";
+import retainedIOSProcesses from "./fixtures/ios-owned-runner-attempt2.json";
 import {
   DRIVER_BUNDLE,
   IOS_SCOPES,
@@ -21,6 +22,7 @@ import {
   runIOSNativeQA,
   runIOSHostCommand,
   runOwnedIOSScope,
+  settleIOSHostScope,
 } from "../scripts/run-ios-native-qa.mjs";
 
 // Failure IDs/times come from retained f17 run38810854902/runtime12011462414:
@@ -528,8 +530,8 @@ describe("owned XCTest scope teardown and absence fence", () => {
     expect(result.fenced).toBe(true);
     expect(test.signals).toEqual([
       [1101, "SIGTERM"],
-      [1102, "SIGTERM"],
       [1101, "SIGKILL"],
+      [1102, "SIGTERM"],
       [1102, "SIGKILL"],
     ]);
     expect(test.elapsed()).toBeGreaterThanOrEqual(8000);
@@ -560,7 +562,15 @@ describe("owned XCTest scope teardown and absence fence", () => {
         test.dependencies,
       );
       expect(result.fenced).toBe(false);
-      expect(test.signals).toEqual([]);
+      const before = [xcode(1101, 1100), runner(1102)];
+      const changed = mutateAfterExit(before).find(
+        (row, index) =>
+          row.started !== before[index].started ||
+          row.pgid !== before[index].pgid ||
+          row.command !== before[index].command,
+      );
+      expect(changed).toBeDefined();
+      expect(test.signals.some(([pid]) => pid === changed?.pid)).toBe(false);
     },
   );
 
@@ -1015,6 +1025,282 @@ describe("selected simulator service-read latency and exact attempt provenance",
       await readFile(join(path, first.commands.ps.stdout.file), "utf8"),
     ).toContain("/sbin/launchd");
   });
+});
+
+describe("independent host proof and passive native monitoring", () => {
+  it("binds each new runner through full proof, uses exact cache only passively, and rejects PID birth changes", () => {
+    const tracker = createIOSScopeTracker(SIMULATOR, 1000);
+    expect(tracker.observeHost([xcode(), runner()]).needsBinding).toBe(true);
+    expect(tracker.identities().map((row) => row.kind)).toEqual(["xcodebuild"]);
+    tracker.observe(snapshot([xcode(), runner()], 35427));
+    expect(tracker.observeHost([xcode(), runner()]).needsBinding).toBe(false);
+    expect(tracker.observeHost([xcode(), runner(35428)]).needsBinding).toBe(
+      true,
+    );
+    expect(tracker.identities().some((row) => row.pid === 35428)).toBe(false);
+    tracker.observe(snapshot([xcode(), runner(35428)], 35428));
+    expect(tracker.observeHost([xcode(), runner(35428)]).needsBinding).toBe(
+      false,
+    );
+    expect(() =>
+      tracker.observeHost([
+        xcode(),
+        { ...runner(35428), started: "Fri Oct 16 00:20:00 2026" },
+      ]),
+    ).toThrow("owned-pid-reused");
+  });
+
+  it("rejects unknown/ambiguous selected native executables on passive reads", () => {
+    const tracker = createIOSScopeTracker(SIMULATOR, 1000);
+    expect(() =>
+      tracker.observeHost([xcode(), runner(), runner(35428)]),
+    ).toThrow("ambiguous");
+    expect(() =>
+      tracker.observeHost([
+        xcode(),
+        {
+          ...runner(),
+          command: runner().command.replace("Runner.app", "Unexpected.app"),
+        },
+      ]),
+    ).toThrow("driver-command-unrecognized");
+    expect(() => tracker.observeHost([xcode(99, 999)])).toThrow("not-owned");
+  });
+
+  it("cannot turn cached native identity into a native signal or absence grant", async () => {
+    const tracker = createIOSScopeTracker(SIMULATOR, 1000);
+    tracker.observe(snapshot([xcode(), runner()], 35427));
+    const signals: number[] = [];
+    let fullReads = 0;
+    await expect(
+      fenceIOSScope(
+        tracker,
+        1000,
+        {
+          now: () => 0,
+          sleep: async () => {},
+          hostSnapshot: async () => [xcode(), runner()],
+          snapshot: async () => {
+            fullReads++;
+            throw Error("selected-service-unavailable");
+          },
+          signal: (pid: number) => {
+            signals.push(pid);
+          },
+        },
+        { simulator: SIMULATOR },
+      ),
+    ).rejects.toThrow("selected-service-unavailable");
+    expect(fullReads).toBe(1);
+    expect(signals).toEqual([]);
+  });
+
+  it("queries selected services only for a new runner during monitoring and freshly for every final signal/absence", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "whimway-ios-lifecycle-"));
+    temporaryDirectories.push(directory);
+    let clock = 0;
+    let rows: Process[] = [];
+    let introduced = false;
+    let finished = false;
+    let finish!: (value: { code: number; signal: null }) => void;
+    const events: { type: string; time: number; pid?: number }[] = [];
+    const dependencies = iosRunnerDependencies(
+      directory,
+      SIMULATOR,
+      async (executable: string) => {
+        events.push({
+          type: executable === "/bin/ps" ? "host" : "service",
+          time: clock,
+        });
+        return hostResult({
+          stdout:
+            executable === "/bin/ps"
+              ? psText(rows)
+              : rows.some((row) => row.pid === 1002)
+                ? `1002 0 ${DRIVER_BUNDLE}\n`
+                : "PID Status Label\n",
+        });
+      },
+    );
+    const result = await runOwnedIOSScope(IOS_SCOPES[0], SIMULATOR, {
+      ...dependencies,
+      now: () => clock,
+      sleep: async (ms: number) => {
+        clock += ms;
+        if (clock >= 3000 && !introduced) {
+          introduced = true;
+          rows.push(runner(1002));
+        }
+        if (clock >= 6000 && !finished) {
+          finished = true;
+          rows = rows.filter((row) => row.pid !== 1000);
+          finish({ code: 0, signal: null });
+        }
+      },
+      start: (scope: Scope) => {
+        rows = [
+          process(
+            1000,
+            `/usr/bin/java -classpath /Users/runner/.maestro/lib/* maestro.cli.AppKt ${iosMaestroArguments(scope, SIMULATOR).join(" ")}`,
+          ),
+          xcode(1001),
+        ];
+        return {
+          pid: 1000,
+          done: new Promise<{ code: number; signal: null }>((resolve) => {
+            finish = resolve;
+          }),
+        };
+      },
+      signal: (pid: number) => {
+        events.push({ type: "signal", time: clock, pid });
+        rows = rows.filter((row) => row.pid !== pid);
+      },
+    });
+    expect(result).toMatchObject({ passed: true, fenced: true });
+    expect(
+      events.filter(
+        (event) =>
+          event.type === "service" && event.time > 0 && event.time < 6000,
+      ),
+    ).toEqual([{ type: "service", time: 3000 }]);
+    expect(
+      events
+        .filter((event) => event.type === "signal")
+        .map((event) => event.pid),
+    ).toEqual([1001, 1002]);
+    for (const [index, event] of events.entries())
+      if (event.type === "signal")
+        expect(events.slice(index - 2, index).map((row) => row.type)).toEqual([
+          "service",
+          "host",
+        ]);
+    expect(clock).toBeGreaterThanOrEqual(8000);
+  });
+
+  it("retains independent successful ps evidence even when its paired service fails", async () => {
+    const shell = parseIOSProcessTable(retainedIOSProcesses.shell.ps)[0];
+    const tracker = createIOSScopeTracker(SIMULATOR, shell.pgid);
+    const roots: Process[] = [];
+    await expect(
+      readIOSRunnerSnapshot(
+        SIMULATOR,
+        async (executable: string) =>
+          executable === "/bin/ps"
+            ? hostResult({ stdout: retainedIOSProcesses.shell.ps + "\n" })
+            : hostResult({ status: 1, code: 1, error: "1" }),
+        async () => {},
+        async () => {},
+        (rows: Process[]) => {
+          roots.push(...rows);
+          tracker.observeHost(rows);
+        },
+        true,
+      ),
+    ).rejects.toThrow("runner-snapshot-failed");
+    expect(roots).toEqual([shell]);
+    expect(
+      isOwnedMaestroRoot(shell, IOS_SCOPES[0], shell.pgid, SIMULATOR),
+    ).toBe(true);
+  });
+
+  it("replays retained shell→Java and xcode identities through a failed native bind, then kills only fresh owned hosts", async () => {
+    const shell = parseIOSProcessTable(retainedIOSProcesses.shell.ps)[0];
+    const java = parseIOSProcessTable(retainedIOSProcesses.java.ps)[0];
+    const host = parseIOSProcessTable(retainedIOSProcesses.xcode.ps)[0];
+    expect(shell).toMatchObject({
+      pid: 17968,
+      pgid: 17968,
+      started: "Fri Oct 16 00:15:29 2026",
+    });
+    expect(java).toMatchObject({
+      pid: shell.pid,
+      pgid: shell.pgid,
+      started: shell.started,
+    });
+    let clock = 0;
+    let rows: Process[] = [];
+    const native = runner(35427);
+    const signals: number[] = [];
+    const events: string[] = [];
+    const outcome = await runOwnedIOSScope(IOS_SCOPES[0], SIMULATOR, {
+      now: () => clock,
+      sleep: async (ms: number) => {
+        clock += ms;
+      },
+      start: () => {
+        // The process identities are real; driver presence and RPC failure are
+        // controlled here to exercise the formerly lost partial-host proof.
+        rows = [shell, host, native];
+        return {
+          pid: shell.pid,
+          done: new Promise<{ code: number }>(() => {}),
+        };
+      },
+      hostSnapshot: async () => rows,
+      snapshot: async (
+        context: { phase: string },
+        observeHost?: (rows: Process[]) => void,
+      ) => {
+        if (context.phase === "preflight") return snapshot([]);
+        observeHost?.(rows);
+        events.push("service-failure");
+        throw Error("selected-service-unavailable");
+      },
+      diagnose: async () => {
+        rows = [java, host, native];
+      },
+      signal: (pid: number) => {
+        signals.push(pid);
+        rows = rows.filter((row) => row.pid !== pid);
+      },
+      record: async () => {},
+    });
+    expect(outcome).toMatchObject({
+      passed: false,
+      fenced: false,
+      reason: "selected-service-unavailable",
+      settleFailure: null,
+    });
+    expect(signals).toEqual([17968, 18382]);
+    expect(rows).toEqual([native]);
+    expect(events).toHaveLength(2);
+    expect(
+      outcome.identities.some((row) => row.kind === "simulator-runner"),
+    ).toBe(false);
+  });
+
+  it.each(["birth", "group", "arguments"])(
+    "never signals a retained root with changed %s during host-only cleanup",
+    async (changed) => {
+      const shell = parseIOSProcessTable(retainedIOSProcesses.shell.ps)[0];
+      const java = parseIOSProcessTable(retainedIOSProcesses.java.ps)[0];
+      const current =
+        changed === "birth"
+          ? { ...java, started: "Fri Oct 16 00:16:00 2026" }
+          : changed === "group"
+            ? { ...java, pgid: 999 }
+            : { ...java, command: java.command + " --unexpected" };
+      const signals: number[] = [];
+      await expect(
+        settleIOSHostScope(
+          shell,
+          createIOSScopeTracker(SIMULATOR, shell.pid),
+          IOS_SCOPES[0],
+          SIMULATOR,
+          {
+            now: () => 0,
+            sleep: async () => {},
+            hostSnapshot: async () => [current],
+            signal: (pid: number) => {
+              signals.push(pid);
+            },
+          },
+        ),
+      ).rejects.toThrow("maestro-root-identity-changed");
+      expect(signals).toEqual([]);
+    },
+  );
 });
 
 describe("four real iOS scopes retain readiness/keychain/font and failure semantics", () => {

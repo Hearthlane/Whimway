@@ -1,0 +1,35 @@
+{
+  "provenance": {
+    "run": 38825447951,
+    "job": 116738352619,
+    "attempt": 2,
+    "artifact": 12015634123,
+    "base": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/",
+    "sources": [
+      {
+        "file": "3-ps.stdout.txt",
+        "sha256": "71eb13c2bbc334d1cef942aeabda13368874f1730e2f99d24815f1ef361ed71f"
+      },
+      {
+        "file": "5-ps.stdout.txt",
+        "sha256": "c977e452167aab799793ffd0c1ee7a1c315249eddf41044c140e3c0a2cf5db7a"
+      }
+    ],
+    "note": "Only three actual process rows retained. Tests simulate later state transitions; no native flow pass is implied."
+  },
+  "shell": {
+    "source": "3-ps.stdout.txt",
+    "line": 813,
+    "ps": "17968 17223 17968 Fri Oct 16 00:15:29 2026     /bin/sh /Users/runner/.maestro/bin/maestro --device 10B884BF-749F-4E8B-AFCD-26AB8F1DBD01 test --driver-host-port 7001 --test-output-dir native-results/ios-ready -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7001 -e EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1 e2e-native/ios-ready.yaml"
+  },
+  "java": {
+    "source": "5-ps.stdout.txt",
+    "line": 783,
+    "ps": "17968 17223 17968 Fri Oct 16 00:15:29 2026     /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-101.0/arm64/Contents/Home//bin/java --enable-native-access=ALL-UNNAMED -classpath /Users/runner/.maestro/lib/* maestro.cli.AppKt --device 10B884BF-749F-4E8B-AFCD-26AB8F1DBD01 test --driver-host-port 7001 --test-output-dir native-results/ios-ready -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7001 -e EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1 e2e-native/ios-ready.yaml"
+  },
+  "xcode": {
+    "source": "5-ps.stdout.txt",
+    "line": 792,
+    "ps": "18382 17968 17968 Fri Oct 16 00:15:46 2026     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/10B884BF-749F-4E8B-AFCD-26AB8F1DBD015561610964279714096/maestro-driver-ios-config.xctestrun -destination id=10B884BF-749F-4E8B-AFCD-26AB8F1DBD01 -derivedDataPath /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/maestro_xctestrunner_xcodebuild_output16380040790997169609"
+  }
+}

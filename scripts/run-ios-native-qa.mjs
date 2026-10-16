@@ -113,14 +113,14 @@ export function iosMaestroArguments(scope, simulator) {
     "--driver-host-port",
     String(scope.port),
     "--test-output-dir",
-    join("native-results", scope.output),
+    `native-results/${scope.output}`,
     "-e",
     "APP_ID=com.example.whimway",
     "-e",
     `IOS_DRIVER_PORT=${scope.port}`,
     "-e",
     `EXPO_DEV_URL=${EXPO_URL}`,
-    join("e2e-native", scope.flow),
+    `e2e-native/${scope.flow}`,
   ];
 }
 
@@ -150,6 +150,13 @@ function driverProcess(process, simulator) {
     executable.startsWith("/") &&
     executable.includes(prefix) &&
     executable.endsWith(`/${DRIVER_EXECUTABLE}.app/${DRIVER_EXECUTABLE}`)
+  );
+}
+
+function selectedDriverReference(process, simulator) {
+  return (
+    process.command.includes(`/CoreSimulator/Devices/${simulator}/`) &&
+    process.command.includes("maestro-driver")
   );
 }
 
@@ -190,21 +197,44 @@ export function createIOSScopeTracker(simulator, groupId) {
       owned.set(process.pid, Object.freeze({ ...process, kind }));
     }
   };
+  const observeHost = (processes) => {
+    for (const process of processes) {
+      if (!selectedXcodeReference(process, simulator)) continue;
+      if (!xcodeProcess(process, simulator))
+        fail("xctest-command-unrecognized");
+      if (process.pgid !== groupId) fail("xctest-process-not-owned");
+      sawXcode = true;
+      remember(process, "xcodebuild");
+    }
+    const drivers = processes.filter((process) =>
+      selectedDriverReference(process, simulator),
+    );
+    if (drivers.length > 1) fail("selected-driver-ambiguous");
+    for (const process of drivers) {
+      if (!driverProcess(process, simulator))
+        fail("driver-command-unrecognized");
+      if (!sawXcode) fail("driver-process-not-owned");
+    }
+    for (const process of processes) {
+      const previous = owned.get(process.pid);
+      if (previous && !identityEqual(previous, process))
+        fail("owned-pid-reused");
+    }
+    return {
+      drivers,
+      needsBinding: drivers.some((process) => !owned.has(process.pid)),
+      host: processes.filter(
+        (process) => owned.get(process.pid)?.kind === "xcodebuild",
+      ),
+    };
+  };
   return {
+    // Passive monitoring can recognize an already bound native identity. It
+    // cannot bind a new one or produce native signal/absence authority.
+    observeHost,
     observe(snapshot) {
       const { processes, driverPid } = snapshot;
-      for (const process of processes) {
-        if (!selectedXcodeReference(process, simulator)) continue;
-        if (!xcodeProcess(process, simulator))
-          fail("xctest-command-unrecognized");
-        if (process.pgid !== groupId) fail("xctest-process-not-owned");
-        sawXcode = true;
-        remember(process, "xcodebuild");
-      }
-      const drivers = processes.filter((process) =>
-        driverProcess(process, simulator),
-      );
-      if (drivers.length > 1) fail("selected-driver-ambiguous");
+      const { drivers } = observeHost(processes);
       if (
         driverPid !== null &&
         !drivers.some((process) => process.pid === driverPid)
@@ -214,12 +244,6 @@ export function createIOSScopeTracker(simulator, groupId) {
         if (!sawXcode || process.pid !== driverPid)
           fail("driver-process-not-owned");
         remember(process, "simulator-runner");
-      }
-      // A PID that has been recycled must never inherit an earlier kill grant.
-      for (const process of processes) {
-        const previous = owned.get(process.pid);
-        if (previous && !identityEqual(previous, process))
-          fail("owned-pid-reused");
       }
       return {
         live: processes.filter((process) => owned.has(process.pid)),
@@ -238,7 +262,7 @@ export function assertIOSRunnerAbsent(snapshot, simulator) {
     snapshot.driverPid !== null ||
     snapshot.processes.some(
       (process) =>
-        driverProcess(process, simulator) ||
+        selectedDriverReference(process, simulator) ||
         selectedXcodeReference(process, simulator),
     )
   )
@@ -266,6 +290,10 @@ export async function readIOSRunnerSnapshot(
   recordAttempt = async (attempt) => {
     void attempt;
   },
+  observeHost = (processes) => {
+    void processes;
+  },
+  serviceFirst = false,
 ) {
   // ps and launchctl cannot be read atomically. A runner can start or exit
   // between them; require a coherent pair before granting any signal rights.
@@ -281,7 +309,7 @@ export async function readIOSRunnerSnapshot(
         timeout: serviceTimeout,
       });
     let ps, services;
-    if (serviceTimeout === SERVICE_RECOVERY_TIMEOUT_MS) {
+    if (serviceFirst || serviceTimeout === SERVICE_RECOVERY_TIMEOUT_MS) {
       // A parallel ps could be fourteen seconds old by the time a slow
       // recovered launchctl returns. Observe process birth/command only after
       // that read completes, including when this snapshot guards a signal.
@@ -294,6 +322,9 @@ export async function readIOSRunnerSnapshot(
     if (ps.status === 0) {
       try {
         processes = parseIOSProcessTable(ps.stdout);
+        // Host birth/group/argv evidence stands independently of a failed
+        // simulator RPC; retain it before the paired service result is judged.
+        observeHost(processes);
       } catch (error) {
         await recordAttempt({
           attempt: attempt + 1,
@@ -430,6 +461,7 @@ export function iosRunnerDependencies(
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   let evidenceCount = 0;
   let evidenceBytes = 0;
+  const firstHostRecorded = new Set();
   const recordSnapshotAttempt = async (context, attempt) => {
     if (
       !context ||
@@ -437,9 +469,18 @@ export function iosRunnerDependencies(
       !["preflight", "monitor", "fence", "root-settle"].includes(context.phase)
     )
       fail("snapshot-context-invalid");
-    if (context.phase !== "preflight" && !attempt.reason && !attempt.recovery)
+    if (
+      context.phase !== "preflight" &&
+      !attempt.reason &&
+      !attempt.recovery &&
+      !attempt.firstHost
+    )
       return;
-    const bytes = [attempt.ps, attempt.services].reduce(
+    const results = {
+      ps: attempt.ps,
+      ...(attempt.services ? { services: attempt.services } : {}),
+    };
+    const bytes = Object.values(results).reduce(
       (total, result) =>
         total +
         Buffer.byteLength(result.stdout) +
@@ -456,8 +497,8 @@ export function iosRunnerDependencies(
     const target = join(directory, context.scope, "snapshots");
     await mkdir(target, { recursive: true });
     const metadata = {};
-    for (const name of ["ps", "services"]) {
-      const { stdout, stderr, ...details } = attempt[name];
+    for (const [name, result] of Object.entries(results)) {
+      const { stdout, stderr, ...details } = result;
       const outputs = {};
       for (const [pipe, value] of Object.entries({ stdout, stderr })) {
         const file = `${sequence}-${name}.${pipe}.txt`;
@@ -480,6 +521,7 @@ export function iosRunnerDependencies(
           phase: context.phase,
           attempt: attempt.attempt,
           recovery: attempt.recovery,
+          observation: attempt.services ? "native-full" : "host-only",
           reason: attempt.reason,
           commands: metadata,
         },
@@ -492,10 +534,44 @@ export function iosRunnerDependencies(
     now: Date.now,
     sleep,
     run,
-    snapshot: (context) =>
-      readIOSRunnerSnapshot(simulator, run, sleep, (attempt) =>
-        recordSnapshotAttempt(context, attempt),
+    snapshot: (context, observeHost) =>
+      readIOSRunnerSnapshot(
+        simulator,
+        run,
+        sleep,
+        (attempt) => recordSnapshotAttempt(context, attempt),
+        observeHost,
+        context.binding === true || context.phase === "fence",
       ),
+    async hostSnapshot(context) {
+      const ps = await run(
+        "/bin/ps",
+        ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="],
+        { timeout: SNAPSHOT_TIMEOUT_MS },
+      );
+      /** @type {ReturnType<typeof parseIOSProcessTable>} */
+      let processes = [];
+      let reason = null;
+      try {
+        if (ps.status !== 0) fail("runner-host-snapshot-failed");
+        processes = parseIOSProcessTable(ps.stdout);
+      } catch (error) {
+        reason =
+          error instanceof Error ? error.message : "host-snapshot-invalid";
+      }
+      const firstHost =
+        context.phase === "monitor" && !firstHostRecorded.has(context.scope);
+      await recordSnapshotAttempt(context, {
+        attempt: 1,
+        ps,
+        reason,
+        recovery: false,
+        firstHost,
+      });
+      if (firstHost) firstHostRecorded.add(context.scope);
+      if (reason) fail(reason);
+      return processes;
+    },
     start(scope) {
       const child = spawn("maestro", iosMaestroArguments(scope, simulator), {
         cwd: workspace,
@@ -681,36 +757,89 @@ export function iosRunnerDependencies(
   };
 }
 
-export async function settleIOSMaestroRoot(
+async function readHostProcesses(dependencies, scope, phase) {
+  const context = { scope: scope.name, phase };
+  return dependencies.hostSnapshot
+    ? dependencies.hostSnapshot(context)
+    : (await dependencies.snapshot(context)).processes;
+}
+
+export async function settleIOSHostScope(
   identity,
+  tracker,
   scope,
   simulator,
   dependencies,
 ) {
   const started = dependencies.now();
   const sent = new Set();
+  let unsafe = null;
   while (dependencies.now() - started <= 10000) {
-    const current = (
-      await dependencies.snapshot({ scope: scope.name, phase: "root-settle" })
-    ).processes.find((row) => row.pid === identity.pid);
-    if (!current) return;
+    const processes = await readHostProcesses(
+      dependencies,
+      scope,
+      "root-settle",
+    );
+    try {
+      tracker.observeHost(processes);
+    } catch (error) {
+      unsafe ??=
+        error instanceof Error ? error.message : "host-observation-failed";
+    }
+    const root = identity && processes.find((row) => row.pid === identity.pid);
     if (
-      !identityEqual(identity, current) ||
-      !isOwnedMaestroRoot(current, scope, identity.pid, simulator)
+      root &&
+      (root.pgid !== identity.pgid ||
+        root.started !== identity.started ||
+        !isOwnedMaestroRoot(root, scope, identity.pid, simulator))
     )
       fail("maestro-root-identity-changed");
-    const signal = dependencies.now() - started >= 5000 ? "SIGKILL" : "SIGTERM";
-    if (!sent.has(signal)) {
+    // A foreign host never receives a signal, but cannot prevent stopping our
+    // separately proven root. Full native absence still fails if it remains.
+    const hosts = tracker
+      .identities()
+      .filter((row) => row.kind === "xcodebuild")
+      .filter((row) =>
+        processes.some((current) => identityEqual(row, current)),
+      );
+    const live = root ? [root, ...hosts] : hosts;
+    if (!live.length) {
+      if (unsafe) fail(unsafe);
+      return;
+    }
+    for (const expected of live) {
+      const current = (
+        await readHostProcesses(dependencies, scope, "root-settle")
+      ).find((row) => row.pid === expected.pid);
+      if (!current) continue;
+      if (identity && current.pid === identity.pid) {
+        // The official launcher may exec Java between observations; only that
+        // same birth/group with this scope's exact allowlisted argv is valid.
+        if (
+          current.pgid !== identity.pgid ||
+          current.started !== identity.started ||
+          !isOwnedMaestroRoot(current, scope, identity.pid, simulator)
+        )
+          fail("maestro-root-identity-changed");
+      } else if (
+        !identityEqual(expected, current) ||
+        !xcodeProcess(current, simulator)
+      )
+        fail("host-signal-identity-changed");
+      const signal =
+        dependencies.now() - started >= 5000 ? "SIGKILL" : "SIGTERM";
+      const key = `${expected.pid}:${signal}`;
+      if (sent.has(key)) continue;
       try {
         dependencies.signal(current.pid, signal);
       } catch (error) {
         if (error?.code !== "ESRCH") throw error;
       }
-      sent.add(signal);
+      sent.add(key);
     }
     await dependencies.sleep(250);
   }
-  fail("maestro-root-settle-timeout");
+  fail("maestro-host-settle-timeout");
 }
 
 export async function fenceIOSScope(
@@ -814,22 +943,35 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
     result = value;
   });
   const started = now();
+  const retainHost = (processes) => {
+    const root = processes.find((process) => process.pid === child.pid);
+    if (root) {
+      if (!isOwnedMaestroRoot(root, scope, child.pid, simulator))
+        fail("maestro-root-not-owned");
+      if (
+        rootIdentity &&
+        (rootIdentity.started !== root.started ||
+          rootIdentity.pgid !== root.pgid)
+      )
+        fail("maestro-pid-reused");
+      rootIdentity = root;
+    }
+    return tracker.observeHost(processes);
+  };
   try {
     while (!exited) {
-      const current = await snapshot({ scope: scope.name, phase: "monitor" });
-      const root = current.processes.find(
-        (process) => process.pid === child.pid,
-      );
-      if (root) {
-        if (!isOwnedMaestroRoot(root, scope, child.pid, simulator))
-          fail("maestro-root-not-owned");
-        // The launcher may exec Java without changing PID/birth time. The
-        // latest observed identity is required if monitoring itself fails.
-        if (rootIdentity && rootIdentity.started !== root.started)
-          fail("maestro-pid-reused");
-        rootIdentity = root;
+      const host = await readHostProcesses(dependencies, scope, "monitor");
+      const passive = retainHost(host);
+      if (passive.needsBinding) {
+        // Newly observed runners bind only through selected launchctl plus a
+        // post-service ps read. Existing native identity is passive cache only.
+        const current = await snapshot(
+          { scope: scope.name, phase: "monitor", binding: true },
+          retainHost,
+        );
+        retainHost(current.processes);
+        tracker.observe(current);
       }
-      tracker.observe(current);
       await Promise.race([completion, sleep(1000)]);
     }
     await completion;
@@ -847,14 +989,26 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
     }
   };
   if (!passed) await capture(failure ?? "maestro-failed");
-  if (!exited && rootIdentity) {
+  const settleHost = async () => {
+    if (
+      !rootIdentity &&
+      !tracker.identities().some((row) => row.kind === "xcodebuild")
+    )
+      return;
     try {
-      await settleIOSMaestroRoot(rootIdentity, scope, simulator, dependencies);
+      await settleIOSHostScope(
+        rootIdentity,
+        tracker,
+        scope,
+        simulator,
+        dependencies,
+      );
     } catch (error) {
-      settleFailure =
-        error instanceof Error ? error.message : "maestro-root-settle-failed";
+      settleFailure ??=
+        error instanceof Error ? error.message : "xctest-host-settle-failed";
     }
-  }
+  };
+  if (!passed) await settleHost();
   let fenced = false;
   try {
     await fenceIOSScope(tracker, child.pid, dependencies, {
@@ -865,7 +1019,10 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
     fenced = true;
   } catch (error) {
     failure ??= error instanceof Error ? error.message : "runner-fence-failed";
-    if (passed) await capture(failure);
+    if (passed) {
+      await capture(failure);
+      await settleHost();
+    }
   }
   const outcome = {
     scope: scope.name,
