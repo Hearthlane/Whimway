@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 
 export const DRIVER_BUNDLE = "dev.mobile.maestro-driver-iosUITests.xctrunner";
 const DRIVER_EXECUTABLE = "maestro-driver-iosUITests-Runner";
+const SIMCTL_EXECUTABLE =
+  "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl";
 const UUID = /^[A-Fa-f0-9]{8}(?:-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$/;
 const MAX_PROCESSES = 4096;
 const MAX_IDENTITIES = 32;
@@ -184,11 +186,19 @@ function selectedXcodeReference(process, simulator) {
   );
 }
 
-export function createIOSScopeTracker(simulator, groupId) {
+function maestroLogStream(process, simulator) {
+  return (
+    process.command ===
+    `${SIMCTL_EXECUTABLE} spawn ${simulator} log stream --style syslog`
+  );
+}
+
+export function createIOSScopeTracker(simulator, groupId, scope) {
   if (!UUID.test(simulator) || !Number.isSafeInteger(groupId) || groupId < 2)
     fail("scope-identity-invalid");
   const owned = new Map();
   let sawXcode = false;
+  let rootBirth = null;
   const remember = (process, kind) => {
     const previous = owned.get(process.pid);
     if (previous && !identityEqual(previous, process)) fail("owned-pid-reused");
@@ -205,6 +215,29 @@ export function createIOSScopeTracker(simulator, groupId) {
       if (process.pgid !== groupId) fail("xctest-process-not-owned");
       sawXcode = true;
       remember(process, "xcodebuild");
+    }
+    const root = scope && processes.find((process) => process.pid === groupId);
+    if (root) {
+      if (!isOwnedMaestroRoot(root, scope, groupId, simulator))
+        fail("maestro-root-not-owned");
+      if (rootBirth && rootBirth !== root.started)
+        fail("maestro-root-identity-changed");
+      rootBirth ??= root.started;
+      const rootBorn = Date.parse(root.started);
+      for (const process of processes) {
+        // Pinned LocalSimulatorUtils.startDeviceLogStream returns this exact
+        // direct child; IOSDriver owns its lifecycle. An unbound orphan or a
+        // bare log process never acquires authority from group membership.
+        if (
+          process.ppid === root.pid &&
+          process.pgid === groupId &&
+          maestroLogStream(process, simulator) &&
+          Number.isFinite(rootBorn) &&
+          Number.isFinite(Date.parse(process.started)) &&
+          Date.parse(process.started) >= rootBorn
+        )
+          remember(process, "maestro-log-stream");
+      }
     }
     const drivers = processes.filter((process) =>
       selectedDriverReference(process, simulator),
@@ -223,8 +256,10 @@ export function createIOSScopeTracker(simulator, groupId) {
     return {
       drivers,
       needsBinding: drivers.some((process) => !owned.has(process.pid)),
-      host: processes.filter(
-        (process) => owned.get(process.pid)?.kind === "xcodebuild",
+      host: processes.filter((process) =>
+        ["xcodebuild", "maestro-log-stream"].includes(
+          owned.get(process.pid)?.kind,
+        ),
       ),
     };
   };
@@ -298,6 +333,7 @@ export async function readIOSRunnerSnapshot(
   // ps and launchctl cannot be read atomically. A runner can start or exit
   // between them; require a coherent pair before granting any signal rights.
   let recoveredTimeout = false;
+  let interrupted = false;
   let serviceTimeout = SNAPSHOT_TIMEOUT_MS;
   for (let attempt = 0; attempt < 3; attempt++) {
     const readProcesses = () =>
@@ -309,7 +345,7 @@ export async function readIOSRunnerSnapshot(
         timeout: serviceTimeout,
       });
     let ps, services;
-    if (serviceFirst || serviceTimeout === SERVICE_RECOVERY_TIMEOUT_MS) {
+    if (serviceFirst || recoveredTimeout) {
       // A parallel ps could be fourteen seconds old by the time a slow
       // recovered launchctl returns. Observe process birth/command only after
       // that read completes, including when this snapshot guards a signal.
@@ -350,13 +386,17 @@ export async function readIOSRunnerSnapshot(
       // That artifact did not preserve timeout proof. Recover only a newly
       // proven timeout, once, with an entirely fresh process/service pair.
       if (
-        ps.status === 0 &&
-        provenCommandTimeout(services) &&
+        (ps.status === 0 || provenCommandTimeout(ps)) &&
+        (services.status === 0 || provenCommandTimeout(services)) &&
         !recoveredTimeout &&
         attempt < 2
       ) {
         recoveredTimeout = true;
-        serviceTimeout = SERVICE_RECOVERY_TIMEOUT_MS;
+        interrupted = true;
+        serviceTimeout =
+          services.status === 0
+            ? SNAPSHOT_TIMEOUT_MS
+            : SERVICE_RECOVERY_TIMEOUT_MS;
         await sleep(100);
         continue;
       }
@@ -390,7 +430,8 @@ export async function readIOSRunnerSnapshot(
       recovery: recoveredTimeout,
       reason: coherent ? null : "driver-service-process-mismatch",
     });
-    if (coherent) return { processes, driverPid };
+    if (coherent) return { processes, driverPid, interrupted };
+    interrupted = true;
     serviceTimeout = SNAPSHOT_TIMEOUT_MS;
     if (attempt < 2) await sleep(50);
   }
@@ -401,8 +442,15 @@ export function runIOSHostCommand(command, args, options = {}) {
   const deadlineMs = options.timeout ?? SNAPSHOT_TIMEOUT_MS;
   const started = performance.now();
   const startedAt = new Date().toISOString();
+  const timing = {
+    execFileReturnMs: null,
+    spawnEventMs: null,
+    exitEventMs: null,
+    closeEventMs: null,
+    callbackMs: null,
+  };
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       command,
       args,
       {
@@ -414,6 +462,7 @@ export function runIOSHostCommand(command, args, options = {}) {
       },
       (error, stdout, stderr) => {
         const elapsedMs = Math.round(performance.now() - started);
+        timing.callbackMs = elapsedMs;
         const code =
           typeof error?.code === "number" || typeof error?.code === "string"
             ? error.code
@@ -438,11 +487,22 @@ export function runIOSHostCommand(command, args, options = {}) {
           deadlineMs,
           elapsedMs,
           startedAt,
+          timing,
           stdout: stdout ?? "",
           stderr: stderr ?? "",
         });
       },
     );
+    timing.execFileReturnMs = Math.round(performance.now() - started);
+    child.once("spawn", () => {
+      timing.spawnEventMs = Math.round(performance.now() - started);
+    });
+    child.once("exit", () => {
+      timing.exitEventMs = Math.round(performance.now() - started);
+    });
+    child.once("close", () => {
+      timing.closeEventMs = Math.round(performance.now() - started);
+    });
   });
 }
 
@@ -531,7 +591,7 @@ export function iosRunnerDependencies(
     );
   };
   return {
-    now: Date.now,
+    now: () => performance.now(),
     sleep,
     run,
     snapshot: (context, observeHost) =>
@@ -544,33 +604,42 @@ export function iosRunnerDependencies(
         context.binding === true || context.phase === "fence",
       ),
     async hostSnapshot(context) {
-      const ps = await run(
-        "/bin/ps",
-        ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="],
-        { timeout: SNAPSHOT_TIMEOUT_MS },
-      );
-      /** @type {ReturnType<typeof parseIOSProcessTable>} */
-      let processes = [];
-      let reason = null;
-      try {
-        if (ps.status !== 0) fail("runner-host-snapshot-failed");
-        processes = parseIOSProcessTable(ps.stdout);
-      } catch (error) {
-        reason =
-          error instanceof Error ? error.message : "host-snapshot-invalid";
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ps = await run(
+          "/bin/ps",
+          ["-ww", "-axo", "pid=,ppid=,pgid=,lstart=,command="],
+          { timeout: SNAPSHOT_TIMEOUT_MS },
+        );
+        /** @type {ReturnType<typeof parseIOSProcessTable>} */
+        let processes = [];
+        let reason = null;
+        try {
+          if (ps.status !== 0) fail("runner-host-snapshot-failed");
+          processes = parseIOSProcessTable(ps.stdout);
+        } catch (error) {
+          reason =
+            error instanceof Error ? error.message : "host-snapshot-invalid";
+        }
+        const firstHost =
+          context.phase === "monitor" && !firstHostRecorded.has(context.scope);
+        await recordSnapshotAttempt(context, {
+          attempt,
+          ps,
+          reason,
+          recovery: attempt === 2,
+          firstHost,
+        });
+        if (firstHost) firstHostRecorded.add(context.scope);
+        if (reason) {
+          // A passive read is not a UI attempt or authority to signal. Discard
+          // timeout output completely, then obtain one new table at the same
+          // bound. Unknown/parse/identity failures never enter this recovery.
+          if (attempt === 1 && provenCommandTimeout(ps)) continue;
+          fail(reason);
+        }
+        return processes;
       }
-      const firstHost =
-        context.phase === "monitor" && !firstHostRecorded.has(context.scope);
-      await recordSnapshotAttempt(context, {
-        attempt: 1,
-        ps,
-        reason,
-        recovery: false,
-        firstHost,
-      });
-      if (firstHost) firstHostRecorded.add(context.scope);
-      if (reason) fail(reason);
-      return processes;
+      fail("runner-host-snapshot-failed");
     },
     start(scope) {
       const child = spawn("maestro", iosMaestroArguments(scope, simulator), {
@@ -604,6 +673,14 @@ export function iosRunnerDependencies(
       const target = join(directory, scope.name);
       await mkdir(target, { recursive: true });
       const captures = [
+        ["host-uptime", "/usr/bin/uptime", [], SNAPSHOT_TIMEOUT_MS],
+        ["host-vm-stat", "/usr/bin/vm_stat", [], SNAPSHOT_TIMEOUT_MS],
+        [
+          "host-memory-load",
+          "/usr/sbin/sysctl",
+          ["hw.memsize", "vm.loadavg"],
+          SNAPSHOT_TIMEOUT_MS,
+        ],
         [
           "processes",
           "/bin/ps",
@@ -675,6 +752,7 @@ export function iosRunnerDependencies(
             deadlineMs: result.deadlineMs,
             elapsedMs: result.elapsedMs,
             startedAt: result.startedAt,
+            timing: result.timing,
           };
         }),
       );
@@ -780,6 +858,8 @@ export async function settleIOSHostScope(
       scope,
       "root-settle",
     );
+    if (dependencies.now() - started > 10000)
+      fail("maestro-host-settle-timeout");
     try {
       tracker.observeHost(processes);
     } catch (error) {
@@ -798,7 +878,7 @@ export async function settleIOSHostScope(
     // separately proven root. Full native absence still fails if it remains.
     const hosts = tracker
       .identities()
-      .filter((row) => row.kind === "xcodebuild")
+      .filter((row) => ["xcodebuild", "maestro-log-stream"].includes(row.kind))
       .filter((row) =>
         processes.some((current) => identityEqual(row, current)),
       );
@@ -811,6 +891,8 @@ export async function settleIOSHostScope(
       const current = (
         await readHostProcesses(dependencies, scope, "root-settle")
       ).find((row) => row.pid === expected.pid);
+      if (dependencies.now() - started > 10000)
+        fail("maestro-host-settle-timeout");
       if (!current) continue;
       if (identity && current.pid === identity.pid) {
         // The official launcher may exec Java between observations; only that
@@ -823,7 +905,9 @@ export async function settleIOSHostScope(
           fail("maestro-root-identity-changed");
       } else if (
         !identityEqual(expected, current) ||
-        !xcodeProcess(current, simulator)
+        !(expected.kind === "maestro-log-stream"
+          ? maestroLogStream(current, simulator)
+          : xcodeProcess(current, simulator))
       )
         fail("host-signal-identity-changed");
       const signal =
@@ -857,6 +941,9 @@ export async function fenceIOSScope(
   while (now() - started <= timeoutMs) {
     const context = { scope: options.scope?.name, phase: "fence" };
     const currentSnapshot = await snapshot(context);
+    if (now() - started > timeoutMs) fail("runner-absence-fence-timeout");
+    options.observe?.(currentSnapshot);
+    if (currentSnapshot.interrupted === true) quietSince = null;
     const observed = tracker.observe(currentSnapshot);
     const root =
       options.rootIdentity &&
@@ -887,6 +974,9 @@ export async function fenceIOSScope(
         // Freshly revalidate birth time, command and scope PGID immediately
         // before each individual signal. PID reuse revokes the entire fence.
         const fresh = await snapshot(context);
+        if (now() - started > timeoutMs) fail("runner-absence-fence-timeout");
+        options.observe?.(fresh);
+        if (fresh.interrupted === true) quietSince = null;
         const freshOwned = tracker.observe(fresh).live;
         const current =
           process.pid === groupId && options.rootIdentity
@@ -931,12 +1021,14 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
   const child = start(scope);
   if (!Number.isSafeInteger(child.pid) || child.pid < 2)
     fail("maestro-start-failed");
-  const tracker = createIOSScopeTracker(simulator, child.pid);
+  const tracker = createIOSScopeTracker(simulator, child.pid, scope);
   let exited = false;
   let result;
   let failure = null;
   let diagnosticFailure = null;
   let settleFailure = null;
+  let fenceFailure = null;
+  let fenceEvidence = null;
   let rootIdentity;
   const completion = child.done.then((value) => {
     exited = true;
@@ -992,7 +1084,9 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
   const settleHost = async () => {
     if (
       !rootIdentity &&
-      !tracker.identities().some((row) => row.kind === "xcodebuild")
+      !tracker
+        .identities()
+        .some((row) => ["xcodebuild", "maestro-log-stream"].includes(row.kind))
     )
       return;
     try {
@@ -1015,10 +1109,24 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
       simulator,
       rootIdentity,
       scope,
+      observe: (current) => {
+        const relevant = current.processes.filter(
+          (row) =>
+            row.pgid === child.pid || selectedDriverReference(row, simulator),
+        );
+        fenceEvidence = {
+          driverPid: current.driverPid,
+          interrupted: current.interrupted === true,
+          processes: relevant.slice(0, MAX_IDENTITIES),
+          truncated: relevant.length > MAX_IDENTITIES,
+        };
+      },
     });
     fenced = true;
   } catch (error) {
-    failure ??= error instanceof Error ? error.message : "runner-fence-failed";
+    fenceFailure =
+      error instanceof Error ? error.message : "runner-fence-failed";
+    failure ??= fenceFailure;
     if (passed) {
       await capture(failure);
       await settleHost();
@@ -1034,6 +1142,8 @@ export async function runOwnedIOSScope(scope, simulator, dependencies) {
     reason: failure,
     diagnosticFailure,
     settleFailure,
+    fenceFailure,
+    fenceEvidence: fenced ? null : fenceEvidence,
     durationMs: now() - started,
     identities: tracker.identities(),
   };

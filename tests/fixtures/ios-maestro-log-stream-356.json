@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "run": 38830000043,
+    "artifact": 12016239728,
+    "source": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders/processes.stdout.txt",
+    "sha256": "9c4935bdde7185017a7470b2dd1d0903535b5bbb45a35f5633d7a32a84ce5214",
+    "note": "Three actual same-census rows. The helper is source-confirmed Maestro-owned; its role in the final fence failure is unproved.",
+    "contracts": [
+      "https://github.com/mobile-dev-inc/maestro/blob/cli-2.11.0/maestro-ios-driver/src/main/kotlin/util/LocalSimulatorUtils.kt",
+      "https://github.com/mobile-dev-inc/maestro/blob/cli-2.11.0/maestro-client/src/main/java/maestro/drivers/IOSDriver.kt"
+    ]
+  },
+  "simulator": "88931AEA-62E6-447F-8697-DCE00A671384",
+  "root": {
+    "line": 782,
+    "ps": "18360 12953 18360 Fri Oct 16 00:40:09 2026     /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-101.0/arm64/Contents/Home//bin/java --enable-native-access=ALL-UNNAMED -classpath /Users/runner/.maestro/lib/* maestro.cli.AppKt --device 88931AEA-62E6-447F-8697-DCE00A671384 test --driver-host-port 7003 --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7003 -e EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1 e2e-native/reminders-allow.yaml"
+  },
+  "helper": {
+    "line": 796,
+    "ps": "22403 18360 18360 Fri Oct 16 00:41:44 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl spawn 88931AEA-62E6-447F-8697-DCE00A671384 log stream --style syslog"
+  },
+  "bareLog": {
+    "line": 797,
+    "ps": "22709  4162 22709 Fri Oct 16 00:41:51 2026     log stream --style syslog"
+  }
+}

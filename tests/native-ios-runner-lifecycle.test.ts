@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { execPath } from "node:process";
 import retainedIOSProcesses from "./fixtures/ios-owned-runner-attempt2.json";
+import retainedLogStream from "./fixtures/ios-maestro-log-stream-356.json";
 import {
   DRIVER_BUNDLE,
   IOS_SCOPES,
@@ -675,6 +676,10 @@ describe("selected simulator service-read latency and exact attempt provenance",
     });
     expect(result.elapsedMs).toBeGreaterThanOrEqual(80);
     expect(Number.isFinite(Date.parse(result.startedAt))).toBe(true);
+    expect(result.timing.execFileReturnMs).toEqual(expect.any(Number));
+    expect(result.timing.spawnEventMs).toEqual(expect.any(Number));
+    expect(result.timing.exitEventMs).toEqual(expect.any(Number));
+    expect(result.timing.callbackMs).toBe(result.elapsedMs);
   });
 
   it("distinguishes an actual process exit from timeout and retains both output pipes", async () => {
@@ -715,6 +720,10 @@ describe("selected simulator service-read latency and exact attempt provenance",
       signal: null,
       timedOut: false,
     });
+    expect(result.timing.spawnEventMs).toBeNull();
+    expect(result.timing.exitEventMs).toBeNull();
+    expect(result.timing.execFileReturnMs).toEqual(expect.any(Number));
+    expect(result.timing.callbackMs).toEqual(expect.any(Number));
   });
 
   it("does not let a known service timeout conceal an invalid process table", async () => {
@@ -1301,6 +1310,390 @@ describe("independent host proof and passive native monitoring", () => {
       expect(signals).toEqual([]);
     },
   );
+});
+
+describe("one bounded fresh host recovery without cached authority", () => {
+  it("retries a proven passive timeout once at the same deadline, discards partial output and retains both attempts", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "whimway-ios-lifecycle-"));
+    temporaryDirectories.push(directory);
+    const deadlines: number[] = [];
+    const dependencies = iosRunnerDependencies(
+      directory,
+      SIMULATOR,
+      async (
+        _command: string,
+        _args: string[],
+        options: { timeout?: number } = {},
+      ) => {
+        deadlines.push(options.timeout ?? 0);
+        return deadlines.length === 1
+          ? { ...timedOutService(), stdout: "invalid partial table" }
+          : hostResult({ stdout: psText([xcode()]) });
+      },
+    );
+    expect(
+      await dependencies.hostSnapshot({ scope: "ready", phase: "monitor" }),
+    ).toEqual([xcode()]);
+    expect(deadlines).toEqual([5000, 5000]);
+    const folder = join(
+      directory,
+      "native-test-artifacts",
+      "ios-runner-lifecycle",
+      "ready",
+      "snapshots",
+    );
+    const first = JSON.parse(
+      await readFile(join(folder, "1-attempt.json"), "utf8"),
+    );
+    const second = JSON.parse(
+      await readFile(join(folder, "2-attempt.json"), "utf8"),
+    );
+    expect(first).toMatchObject({
+      attempt: 1,
+      recovery: false,
+      reason: "runner-host-snapshot-failed",
+    });
+    expect(second).toMatchObject({ attempt: 2, recovery: true, reason: null });
+    expect(
+      await readFile(join(folder, first.commands.ps.stdout.file), "utf8"),
+    ).toBe("invalid partial table");
+  });
+
+  it.each(["timeout", "unknown", "parse"])(
+    "keeps a second timeout or initial %s error fatal",
+    async (kind) => {
+      const directory = await mkdtemp(join(tmpdir(), "whimway-ios-lifecycle-"));
+      temporaryDirectories.push(directory);
+      let calls = 0;
+      const dependencies = iosRunnerDependencies(
+        directory,
+        SIMULATOR,
+        async () => {
+          calls++;
+          return kind === "timeout"
+            ? timedOutService()
+            : kind === "parse"
+              ? hostResult({ stdout: "invalid process table" })
+              : hostResult({ status: null, code: "ENOENT", error: "ENOENT" });
+        },
+      );
+      await expect(
+        dependencies.hostSnapshot({ scope: "ready", phase: "monitor" }),
+      ).rejects.toThrow();
+      expect(calls).toBe(kind === "timeout" ? 2 : 1);
+    },
+  );
+
+  it("reacquires selected services and then fresh ps after a full snapshot host timeout", async () => {
+    const calls: [string, number][] = [];
+    let hosts = 0;
+    let services = 0;
+    const passive: number[] = [];
+    const current = await readIOSRunnerSnapshot(
+      SIMULATOR,
+      async (
+        command: string,
+        _args: string[],
+        options: { timeout: number },
+      ) => {
+        calls.push([command, options.timeout]);
+        if (command === "/bin/ps") {
+          hosts++;
+          return hosts === 1
+            ? timedOutService()
+            : hostResult({ stdout: psText([xcode(), runner(35428)]) });
+        }
+        services++;
+        return hostResult({
+          stdout: `${services === 1 ? 35427 : 35428} 0 ${DRIVER_BUNDLE}\n`,
+        });
+      },
+      async () => {},
+      async () => {},
+      (rows: Process[]) => {
+        passive.push(...rows.map((row) => row.pid));
+      },
+    );
+    expect(current).toMatchObject({ driverPid: 35428, interrupted: true });
+    expect(passive).toEqual([15864, 35428]);
+    expect(calls).toEqual([
+      ["/bin/ps", 5000],
+      ["xcrun", 5000],
+      ["xcrun", 5000],
+      ["/bin/ps", 5000],
+    ]);
+  });
+
+  it("requires two new clean seconds after a recovered unknown gap instead of crediting old absence", async () => {
+    let clock = 0;
+    let reads = 0;
+    let serviceReads = 0;
+    let recoveryFinished = 0;
+    await fenceIOSScope(
+      createIOSScopeTracker(SIMULATOR, 1000),
+      1000,
+      {
+        now: () => clock,
+        sleep: async (ms: number) => {
+          clock += ms;
+        },
+        signal: () => {
+          throw Error("No signal expected");
+        },
+        snapshot: async () => {
+          reads++;
+          if (reads !== 2) return snapshot([]);
+          const recovered = await readIOSRunnerSnapshot(
+            SIMULATOR,
+            async (command: string) => {
+              if (command === "/bin/ps") return hostResult();
+              serviceReads++;
+              if (serviceReads === 1) {
+                clock += 5000;
+                return timedOutService();
+              }
+              return hostResult({ stdout: "PID Status Label\n" });
+            },
+            async (ms: number) => {
+              clock += ms;
+            },
+          );
+          recoveryFinished = clock;
+          return recovered;
+        },
+      },
+      { simulator: SIMULATOR },
+    );
+    expect(serviceReads).toBe(2);
+    expect(clock - recoveryFinished).toBeGreaterThanOrEqual(2000);
+    expect(clock).toBeLessThan(20000);
+  });
+
+  it("cannot grant absence or signal after a slow recovered read exhausts the existing fence budget", async () => {
+    let clock = 0;
+    const signals: number[] = [];
+    await expect(
+      fenceIOSScope(
+        createIOSScopeTracker(SIMULATOR, 1000),
+        1000,
+        {
+          now: () => clock,
+          sleep: async () => {},
+          signal: (pid: number) => {
+            signals.push(pid);
+          },
+          snapshot: async () => {
+            clock = 20001;
+            return { ...snapshot([]), interrupted: true };
+          },
+        },
+        { simulator: SIMULATOR },
+      ),
+    ).rejects.toThrow("runner-absence-fence-timeout");
+    expect(signals).toEqual([]);
+  });
+
+  it("preserves independent monitor and fence failures plus the actual remaining owned-group evidence", async () => {
+    const test = machine({
+      monitorFailure: true,
+      hangCli: true,
+      unknownGroupMember: true,
+    });
+    const result = await runOwnedIOSScope(
+      IOS_SCOPES[0],
+      SIMULATOR,
+      test.dependencies,
+    );
+    expect(result).toMatchObject({
+      passed: false,
+      fenced: false,
+      reason: "simulated-monitor-failure",
+      fenceFailure: "runner-absence-fence-timeout",
+      fenceEvidence: {
+        processes: [{ pid: 1103, command: "/usr/bin/unknown-worker" }],
+      },
+    });
+    expect(test.signals.some(([pid]) => pid === 1103)).toBe(false);
+  });
+});
+
+describe("exact source-owned simulator log helper", () => {
+  const simulator = retainedLogStream.simulator;
+  const root = parseIOSProcessTable(retainedLogStream.root.ps)[0];
+  const helper = parseIOSProcessTable(retainedLogStream.helper.ps)[0];
+  const bare = parseIOSProcessTable(retainedLogStream.bareLog.ps)[0];
+  const scope = IOS_SCOPES[2];
+
+  it("binds only the retained exact direct child beside its validated root in the same full census", () => {
+    const tracker = createIOSScopeTracker(simulator, root.pid, scope);
+    expect(
+      tracker
+        .observeHost([root, helper, bare])
+        .host.map((row: Process) => row.pid),
+    ).toEqual([22403]);
+    expect(tracker.identities()).toMatchObject([
+      { pid: 22403, kind: "maestro-log-stream" },
+    ]);
+    expect(tracker.identities().some((row) => row.pid === 22709)).toBe(false);
+    expect(retainedLogStream.provenance.note).toContain("unproved");
+  });
+
+  it.each(["parent", "group", "birth", "device", "argv", "path", "bare"])(
+    "does not bind an unknown helper with changed %s",
+    (changed) => {
+      const bad =
+        changed === "parent"
+          ? { ...helper, ppid: 1 }
+          : changed === "group"
+            ? { ...helper, pgid: 999 }
+            : changed === "birth"
+              ? { ...helper, started: "Fri Oct 16 00:39:00 2026" }
+              : changed === "device"
+                ? {
+                    ...helper,
+                    command: helper.command.replace(simulator, OTHER_SIMULATOR),
+                  }
+                : changed === "argv"
+                  ? { ...helper, command: helper.command + " --extra" }
+                  : changed === "path"
+                    ? {
+                        ...helper,
+                        command: helper.command.replace(
+                          helper.command.split(" ")[0],
+                          "/usr/bin/simctl",
+                        ),
+                      }
+                    : { ...bare, pgid: root.pgid, ppid: root.pid };
+      const tracker = createIOSScopeTracker(simulator, root.pid, scope);
+      expect(tracker.observeHost([root, bad]).host).toEqual([]);
+      expect(tracker.identities()).toEqual([]);
+    },
+  );
+
+  it("cannot adopt an unbound orphan or a helper without the exact validated scope root", () => {
+    expect(
+      createIOSScopeTracker(simulator, root.pid, scope).observeHost([
+        { ...helper, ppid: 1 },
+      ]).host,
+    ).toEqual([]);
+    expect(() =>
+      createIOSScopeTracker(simulator, root.pid, IOS_SCOPES[0]).observeHost([
+        root,
+        helper,
+      ]),
+    ).toThrow("root-not-owned");
+  });
+
+  it("revalidates a previously bound helper after reparenting and leaves bare native log untouched", async () => {
+    const tracker = createIOSScopeTracker(simulator, root.pid, scope);
+    tracker.observeHost([root, helper, bare]);
+    let rows = [{ ...helper, ppid: 1 }, bare];
+    let clock = 0;
+    const signals: number[] = [];
+    await settleIOSHostScope(root, tracker, scope, simulator, {
+      now: () => clock,
+      sleep: async (ms: number) => {
+        clock += ms;
+      },
+      hostSnapshot: async () => rows,
+      signal: (pid: number) => {
+        signals.push(pid);
+        rows = rows.filter((row) => row.pid !== pid);
+      },
+    });
+    expect(signals).toEqual([22403]);
+    expect(rows).toEqual([bare]);
+  });
+
+  it("never signals a recycled or changed bound helper", async () => {
+    const tracker = createIOSScopeTracker(simulator, root.pid, scope);
+    tracker.observeHost([root, helper]);
+    const signals: number[] = [];
+    await expect(
+      settleIOSHostScope(root, tracker, scope, simulator, {
+        now: () => 0,
+        sleep: async () => {},
+        hostSnapshot: async () => [
+          { ...helper, ppid: 1, started: "Fri Oct 16 00:45:00 2026" },
+        ],
+        signal: (pid: number) => {
+          signals.push(pid);
+        },
+      }),
+    ).rejects.toThrow("owned-pid-reused");
+    expect(signals).toEqual([]);
+  });
+
+  it("collects bounded read-only host health and observational command event timing only at failure time", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "whimway-ios-lifecycle-"));
+    temporaryDirectories.push(directory);
+    const calls: {
+      command: string;
+      args: string[];
+      timeout: number | undefined;
+    }[] = [];
+    const dependencies = iosRunnerDependencies(
+      directory,
+      simulator,
+      async (
+        command: string,
+        args: string[],
+        options: { timeout?: number } = {},
+      ) => {
+        calls.push({ command, args, timeout: options.timeout });
+        return {
+          ...hostResult({ stdout: "bounded host evidence" }),
+          command,
+          args,
+          timing: {
+            execFileReturnMs: 1,
+            spawnEventMs: 2,
+            exitEventMs: 3,
+            callbackMs: 4,
+            closeEventMs: 4,
+          },
+        };
+      },
+    );
+    await dependencies.diagnose(scope, "simulated-read-failure");
+    expect(
+      calls.filter((call) =>
+        ["/usr/bin/uptime", "/usr/bin/vm_stat", "/usr/sbin/sysctl"].includes(
+          call.command,
+        ),
+      ),
+    ).toEqual([
+      { command: "/usr/bin/uptime", args: [], timeout: 5000 },
+      { command: "/usr/bin/vm_stat", args: [], timeout: 5000 },
+      {
+        command: "/usr/sbin/sysctl",
+        args: ["hw.memsize", "vm.loadavg"],
+        timeout: 5000,
+      },
+    ]);
+    const evidence = JSON.parse(
+      await readFile(
+        join(
+          directory,
+          "native-test-artifacts",
+          "ios-runner-lifecycle",
+          scope.name,
+          "diagnostics.json",
+        ),
+        "utf8",
+      ),
+    );
+    expect(
+      evidence.captures.find(
+        (capture: { name: string }) => capture.name === "host-uptime",
+      ).timing,
+    ).toMatchObject({
+      execFileReturnMs: 1,
+      spawnEventMs: 2,
+      exitEventMs: 3,
+      callbackMs: 4,
+    });
+  });
 });
 
 describe("four real iOS scopes retain readiness/keychain/font and failure semantics", () => {
