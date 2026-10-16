@@ -1,0 +1,54 @@
+{
+  "source": "maestro-xctest-live-ax",
+  "observedAt": "2026-10-15T22:37:30.063Z",
+  "sequence": 22,
+  "driverPort": 7004,
+  "screenBounds": "[0,0][402,874]",
+  "targetText": "Adjust plan",
+  "targetKind": "control",
+  "observationToken": "c2daafce-113c-4fba-826b-de64254e3e75",
+  "device": {
+    "file": "1792102933211-9805bf8c-022-driver-7004-device-info.json",
+    "bytes": 77,
+    "sha256": "2d0f1a3b1623a00f2aba5035523d85f5d6f4ff4ae8d86c197324185aa44c6f9b"
+  },
+  "snapshot": {
+    "file": "1792102933211-9805bf8c-022-driver-7004-snapshot.json",
+    "bytes": 49270,
+    "sha256": "06b4e460a0c2725faace93d34394a6a94797505a1e6824c04852b39450bc91a3"
+  },
+  "ok": true,
+  "ready": true,
+  "fullyVisible": true,
+  "targetBounds": {
+    "left": 24,
+    "top": 743.6666641235352,
+    "right": 378,
+    "bottom": 826.3334121704102,
+    "width": 354,
+    "height": 82.666748046875
+  },
+  "paneBounds": {
+    "left": 0,
+    "top": 472,
+    "right": 402,
+    "bottom": 840,
+    "width": 402,
+    "height": 368
+  },
+  "clipBounds": {
+    "left": 0,
+    "top": 472,
+    "right": 402,
+    "bottom": 840,
+    "width": 402,
+    "height": 368
+  },
+  "tapCenter": {
+    "x": 201,
+    "y": 785.0000381469727
+  },
+  "tapPoint": "50%,89.816938%",
+  "direction": null,
+  "swipe": null
+}

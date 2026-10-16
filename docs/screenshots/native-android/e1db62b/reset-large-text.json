@@ -1,0 +1,142 @@
+{
+  "app_id": "com.example.whimway",
+  "emulator": "emulator-5554",
+  "scope": "large-text",
+  "prepared": true,
+  "stable_quiet_ms": 2473,
+  "commands": [
+    {
+      "command": "serial",
+      "elapsed_ms": 8,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "force-stop",
+      "elapsed_ms": 274,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "clear-data",
+      "elapsed_ms": 1305,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 1461,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 1635,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 2330,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 2447,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 2984,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 3003,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 3532,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 3550,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 4094,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 4110,
+      "status": 0,
+      "signal": null,
+      "error": null
+    }
+  ],
+  "observations": [
+    {
+      "elapsed_ms": 1637,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 2450,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 3004,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 3551,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 4110,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    }
+  ]
+}

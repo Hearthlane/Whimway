@@ -8,6 +8,8 @@ Checked 13 October 2026 using npm audit and the official GitHub advisory records
 | Root production-only (`npm audit --omit=dev`) | 0                        | 0                                                                     |
 | Mobile full dependency tree                   | 31: 20 high, 11 moderate | 20 high, 0 moderate                                                   |
 
+The supported patch update in source `2983b7b` on 15 October changes only `expo` to `~57.0.30`, `expo-router` to `~57.0.28` and the required mobile lockfile transitive dependencies. Online `expo install --check` passes. The install summary still reports 20 high advisories; this is not a fresh full audit or a revalidation of the root advisory review above. Root dependencies are unchanged, and the documented mobile tooling exposure remains open. Application source `1d8b887` and later host-only harness `110801f` change no dependency inputs. The 110 online alignment passes; preceding 356 host failures and these functional checks are not a new dependency audit.
+
 ## Applied change
 
 The mobile manifest overrides only `xcode`'s `uuid` dependency to `11.1.1`, the patched release that still provides a CommonJS entry and the `v4()` API used by `xcode@3.0.1`. A smoke check generated 100 unique valid 24-character uppercase Xcode project IDs through `xcode.generateUuid`; Expo dependency alignment also passed. The final native prebuild/config checks validate this tool integration again. No React Native/Expo native SDK major version was forced or downgraded. [UUID advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq)

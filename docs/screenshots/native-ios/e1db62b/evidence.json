@@ -1,0 +1,129 @@
+{
+  "run_id": 38750438975,
+  "job_id": 116475216083,
+  "source_sha": "e1db62bd3ed3bfe7c1e4b688e358ee4e340e967f",
+  "runtime_artifact_id": 11987126144,
+  "runtime_zip_sha256": "11cc0a74cd5c58a0745b48f4c81c5041da3f83c69c2a71c2224afec05ea47769",
+  "release": {
+    "original_artifact_id": 11984822866,
+    "compiler_source_sha": "e1db62bd3ed3bfe7c1e4b688e358ee4e340e967f",
+    "archive_sha256": "17f17600c8c3eff3af7a25315c752a8824e0c1ede095dab52c61422041fefac4",
+    "launch_utc": "2026-10-15T15:21:14.494Z",
+    "pid": 75294
+  },
+  "debug": {
+    "original_artifact_id": 11942772099,
+    "compiler_source_sha": "63d84af1d4b3faaa2ae56f63d03681116d1ede07",
+    "metro_source_sha": "e1db62bd3ed3bfe7c1e4b688e358ee4e340e967f",
+    "archive_sha256": "fb2d023f8333f98e896d33708a936df9a1ff75091d467fc9bb9153a966281f36"
+  },
+  "scopes": {
+    "startup": {
+      "COMPLETED": 28,
+      "SKIPPED": 4
+    },
+    "main": {
+      "COMPLETED": 193,
+      "SKIPPED": 11,
+      "WARNED": 2,
+      "FAILED": 1
+    },
+    "reminders": {
+      "COMPLETED": 107,
+      "SKIPPED": 13,
+      "WARNED": 1
+    },
+    "large_text": {
+      "COMPLETED": 130,
+      "SKIPPED": 32,
+      "FAILED": 1
+    }
+  },
+  "keychain": {
+    "registrationRead": true,
+    "installationRead": true,
+    "installationStable": true,
+    "stage": "complete",
+    "reason": "verified"
+  },
+  "content_size": "accessibility-extra-extra-extra-large",
+  "failures": {
+    "main": {
+      "utc": "2026-10-15T15:35:30.184Z",
+      "duration_ms": 18196,
+      "start_bounds_points": [24, 3, 378, 59],
+      "timeline_bounds_points": [0, 280, 402, 839],
+      "actual": "The plain post-denial Start tap targets y31 above the actual pane. Frame remains Plan; no Day loading/product failure is established. The 0 DONE assertion fails.",
+      "hierarchy": {
+        "source_path": "native-results/ios/2026-10-15_152746/Native fixture outing smoke/screen-hierarchy/step-207-assertCondition-0_DONE.0_SKIPPED.json",
+        "sha256": "9980349c060c67e7556ddc22cd07802ec6b21969e4e2d6cd194f9c89845d3abb"
+      }
+    },
+    "large_text": {
+      "utc": "2026-10-15T15:49:21.320Z",
+      "duration_ms": 17903,
+      "adjust_bounds_points": [24, 827, 378, 909],
+      "timeline_bounds_points": [0, 472, 402, 840],
+      "actual": "The below-top predicate accepts partially bottom-clipped Adjust. Its center y868 is below the pane bottom840; completed tap leaves itinerary unchanged and sheet assertion fails.",
+      "hierarchy": {
+        "source_path": "native-results/ios-large-text/2026-10-15_154223/Native large-text outing/screen-hierarchy/step-163-assertCondition-Make_room_for_your_day.json",
+        "sha256": "a9b6b52d0647b592e7696f37e7a9e274f9a304693abfdc3e43c86f3e9ca699a7"
+      }
+    }
+  },
+  "observations": [
+    "Share is wrapped inside the 402-point screen at [24,378][230,468] in the largest category",
+    "Day Remix words and glyph fit in one whole-width action at [24,736][378,818]; the bottom-clipped Adjust prevents a complete largest-type controls/sheet/Day visual pass",
+    "Largest-category fallback is not exposed in these retained frames; browser containment and Android fontScale2.0 remain separate evidence",
+    "Reminder reports verify five scheduled and zero pending after cancellation; actual delivery/taps are unverified"
+  ],
+  "scope_limits": [
+    "Synthetic development fixtures",
+    "Successful UI readiness, Keychain calls and reminders do not turn the failed main/largest scopes into passes",
+    "Simulator compile/signing does not establish signed device/store distribution, live providers or physical performance"
+  ],
+  "retained_files": [
+    {
+      "name": "failure-main-start-above-pane.png",
+      "source_path": "native-results/ios/2026-10-15_152746/Native fixture outing smoke/screenshots/step-207-assertCondition-0_DONE.0_SKIPPED.png",
+      "bytes": 168475,
+      "sha256": "26ee1cbc0adb8cf74ae22e93ffafc1ef35a07100725d38819f38c297cbae20fe"
+    },
+    {
+      "name": "failure-largest-adjust-below-pane.png",
+      "source_path": "native-results/ios-large-text/2026-10-15_154223/Native large-text outing/screenshots/step-163-assertCondition-Make_room_for_your_day.png",
+      "bytes": 180140,
+      "sha256": "eb01f9881542b7c680c7f139ecbbfbcc07e514a5dc199d7e70030a8dcde6fd45"
+    },
+    {
+      "name": "native-reminders-scheduled.png",
+      "source_path": "native-results/ios-reminders/2026-10-15_153607/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-scheduled.png",
+      "bytes": 208485,
+      "sha256": "2a945ce7e80f4ddce91e5d91084e24ae04ac6706233725b6695f48dede69df39"
+    },
+    {
+      "name": "native-reminders-cancelled.png",
+      "source_path": "native-results/ios-reminders/2026-10-15_153607/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-cancelled.png",
+      "bytes": 206425,
+      "sha256": "bb2973bd560b64305de7b95adfd2b02476834f01aaa2b7007fe137c2afb6d439"
+    },
+    {
+      "name": "ios-metro-bundle-warm.json",
+      "source_path": "native-test-artifacts/ios-metro-bundle-warm.json",
+      "bytes": 341,
+      "sha256": "2bfffa1170532d4189bb798bd3352d96263db53c42441a21f5787a3bc4613ce3"
+    },
+    {
+      "name": "ios-keychain-proof.json",
+      "source_path": "native-test-artifacts/ios-keychain-proof.json",
+      "bytes": 76,
+      "sha256": "105d1a444528d8f9f50b98e9654adb27296c8eba091d5c3c0fb093c3265a85e1"
+    },
+    {
+      "name": "ios-keychain-diagnostics.json",
+      "source_path": "native-test-artifacts/ios-keychain-diagnostics.json",
+      "bytes": 41,
+      "sha256": "4be10692295ee8c66a18d84c729a324741fa0c6d8c1b39cd6e91c8d973d17533"
+    }
+  ]
+}

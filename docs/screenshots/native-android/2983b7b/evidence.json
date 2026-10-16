@@ -1,0 +1,130 @@
+{
+  "source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38805051576,
+  "job_id": 116663916054,
+  "artifact_id": 12007473010,
+  "artifact_zip_sha256": "a3e5ce7d80ccd2a53c70f5890ebfe5a9d7221750db7a95149119eb17b3d505b7",
+  "compiler_artifact_id": 12006123509,
+  "release_apk_sha256": "56b750ea85d6c2bd04de316b207dea230d0e19a256c05078182dab1dbcc84de3",
+  "debug_apk_sha256": "c1692c49485872957b2a52910749c9b869b4b74ab56ef28614b8db8fff287cce",
+  "scopes": {
+    "smoke": {
+      "completed": 191,
+      "skipped": 19,
+      "failed": 0
+    },
+    "reminders": {
+      "completed": 79,
+      "skipped": 15,
+      "optional_allow_warnings": 1,
+      "failed": 0
+    },
+    "font_scale_2": {
+      "completed": 74,
+      "skipped": 17,
+      "failed": 0
+    },
+    "standalone_release": {
+      "completed": 7,
+      "skipped": 1,
+      "failed": 1,
+      "failure": "Explore heading remains absent after120107ms; screenshot is Whimway splash."
+    }
+  },
+  "reset_quiet_ms": {
+    "smoke": 2098,
+    "reminders": 2235,
+    "large_text": 2531
+  },
+  "release_failure": {
+    "source_log": "native-test-artifacts/android-release-logcat.txt",
+    "full_log_sha256": "d8206497daa8f421bd7eb9c8381032b6b38cb3dfe375e1f4fa1e8686a6dcdca4",
+    "selected_line_ranges": [
+      [
+        220,
+        245
+      ],
+      [
+        823,
+        836
+      ],
+      [
+        15005,
+        15018
+      ]
+    ],
+    "established": "clearState launch clears old process9007/task12; new process9251/task13 starts21:19:51.587 and old-task removal timeout kills9251 at21:19:51.686 before JS attachment. No JavaScript/font defect is established.",
+    "activity_total_ms": 2802,
+    "activity_wait_ms": 2812,
+    "activity_start_not_ui_ready": true
+  },
+  "observations": [
+    "Three actual Debug scopes pass; full standalone Release journey fails.",
+    "Largest Plan toolbar/tool words and real Adjust fields/Update are visible and contained in reviewed frames; complete native photo-fallback caption containment is not exposed.",
+    "Largest Day Guide label wraps inside its button; the retained frame exposes only part of Done at its bottom, so it does not establish full Done-button containment.",
+    "Static matching-Hermes inspection parses the whole bundle and finds all three font files matching source; this is not native startup success.",
+    "No physical-device, continuous smoothness, battery, haptic, live provider, notification delivery or store-signing claim."
+  ],
+  "retained_files": [
+    {
+      "name": "android-large-font-scale.txt",
+      "bytes": 4,
+      "sha256": "d526eb4e878a23ef26ae190031b4efd2d58ed66789ac049ea3dbaf74c9df7402"
+    },
+    {
+      "name": "failure-release-hierarchy.json",
+      "bytes": 23463,
+      "sha256": "03e3f2239db39cffb6e88d3fae8b8d1ff50d3f6c6d73be4b45b7294de8ad6de2"
+    },
+    {
+      "name": "failure-release-splash.png",
+      "bytes": 66918,
+      "sha256": "3c6cba5348861170b2f18a761036802aadd2ab8fb94dc87ead970e16254a01d7"
+    },
+    {
+      "name": "native-large-text-day.png",
+      "bytes": 208344,
+      "sha256": "da438cd8fe276661f9df953882814567adda3fec7eca7dd8c23bd6c1bc07c90d"
+    },
+    {
+      "name": "native-large-text-itinerary.png",
+      "bytes": 221396,
+      "sha256": "48ff620dcdfae591d06197113776524a8b4f4521cbea9ca91f5c9df48eefc611"
+    },
+    {
+      "name": "native-large-text-sheet.png",
+      "bytes": 169001,
+      "sha256": "81dc0191b79ced4c245d52df666bcc660ce03e543efa6beb83b2ee017681a953"
+    },
+    {
+      "name": "release-activity-cold-start.txt",
+      "bytes": 172,
+      "sha256": "b2001f213dce0e634112abbc7fa3881830aaad110c8291c3680c9a94fb8f7a29"
+    },
+    {
+      "name": "release-apk-static-inspection.json",
+      "bytes": 2567,
+      "sha256": "f3f6ba020007f00d2b27c7787bcba4d853e2fc37ed071b7f3fffd52763ede098"
+    },
+    {
+      "name": "release-logcat-selected-lines.txt",
+      "bytes": 6931,
+      "sha256": "3f952ebcd07b17df38190ee8df5cfacd98dfea0ede48f1a0a38ee07ec436dc8c"
+    },
+    {
+      "name": "reset-large-text.json",
+      "bytes": 2605,
+      "sha256": "a2a0476b4dea68f5bd7a0a867098301562885afec37b25a61cfe20bc29c3c76f"
+    },
+    {
+      "name": "reset-reminders.json",
+      "bytes": 2195,
+      "sha256": "77149f000b080b2fd97d99e2a8c235a7aa199b3e25c2787e7dd7538ba9951df3"
+    },
+    {
+      "name": "reset-smoke.json",
+      "bytes": 2191,
+      "sha256": "021e1e8098169abd9b1dff8ef756526d3e2b3089524f151242184ef555a58717"
+    }
+  ]
+}

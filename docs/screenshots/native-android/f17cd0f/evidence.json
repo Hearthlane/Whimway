@@ -1,0 +1,80 @@
+{
+  "source_sha": "f17cd0fa219b756415761bc9f8505e3a53e93f4c",
+  "binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38810854902,
+  "job_id": 116710279681,
+  "attempt": 2,
+  "artifact_id": 12012786092,
+  "artifact_zip_sha256": "ecc092768bb49b38be501c7bf407887f4e28e36f38fe74c5c9d415850ac43ebe",
+  "scope": "Historical SDK/app 298 Android four-scope pass on exact restored APKs; not application 1d8.",
+  "flows": {
+    "main": {
+      "completed": 196,
+      "skipped": 18
+    },
+    "reminders": {
+      "completed": 79,
+      "skipped": 15,
+      "optional_allow_warning": 1
+    },
+    "large_font2": {
+      "completed": 74,
+      "skipped": 17
+    },
+    "release": {
+      "completed": 25,
+      "skipped": 2
+    }
+  },
+  "observations": [
+    "All four scopes have zero failed commands. The first attempt stopped at npmci ECONNRESET before runtime; this accepted failed-job retry executes successfully.",
+    "Prepared Release reset has 2304 ms continuous quiet; manual clearing branch is skipped and real launch has clearState:false/stopApp:false.",
+    "Actual Release Explore/Profile/Saved guest assertions pass; original Explore image reviewed with full CTA/tabs visible.",
+    "Activity-only cold start 3200 ms/Wait 3217 ms is a software-emulator measurement, not physical interactivity/FPS/battery.",
+    "New source 1d8 changes footer/Sheet/API behavior and needs its own native verification."
+  ],
+  "retained_files": [
+    {
+      "name": "release-explore.png",
+      "bytes": 189315,
+      "sha256": "b7ae4dd2fa510f54cb415566ba4aa2662fed0c355bf80fbf918a5c1575228ac4",
+      "source_path": "native-results/android-release/2026-10-15_225855/Standalone Android Release guest probe/takeScreenshot/android-release-explore.png"
+    },
+    {
+      "name": "release-commands.json",
+      "bytes": 31437,
+      "sha256": "49db0743f81e5f8441568eb0dccbc9a6a2ad184ff5be58830dd78b416ff8d639",
+      "source_path": "native-results/android-release/2026-10-15_225855/Standalone Android Release guest probe/commands.json"
+    },
+    {
+      "name": "release-activity-cold-start.txt",
+      "bytes": 172,
+      "sha256": "172b0ad18f11ba56d1cde41ee0e3d0233c851cf48b1f9f3bb8f1b9b3c5dbfac8",
+      "source_path": "native-test-artifacts/android-release-activity-cold-start.txt"
+    },
+    {
+      "name": "reset-smoke.json",
+      "bytes": 2191,
+      "sha256": "71dc4e4a5f9165257dd46d540296dbc02b3e5fc3eb18db39c680982a9ecde5f1",
+      "source_path": "native-test-artifacts/android-reset/smoke/reset-evidence.json"
+    },
+    {
+      "name": "reset-reminders.json",
+      "bytes": 2197,
+      "sha256": "c0cadee102941bce0b7e4d51b98c58cacc96d6d47c63a817589cb08dd5eaad4e",
+      "source_path": "native-test-artifacts/android-reset/reminders/reset-evidence.json"
+    },
+    {
+      "name": "reset-large-text.json",
+      "bytes": 2198,
+      "sha256": "45ae0fa4d4172127e6a1efcac6ebc269893859fd0df9997f40757d1f57016090",
+      "source_path": "native-test-artifacts/android-reset/large-text/reset-evidence.json"
+    },
+    {
+      "name": "reset-release.json",
+      "bytes": 2594,
+      "sha256": "26ce49a94be59970dedddaf5cd9fcd99a44655bab1dd5545ed8a7210da54befe",
+      "source_path": "native-test-artifacts/android-reset/release/reset-evidence.json"
+    }
+  ]
+}

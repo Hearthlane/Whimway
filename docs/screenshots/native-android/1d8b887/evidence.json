@@ -1,0 +1,273 @@
+{
+  "source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "binary_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "run_id": 38821045667,
+  "job_id": 116717636563,
+  "artifact_id": 12014352791,
+  "artifact_zip_sha256": "f6e376e237752702418b9d160237705b5187f9b55e29766d33bd27d26f5aff30",
+  "apk_artifact_id": 12013398588,
+  "apk_artifact_zip_sha256": "7839604954ba999c76cdb4bcd7fc3ae92a1ff64de1a9ab1f0927b46f44cb726b",
+  "release_apk_sha256": "8da2003bb6aafd48224f8f9b58eb097b0301efdb2980da6dff214efac6fe1889",
+  "debug_apk_sha256": "b3e0485a23733a1941354fe6d9c96682316418dd2105806e3679df99728f7b76",
+  "scope": "Actual native Android source 1d8: main, reminders, OS fontScale 2.0 and standalone Release all pass; synthetic development fixtures.",
+  "flows": {
+    "main": {
+      "completed": 207,
+      "skipped": 18
+    },
+    "reminders": {
+      "completed": 86,
+      "skipped": 15,
+      "optional_allow_warning": 1
+    },
+    "large_font2": {
+      "completed": 81,
+      "skipped": 17
+    },
+    "release": {
+      "completed": 25,
+      "skipped": 2
+    }
+  },
+  "observations": [
+    "Zero FAILED commands in all four scopes; the optional notification Allow tap warns because the permission can already be preset.",
+    "All four host resets are prepared:true; continuous quiet is smoke 2154/reminders 2192/large 2227/Release 2346 ms with zero package process/task/activity and no pending kill. Reports retain actual prepared-launch branches.",
+    "Original fontScale 2 planner Back/Next, whole Sheet title/Walking/Driving/Update and Plan toolbar/tools are visible. The Day Guide/Done controls fit in the captured scrolled viewport. No unseen fallback-card containment is inferred.",
+    "Main proves real keyboard/validation, Save/hydration and process-restored 1 DONE. Reminders schedule five then cancel to zero pending; no notification delivery/tap claim.",
+    "Standalone Release Explore/Profile/Saved use embedded current source without Metro; development fixtures are absent.",
+    "SwiftShader emulator measurements are poor: Debug 728/805 janky frames (90.43%), Release 203/224 (90.62%). Activity-only cold start 3141 ms/Wait 3149 ms does not establish physical 60 fps, battery or JS time-to-interactive.",
+    "No live Maps/Places/OpenAI/Supabase, OS assistive or signed store/distribution claim."
+  ],
+  "retained_files": [
+    {
+      "name": "planner-font2.png",
+      "bytes": 183467,
+      "sha256": "238dfc4185279a49fccef8bd2bee2bc9ca7618f4b9a90e27ad94994bcef7d803",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-large-text/2026-10-15_233734/Native large-text outing/takeScreenshot/native-planner-energy.png"
+    },
+    {
+      "name": "sheet-font2.png",
+      "bytes": 154765,
+      "sha256": "aa4df6a4451aa1a4872b7e011a97f6a3f2ff6bff694f079c2584a5a73bac6854",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-large-text/2026-10-15_233734/Native large-text outing/takeScreenshot/native-large-text-sheet.png"
+    },
+    {
+      "name": "itinerary-font2.png",
+      "bytes": 222490,
+      "sha256": "e0b6180d384147e2b6fc8ad9b725b608f74a17cdaa15007c6f7045bf700cda05",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-large-text/2026-10-15_233734/Native large-text outing/takeScreenshot/native-large-text-itinerary.png"
+    },
+    {
+      "name": "day-font2.png",
+      "bytes": 203295,
+      "sha256": "94923253ba8811a708c307c965b501e9ddc5bff460ba58d4d848ad58b26fbc23",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-large-text/2026-10-15_233734/Native large-text outing/takeScreenshot/native-large-text-day.png"
+    },
+    {
+      "name": "planner-budget-keyboard.png",
+      "bytes": 148671,
+      "sha256": "4ce2e94007a11e2e57bff6a43ef3b3e7ac714b69ff50f13199d9a9982d90ce96",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android/2026-10-15_232637/Native fixture outing smoke/takeScreenshot/native-planner-budget-keyboard.png"
+    },
+    {
+      "name": "progress-restored.png",
+      "bytes": 176822,
+      "sha256": "eb182c75aee6506175bcd0bb611d31d8b651343ac9e97de7b714f32149c9f5f3",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android/2026-10-15_232637/Native fixture outing smoke/takeScreenshot/native-progress-restored.png"
+    },
+    {
+      "name": "release-explore.png",
+      "bytes": 188542,
+      "sha256": "ba49f774fe5612f9402b865fbfcb2a947002f2cb9c0e2fa0ee5b0649497f49be",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-release/2026-10-15_233949/Standalone Android Release guest probe/takeScreenshot/android-release-explore.png"
+    },
+    {
+      "name": "main-commands.json",
+      "bytes": 566586,
+      "sha256": "39c2c615c10e738a52f5d6269a1cfa81b74aaad4411ab0c89759867347da1fb7",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android/2026-10-15_232637/Native fixture outing smoke/commands.json"
+    },
+    {
+      "name": "large-text-commands.json",
+      "bytes": 462577,
+      "sha256": "5b5537f9ddfa394e70e7d9d5b2eb4f3d23338a5893b261344126b39023118372",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-large-text/2026-10-15_233734/Native large-text outing/commands.json"
+    },
+    {
+      "name": "reminders-commands.json",
+      "bytes": 361084,
+      "sha256": "fbd5930a93f41f96626c1df9b2f4a1dde4f1e632b9b068d81fa3aa4018416f28",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-reminders/2026-10-15_233409/Native fixture reminders schedule and cancel/commands.json"
+    },
+    {
+      "name": "release-commands.json",
+      "bytes": 31438,
+      "sha256": "3bcf71fecf06ebe974737b3a6f6360a9a9f43ad5cd138f3131d608844c16d865",
+      "source_path": "native-results/38821045667/android-runtime/native-results/android-release/2026-10-15_233949/Standalone Android Release guest probe/commands.json"
+    },
+    {
+      "name": "smoke-reset.json",
+      "bytes": 2189,
+      "sha256": "562922e65b413b9e92bd96ded4768fecc7a0f05a43737f1b0f2d3c529e247b06",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-reset/smoke/reset-evidence.json"
+    },
+    {
+      "name": "reminders-reset.json",
+      "bytes": 2197,
+      "sha256": "aa619959123f03eabb05edc7e78891d2e38fcf6c425ab3f3525f71da7115dd4b",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-reset/reminders/reset-evidence.json"
+    },
+    {
+      "name": "large-text-reset.json",
+      "bytes": 2197,
+      "sha256": "699fb1ed1fa86013c0f6d1034e642a37c2c89b37bb59b86ec8d623eb981232a2",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-reset/large-text/reset-evidence.json"
+    },
+    {
+      "name": "release-reset.json",
+      "bytes": 2594,
+      "sha256": "39cf39f2a04aeb0414716c29b458b3ca4fbf12cce5fff042d01307770364cd31",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-reset/release/reset-evidence.json"
+    },
+    {
+      "name": "android-large-font-scale.txt",
+      "bytes": 4,
+      "sha256": "d526eb4e878a23ef26ae190031b4efd2d58ed66789ac049ea3dbaf74c9df7402",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-large-font-scale.txt"
+    },
+    {
+      "name": "android-release-font-scale.txt",
+      "bytes": 4,
+      "sha256": "5717e7c840171019a4eeab5b79a7f894a4986eaff93d04ec5b12c9a189f594bf",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-release-font-scale.txt"
+    },
+    {
+      "name": "android-debug-gfxinfo.txt",
+      "bytes": 35301,
+      "sha256": "0b31d3e00f10579be3818d6d29c37a9eb848cc36fafe5e36bae329c82c5dabda",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-debug-gfxinfo.txt"
+    },
+    {
+      "name": "android-release-gfxinfo.txt",
+      "bytes": 35253,
+      "sha256": "beb1b980c21b30d6adee336c63ac9170ff2ae780c90eb7251700e5f76ea4d4e7",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-release-gfxinfo.txt"
+    },
+    {
+      "name": "android-release-activity-cold-start.txt",
+      "bytes": 172,
+      "sha256": "0091b8ab025c1b17b17a47e481824b20a9f9a8f4a298423c46e89be1a24c7001",
+      "source_path": "native-results/38821045667/android-runtime/native-test-artifacts/android-release-activity-cold-start.txt"
+    },
+    {
+      "name": "release-permissions.txt",
+      "bytes": 1867,
+      "sha256": "09edd88db6f784ae5333384182fd235f736774e556674f4c7ac8988fa9999317",
+      "source_path": "native-results/38821045667/android-build/permissions.txt"
+    },
+    {
+      "name": "release-package.txt",
+      "bytes": 6637,
+      "sha256": "d532a7f5ebe82e96af0b33c1c1f7fd5af28cde45932e5d187badc2fa1ce0e53a",
+      "source_path": "native-results/38821045667/android-build/package.txt"
+    }
+  ],
+  "source_preserving_replays": [
+    {
+      "source_sha": "b57dc1e599828242974e0506194b464e29dc3f2a",
+      "run_id": 38825447951,
+      "job_id": 116731907998,
+      "artifact_id": 12015244611,
+      "artifact_zip_sha256": "797791902c6962951980a45aff74fb3a979025808d5424b2237fc31b61699ee1",
+      "reports": [
+        {
+          "source_path": "native-results/38825447951/android-runtime/native-results/android/2026-10-15_234924/Native fixture outing smoke/commands.json",
+          "bytes": 566588,
+          "sha256": "78cb731febd20ef1b22a7d917a7bd4412a609225aba9b9f1e19355500b1d6c2b",
+          "counts": {
+            "COMPLETED": 207,
+            "SKIPPED": 18
+          }
+        },
+        {
+          "source_path": "native-results/38825447951/android-runtime/native-results/android-large-text/2026-10-16_000041/Native large-text outing/commands.json",
+          "bytes": 462578,
+          "sha256": "7c0f3d0bdf3b1a2927bcb2c62db8731304c83fef2d315ab0abc0ec58cf94dbd3",
+          "counts": {
+            "COMPLETED": 81,
+            "SKIPPED": 17
+          }
+        },
+        {
+          "source_path": "native-results/38825447951/android-runtime/native-results/android-release/2026-10-16_000302/Standalone Android Release guest probe/commands.json",
+          "bytes": 31438,
+          "sha256": "b48576ed6afaf517e0fdde84bfadb1312184e530289b3256823d071ab03633de",
+          "counts": {
+            "COMPLETED": 25,
+            "SKIPPED": 2
+          }
+        },
+        {
+          "source_path": "native-results/38825447951/android-runtime/native-results/android-reminders/2026-10-15_235709/Native fixture reminders schedule and cancel/commands.json",
+          "bytes": 361085,
+          "sha256": "eda5cca0e17f1401c2c224fc7ea62a6597f216aae4d681627e1a6de3d604cdb3",
+          "counts": {
+            "COMPLETED": 86,
+            "SKIPPED": 15,
+            "WARNED": 1
+          }
+        }
+      ],
+      "binary_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+      "scope": "Independent four-scope native pass on exact restored original1d8 APKs; no duplicate broad gallery retained."
+    },
+    {
+      "source_sha": "35643b3d2d86b936a9cf38f051d05ab68632716b",
+      "run_id": 38830000043,
+      "job_id": 116746521101,
+      "artifact_id": 12016634939,
+      "artifact_zip_sha256": "a262691eafb0cfdcd7b95cc9933557a714877574bc28c6ffaacbc47bf035ca08",
+      "reports": [
+        {
+          "source_path": "native-results/38830000043/android-runtime/native-results/android/2026-10-16_003646/Native fixture outing smoke/commands.json",
+          "bytes": 566586,
+          "sha256": "cf9fd2d1f718a4ce585ee854faa47bc70bac24a3ea2bc207f6d4055dbe6ec83a",
+          "counts": {
+            "COMPLETED": 207,
+            "SKIPPED": 18
+          }
+        },
+        {
+          "source_path": "native-results/38830000043/android-runtime/native-results/android-large-text/2026-10-16_004757/Native large-text outing/commands.json",
+          "bytes": 462577,
+          "sha256": "373edfb0e6e2937f9c175501910ecf79624027c0e5d7f2e3b06573aa07b87028",
+          "counts": {
+            "COMPLETED": 81,
+            "SKIPPED": 17
+          }
+        },
+        {
+          "source_path": "native-results/38830000043/android-runtime/native-results/android-release/2026-10-16_005015/Standalone Android Release guest probe/commands.json",
+          "bytes": 31439,
+          "sha256": "57424310ad4034f7a358c1f8e389b1c398088c493e9c7896b209045c11b7dc56",
+          "counts": {
+            "COMPLETED": 25,
+            "SKIPPED": 2
+          }
+        },
+        {
+          "source_path": "native-results/38830000043/android-runtime/native-results/android-reminders/2026-10-16_004424/Native fixture reminders schedule and cancel/commands.json",
+          "bytes": 361086,
+          "sha256": "6eeee63de8b7788dd29b6710d4a7b3cc73476b6459b406d34b31483833acc272",
+          "counts": {
+            "COMPLETED": 86,
+            "SKIPPED": 15,
+            "WARNED": 1
+          }
+        }
+      ],
+      "binary_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+      "scope": "Independent four-scope native pass on exact restored original1d8 APKs; no duplicate broad gallery retained."
+    }
+  ]
+}

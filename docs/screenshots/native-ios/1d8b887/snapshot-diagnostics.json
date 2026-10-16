@@ -1,0 +1,29 @@
+{
+  "scope": "ready",
+  "port": 7001,
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "reason": "runner-snapshot-failed",
+  "observedAt": "2026-10-15T23:31:22.512Z",
+  "captures": [
+    {
+      "name": "processes",
+      "status": 0,
+      "error": null
+    },
+    {
+      "name": "services",
+      "status": null,
+      "error": "command-failed"
+    },
+    {
+      "name": "simulator-xctest",
+      "status": 0,
+      "error": null
+    },
+    {
+      "name": "host-xctest",
+      "status": 0,
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "local-host-metro-warm-only",
+  "started_at": "2026-10-15T13:38:50.771Z",
+  "elapsed_ms": 39662,
+  "status": 200,
+  "mime_type": "application/javascript",
+  "bytes": 16020094,
+  "sha256": "79f52949f1dfbddc3fd4bb2eed47bdfabc5858ede6cf4fae4bb1b3bd5eda45a1",
+  "format": "javascript-syntax",
+  "ok": true,
+  "reason": "verified"
+}

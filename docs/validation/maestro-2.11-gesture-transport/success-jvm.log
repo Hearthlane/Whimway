@@ -1,0 +1,4 @@
+ENGINE_LOG {"source":"maestro-xctest-gesture-broker","driverPort":7004,"sequence":1,"payload":{"startX":389.9999985,"startY":708.99999594,"endX":389.9999985,"endY":602.9999998999999,"duration":0.6,"appIds":["com.example.whimway"]},"response":{"ok":true,"status":200,"body":"{\"ok\":true,\"reason\":null,\"nativeStatus\":200,\"sequence\":1,\"driverPort\":7004}","bodyTruncated":false}}
+GRAAL_ADAPTER_PASS success
+
+STDERR

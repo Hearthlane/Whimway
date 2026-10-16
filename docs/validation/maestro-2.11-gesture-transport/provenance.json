@@ -1,0 +1,63 @@
+{
+  "scope": "Isolated actual official Maestro 2.11.0 GraalJS runtime with loopback fake XCTest driver. No simulator, native UI, or Keychain proof.",
+  "runtime": {
+    "jre": {
+      "version": "21.0.12.1+1",
+      "archiveSha256": "d35f31e712f0fcf6ac5a093edc90204fbff22f720ba3950bd09d331d5e621636",
+      "vendor": "Eclipse Temurin"
+    },
+    "maestro": {
+      "version": "2.11.0",
+      "officialReleaseZipSha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"
+    },
+    "ecj": {
+      "version": "3.42.0",
+      "jarSha256": "29f6d3918ee02db4400c103bc25dd90a22491c3a395867d9393070cb96a7dd29"
+    }
+  },
+  "sourceState": "Uncommitted frozen harness changes on the listed base commit; hashes identify tested working source.",
+  "sources": [
+    {
+      "sha256": "d4325ff33ed5b822dca8dd97063a47eb697249987deea640a805bf4295ef21f5",
+      "path": "scripts/native-ios-gesture-server.mjs"
+    },
+    {
+      "sha256": "f513ca393b91d46b08d52e19e50da5c116d22463bdd1bdf8dd8909fd11f9c74b",
+      "path": "scripts/native-ios-viewport-server.mjs"
+    },
+    {
+      "sha256": "103f739e1639b647c46d6b6f8a250c7c0ac9cb896a1b73161a7582571a04a087",
+      "path": "scripts/native-plan-viewport.mjs"
+    },
+    {
+      "sha256": "7fddefe49312f9756d284e201a4dc820e696f6e3639a65983fe491e1a622bcd2",
+      "path": "e2e-native/helpers/observe-ios-plan.js"
+    },
+    {
+      "sha256": "5b0244603c3ff0d891e61ae61ecf7edccb83f26242153f745c095abcf560dade",
+      "path": "e2e-native/helpers/swipe-ios-plan.js"
+    },
+    {
+      "sha256": "500b700afb4bf3cdab9f97f7ab29befd0b801f3f658675c1cdb45e73785206dc",
+      "path": "native-results/maestro-js-http-check/GraalHttpCheck.java"
+    },
+    {
+      "sha256": "6e07dd87044c4ff1d2539be55b51dc3e9c45d13e35f132df99b251b30b46653e",
+      "path": "native-results/maestro-js-http-check/run-check.mjs"
+    }
+  ],
+  "testedAt": "2026-10-15T21:20:40.0889401Z",
+  "result": {
+    "native408DriverPostCount": 1,
+    "report": "report.json",
+    "successDriverPostCount": 1,
+    "native408ExplicitFailure": true,
+    "manualReplayRejected": true
+  },
+  "baseline": {
+    "native408DriverPostCount": 2,
+    "report": "pre-broker-report.json"
+  },
+  "baseCommit": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "command": "node native-results/maestro-js-http-check/run-check.mjs"
+}

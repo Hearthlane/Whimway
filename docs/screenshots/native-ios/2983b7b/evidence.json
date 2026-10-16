@@ -1,0 +1,169 @@
+{
+  "source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38805051576,
+  "job_id": 116663916171,
+  "artifact_id": 12006858624,
+  "artifact_zip_sha256": "4ed4436256facdf687451c1cdb463a367bb2bbc59977497e7f5a27589864c78b",
+  "scope": "Fresh SDK 298 Release compilation/first frame and Debug simulator runtime with passing startup, Keychain and reminders; main restored Saved opening and largest-location helper remain failed. This is not signed distribution or physical-device verification.",
+  "original_app_archive_sha256": "e95708722bc8bdd7275e4ecebe1a153e0b0968f905c2b1798b8669c57083f824",
+  "launch": {
+    "time": "2026-10-15T21:18:26.787Z",
+    "pid": 61673,
+    "package": "com.example.whimway"
+  },
+  "image": {
+    "width": 1206,
+    "height": 2622
+  },
+  "observations": [
+    "Original Explore frame reviewed: complete portrait search/location/mode/primary actions and all three tabs are visible, without identified clipping.",
+    "Actual fresh Debug startup and all three Keychain booleans pass; simulator-embedded entitlement verification is distinct from store signing.",
+    "The first Start target is fully inside the current pane: [24,376.333][378,432.333] within [0,280.333][402,840]. Actual Maestro sequence 255 taps 201,404 at 22:01:55.119Z and Done reaches 1 DONE. This original transport has no 956 broker.",
+    "The restored-plan failure frame remains on Saved with the original four-stop plan, Refreshing your saved day and Cancel opening. No off-pane Start or lost-progress conclusion is supported. Matching native request logs show pending hydrate response at this 20.760-second gate.",
+    "The independent reminder flow completes five scheduled reminders, then zero pending after cancellation.",
+    "At accessibility-extra-extra-extra-large the fixture helper remains on planner location 1/8; a covered destination-result tap has not selected a location. The same original frame visibly word-breaks Back and the primary footer label in a 357-point footer. It does not reach interests or prove largest Plan/Day fit.",
+    "No live-provider, physical performance, assistive-technology or signed-device outcome is inferred."
+  ],
+  "retained_files": [
+    {
+      "name": "explore-release.png",
+      "bytes": 241834,
+      "sha256": "36075ce689588a6b9fb0c73bb700fed9120187d096dc38f10a7435961deef00f"
+    },
+    {
+      "name": "launch-release.txt",
+      "bytes": 113,
+      "sha256": "a15528c8b1bb1826c09344033fdca485b68c99a5109945c59a56f3286cce27c6"
+    },
+    {
+      "name": "failure-saved-refreshing.png",
+      "bytes": 184848,
+      "sha256": "028b0a2925d3828d56ecc6b50c78f41edde2f811afec3ba4199368916f9104f3",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios/2026-10-15_215309/Native fixture outing smoke/screenshots/step-281-assertCondition-Start_my_day.png"
+    },
+    {
+      "name": "failure-saved-refreshing-hierarchy.json",
+      "bytes": 60345,
+      "sha256": "4a376ba938c437aa1d21d92e655bbdbdf3c64ec179247997684d228f76e7b628",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios/2026-10-15_215309/Native fixture outing smoke/screen-hierarchy/step-281-assertCondition-Start_my_day.json"
+    },
+    {
+      "name": "failure-largest-location.png",
+      "bytes": 153824,
+      "sha256": "1a666fb41dd14186ec749e8a663d4cc2fbb1ead5d3a824b0f0b574537a05534c",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios-large-text/2026-10-15_220938/Native large-text outing/screenshots/step-063-assertCondition-What_sounds_fun[].png"
+    },
+    {
+      "name": "failure-largest-location-hierarchy.json",
+      "bytes": 51683,
+      "sha256": "e8452b96ffbd3b56b98028efd7c399b9932b4155369dfb94bafd7be8eaaf75e2",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios-large-text/2026-10-15_220938/Native large-text outing/screen-hierarchy/step-063-assertCondition-What_sounds_fun[].json"
+    },
+    {
+      "name": "native-day-progress.png",
+      "bytes": 201072,
+      "sha256": "e9eb0e0b2a86149e6099659eda9ee3bccf276902ccda1421028a5f7f95fbfda9",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios/2026-10-15_215309/Native fixture outing smoke/takeScreenshot/native-day-progress.png"
+    },
+    {
+      "name": "native-reminders-cancelled.png",
+      "bytes": 207345,
+      "sha256": "2f66ae6b7c0a258ceec3190d6fb18c0be64ccd5050e44cd53d762562e7f7d08f",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-results/ios-reminders/2026-10-15_220343/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-cancelled.png"
+    },
+    {
+      "name": "ios-keychain-proof.json",
+      "bytes": 76,
+      "sha256": "105d1a444528d8f9f50b98e9654adb27296c8eba091d5c3c0fb093c3265a85e1",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "ios-keychain-diagnostics.json",
+      "bytes": 41,
+      "sha256": "4be10692295ee8c66a18d84c729a324741fa0c6d8c1b39cd6e91c8d973d17533",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "ios-metro-bundle-warm.json",
+      "bytes": 341,
+      "sha256": "33d786a9a5fd9410479aba4c9179fcb0f6a90c8c6e6b4cf55386ec380b306adb",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "ios-content-size.txt",
+      "bytes": 38,
+      "sha256": "135b29ea46721b113e482c958f91d608193ed2e911676465b90b39a8fc807757",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-content-size.txt"
+    },
+    {
+      "name": "debug-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "39676d210f6a09b6b1eb95425062889025089171b6b38b8f7aa6bcda62d698df",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-simulator-runtime/debug/signing-evidence.json"
+    },
+    {
+      "name": "1792100714183-d6989801-017-driver-7002-observation.json",
+      "bytes": 1280,
+      "sha256": "3d41b53c10acb7eb4223cd34092b990bf47172cb860639fef8b17335dd469221",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792100714183-d6989801-017-driver-7002-observation.json"
+    },
+    {
+      "name": "1792100714183-d6989801-017-driver-7002-device-info.json",
+      "bytes": 77,
+      "sha256": "3c23c9393458cd14d890bd0022b73d6c0ca521fd2be9bd50c5f4fd6cd2c5eb1e",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792100714183-d6989801-017-driver-7002-device-info.json"
+    },
+    {
+      "name": "1792100714183-d6989801-017-driver-7002-snapshot.json",
+      "bytes": 51026,
+      "sha256": "e6746dcd7a8f58813d897881d2d1bf769bc15d6038f6839622b9cbd9ca8e2ca0",
+      "source_artifact_id": 12009928737,
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792100714183-d6989801-017-driver-7002-snapshot.json"
+    }
+  ],
+  "runtime_artifact_id": 12009928737,
+  "runtime_artifact_zip_sha256": "0bf714b53403346a039e04ae8c1f9bb8ba510ca232dfccf8a2b333e1843bbb1a",
+  "debug_archive_sha256": "601d2b8257a2b876421a5c734bef07c53919a0065cb53f4d5a2df97697c2c1ca",
+  "runtime_flows": {
+    "ui_ready": {
+      "completed": 28,
+      "skipped": 4
+    },
+    "main": {
+      "completed": 264,
+      "skipped": 14,
+      "optional_denial_warnings": 2,
+      "failed": 1,
+      "failure_sequence": 280,
+      "failure_utc": "2026-10-15T22:02:55.116Z",
+      "duration_ms": 20760
+    },
+    "reminders": {
+      "completed": 105,
+      "skipped": 13,
+      "optional_allow_warnings": 1,
+      "failed": 0
+    },
+    "large": {
+      "completed": 54,
+      "skipped": 7,
+      "failed_entries": 2,
+      "deepest_sequence": 62,
+      "deepest_failure_utc": "2026-10-15T22:13:47.373Z",
+      "deepest_duration_ms": 19086
+    }
+  }
+}

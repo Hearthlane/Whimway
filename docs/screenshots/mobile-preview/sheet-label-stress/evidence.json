@@ -1,0 +1,112 @@
+{
+  "scope": "RN Web rendered sheet-text/input-value stress at four times browser font size; real fixture generate/edit API, no native Dynamic Type or device claim.",
+  "source_commit": "Frozen working components later committed unchanged in 1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "capture_finished_at": "2026-10-15T22:55:53.7524009Z",
+  "retained_files": [
+    {
+      "name": "new-360-geometry.json",
+      "bytes": 1409,
+      "sha256": "b8c815c5f1175fbcf619a1d8cfe8e2bcbf4afec125458025971930ac7ba471a6",
+      "source_path": "native-results/sheet-4x/retained/new-360-geometry.json"
+    },
+    {
+      "name": "new-360-title-4x.png",
+      "bytes": 25315,
+      "sha256": "3439467f8b8aead57f127a3ad1520a226bef1478334656a8ad600c68cb4c40c7",
+      "source_path": "native-results/sheet-4x/retained/new-360-title-4x.png"
+    },
+    {
+      "name": "new-360-update-4x.png",
+      "bytes": 32487,
+      "sha256": "200762c4224d37319b61f220a01354f9d3f56034a349cbce3b5a0ab66a92d9da",
+      "source_path": "native-results/sheet-4x/retained/new-360-update-4x.png"
+    },
+    {
+      "name": "new-430-geometry.json",
+      "bytes": 1416,
+      "sha256": "3da619f2003b8e2564f99eaf1c78a7cb0e71a8309909dba887b5977d8d70cf54",
+      "source_path": "native-results/sheet-4x/retained/new-430-geometry.json"
+    },
+    {
+      "name": "new-430-title-4x.png",
+      "bytes": 43547,
+      "sha256": "458529aa5d04c743adf12ace09328902fecaf6a3c0bf1911d52557e783dc15db",
+      "source_path": "native-results/sheet-4x/retained/new-430-title-4x.png"
+    },
+    {
+      "name": "new-430-update-4x.png",
+      "bytes": 43808,
+      "sha256": "d1834a5012994a7ae716019af49648ca7e83b723c58d654ffaf2f11d61ab9005",
+      "source_path": "native-results/sheet-4x/retained/new-430-update-4x.png"
+    },
+    {
+      "name": "old-360-geometry.json",
+      "bytes": 1319,
+      "sha256": "42a33400b9e262cb73459dd5961f076534292f786b36bdebe7cdc35ba49227e1",
+      "source_path": "native-results/sheet-4x/retained/old-360-geometry.json"
+    },
+    {
+      "name": "old-360-title-4x.png",
+      "bytes": 26219,
+      "sha256": "c48c01c2bb7f088d7526c31102d4177b588b69b76525ff344c187a818f1e8870",
+      "source_path": "native-results/sheet-4x/retained/old-360-title-4x.png"
+    },
+    {
+      "name": "provenance.json",
+      "bytes": 2236,
+      "sha256": "21a04a52813177c82b07da5cac3ac436e9b8c1f821c7d579845532245e79bd5c",
+      "source_path": "native-results/sheet-4x/retained/provenance.json"
+    },
+    {
+      "name": "before-mode-wrap-360-geometry.json",
+      "bytes": 1409,
+      "sha256": "b8c815c5f1175fbcf619a1d8cfe8e2bcbf4afec125458025971930ac7ba471a6",
+      "source_path": "native-results/sheet-4x/retained/new-360-geometry.json"
+    },
+    {
+      "name": "before-mode-wrap-provenance.json",
+      "bytes": 1688,
+      "sha256": "857b8b848de4b1da726b3c00dfc8308ea76ca4f9862d46d66958ad2fa2575cf1",
+      "source_path": "native-results/sheet-4x/retained/provenance.json"
+    },
+    {
+      "name": "new-360-modes-4x.png",
+      "bytes": 33552,
+      "sha256": "0e41ce13488590b7d377c0ed0a7be51204a0b901271253beee53ab46c372fc0b",
+      "source_path": "native-results/sheet-4x/retained/new-360-modes-4x.png"
+    },
+    {
+      "name": "new-430-modes-4x.png",
+      "bytes": 46056,
+      "sha256": "295e3db7483cf8fed3cad8eb532b69512d984a7272a4629312a41c79139e8266",
+      "source_path": "native-results/sheet-4x/retained/new-430-modes-4x.png"
+    },
+    {
+      "name": "old-360-mode-row-4x.png",
+      "bytes": 33664,
+      "sha256": "34935f3634c454c04a548b28acca2db28b1ec4cf3dd0a3eae7997832b990aaf3",
+      "source_path": "native-results/sheet-4x/retained/old-360-mode-row-4x.png"
+    }
+  ],
+  "qualifications": [
+    "old-360-mode-row-4x.png preserves the clipped Driving control before mode wrapping. The original pre-wrap geometry/provenance are retained separately.",
+    "New360/430 modes and Update captures come from strengthened passing assertions: both travel controls fully inside the phone, cancellation changes no plan, and the actual DRIVE edit increments the revision once.",
+    "These browser dimensions are not native OS bounds. Actual Dynamic Type replay remains pending."
+  ],
+  "focused_validation": "Strengthened two Sheet cases plus normal Shared Sheet drag/keyboard/error:3/3 pass. Final frozen-candidate full47/47 pass in3.6minutes.",
+  "component_source_commit": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "verified_source_hashes": [
+    {
+      "path": "apps/mobile/src/components/ui.tsx",
+      "sha256": "d0c1177d42825eb2a87609c1435e60ae50c7262acf66e3d3c177d7c24fd9ff8a"
+    },
+    {
+      "path": "apps/mobile/app/plan/[id].tsx",
+      "sha256": "01b3ef84a0bbaa0c09687c7624fbc52dcc502cdf855bf342f6a97dda8c8f7d73"
+    },
+    {
+      "path": "e2e-mobile/sheet-large-label.spec.ts",
+      "sha256": "5f4ec74c08094fa8c820bfaf5a867cc0f5c6c03b21297d6d38aa8bab3324d7be"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "labelScale": 4,
+  "title": {
+    "left": 24,
+    "right": 406,
+    "top": 227.8125,
+    "bottom": 751.8125,
+    "height": 524
+  },
+  "fontSize": 104,
+  "scroll": {
+    "left": 0,
+    "right": 430,
+    "top": 219.8125,
+    "bottom": 932,
+    "height": 712.1875
+  },
+  "words": [
+    {
+      "text": "Make",
+      "rects": [
+        {
+          "left": 24,
+          "right": 280.046875,
+          "top": 227.8125,
+          "bottom": 358.8125,
+          "height": 131
+        }
+      ]
+    },
+    {
+      "text": "room",
+      "rects": [
+        {
+          "left": 24,
+          "right": 272.046875,
+          "top": 358.8125,
+          "bottom": 489.8125,
+          "height": 131
+        }
+      ]
+    },
+    {
+      "text": "for",
+      "rects": [
+        {
+          "left": 24,
+          "right": 167.8125,
+          "top": 489.8125,
+          "bottom": 620.8125,
+          "height": 131
+        }
+      ]
+    },
+    {
+      "text": "your",
+      "rects": [
+        {
+          "left": 187.46875,
+          "right": 396.828125,
+          "top": 489.8125,
+          "bottom": 620.8125,
+          "height": 131
+        }
+      ]
+    },
+    {
+      "text": "day",
+      "rects": [
+        {
+          "left": 24,
+          "right": 199.21875,
+          "top": 620.8125,
+          "bottom": 751.8125,
+          "height": 131
+        }
+      ]
+    }
+  ]
+}

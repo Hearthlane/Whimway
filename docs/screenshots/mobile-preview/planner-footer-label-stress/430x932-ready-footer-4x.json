@@ -1,0 +1,90 @@
+{
+  "labelScale": 4,
+  "footer": {
+    "left": 0,
+    "top": 610,
+    "right": 430,
+    "bottom": 932,
+    "height": 322
+  },
+  "actions": [
+    {
+      "label": "Back",
+      "bounds": {
+        "left": 24,
+        "top": 619,
+        "right": 179.828125,
+        "bottom": 716,
+        "height": 97
+      },
+      "words": [
+        {
+          "word": "Back",
+          "rectangles": [
+            {
+              "left": 36,
+              "top": 631,
+              "right": 167.828125,
+              "bottom": 704,
+              "height": 73
+            }
+          ]
+        }
+      ],
+      "fontSizes": [
+        56
+      ]
+    },
+    {
+      "label": "Make my day",
+      "bounds": {
+        "left": 24,
+        "top": 724,
+        "right": 406,
+        "bottom": 924,
+        "height": 200
+      },
+      "words": [
+        {
+          "word": "Make",
+          "rectangles": [
+            {
+              "left": 41,
+              "top": 741,
+              "right": 204.53125,
+              "bottom": 824,
+              "height": 83
+            }
+          ]
+        },
+        {
+          "word": "my",
+          "rectangles": [
+            {
+              "left": 220.125,
+              "top": 741,
+              "right": 316.078125,
+              "bottom": 824,
+              "height": 83
+            }
+          ]
+        },
+        {
+          "word": "day",
+          "rectangles": [
+            {
+              "left": 41,
+              "top": 824,
+              "right": 155.765625,
+              "bottom": 907,
+              "height": 83
+            }
+          ]
+        }
+      ],
+      "fontSizes": [
+        64
+      ]
+    }
+  ]
+}

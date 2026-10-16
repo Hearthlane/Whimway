@@ -1,0 +1,38 @@
+{
+  "simulator": "88931AEA-62E6-447F-8697-DCE00A671384",
+  "sequence": 12,
+  "phase": "monitor",
+  "attempt": 1,
+  "recovery": false,
+  "observation": "host-only",
+  "reason": "runner-host-snapshot-failed",
+  "commands": {
+    "ps": {
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": null,
+      "error": "command-failed",
+      "code": null,
+      "killed": true,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "deadlineMs": 5000,
+      "elapsedMs": 12903,
+      "startedAt": "2026-10-16T00:43:33.101Z",
+      "stdout": {
+        "file": "12-ps.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "file": "12-ps.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

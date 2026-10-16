@@ -1,0 +1,83 @@
+{
+  "run_id": 38745706827,
+  "job_id": 116458756122,
+  "source_sha": "f12264572dbf8866263f345526571772302969f4",
+  "runtime_artifact_id": 11981960467,
+  "compiler_artifact_id": 11978724374,
+  "release_apk_sha256": "4485f2a600eeca851c94c6249ce4590ecc018d675a0e59c71579713d6c7b3550",
+  "debug_apk_sha256": "643272f63c2e3b9b17b6d9695ebffb888a9853e995fa00ff31892a573c073269",
+  "scopes": {
+    "main": {
+      "COMPLETED": 189,
+      "SKIPPED": 17
+    },
+    "reminders": {
+      "COMPLETED": 79,
+      "SKIPPED": 15,
+      "WARNED": 1
+    },
+    "large_text": {
+      "COMPLETED": 72,
+      "SKIPPED": 17
+    },
+    "release": {
+      "COMPLETED": 24,
+      "SKIPPED": 1
+    }
+  },
+  "resets": {
+    "smoke": {
+      "prepared": true,
+      "stable_quiet_ms": 2769,
+      "final_observation": {
+        "elapsed_ms": 3640,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      }
+    },
+    "reminders": {
+      "prepared": true,
+      "stable_quiet_ms": 2033,
+      "final_observation": {
+        "elapsed_ms": 3609,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      }
+    },
+    "large-text": {
+      "prepared": true,
+      "stable_quiet_ms": 2055,
+      "final_observation": {
+        "elapsed_ms": 3558,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      }
+    }
+  },
+  "os_font_scale": "2.0",
+  "observations": [
+    "Reviewed original native fontScale2.0 itinerary: Share and arrow fit on the toolbar, controls and full Start action are visible; tool words wrap without the largest-iOS mid-word splitting",
+    "This precedes e1db62b intrinsic tool/fallback changes and does not establish largest iOS fit"
+  ],
+  "scope_limits": [
+    "Synthetic development fixtures",
+    "No live providers, notification delivery or physical-device performance claim"
+  ],
+  "retained_files": [
+    {
+      "name": "native-font-2-itinerary.png",
+      "bytes": 221137,
+      "sha256": "6c9d77a4dccad82d714cf63f0fdc083334b2e4444811e1db4eeffb1286305875",
+      "source_path": "native-results/android-large-text/2026-10-15_141827/Native large-text outing/takeScreenshot/native-large-text-itinerary.png"
+    }
+  ]
+}

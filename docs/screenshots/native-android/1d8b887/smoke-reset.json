@@ -1,0 +1,120 @@
+{
+  "app_id": "com.example.whimway",
+  "emulator": "emulator-5554",
+  "scope": "smoke",
+  "prepared": true,
+  "stable_quiet_ms": 2154,
+  "commands": [
+    {
+      "command": "serial",
+      "elapsed_ms": 6,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "force-stop",
+      "elapsed_ms": 242,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "clear-data",
+      "elapsed_ms": 469,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 684,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 834,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 1453,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 1532,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 2191,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 2256,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "processes",
+      "elapsed_ms": 2911,
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "tasks",
+      "elapsed_ms": 2989,
+      "status": 0,
+      "signal": null,
+      "error": null
+    }
+  ],
+  "observations": [
+    {
+      "elapsed_ms": 836,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 1538,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 2257,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    },
+    {
+      "elapsed_ms": 2990,
+      "processes": 0,
+      "tasks": 0,
+      "activities": 0,
+      "pending_kill": false,
+      "quiet": true
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "passed": false,
+  "outcomes": [
+    {
+      "scope": "ready",
+      "port": 7001,
+      "passed": false,
+      "fenced": true,
+      "code": 143,
+      "signal": null,
+      "reason": "runner-host-snapshot-failed",
+      "diagnosticFailure": null,
+      "settleFailure": null,
+      "durationMs": 56548,
+      "identities": [
+        {
+          "pid": 14512,
+          "ppid": 13038,
+          "pgid": 13038,
+          "started": "Fri Oct 16 00:38:53 2026",
+          "command": "/Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/88931AEA-62E6-447F-8697-DCE00A6713846426689693717881567/maestro-driver-ios-config.xctestrun -destination id=88931AEA-62E6-447F-8697-DCE00A671384 -derivedDataPath /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/maestro_xctestrunner_xcodebuild_output15041860299058798130",
+          "kind": "xcodebuild"
+        }
+      ]
+    },
+    {
+      "scope": "main",
+      "port": 7002,
+      "passed": false,
+      "fenced": true,
+      "code": 143,
+      "signal": null,
+      "reason": "runner-host-snapshot-failed",
+      "diagnosticFailure": null,
+      "settleFailure": null,
+      "durationMs": 36058,
+      "identities": [
+        {
+          "pid": 16674,
+          "ppid": 16532,
+          "pgid": 16532,
+          "started": "Fri Oct 16 00:39:39 2026",
+          "command": "/Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/88931AEA-62E6-447F-8697-DCE00A6713849580402416073836375/maestro-driver-ios-config.xctestrun -destination id=88931AEA-62E6-447F-8697-DCE00A671384 -derivedDataPath /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/maestro_xctestrunner_xcodebuild_output13824443171774776806",
+          "kind": "xcodebuild"
+        }
+      ]
+    },
+    {
+      "scope": "reminders",
+      "port": 7003,
+      "passed": false,
+      "fenced": false,
+      "code": 1,
+      "signal": "SIGKILL",
+      "reason": "runner-host-snapshot-failed",
+      "diagnosticFailure": null,
+      "settleFailure": null,
+      "durationMs": 259335,
+      "identities": [
+        {
+          "pid": 19226,
+          "ppid": 18360,
+          "pgid": 18360,
+          "started": "Fri Oct 16 00:40:21 2026",
+          "command": "/Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/88931AEA-62E6-447F-8697-DCE00A6713845642967309658005892/maestro-driver-ios-config.xctestrun -destination id=88931AEA-62E6-447F-8697-DCE00A671384 -derivedDataPath /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/maestro_xctestrunner_xcodebuild_output14277185019856006830",
+          "kind": "xcodebuild"
+        },
+        {
+          "pid": 20687,
+          "ppid": 4162,
+          "pgid": 20687,
+          "started": "Fri Oct 16 00:41:02 2026",
+          "command": "/Users/runner/Library/Developer/CoreSimulator/Devices/88931AEA-62E6-447F-8697-DCE00A671384/data/Containers/Bundle/Application/972974E4-A5FF-4E2A-AD8E-6F5B25F9325C/maestro-driver-iosUITests-Runner.app/maestro-driver-iosUITests-Runner",
+          "kind": "simulator-runner"
+        }
+      ]
+    }
+  ]
+}

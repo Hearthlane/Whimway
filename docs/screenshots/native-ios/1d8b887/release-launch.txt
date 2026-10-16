@@ -1,0 +1,2 @@
+{"attempt":1,"time":"2026-10-15T23:28:13.840Z","status":0,"signal":null,"error":null}
+com.example.whimway: 58665

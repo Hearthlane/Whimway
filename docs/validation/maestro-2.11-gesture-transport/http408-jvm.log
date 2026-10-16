@@ -1,0 +1,6 @@
+ENGINE_LOG {"source":"maestro-xctest-gesture-broker","driverPort":7004,"sequence":3,"payload":{"startX":389.9999985,"startY":708.99999594,"endX":389.9999985,"endY":602.9999998999999,"duration":0.6,"appIds":["com.example.whimway"]},"response":{"ok":true,"status":200,"body":"{\"ok\":false,\"reason\":\"native-http-failed\",\"nativeStatus\":408,\"sequence\":3,\"driverPort\":7004}","bodyTruncated":false}}
+EXPECTED_FAILURE Error: Native swipe failed
+SCRIPT_REPLAY_REJECTED
+GRAAL_ADAPTER_PASS http408
+
+STDERR

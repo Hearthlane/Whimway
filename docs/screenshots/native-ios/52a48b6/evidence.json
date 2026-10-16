@@ -1,0 +1,137 @@
+{
+  "run_id": 38742724011,
+  "job_id": 116448390437,
+  "checkout_sha": "52a48b654d9c4e17f82dbc4dcc56839073a120bf",
+  "mobile_source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+  "runtime_artifact_id": 11979942574,
+  "runtime_zip_sha256": "7be5f5fbe148e9a93008e5b1abaa34e01b32e1ed4194597ab82262089c77ca36",
+  "release_original_artifact_id": 11973593994,
+  "release_compiler_source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+  "debug_original_artifact_id": 11942772099,
+  "debug_compiler_source_sha": "63d84af1d4b3faaa2ae56f63d03681116d1ede07",
+  "debug_original_archive_sha256": "fb2d023f8333f98e896d33708a936df9a1ff75091d467fc9bb9153a966281f36",
+  "signing": {
+    "simulator_only": true,
+    "mode": "xcode-ad-hoc-verified-copy",
+    "signature_verified": true,
+    "originals_unchanged": true,
+    "runtime_copy_unchanged": true
+  },
+  "scopes": {
+    "startup": {
+      "COMPLETED": 28,
+      "SKIPPED": 4
+    },
+    "main": {
+      "COMPLETED": 208,
+      "SKIPPED": 11,
+      "WARNED": 2
+    },
+    "reminders": {
+      "COMPLETED": 27,
+      "SKIPPED": 5,
+      "FAILED": 3
+    },
+    "large_text": {
+      "COMPLETED": 82,
+      "SKIPPED": 11,
+      "FAILED": 1
+    }
+  },
+  "keychain": {
+    "registrationRead": true,
+    "installationRead": true,
+    "installationStable": true,
+    "stage": "complete",
+    "reason": "verified",
+    "scope": "Actual native Debug simulator calls; no distribution-signing or live-delivery claim"
+  },
+  "failures": {
+    "reminders": {
+      "utc": "2026-10-15T13:55:44.573Z",
+      "duration_ms": 15299,
+      "sequence": 34,
+      "actual": "centerElement scroll fails before the fixture-switch tap, although the OFF switch is visible at [24,652][87,680] inside viewport [0,62][402,738]. Three nested failed records describe this one deep failure.",
+      "hierarchy": {
+        "source_path": "native-results/ios-reminders/2026-10-15_135338/Native fixture reminders schedule and cancel/screen-hierarchy/step-035-scrollUntilVisible-Use_synthetic_develop.json",
+        "sha256": "e148d586e3f4f88b04c03bde5b0be8de2cdd210a40192b1289bf42bec77a9c3b"
+      }
+    },
+    "large_text": {
+      "utc": "2026-10-15T14:01:20.453Z",
+      "duration_ms": 17927,
+      "sequence": 93,
+      "actual": "After generated title, fixture disclosure and Start visibility pass, Adjust tap reports completed but no sheet opens. Adjust bounds [144,224][257,488] have center y356 above timeline viewport top374; no post-Close sequence reached.",
+      "hierarchy": {
+        "source_path": "native-results/ios-large-text/2026-10-15_135624/Native large-text outing/screen-hierarchy/step-094-assertCondition-Make_room_for_your_day.json",
+        "sha256": "9ef9392c7c729512c3c0dff8abc5679e3ed1c80c25bc4989acf5f3c8a8c775c3"
+      }
+    }
+  },
+  "observations": [
+    {
+      "kind": "largest-type-tool-and-fallback-layout",
+      "retained_frame": "failure-adjust-covered.png",
+      "hierarchy_source_path": "native-results/ios-large-text/2026-10-15_135624/Native large-text outing/screen-hierarchy/step-094-assertCondition-Make_room_for_your_day.json",
+      "hierarchy_sha256": "9ef9392c7c729512c3c0dff8abc5679e3ed1c80c25bc4989acf5f3c8a8c775c3",
+      "actual": "The three-column tools break Adjust plan into pla/n and Add a stop into sto/p. The synthetic illustration caption extends below its fixed-height mint card. These are visible product layout findings, separate from the covered Adjust tap that failed the flow.",
+      "tool_bounds_points": {
+        "Day Remix": [24, 231, 136, 481],
+        "Adjust plan": [144, 224, 257, 488],
+        "Add a stop": [265, 224, 377, 488]
+      },
+      "source_scope": "Observed e923 mobile source with harness 52a48b6. Product e1db62b corrects intrinsic tool wrapping and the expanding illustration fallback; browser stress cases pass, while native correction remains unverified."
+    }
+  ],
+  "scope_limits": [
+    "Explicit synthetic development fixtures",
+    "Full normal main flow and process-restored 1 DONE pass; independent reminder retry and largest-type flow remain incomplete",
+    "Original e923 reminder flow already passed; this failed retry is kept separately",
+    "Precedes product f122 toolbar wrap; no inference that wrapped native bounds pass",
+    "Simulator signing and Keychain calls do not establish store/device signing, notification delivery, live providers or physical performance"
+  ],
+  "retained_files": [
+    {
+      "name": "native-progress-restored.png",
+      "bytes": 199814,
+      "sha256": "adb1c83df208fc690a1ece67cc4a7c3182e0cd9a6c42f88d6a43177812faa261",
+      "source_path": "native-results/ios/2026-10-15_134405/Native fixture outing smoke/takeScreenshot/native-progress-restored.png"
+    },
+    {
+      "name": "native-saved-before-progress-restore.png",
+      "bytes": 169970,
+      "sha256": "900a5452334437511637065b3a4ff14b0bc287ae964f6cd86be70f333c6232da",
+      "source_path": "native-results/ios/2026-10-15_134405/Native fixture outing smoke/takeScreenshot/native-saved-before-progress-restore.png"
+    },
+    {
+      "name": "failure-fixture-centering.png",
+      "bytes": 194631,
+      "sha256": "33a59fed6d504a2c5f7c3f9c0671c47f3a664ef64121d498c499c08591945272",
+      "source_path": "native-results/ios-reminders/2026-10-15_135338/Native fixture reminders schedule and cancel/screenshots/step-035-scrollUntilVisible-Use_synthetic_develop.png"
+    },
+    {
+      "name": "failure-adjust-covered.png",
+      "bytes": 203796,
+      "sha256": "ddeeef15ef8817a4ea7ad7618a0cad3a496390259e5cb8711e33ad93f39122d9",
+      "source_path": "native-results/ios-large-text/2026-10-15_135624/Native large-text outing/screenshots/step-094-assertCondition-Make_room_for_your_day.png"
+    },
+    {
+      "name": "ios-metro-bundle-warm.json",
+      "bytes": 341,
+      "sha256": "7f993c61c5d45b0c6434ced5d181f7165359eaef0cf71f5ee321b97c94700955",
+      "source_path": "native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "ios-keychain-proof.json",
+      "bytes": 76,
+      "sha256": "105d1a444528d8f9f50b98e9654adb27296c8eba091d5c3c0fb093c3265a85e1",
+      "source_path": "native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "ios-keychain-diagnostics.json",
+      "bytes": 41,
+      "sha256": "4be10692295ee8c66a18d84c729a324741fa0c6d8c1b39cd6e91c8d973d17533",
+      "source_path": "native-test-artifacts/ios-keychain-diagnostics.json"
+    }
+  ]
+}

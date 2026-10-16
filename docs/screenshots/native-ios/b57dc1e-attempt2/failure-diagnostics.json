@@ -1,0 +1,99 @@
+{
+  "scope": "ready",
+  "port": 7001,
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "reason": "runner-snapshot-failed",
+  "observedAt": "2026-10-16T00:15:59.929Z",
+  "captures": [
+    {
+      "name": "processes",
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 312,
+      "startedAt": "2026-10-16T00:15:44.784Z"
+    },
+    {
+      "name": "services",
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "launchctl",
+        "list"
+      ],
+      "status": null,
+      "error": "command-failed",
+      "code": null,
+      "killed": true,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "deadlineMs": 15000,
+      "elapsedMs": 15049,
+      "startedAt": "2026-10-16T00:15:44.786Z"
+    },
+    {
+      "name": "simulator-xctest",
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "log",
+        "show",
+        "--style",
+        "compact",
+        "--last",
+        "5m",
+        "--info",
+        "--debug",
+        "--predicate",
+        "process CONTAINS[c] \"maestro-driver\" OR process == \"testmanagerd\" OR ((process == \"SpringBoard\" OR process == \"runningboardd\" OR process == \"launchd_sim\") AND (messageType == error OR messageType == fault))"
+      ],
+      "status": null,
+      "error": "command-failed",
+      "code": null,
+      "killed": true,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "deadlineMs": 15000,
+      "elapsedMs": 15099,
+      "startedAt": "2026-10-16T00:15:44.825Z"
+    },
+    {
+      "name": "host-xctest",
+      "command": "/usr/bin/log",
+      "args": [
+        "show",
+        "--style",
+        "compact",
+        "--last",
+        "5m",
+        "--info",
+        "--debug",
+        "--predicate",
+        "process == \"xcodebuild\" OR process == \"testmanagerd\" OR process == \"testmanagerd_sim\" OR (process == \"CoreSimulatorService\" AND (messageType == error OR messageType == fault))"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 15000,
+      "elapsedMs": 4336,
+      "startedAt": "2026-10-16T00:15:44.874Z"
+    }
+  ]
+}

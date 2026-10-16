@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.example.whimway/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.example.whimway/.MainActivity
+TotalTime: 3141
+WaitTime: 3149
+Complete

@@ -1,0 +1,511 @@
+{
+  "attributes" : {
+    "bounds" : "[0,0][0,0]",
+    "enabled" : "false",
+    "focused" : "false",
+    "selected" : "false",
+    "checked" : "false"
+  },
+  "children" : [ {
+    "attributes" : {
+      "accessibilityText" : "Whimway",
+      "bounds" : "[0,0][402,874]",
+      "enabled" : "true",
+      "focused" : "false",
+      "selected" : "false",
+      "checked" : "false"
+    },
+    "children" : [ {
+      "attributes" : {
+        "bounds" : "[0,0][402,874]",
+        "enabled" : "true",
+        "focused" : "false",
+        "selected" : "false",
+        "checked" : "false"
+      },
+      "children" : [ {
+        "attributes" : {
+          "bounds" : "[0,0][402,874]",
+          "enabled" : "true",
+          "focused" : "false",
+          "selected" : "false",
+          "checked" : "false"
+        },
+        "children" : [ {
+          "attributes" : {
+            "bounds" : "[0,0][402,874]",
+            "enabled" : "true",
+            "focused" : "false",
+            "selected" : "false",
+            "checked" : "false"
+          },
+          "children" : [ {
+            "attributes" : {
+              "bounds" : "[0,0][402,874]",
+              "enabled" : "true",
+              "focused" : "false",
+              "selected" : "false",
+              "checked" : "false"
+            },
+            "children" : [ {
+              "attributes" : {
+                "accessibilityText" : "Make room for your day",
+                "bounds" : "[0,131][402,874]",
+                "enabled" : "true",
+                "focused" : "false",
+                "selected" : "false",
+                "checked" : "false"
+              },
+              "children" : [ {
+                "attributes" : {
+                  "bounds" : "[0,131][402,874]",
+                  "enabled" : "true",
+                  "focused" : "false",
+                  "selected" : "false",
+                  "checked" : "false"
+                },
+                "children" : [ {
+                  "attributes" : {
+                    "bounds" : "[0,131][402,750]",
+                    "enabled" : "true",
+                    "focused" : "false",
+                    "selected" : "false",
+                    "checked" : "false"
+                  },
+                  "children" : [ {
+                    "attributes" : {
+                      "accessibilityText" : "Make room for your day",
+                      "bounds" : "[24,157][320,742]",
+                      "enabled" : "true",
+                      "focused" : "false",
+                      "selected" : "false",
+                      "checked" : "false"
+                    },
+                    "children" : [ {
+                      "attributes" : {
+                        "accessibilityText" : "Make room for your day",
+                        "bounds" : "[24,157][320,742]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    } ],
+                    "enabled" : true,
+                    "focused" : false,
+                    "checked" : false,
+                    "selected" : false
+                  }, {
+                    "attributes" : {
+                      "accessibilityText" : "Close",
+                      "bounds" : "[332,426][378,472]",
+                      "enabled" : "true",
+                      "focused" : "false",
+                      "selected" : "false",
+                      "checked" : "false"
+                    },
+                    "enabled" : true,
+                    "focused" : false,
+                    "checked" : false,
+                    "selected" : false
+                  } ],
+                  "enabled" : true,
+                  "focused" : false,
+                  "checked" : false,
+                  "selected" : false
+                }, {
+                  "attributes" : {
+                    "bounds" : "[0,750][402,874]",
+                    "enabled" : "true",
+                    "focused" : "false",
+                    "selected" : "false",
+                    "checked" : "false"
+                  },
+                  "children" : [ {
+                    "attributes" : {
+                      "bounds" : "[0,750][402,874]",
+                      "enabled" : "true",
+                      "focused" : "false",
+                      "selected" : "false",
+                      "checked" : "false"
+                    },
+                    "children" : [ {
+                      "attributes" : {
+                        "bounds" : "[0,750][402,1618]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "children" : [ {
+                        "attributes" : {
+                          "bounds" : "[0,750][402,1618]",
+                          "enabled" : "true",
+                          "focused" : "false",
+                          "selected" : "false",
+                          "checked" : "false"
+                        },
+                        "children" : [ {
+                          "attributes" : {
+                            "accessibilityText" : "Budget / person · CAD",
+                            "bounds" : "[24,758][378,888]",
+                            "enabled" : "true",
+                            "focused" : "false",
+                            "selected" : "false",
+                            "checked" : "false"
+                          },
+                          "children" : [ {
+                            "attributes" : {
+                              "accessibilityText" : "Budget / person · CAD",
+                              "bounds" : "[24,758][378,888]",
+                              "enabled" : "true",
+                              "focused" : "false",
+                              "selected" : "false",
+                              "checked" : "false"
+                            },
+                            "enabled" : true,
+                            "focused" : false,
+                            "checked" : false,
+                            "selected" : false
+                          } ],
+                          "enabled" : true,
+                          "focused" : false,
+                          "checked" : false,
+                          "selected" : false
+                        } ],
+                        "enabled" : true,
+                        "focused" : false,
+                        "checked" : false,
+                        "selected" : false
+                      } ],
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    }, {
+                      "attributes" : {
+                        "accessibilityText" : "Vertical scroll bar, 8 pages",
+                        "value" : "0%",
+                        "text" : "0%",
+                        "bounds" : "[365,750][395,812]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "children" : [ {
+                        "attributes" : {
+                          "bounds" : "[392,753][395,789]",
+                          "enabled" : "true",
+                          "focused" : "false",
+                          "selected" : "false",
+                          "checked" : "false"
+                        },
+                        "enabled" : true,
+                        "focused" : false,
+                        "checked" : false,
+                        "selected" : false
+                      } ],
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    }, {
+                      "attributes" : {
+                        "accessibilityText" : "Horizontal scroll bar, 1 page",
+                        "value" : "0%",
+                        "text" : "0%",
+                        "bounds" : "[62,841][340,871]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "children" : [ {
+                        "attributes" : {
+                          "bounds" : "[65,868][337,871]",
+                          "enabled" : "true",
+                          "focused" : "false",
+                          "selected" : "false",
+                          "checked" : "false"
+                        },
+                        "enabled" : true,
+                        "focused" : false,
+                        "checked" : false,
+                        "selected" : false
+                      } ],
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    }, {
+                      "attributes" : {
+                        "accessibilityText" : "Vertical scroll bar, 8 pages",
+                        "value" : "0%",
+                        "text" : "0%",
+                        "bounds" : "[365,750][395,812]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "children" : [ {
+                        "attributes" : {
+                          "bounds" : "[392,753][395,789]",
+                          "enabled" : "true",
+                          "focused" : "false",
+                          "selected" : "false",
+                          "checked" : "false"
+                        },
+                        "enabled" : true,
+                        "focused" : false,
+                        "checked" : false,
+                        "selected" : false
+                      } ],
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    }, {
+                      "attributes" : {
+                        "accessibilityText" : "Horizontal scroll bar, 1 page",
+                        "value" : "0%",
+                        "text" : "0%",
+                        "bounds" : "[62,841][340,871]",
+                        "enabled" : "true",
+                        "focused" : "false",
+                        "selected" : "false",
+                        "checked" : "false"
+                      },
+                      "children" : [ {
+                        "attributes" : {
+                          "bounds" : "[65,868][337,871]",
+                          "enabled" : "true",
+                          "focused" : "false",
+                          "selected" : "false",
+                          "checked" : "false"
+                        },
+                        "enabled" : true,
+                        "focused" : false,
+                        "checked" : false,
+                        "selected" : false
+                      } ],
+                      "enabled" : true,
+                      "focused" : false,
+                      "checked" : false,
+                      "selected" : false
+                    } ],
+                    "enabled" : true,
+                    "focused" : false,
+                    "checked" : false,
+                    "selected" : false
+                  } ],
+                  "enabled" : true,
+                  "focused" : false,
+                  "checked" : false,
+                  "selected" : false
+                } ],
+                "enabled" : true,
+                "focused" : false,
+                "checked" : false,
+                "selected" : false
+              } ],
+              "enabled" : true,
+              "focused" : false,
+              "checked" : false,
+              "selected" : false
+            } ],
+            "enabled" : true,
+            "focused" : false,
+            "checked" : false,
+            "selected" : false
+          } ],
+          "enabled" : true,
+          "focused" : false,
+          "checked" : false,
+          "selected" : false
+        } ],
+        "enabled" : true,
+        "focused" : false,
+        "checked" : false,
+        "selected" : false
+      } ],
+      "enabled" : true,
+      "focused" : false,
+      "checked" : false,
+      "selected" : false
+    }, {
+      "attributes" : {
+        "bounds" : "[0,0][402,874]",
+        "enabled" : "true",
+        "focused" : "false",
+        "selected" : "false",
+        "checked" : "false"
+      },
+      "children" : [ {
+        "attributes" : {
+          "bounds" : "[0,0][402,874]",
+          "enabled" : "true",
+          "focused" : "false",
+          "selected" : "false",
+          "checked" : "false"
+        },
+        "children" : [ {
+          "attributes" : {
+            "bounds" : "[0,0][402,874]",
+            "enabled" : "true",
+            "focused" : "false",
+            "selected" : "false",
+            "checked" : "false"
+          },
+          "enabled" : true,
+          "focused" : false,
+          "checked" : false,
+          "selected" : false
+        } ],
+        "enabled" : true,
+        "focused" : false,
+        "checked" : false,
+        "selected" : false
+      } ],
+      "enabled" : true,
+      "focused" : false,
+      "checked" : false,
+      "selected" : false
+    } ],
+    "enabled" : true,
+    "focused" : false,
+    "checked" : false,
+    "selected" : false
+  }, {
+    "attributes" : {
+      "bounds" : "[0,0][0,0]",
+      "enabled" : "false",
+      "focused" : "false",
+      "selected" : "false",
+      "checked" : "false"
+    },
+    "children" : [ {
+      "attributes" : {
+        "bounds" : "[0,0][402,54]",
+        "enabled" : "true",
+        "focused" : "false",
+        "selected" : "false",
+        "checked" : "false"
+      },
+      "enabled" : true,
+      "focused" : false,
+      "checked" : false,
+      "selected" : false
+    }, {
+      "attributes" : {
+        "bounds" : "[0,0][402,54]",
+        "enabled" : "true",
+        "focused" : "false",
+        "selected" : "false",
+        "checked" : "false"
+      },
+      "children" : [ {
+        "attributes" : {
+          "bounds" : "[0,0][402,54]",
+          "enabled" : "true",
+          "focused" : "false",
+          "selected" : "false",
+          "checked" : "false"
+        },
+        "children" : [ {
+          "attributes" : {
+            "bounds" : "[0,0][402,54]",
+            "enabled" : "true",
+            "focused" : "false",
+            "selected" : "false",
+            "checked" : "false"
+          },
+          "children" : [ {
+            "attributes" : {
+              "accessibilityText" : "10:37 PM",
+              "bounds" : "[52,22][96,42]",
+              "enabled" : "true",
+              "focused" : "false",
+              "selected" : "false",
+              "checked" : "false"
+            },
+            "enabled" : true,
+            "focused" : false,
+            "checked" : false,
+            "selected" : false
+          }, {
+            "attributes" : {
+              "accessibilityText" : "Cellular",
+              "value" : "No signal",
+              "text" : "No signal",
+              "bounds" : "[288,26][307,38]",
+              "enabled" : "true",
+              "focused" : "false",
+              "selected" : "false",
+              "checked" : "false"
+            },
+            "enabled" : true,
+            "focused" : false,
+            "checked" : false,
+            "selected" : false
+          }, {
+            "attributes" : {
+              "value" : "SSID, 3 of 3 Wi-Fi bars",
+              "text" : "SSID, 3 of 3 Wi-Fi bars",
+              "resource-id" : "3 of 3 Wi-Fi bars",
+              "bounds" : "[315,26][332,38]",
+              "enabled" : "true",
+              "focused" : "false",
+              "selected" : "false",
+              "checked" : "false"
+            },
+            "enabled" : true,
+            "focused" : false,
+            "checked" : false,
+            "selected" : false
+          }, {
+            "attributes" : {
+              "accessibilityText" : "100% battery power",
+              "value" : "Not charging",
+              "text" : "Not charging",
+              "bounds" : "[339,26][366,39]",
+              "enabled" : "true",
+              "focused" : "false",
+              "selected" : "false",
+              "checked" : "false"
+            },
+            "enabled" : true,
+            "focused" : false,
+            "checked" : false,
+            "selected" : false
+          } ],
+          "enabled" : true,
+          "focused" : false,
+          "checked" : false,
+          "selected" : false
+        } ],
+        "enabled" : true,
+        "focused" : false,
+        "checked" : false,
+        "selected" : false
+      } ],
+      "enabled" : true,
+      "focused" : false,
+      "checked" : false,
+      "selected" : false
+    } ],
+    "enabled" : false,
+    "focused" : false,
+    "checked" : false,
+    "selected" : false
+  } ],
+  "enabled" : false,
+  "focused" : false,
+  "checked" : false,
+  "selected" : false
+}

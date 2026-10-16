@@ -1,0 +1,53 @@
+{
+  "scope": "RN Web 4x rendered sheet-text and input-value layout stress, real local fixture generate/edit API. No native Dynamic Type, keyboard or device gesture claim.",
+  "baseCommit": "f17cd0fa219b756415761bc9f8505e3a53e93f4c",
+  "sources": [
+    {
+      "path": "apps/mobile/src/components/ui.tsx",
+      "sha256": "d0c1177d42825eb2a87609c1435e60ae50c7262acf66e3d3c177d7c24fd9ff8a"
+    },
+    {
+      "path": "e2e-mobile/sheet-large-label.spec.ts",
+      "sha256": "c369a19da3721e6ff6329ec283959e5123b49979a8d83c21ceebc704e3c43264"
+    }
+  ],
+  "oldBaseline": "Meaningful failure: full large title has no scrollable ancestor in fixed header",
+  "finalFocused": "2/2 passed at 360x722 and430x932",
+  "existingNormalRegression": "Shared sheet drag/keyboard/field-error recovery passed on unchanged source",
+  "cases": [
+    {
+      "scrollHeight": 533.6875,
+      "successfulEditRequests": 1,
+      "cancelRequests": 0,
+      "titleFontSize": 104,
+      "outcome": "pass",
+      "viewport": {
+        "width": 360,
+        "height": 722
+      },
+      "titleHeight": 655,
+      "width": 360
+    },
+    {
+      "scrollHeight": 712.1875,
+      "successfulEditRequests": 1,
+      "cancelRequests": 0,
+      "titleFontSize": 104,
+      "outcome": "pass",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "titleHeight": 524,
+      "width": 430
+    }
+  ],
+  "nativeFailureReference": {
+    "artifactId": "12011462414",
+    "runId": "38810854902",
+    "headerTitleHeightPoints": 585,
+    "newNativeReplay": "pending",
+    "bodyViewportHeightPoints": 124
+  },
+  "capturedAt": "2026-10-15T22:52:08.7724463Z"
+}

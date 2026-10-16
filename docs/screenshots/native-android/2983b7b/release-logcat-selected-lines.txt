@@ -1,0 +1,62 @@
+Annotated excerpts from android-release-logcat.txt
+Original full-file SHA-256: d8206497daa8f421bd7eb9c8381032b6b38cb3dfe375e1f4fa1e8686a6dcdca4
+
+Lines 220–245
+220: 10-15 21:19:51.571   335   335 D Zygote  : Forked child process 9251
+221: 10-15 21:19:51.579   521   902 D CompatibilityChangeReporter: Compat change id reported: 168419799; UID 10199; state: DISABLED
+222: 10-15 21:19:51.579   521   902 D CompatibilityChangeReporter: Compat change id reported: 273564678; UID 10199; state: DISABLED
+223: 10-15 21:19:51.587   521   551 I ActivityManager: Start proc 9251:com.example.whimway/u0a199 for next-top-activity {com.example.whimway/com.example.whimway.MainActivity}
+224: 10-15 21:19:51.587   521   820 D CoreBackPreview: Window{2cda116 u0 Splash Screen com.example.whimway}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@c71346d, mPriority=0, mIsAnimationCallback=false}
+225: 10-15 21:19:51.593   838   870 W Looper  : Slow dispatch took 75ms wmshell.main h=android.os.Handler c=com.android.wm.shell.transition.Transitions$TransitionPlayerImpl$$ExternalSyntheticLambda1@e8ad944 m=0
+226: 10-15 21:19:51.593   838   870 W Looper  : Slow delivery took 38ms wmshell.main h=android.os.Handler c=null m=16
+227: 10-15 21:19:51.594   401   401 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+228: 10-15 21:19:51.595   838   870 W Looper  : Drained
+229: 10-15 21:19:51.653  9251  9251 I example.whimway: Using CollectorTypeCC GC.
+230: 10-15 21:19:51.658  9251  9251 W example.whimway: Unexpected CPU variant for x86: x86_64.
+231: 10-15 21:19:51.658  9251  9251 W example.whimway: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+232: 10-15 21:19:51.668  9251  9251 E example.whimway: Not starting debugger since process cannot load the jdwp agent.
+233: 10-15 21:19:51.683   521   543 I ActivityTaskManager: Destroy timeout of remove-task, attempt to kill Task{ed89d4 #12 type=standard A=10199:com.example.whimway}
+234: 10-15 21:19:51.686   521   543 I ActivityManager: Killing 9251:com.example.whimway/u0a199 (adj -10000): remove task
+235: 10-15 21:19:51.712   335   335 I Zygote  : Process 9251 exited due to signal 9 (Killed)
+236: 10-15 21:19:51.875     0     0 I binder  : undelivered TRANSACTION_COMPLETE
+237: 10-15 21:19:51.876     0     0 I binder  : undelivered transaction 1285822, process died.
+238: 10-15 21:19:51.738   521   602 D CompatibilityChangeReporter: Compat change id reported: 265195908; UID 10199; state: ENABLED
+239: 10-15 21:19:51.800   521   552 I libprocessgroup: Successfully killed process cgroup uid 10199 pid 9251 in 104ms
+240: 10-15 21:19:51.800  9135  9190 W .mobile.maestro: Verification of boolean kotlinx.coroutines.scheduling.CoroutineScheduler.tryCreateWorker$default(kotlinx.coroutines.scheduling.CoroutineScheduler, long, int, java.lang.Object) took 100.378ms (149.43 bytecodes/s) (1560B approximate peak alloc)
+241: 10-15 21:19:51.848  1092  2004 D EGL_emulation: app_time_stats: avg=178.46ms min=17.04ms max=814.05ms count=6
+242: 10-15 21:19:51.901   838   870 V WindowManagerShell: onTransitionReady android.os.BinderProxy@2958503: {id=34 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@9728bae} m=OPEN f=NONE leash=Surface(name=Task=13)/@0xcf1b4f3 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@2e8ad4f} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xefe45b0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+243: 10-15 21:19:51.902   838   870 V WindowManagerShell: Playing animation for (#34)android.os.BinderProxy@2958503@0
+244: 10-15 21:19:51.902   838   870 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@5e4df7a
+245: 10-15 21:19:51.902   838   870 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@e6832b
+
+Lines 823–836
+823: 10-15 21:20:01.474  9135  9190 W UiDevice: Active window root not found.
+824: 10-15 21:20:01.480  9135  9190 D Maestro : View hierarchy received in 7 ms
+825: 10-15 21:20:01.517   521   543 W ActivityTaskManager: Launch timeout has expired, giving up wake lock!
+826: 10-15 21:20:01.572  9135  9190 D Maestro : Requesting view hierarchy
+827: 10-15 21:20:01.572  9135  9190 W QueryController: Could not detect idle state.
+828: 10-15 21:20:01.573  9135  9190 W QueryController: Could not detect idle state.
+829: 10-15 21:20:01.573  9135  9190 W UiDevice: Active window root not found.
+830: 10-15 21:20:01.581  9135  9190 D Maestro : View hierarchy received in 9 ms
+831: 10-15 21:20:01.589   521   550 W ActivityManager: Process ProcessRecord{888f2d8 9251:com.example.whimway/u0a199} failed to attach
+832: 10-15 21:20:01.589   521   541 D DisplayManagerService: Drop pending events for gone uid 10199
+833: 10-15 21:20:01.630  9135  9190 D Maestro : Requesting view hierarchy
+834: 10-15 21:20:01.631  9135  9190 W QueryController: Could not detect idle state.
+835: 10-15 21:20:01.631  9135  9190 W QueryController: Could not detect idle state.
+836: 10-15 21:20:01.631  9135  9190 W UiDevice: Active window root not found.
+
+Lines 15005–15018
+15005: 10-15 21:22:02.852  9114  9114 I app_process: System.exit called, status: 0
+15006: 10-15 21:22:02.852  9114  9114 I AndroidRuntime: VM exiting with result code 0.
+15007: 10-15 21:22:02.855   521   551 I ActivityManager: Start proc 9290:com.example.whimway/u0a199 for top-activity {com.example.whimway/com.example.whimway.MainActivity}
+15008: 10-15 21:22:03.023     0     0 I init    : starting service 'artd'...
+15009: 10-15 21:22:02.864  1092  1137 I ImeTracker: com.google.android.apps.nexuslauncher:e8beb14: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT
+15010: 10-15 21:22:02.869  1092  2126 D OneSearchSuggestProvider: Shut down the binder channel
+15011: 10-15 21:22:02.870   521  2161 I ImeTracker: com.google.android.apps.nexuslauncher:e8beb14: onCancelled at PHASE_SERVER_SHOULD_HIDE
+15012: 10-15 21:22:03.033     0     0 I binder_alloc: 9135: binder_alloc_buf, no vma
+15013: 10-15 21:22:03.035     0     0 I binder  : cannot allocate buffer: vma cleared, target dead or dying
+15014: 10-15 21:22:03.035     0     0 I binder  : 521:2257 transaction async to 9135:0 failed 1388645/29189/-3, size 192-0 line 3406
+15015: 10-15 21:22:02.873   521  2257 E IPCThreadState: Binder transaction failure: 1388645/29189/-3
+15016: 10-15 21:22:02.875  1092  9013 I IPCThreadState: oneway function results for code 2 on binder at 0x76c919d30070 will be dropped but finished with status UNKNOWN_TRANSACTION
+15017: 10-15 21:22:02.878   521   591 V ActivityManager: Got obituary of 9135:dev.mobile.maestro
+15018: 10-15 21:22:02.879   521  2257 W WindowMagnificationMgr: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED

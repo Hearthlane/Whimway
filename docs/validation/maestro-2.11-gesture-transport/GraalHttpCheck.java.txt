@@ -1,0 +1,43 @@
+import java.lang.reflect.*;
+import java.nio.file.*;
+import java.util.Map;
+
+public final class GraalHttpCheck {
+  private static Object engine;
+  private static Method evaluate;
+  private static Object run(String source, String name) throws Exception {
+    try { return evaluate.invoke(engine, source, Map.of(), name, true, Path.of("e2e-native/helpers").toAbsolutePath().toString()); }
+    catch (InvocationTargetException e) { throw new Exception(e.getCause().getMessage(), e.getCause()); }
+  }
+  public static void main(String[] args) throws Exception {
+    Class<?> clazz = Class.forName("maestro.js.GraalJsEngine");
+    engine = clazz.getConstructor().newInstance();
+    evaluate = clazz.getMethod("evaluateScript", String.class, Map.class, String.class, boolean.class, String.class);
+    Method put = clazz.getMethod("putEnv",String.class,String.class);
+    put.invoke(engine,"IOS_DRIVER_PORT","7004"); put.invoke(engine,"TARGET_TEXT","Adjust plan");put.invoke(engine,"TARGET_KIND","control");
+    Class<?> fn = Class.forName("kotlin.jvm.functions.Function1");
+    Object unit = Class.forName("kotlin.Unit").getField("INSTANCE").get(null);
+    Object log = Proxy.newProxyInstance(fn.getClassLoader(),new Class[]{fn},(proxy,m,a)->{if(m.getName().equals("invoke")){System.out.println("ENGINE_LOG "+a[0]);return unit;}return null;});
+    clazz.getMethod("onLogMessage",fn).invoke(engine,log);
+    try {
+      run("var r=http.get('http://127.0.0.1:8766/health'); if(typeof r.ok!=='boolean'||r.ok!==true||typeof r.status!=='number'||r.status!==200||typeof r.body!=='string'||!Number.isFinite(Date.now())||!Number.isInteger(7)||!Number.isFinite(Date.parse(new Date().toISOString()))) throw Error('HTTP types/APIs failed');", "actual-bindings");
+      String observe = Files.readString(Path.of("e2e-native/helpers/observe-ios-plan.js"));
+      String swipe = Files.readString(Path.of("e2e-native/helpers/swipe-ios-plan.js"));
+      run(observe,"original-observe.js");
+      run("if(output.whimwayPlanViewport.ready!==false||!output.whimwayPlanValidatedSwipe)throw Error('No real observed swipe');", "proof-check");
+      if(args[0].equals("success")) {
+        run(swipe,"original-swipe.js");
+        run("if(output.whimwayPlanValidatedSwipe!==null)throw Error('Proof not consumed');", "proof-consumed");
+        run(observe,"original-observe-after-swipe.js");
+        run("if(output.whimwayPlanViewport.ready!==true||output.whimwayPlanViewport.tapPoint!=='201,641')throw Error('Tap adaptation failed');", "tap-check");
+      } else {
+        boolean failed=false;try{run(swipe,"original-swipe-failure.js");}catch(Exception e){failed=true;System.out.println("EXPECTED_FAILURE "+e.getMessage());}
+        if(!failed)throw new Exception("Native HTTP failure did not propagate");
+        run("if(output.whimwayPlanValidatedSwipe!==null)throw Error('Failure proof not consumed');", "failure-proof");
+        try{run(swipe,"original-swipe-replay-check.js");throw new IllegalStateException("Replay accepted");}catch(IllegalStateException e){throw e;}catch(Exception expected){System.out.println("SCRIPT_REPLAY_REJECTED");}
+      }
+      System.out.println("GRAAL_ADAPTER_PASS "+args[0]);
+    } finally { clazz.getMethod("close").invoke(engine); }
+    System.exit(0);
+  }
+}

@@ -1,0 +1,16 @@
+00:43:07.934 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "Where are we heading[?]" is visible COMPLETED
+00:43:26.351 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Take screenshot native-fixtures-enabled COMPLETED
+00:43:36.495 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that id: ^delete$ is visible COMPLETED
+00:43:37.450 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "Done editing, dismiss keyboard" is visible COMPLETED
+00:43:43.142 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Input text Toronto COMPLETED
+00:43:43.541 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "^Toronto$", Above "Done editing, dismiss keyboard" is visible COMPLETED
+00:43:46.884 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "CF Toronto Eaton Centre" is visible COMPLETED
+00:43:50.258 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Tap on "Done editing, dismiss keyboard" COMPLETED
+00:43:50.259 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Run flow when "Done editing, dismiss keyboard" is visible COMPLETED
+00:43:51.382 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that id: ^delete$ is not visible COMPLETED
+00:43:52.269 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "Done editing, dismiss keyboard" is not visible COMPLETED
+00:43:52.751 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Scrolling DOWN until "CF Toronto Eaton Centre" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled COMPLETED
+00:44:01.089 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Tap on "CF Toronto Eaton Centre" COMPLETED
+00:44:02.087 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "^Toronto$" is not visible COMPLETED
+00:44:02.380 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Assert that "CF Toronto Eaton Centre" is visible COMPLETED
+00:44:02.552 [ INFO] maestro.cli.runner.MaestroCommandRunner.runCommands$lambda$2: Take screenshot native-location-selected COMPLETED

@@ -1,0 +1,66 @@
+{
+  "labelScale": 4,
+  "footer": {
+    "left": 0,
+    "top": 483,
+    "right": 360,
+    "bottom": 722,
+    "height": 239
+  },
+  "actions": [
+    {
+      "label": "Back",
+      "bounds": {
+        "left": 24,
+        "top": 492,
+        "right": 179.828125,
+        "bottom": 589,
+        "height": 97
+      },
+      "words": [
+        {
+          "word": "Back",
+          "rectangles": [
+            {
+              "left": 36,
+              "top": 504,
+              "right": 167.828125,
+              "bottom": 577,
+              "height": 73
+            }
+          ]
+        }
+      ],
+      "fontSizes": [
+        56
+      ]
+    },
+    {
+      "label": "Next",
+      "bounds": {
+        "left": 24,
+        "top": 597,
+        "right": 336,
+        "bottom": 714,
+        "height": 117
+      },
+      "words": [
+        {
+          "word": "Next",
+          "rectangles": [
+            {
+              "left": 41,
+              "top": 614,
+              "right": 184.875,
+              "bottom": 697,
+              "height": 83
+            }
+          ]
+        }
+      ],
+      "fontSizes": [
+        64
+      ]
+    }
+  ]
+}

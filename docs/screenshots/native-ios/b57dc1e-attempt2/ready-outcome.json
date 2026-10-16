@@ -1,0 +1,13 @@
+{
+  "scope": "ready",
+  "port": 7001,
+  "passed": false,
+  "fenced": false,
+  "code": null,
+  "signal": null,
+  "reason": "runner-snapshot-failed",
+  "diagnosticFailure": null,
+  "settleFailure": null,
+  "durationMs": 35993,
+  "identities": []
+}

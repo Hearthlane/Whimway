@@ -1,0 +1,192 @@
+Official converter: file:/C:/Users/yychim/Documents/ChatGPT/Whimway/native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/maestro-orchestra.jar
+PARSED helpers\boot.yaml
+PARSED helpers\cancel-stale-whimway-link.yaml
+FAILED helpers\create-fixture-plan.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:565)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+PARSED helpers\dismiss-pixel-launcher-anr.yaml
+PARSED helpers\open-whimway-link.yaml
+FAILED helpers\scroll-ios-plan.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+FAILED helpers\tap-ios-plan.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+PARSED ios-ready.yaml
+FAILED large-text.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:565)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+PARSED release-launch.yaml
+FAILED reminders-allow.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:565)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+FAILED smoke.yaml: maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+maestro.orchestra.error.SyntaxError: Parsing Failed at C:\Users\yychim\Documents\ChatGPT\Whimway\native-results\maestro-full-parser\original-ad9\e2e-native\helpers\scroll-ios-plan.yaml:7:3
+	at maestro.orchestra.yaml.YamlCommandReader.toSyntaxError(YamlCommandReader.kt:145)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:123)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$default(YamlCommandReader.kt:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at CheckNativeFlows.main(CheckNativeFlows.java:30)
+Caused by: maestro.orchestra.yaml.FlowParseException: Parsing Failed
+maestro.orchestra.yaml.ToCommandsException: java.lang.NumberFormatException: For input string: "${output.whimwayPlanViewport.swipe.start}"
+ at [Source: (String); line: 7, column: 3]
+	at maestro.orchestra.yaml.MaestroFlowParserKt.wrapException(MaestroFlowParser.kt:237)
+	at maestro.orchestra.yaml.MaestroFlowParserKt.access$wrapException(MaestroFlowParser.kt:1)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:540)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:565)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands(YamlCommandReader.kt:46)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlow(YamlFluentCommand.kt:704)
+	at maestro.orchestra.yaml.YamlFluentCommand.runFlowCommand(YamlFluentCommand.kt:568)
+	at maestro.orchestra.yaml.YamlFluentCommand._toCommands(YamlFluentCommand.kt:371)
+	at maestro.orchestra.yaml.YamlFluentCommand.toCommands(YamlFluentCommand.kt:159)
+	at maestro.orchestra.yaml.MaestroFlowParser.parseFlow(MaestroFlowParser.kt:536)
+	at maestro.orchestra.yaml.YamlCommandReader.readCommands$lambda$0(YamlCommandReader.kt:48)
+	at maestro.orchestra.yaml.YamlCommandReader.mapParsingErrors(YamlCommandReader.kt:116)
+	... 5 more
+Converted 6/12 native flow graphs with official Maestro classes.

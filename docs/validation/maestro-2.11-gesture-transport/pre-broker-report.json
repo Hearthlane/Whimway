@@ -1,0 +1,121 @@
+{
+  "scope": "isolated actual Maestro GraalJS+HTTP adapter; no simulator/native Keychain/UI proof",
+  "reports": [
+    {
+      "case": "success",
+      "code": 0,
+      "signal": null,
+      "stdout": "ENGINE_LOG {\"source\":\"maestro-xctest-native-swipe\",\"driverPort\":7004,\"sequence\":1,\"payload\":{\"startX\":389.9999985,\"startY\":708.99999594,\"endX\":389.9999985,\"endY\":602.9999998999999,\"duration\":0.6,\"appIds\":[\"com.example.whimway\"]},\"response\":{\"ok\":true,\"status\":200,\"body\":\"\",\"bodyTruncated\":false}}\r\nGRAAL_ADAPTER_PASS success\r\n",
+      "stderr": "",
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/deviceInfo",
+          "body": {},
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/viewHierarchy",
+          "body": {
+            "appIds": [
+              "com.example.whimway"
+            ],
+            "excludeKeyboardElements": true
+          },
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/swipeV2",
+          "body": {
+            "startX": 389.9999985,
+            "startY": 708.99999594,
+            "endX": 389.9999985,
+            "endY": 602.9999998999999,
+            "duration": 0.6,
+            "appIds": [
+              "com.example.whimway"
+            ]
+          },
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/deviceInfo",
+          "body": {},
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/viewHierarchy",
+          "body": {
+            "appIds": [
+              "com.example.whimway"
+            ],
+            "excludeKeyboardElements": true
+          },
+          "contentType": "application/json"
+        }
+      ],
+      "gestureRequests": 1
+    },
+    {
+      "case": "http408",
+      "code": 0,
+      "signal": null,
+      "stdout": "ENGINE_LOG {\"source\":\"maestro-xctest-native-swipe\",\"driverPort\":7004,\"sequence\":3,\"payload\":{\"startX\":389.9999985,\"startY\":708.99999594,\"endX\":389.9999985,\"endY\":602.9999998999999,\"duration\":0.6,\"appIds\":[\"com.example.whimway\"]},\"response\":{\"ok\":false,\"status\":408,\"body\":\"{\\\"errorMessage\\\":\\\"isolated timeout fixture\\\"}\",\"bodyTruncated\":false}}\r\nEXPECTED_FAILURE Error: Native swipe failed\r\nSCRIPT_REPLAY_REJECTED\r\nGRAAL_ADAPTER_PASS http408\r\n",
+      "stderr": "",
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/deviceInfo",
+          "body": {},
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/viewHierarchy",
+          "body": {
+            "appIds": [
+              "com.example.whimway"
+            ],
+            "excludeKeyboardElements": true
+          },
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/swipeV2",
+          "body": {
+            "startX": 389.9999985,
+            "startY": 708.99999594,
+            "endX": 389.9999985,
+            "endY": 602.9999998999999,
+            "duration": 0.6,
+            "appIds": [
+              "com.example.whimway"
+            ]
+          },
+          "contentType": "application/json"
+        },
+        {
+          "method": "POST",
+          "path": "/swipeV2",
+          "body": {
+            "startX": 389.9999985,
+            "startY": 708.99999594,
+            "endX": 389.9999985,
+            "endY": 602.9999998999999,
+            "duration": 0.6,
+            "appIds": [
+              "com.example.whimway"
+            ]
+          },
+          "contentType": "application/json"
+        }
+      ],
+      "gestureRequests": 2
+    }
+  ]
+}

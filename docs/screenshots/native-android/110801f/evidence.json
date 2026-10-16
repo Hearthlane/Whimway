@@ -1,0 +1,116 @@
+{
+  "source_sha": "110801f2c99a9e529bd459f571b7ecc6858b0d74",
+  "mobile_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "binary_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "run_id": 38832567637,
+  "job_id": 116754533865,
+  "artifact_id": 12018546908,
+  "artifact_zip_sha256": "eda9394e5397d088f8124e28900ae44eb4870db66833e41d3ffc2913b5af5f66",
+  "scope": "Final independent Android four-scope pass using verified original app 1d8 APKs. Compact raw command/reset proof; original representative app 1d8 captures remain in the separate 1d8b887 gallery.",
+  "observations": [
+    "Every scope has zero FAILED records. The reminders WARNED record is an optional system Allow interaction, with scheduling and zero pending after cancellation still asserted.",
+    "All four prepared host resets establish at least two seconds quiet. Actual fontScale is 2.0.",
+    "Release Activity cold launch TotalTime 3058 ms/WaitTime 3066 ms is a software-emulator observation, not physical FPS, battery or JavaScript-interactivity evidence."
+  ],
+  "reports": [
+    {
+      "scope": "smoke",
+      "counts": {
+        "COMPLETED": 207,
+        "SKIPPED": 18
+      },
+      "prepared": true,
+      "stable_quiet_ms": 2248
+    },
+    {
+      "scope": "large-text",
+      "counts": {
+        "COMPLETED": 81,
+        "SKIPPED": 17
+      },
+      "prepared": true,
+      "stable_quiet_ms": 2007
+    },
+    {
+      "scope": "release",
+      "counts": {
+        "COMPLETED": 25,
+        "SKIPPED": 2
+      },
+      "prepared": true,
+      "stable_quiet_ms": 2218
+    },
+    {
+      "scope": "reminders",
+      "counts": {
+        "COMPLETED": 86,
+        "SKIPPED": 15,
+        "WARNED": 1
+      },
+      "prepared": true,
+      "stable_quiet_ms": 2018
+    }
+  ],
+  "retained_files": [
+    {
+      "name": "smoke-commands.json",
+      "bytes": 566588,
+      "sha256": "5243f39d4e9bccaf746a36b71827a108eede5699c372b5bed4da49b9fbea208e",
+      "source_path": "native-results/38832567637/android-runtime/native-results/android/2026-10-16_010252/Native fixture outing smoke/commands.json"
+    },
+    {
+      "name": "smoke-reset.json",
+      "bytes": 2191,
+      "sha256": "71ac5d4ccd6fd95d922ffdf43ffd2381d4b17b3488d7d51f651ef6d890632d8c",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-reset/smoke/reset-evidence.json"
+    },
+    {
+      "name": "large-text-commands.json",
+      "bytes": 462577,
+      "sha256": "18dce277f17078b24b43a2b39afbbc844143865fdec0e7f5afa845e539fb724f",
+      "source_path": "native-results/38832567637/android-runtime/native-results/android-large-text/2026-10-16_011343/Native large-text outing/commands.json"
+    },
+    {
+      "name": "large-text-reset.json",
+      "bytes": 2198,
+      "sha256": "e487fe138cb40908f60d8a5c59c5729c5a1f9a5c421c53c03bc8dbd46318d4f7",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-reset/large-text/reset-evidence.json"
+    },
+    {
+      "name": "release-commands.json",
+      "bytes": 31438,
+      "sha256": "060b08a38f42a09ec9019f6b5794b73c2c48aea5e844f56bd30a4b708ac87a02",
+      "source_path": "native-results/38832567637/android-runtime/native-results/android-release/2026-10-16_011559/Standalone Android Release guest probe/commands.json"
+    },
+    {
+      "name": "release-reset.json",
+      "bytes": 2597,
+      "sha256": "e52156dc8a78b5a410b370273c854aa5085516ef77609e3a936615b70d2bc11c",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-reset/release/reset-evidence.json"
+    },
+    {
+      "name": "reminders-commands.json",
+      "bytes": 361085,
+      "sha256": "3aeab7181093642f94d51eabe1a09f9c9b037f8d7d590548ca60b0871d97eebf",
+      "source_path": "native-results/38832567637/android-runtime/native-results/android-reminders/2026-10-16_011020/Native fixture reminders schedule and cancel/commands.json"
+    },
+    {
+      "name": "reminders-reset.json",
+      "bytes": 2197,
+      "sha256": "02e1aebd116904b1cda965d0693fecc37ce28e640ffce62df2544f455ba91c25",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-reset/reminders/reset-evidence.json"
+    },
+    {
+      "name": "font-scale.txt",
+      "bytes": 4,
+      "sha256": "d526eb4e878a23ef26ae190031b4efd2d58ed66789ac049ea3dbaf74c9df7402",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-large-font-scale.txt"
+    },
+    {
+      "name": "release-activity-cold-start.txt",
+      "bytes": 172,
+      "sha256": "56178859a38122d0bc1ba8bf3f561747778f2fc909c5b6c95f4bbb16449b2cef",
+      "source_path": "native-results/38832567637/android-runtime/native-test-artifacts/android-release-activity-cold-start.txt"
+    }
+  ]
+}
