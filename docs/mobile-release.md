@@ -47,6 +47,17 @@ Keep `APP_ORIGIN` unset for local preview. Metro's development-only `/api` proxy
 
 Web preview validates shared screen layout and API behavior. Native maps, OS dialogs, background/foreground lifecycle, haptics, Android back, iOS safe areas and native local notifications still require a device or simulator.
 
+## Retained internal Android test builds
+
+The [original APK archive](https://github.com/Hearthlane/Whimway/actions/runs/38821045667/artifacts/12013398588) contains the freshly compiled app source `1d8b8877a932395fd0f8d692eaa064382d623ec3`. Its unchanged binaries pass all four scopes in [final runtime evidence](https://github.com/Hearthlane/Whimway/actions/runs/38832567637/artifacts/12018546908), with harness `110801f`. Later documentation commits do not create new native acceptance.
+
+| Archive path                                    | SHA-256                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `app/build/outputs/apk/release/app-release.apk` | `8da2003bb6aafd48224f8f9b58eb097b0301efdb2980da6dff214efac6fe1889` |
+| `app/build/outputs/apk/debug/app-debug.apk`     | `b3e0485a23733a1941354fe6d9c96682316418dd2105806e3679df99728f7b76` |
+
+After extracting the archive, install the Release guest build from its extraction root with `adb install -r app/build/outputs/apk/release/app-release.apk`. This internal build has placeholder backend settings and no live Maps key; its guest Explore/Profile/Saved checks do not establish live planning. The Debug APK is a development client and needs matching Metro source plus a reachable configured backend. Use the phone/LAN setup above for development planning; explicitly enable synthetic fixtures on the development backend and in the app when testing without providers. These test identifiers and signing are not store configuration.
+
 ## Environment and provider setup
 
 | Setting                                                             | Location                  | Requirement                                                                   |
