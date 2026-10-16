@@ -1,0 +1,474 @@
+name: Whimway native builds and UI checks
+
+on:
+  pull_request:
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/**",
+        "lib/**",
+        "app/api/**",
+        "package.json",
+        "package-lock.json",
+        "e2e-native/**",
+        "scripts/native-build-inputs.mjs",
+        "scripts/reuse-native-build.mjs",
+        "scripts/sign-ios-simulator-test-app.sh",
+        "scripts/check-ios-simulator-keychain.mjs",
+        "scripts/start-native-test-services.mjs",
+        "scripts/native-ios-viewport-server.mjs",
+        "scripts/native-ios-gesture-server.mjs",
+        "scripts/native-plan-viewport.mjs",
+        "scripts/CheckNativeFlows.java",
+        "scripts/run-android-native-qa.sh",
+        "scripts/run-ios-native-qa.mjs",
+        "scripts/verify-native-permissions.mjs",
+        ".github/workflows/native.yml",
+      ]
+  push:
+    branches: [main]
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/**",
+        "lib/**",
+        "app/api/**",
+        "package.json",
+        "package-lock.json",
+        "e2e-native/**",
+        "scripts/native-build-inputs.mjs",
+        "scripts/reuse-native-build.mjs",
+        "scripts/sign-ios-simulator-test-app.sh",
+        "scripts/check-ios-simulator-keychain.mjs",
+        "scripts/start-native-test-services.mjs",
+        "scripts/native-ios-viewport-server.mjs",
+        "scripts/native-ios-gesture-server.mjs",
+        "scripts/native-plan-viewport.mjs",
+        "scripts/CheckNativeFlows.java",
+        "scripts/run-android-native-qa.sh",
+        "scripts/run-ios-native-qa.mjs",
+        "scripts/verify-native-permissions.mjs",
+        ".github/workflows/native.yml",
+      ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+  EXPO_PUBLIC_API_URL: https://whimway.invalid
+  WHIMWAY_NATIVE_BUILD_CHECK: "true"
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.inputs.outputs.native }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check actual native build inputs changed in this push
+        id: inputs
+        run: node scripts/native-build-inputs.mjs
+  syntax:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install pinned Maestro and report parser version
+        env:
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          version=$("$HOME/.maestro/bin/maestro" --version)
+          printf '%s\n' "$version"
+          test "$version" = "$MAESTRO_VERSION"
+      - name: Convert every native flow with the actual Maestro parser
+        run: |
+          mkdir -p native-parser-classes
+          "$JAVA_HOME_17_X64/bin/javac" --release 17 -d native-parser-classes scripts/CheckNativeFlows.java
+          "$JAVA_HOME_17_X64/bin/java" --enable-native-access=ALL-UNNAMED -cp "native-parser-classes:$HOME/.maestro/lib/*" CheckNativeFlows e2e-native
+  android:
+    needs: [changes, syntax]
+    if: needs.changes.outputs.native == 'true'
+    concurrency:
+      group: native-android-${{ github.ref }}
+      # Keep successful compiler output available to the queued runtime retry.
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Find an APK built from the same product source
+        id: reuse_android
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs android
+      - name: Restore verified compiled APKs
+        if: steps.reuse_android.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_android.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_android.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/android
+      - name: Install compatible mobile dependencies
+        run: npm ci
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: native-gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/package-lock.json') }}
+          restore-keys: native-gradle-${{ runner.os }}-
+      - name: Use installed JDK 17 and report toolchain
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          "$JAVA_HOME_17_X64/bin/java" -version
+          test -d "$ANDROID_HOME/licenses"
+      - name: Generate Android project
+        if: steps.reuse_android.outputs.reused != 'true'
+        run: npx expo prebuild --platform android --no-install
+      - name: Compile standalone internal-test APK
+        id: android_compile
+        if: steps.reuse_android.outputs.reused != 'true'
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+      - name: Inspect compiled permissions and package
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions android/app/build/outputs/apk/release/app-release.apk > android/permissions.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk > android/package.txt
+          node ../../scripts/verify-native-permissions.mjs android/permissions.txt
+      - name: Retain internal APK and manifest evidence
+        if: always() && steps.android_compile.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-compilation-apk
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            apps/mobile/android/permissions.txt
+            apps/mobile/android/package.txt
+          retention-days: 7
+      - name: Prepare native fixture runtime
+        working-directory: .
+        env:
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          npm ci
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          "$HOME/.maestro/bin/maestro" --version
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          test -e /dev/kvm
+          sudo chown "$USER" /dev/kvm
+          sudo chmod 600 /dev/kvm
+          node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
+      - name: Exercise actual Android views in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          ram-size: 2048M
+          disable-animations: false
+          enable-hw-keyboard: false
+          emulator-boot-timeout: 600
+          script: bash scripts/run-android-native-qa.sh
+      - name: Retain Android native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-runtime
+          path: |
+            native-results
+            native-test-services.log
+            native-test-artifacts
+          retention-days: 7
+      - name: Retain compiler logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-native-build-failure
+          path: apps/mobile/android/build/reports
+          retention-days: 7
+  ios:
+    needs: [changes, syntax]
+    if: needs.changes.outputs.native == 'true'
+    concurrency:
+      group: native-ios-${{ github.ref }}
+      # Preserve the expensive Debug compile when Android-only flow repairs
+      # arrive; the next run can reuse its retained, source-checked app.
+      cancel-in-progress: false
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Find simulator apps built from the same product source
+        id: reuse_ios_release
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs ios-release
+      - name: Find a matching simulator development client
+        id: reuse_ios_debug
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/reuse-native-build.mjs ios-debug
+      - name: Restore verified Release simulator archive
+        if: steps.reuse_ios_release.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_ios_release.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_ios_release.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/.expo/native-reuse/release
+      - name: Restore verified Debug simulator archive
+        if: steps.reuse_ios_debug.outputs.reused == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.reuse_ios_debug.outputs.artifact_id }}
+          run-id: ${{ steps.reuse_ios_debug.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: apps/mobile/.expo/native-reuse/debug
+      - name: Report installed Apple toolchain
+        run: |
+          xcodebuild -version
+          pod --version
+      - name: Start iPhone simulator migration while the app compiles
+        run: |
+          xcrun simctl list devices available -j > ios-devices.json
+          IOS_SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          SIMULATOR_ID=$(node -e 'const fs=require("node:fs"); const sdk=process.argv[1].replaceAll(".","-"); const entries=Object.entries(JSON.parse(fs.readFileSync("ios-devices.json")).devices).filter(([runtime])=>runtime.endsWith("iOS-"+sdk)); const phone=entries.flatMap(([,devices])=>devices).find(d=>d.isAvailable&&d.name==="iPhone 17"&&d.state==="Shutdown"); if(!phone)throw Error("No iPhone 17 for the selected stable SDK"); process.stdout.write(phone.udid)' "$IOS_SDK_VERSION")
+          echo "WHIMWAY_SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_ID"
+      - name: Install compatible mobile dependencies
+        run: npm ci
+      - name: Generate iOS project and install pods
+        if: steps.reuse_ios_release.outputs.reused != 'true' || steps.reuse_ios_debug.outputs.reused != 'true'
+        run: |
+          npx expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Compile iOS simulator app without signing credentials
+        id: ios_compile
+        if: steps.reuse_ios_release.outputs.reused != 'true'
+        run: |
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build > ios/native-build.log 2>&1
+          tar -czf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator Whimway.app
+      - name: Unpack verified Release simulator app
+        if: steps.reuse_ios_release.outputs.reused == 'true'
+        run: |
+          mkdir -p ios/build/Build/Products/Release-iphonesimulator
+          cp .expo/native-reuse/release/whimway-ios-simulator.tar.gz ios/whimway-ios-simulator.tar.gz
+          tar -xzf ios/whimway-ios-simulator.tar.gz -C ios/build/Build/Products/Release-iphonesimulator
+      - name: Launch the actual simulator app and capture first frame
+        timeout-minutes: 14
+        run: |
+          cp ios-devices.json ios/devices.json
+          node -e 'const cp=require("node:child_process"); const r=cp.spawnSync("xcrun",["simctl","bootstatus",process.env.WHIMWAY_SIMULATOR_ID,"-b"],{stdio:"inherit",timeout:600000}); if(r.error)throw r.error; process.exit(r.status??1)'
+          WHIMWAY_BINARY_SOURCE_SHA='${{ steps.reuse_ios_release.outputs.binary_source_sha || github.event.pull_request.head.sha || github.sha }}' bash ../../scripts/sign-ios-simulator-test-app.sh release ios/build/Build/Products/Release-iphonesimulator/Whimway.app ios/whimway-ios-simulator.tar.gz
+          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/release/Whimway.app"
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          import path from 'node:path';
+          import { setTimeout } from 'node:timers/promises';
+          const directory = path.join(process.env.GITHUB_WORKSPACE, 'native-test-artifacts/ios-launch');
+          mkdirSync(directory, { recursive: true });
+          const simulator = process.env.WHIMWAY_SIMULATOR_ID;
+          const evidence = { simulator, attempts: [], springboard: [] };
+          const run = (name, args, timeout = 10000) => {
+            const result = spawnSync('xcrun', args, { encoding: 'utf8', timeout, maxBuffer: 2 * 1024 * 1024 });
+            writeFileSync(path.join(directory, name + '.stdout.txt'), result.stdout || '');
+            writeFileSync(path.join(directory, name + '.stderr.txt'), result.stderr || '');
+            return { status: result.status, signal: result.signal, error: result.error?.code || null, stdout: result.stdout || '', stderr: result.stderr || '' };
+          };
+          // Boot completion alone does not record FrontBoard/SpringBoard state.
+          // Record a bounded readiness observation; unknown OS service labels
+          // remain diagnostic evidence rather than a substitute app assertion.
+          for (let i = 0; i < 6; i++) {
+            const result = run('springboard-' + (i + 1), ['simctl', 'spawn', simulator, 'launchctl', 'list']);
+            const ready = result.status === 0 && result.stdout.split('\n').some(line => /^\s*[1-9]\d*\s+-?\d+\s+com\.apple\.SpringBoard\s*$/.test(line));
+            evidence.springboard.push({ time: new Date().toISOString(), status: result.status, observed_live_pid: ready, error: result.error });
+            if (ready || i === 5) break;
+            await setTimeout(2000);
+          }
+          let launched = false;
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const time = new Date().toISOString();
+            const result = run('launch-' + attempt, ['simctl', 'launch', simulator, 'com.example.whimway'], 45000);
+            evidence.attempts.push({ attempt, time, status: result.status, signal: result.signal, error: result.error });
+            writeFileSync('ios/launch.txt', evidence.attempts.map(value => JSON.stringify(value)).join('\n') + '\n' + result.stdout + result.stderr);
+            if (result.status === 0) { launched = true; break; }
+            // Retry only the observed generic service denial. A specific
+            // security/dyld/crash report must remain a failure immediately.
+            const genericDenial = /FBSOpenApplicationServiceErrorDomain/.test(result.stderr) && /SBMainWorkspace/.test(result.stderr) && !/security|invalid code signature|dyld|crash|inadequate entitlements/i.test(result.stderr);
+            if (!genericDenial || attempt === 2) break;
+            await setTimeout(5000);
+          }
+          writeFileSync(path.join(directory, 'launch-evidence.json'), JSON.stringify({ ...evidence, launched }, null, 2) + '\n');
+          if (!launched) throw Error('Simulator launch failed; retained all attempts and startup diagnostics.');
+          NODE
+          sleep 5
+          xcrun simctl io "$WHIMWAY_SIMULATOR_ID" screenshot ios/native-smoke.png
+      - name: Retain simulator app and runtime evidence
+        if: always() && steps.ios_compile.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-simulator-app
+          path: |
+            apps/mobile/ios/whimway-ios-simulator.tar.gz
+            apps/mobile/ios/native-smoke.png
+            apps/mobile/ios/launch.txt
+            apps/mobile/ios/devices.json
+          retention-days: 7
+      - name: Compile a simulator development client
+        id: ios_debug_compile
+        if: steps.reuse_ios_debug.outputs.reused != 'true'
+        run: |
+          xcodebuild -workspace ios/Whimway.xcworkspace -scheme Whimway -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build > ios/native-debug-build.log 2>&1
+          tar -czf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator Whimway.app
+      - name: Unpack verified Debug simulator app
+        if: steps.reuse_ios_debug.outputs.reused == 'true'
+        run: |
+          mkdir -p ios/build/Build/Products/Debug-iphonesimulator
+          cp .expo/native-reuse/debug/whimway-ios-simulator-debug.tar.gz ios/whimway-ios-simulator-debug.tar.gz
+          tar -xzf ios/whimway-ios-simulator-debug.tar.gz -C ios/build/Build/Products/Debug-iphonesimulator
+      - name: Retain compiled simulator development client
+        if: always() && steps.ios_debug_compile.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-simulator-debug
+          path: apps/mobile/ios/whimway-ios-simulator-debug.tar.gz
+          retention-days: 7
+      - name: Prepare and exercise actual iOS development views
+        working-directory: .
+        env:
+          WHIMWAY_IOS_UI_OBSERVER: "1"
+          MAESTRO_VERSION: "2.11.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          npm ci
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          trap 'xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size large >/dev/null 2>&1 || true' EXIT
+          xcrun simctl ui "$WHIMWAY_SIMULATOR_ID" content_size large
+          node scripts/start-native-test-services.mjs > native-test-services.log 2>&1 &
+          WHIMWAY_BINARY_SOURCE_SHA='${{ steps.reuse_ios_debug.outputs.binary_source_sha || github.event.pull_request.head.sha || github.sha }}' bash scripts/sign-ios-simulator-test-app.sh debug apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Whimway.app apps/mobile/ios/whimway-ios-simulator-debug.tar.gz
+          xcrun simctl install "$WHIMWAY_SIMULATOR_ID" "$GITHUB_WORKSPACE/native-test-artifacts/ios-simulator-runtime/debug/Whimway.app"
+          for i in {1..180}; do test -f native-test-artifacts/ready.json && break; sleep 1; done
+          test -f native-test-artifacts/ready.json
+          node e2e-native/helpers/warm-ios-bundle.mjs
+          node scripts/run-ios-native-qa.mjs
+      - name: Collect bounded iOS startup diagnostics
+        if: always()
+        timeout-minutes: 4
+        working-directory: .
+        run: |
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+          import { homedir } from 'node:os';
+          import path from 'node:path';
+          const simulator = process.env.WHIMWAY_SIMULATOR_ID;
+          if (!/^[A-Fa-f0-9-]{36}$/.test(simulator || '')) throw Error('Expected the selected CI simulator ID.');
+          const directory = path.join(process.env.GITHUB_WORKSPACE, 'native-test-artifacts/ios-startup-diagnostics');
+          mkdirSync(directory, { recursive: true });
+          const commands = [];
+          const capture = (name, command, args, timeout = 15000) => {
+            const result = spawnSync(command, args, { encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024 });
+            writeFileSync(path.join(directory, name + '.stdout.txt'), result.stdout || '');
+            writeFileSync(path.join(directory, name + '.stderr.txt'), result.stderr || '');
+            commands.push({ name, time: new Date().toISOString(), status: result.status, signal: result.signal, error: result.error?.code || null });
+            return result;
+          };
+          capture('devices', 'xcrun', ['simctl', 'list', 'devices', 'available', '-j']);
+          capture('services', 'xcrun', ['simctl', 'spawn', simulator, 'launchctl', 'list']);
+          capture('installed-app', 'xcrun', ['simctl', 'appinfo', simulator, 'com.example.whimway']);
+          capture('final-screen', 'xcrun', ['simctl', 'io', simulator, 'screenshot', path.join(directory, 'final-screen.png')]);
+          const predicate = 'process == "Whimway" OR eventMessage CONTAINS[c] "com.example.whimway" OR ((process == "SpringBoard" OR process == "runningboardd" OR process == "amfid" OR process == "launchd_sim" OR process == "securityd") AND (messageType == error OR messageType == fault))';
+          capture('simulator-log', 'xcrun', ['simctl', 'spawn', simulator, 'log', 'show', '--style', 'compact', '--last', '5m', '--info', '--debug', '--predicate', predicate], 45000);
+          capture('host-log', '/usr/bin/log', ['show', '--style', 'compact', '--last', '5m', '--info', '--debug', '--predicate', 'process == "Whimway" OR eventMessage CONTAINS[c] "com.example.whimway" OR (process == "CoreSimulatorService" AND (messageType == error OR messageType == fault))'], 45000);
+          const reports = [];
+          const roots = [path.join(homedir(), 'Library/Logs/DiagnosticReports'), path.join(homedir(), 'Library/Developer/CoreSimulator/Devices', simulator, 'data/Library/Logs/CrashReporter')];
+          for (const root of roots) {
+            if (!existsSync(root) || lstatSync(root).isSymbolicLink()) continue;
+            const candidates = [root, path.join(root, 'Retired')].filter(value => existsSync(value) && !lstatSync(value).isSymbolicLink());
+            for (const candidate of candidates) for (const entry of readdirSync(candidate, { withFileTypes: true })) {
+              if (reports.length >= 12 || !entry.isFile() || !/^(Whimway|SpringBoard)[-_].*\.(ips|crash)$/.test(entry.name)) continue;
+              const source = path.join(candidate, entry.name), stat = lstatSync(source);
+              if (stat.size > 4 * 1024 * 1024 || Date.now() - stat.mtimeMs > 60 * 60 * 1000) continue;
+              const target = reports.length + '-' + entry.name;
+              copyFileSync(source, path.join(directory, target));
+              reports.push({ file: target, bytes: stat.size });
+            }
+          }
+          writeFileSync(path.join(directory, 'diagnostics.json'), JSON.stringify({ simulator_only: true, time: new Date().toISOString(), commands, reports }, null, 2) + '\n');
+          NODE
+      - name: Retain iOS native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-runtime
+          path: |
+            native-results
+            native-test-services.log
+            native-test-artifacts
+            !native-test-artifacts/ios-simulator-runtime/**/Whimway.app/**
+            apps/mobile/ios/native-smoke.png
+            apps/mobile/ios/launch.txt
+            apps/mobile/ios/devices.json
+            apps/mobile/ios/native-debug-build.log
+          retention-days: 7
+      - name: Retain native compiler evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-native-build-log
+          path: apps/mobile/ios/native-build.log
+          retention-days: 7

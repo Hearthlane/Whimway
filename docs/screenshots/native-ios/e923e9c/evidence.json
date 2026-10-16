@@ -1,0 +1,182 @@
+{
+  "run_id": 38733708887,
+  "job_id": 116417631656,
+  "source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+  "runtime_artifact_id": 11975233359,
+  "release": {
+    "artifact_id": 11973593994,
+    "compiler_source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+    "archive_sha256": "b9bcaafa76391b415884b03f0d11c35b5c2bdd86e1d2384b7f88d3b51e762eac",
+    "launch_utc": "2026-10-15T12:51:45.393Z",
+    "pid": 70525,
+    "signature_verified": true,
+    "originals_unchanged": true,
+    "runtime_copy_unchanged": true
+  },
+  "debug": {
+    "original_artifact_id": 11942772099,
+    "compiler_source_sha": "63d84af1d4b3faaa2ae56f63d03681116d1ede07",
+    "metro_source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+    "archive_sha256": "fb2d023f8333f98e896d33708a936df9a1ff75091d467fc9bb9153a966281f36",
+    "signature_verified": true,
+    "originals_unchanged": true,
+    "runtime_copy_unchanged": true
+  },
+  "scopes": {
+    "startup": {
+      "COMPLETED": 28,
+      "SKIPPED": 4
+    },
+    "main": {
+      "COMPLETED": 193,
+      "SKIPPED": 11,
+      "WARNED": 2,
+      "FAILED": 1
+    },
+    "reminders": {
+      "COMPLETED": 91,
+      "SKIPPED": 11
+    },
+    "large_text": {
+      "COMPLETED": 70,
+      "SKIPPED": 11,
+      "FAILED": 2
+    }
+  },
+  "failures": {
+    "main": {
+      "utc": "2026-10-15T13:04:34.032Z",
+      "duration_ms": 20845,
+      "actual": "After relaunch, Saved tap reports completed but Explore remains selected; original plan heading assertion fails. No storage-loss conclusion."
+    },
+    "large_text": {
+      "utc": "2026-10-15T13:14:55.552Z",
+      "duration_ms": 90689,
+      "actual": "First Start my day assertion inside create-fixture-plan fails; generated itinerary title is visible at top and CTA is offscreen. Subsequent Map/edit/Close sequence was not reached."
+    }
+  },
+  "content_size": "accessibility-extra-extra-extra-large",
+  "observations": [
+    {
+      "kind": "largest-type-toolbar-overflow",
+      "screen_width_points": 402,
+      "share_bounds_points": [238, 278, 445, 367],
+      "overflow_right_points": 43,
+      "hierarchy_source_path": "native-results/ios-large-text/2026-10-15_131107/Native large-text outing/screen-hierarchy/step-083-assertCondition-Start_my_day.json",
+      "hierarchy_sha256": "94810defa55e12781fd12598d0ea6d4fd09f9b057eb75096920e241e67783033",
+      "retained_frame": "failure-largest-start-offscreen.png",
+      "scope": "Observed in original runtime artifact 11975233359. The Share arrow extends past the screen in the same failed frame that shows Start offscreen. Product f122645 wraps this toolbar; native fit is pending and original scope results remain unchanged."
+    }
+  ],
+  "recording": {
+    "duration_seconds": 127.761667,
+    "width": 1206,
+    "height": 2622,
+    "review": "Ordered decoded samples at20/40/60/80/100/120/final seconds independently reviewed. Native Debug simulator fixture entry, query, guided choices/keyboard and reveal; not continuous smoothness or physical performance proof."
+  },
+  "scope_limits": [
+    "Explicit synthetic fixture journeys",
+    "Startup, initial local Saved readiness, Profile, planning/editing and reminder schedule/cancel checks passed; main process-restored progress and full largest-type flow did not complete",
+    "Keychain probe fails at debugger transport before a native Keychain call",
+    "Notification scheduling/cancellation does not establish delivery or tap handling",
+    "Simulator signing is not distribution signing; no live provider/account or physical performance claim"
+  ],
+  "retained_files": [
+    {
+      "name": "native-profile-save-error.png",
+      "bytes": 194250,
+      "sha256": "9b5bdfdd962eea1aec21cb6e8d0bcf1a7fa8a23cdc7c34d7c69ecb78d0708343",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-profile-save-error.png"
+    },
+    {
+      "name": "native-profile-preferences.png",
+      "bytes": 187833,
+      "sha256": "e98defdf0ab81ee82df2762ceb21d39a21d5cf0e10c056dcf4b7257a50e91048",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-profile-preferences.png"
+    },
+    {
+      "name": "native-search-query-entered.png",
+      "bytes": 234360,
+      "sha256": "a2321eb058006e68441dd6d3c6bba86931400cf175111854d24457df648e9d0c",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-search-query-entered.png"
+    },
+    {
+      "name": "native-planner-budget-keyboard.png",
+      "bytes": 188159,
+      "sha256": "2b9a6a437df608e7b6b9d5abac9d153e92381c857ebbf021df8a57f0e8ebdedf",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-planner-budget-keyboard.png"
+    },
+    {
+      "name": "native-planner-duration-keyboard.png",
+      "bytes": 181837,
+      "sha256": "f4e6cea53a0f605168c858ca4e11e381d8cf8b67ed6e455965781d313f0c6769",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-planner-duration-keyboard.png"
+    },
+    {
+      "name": "native-day-progress.png",
+      "bytes": 202423,
+      "sha256": "9c00709dc60273428d2d61704193e76a7d15a2166cac8988e589435aed9f9b44",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/takeScreenshot/native-day-progress.png"
+    },
+    {
+      "name": "native-reminders-scheduled.png",
+      "bytes": 208266,
+      "sha256": "4c852d4a6f7d6f2127f9fc3d3fb5d909462b1336660d4191ffd2ff1ae53c18f0",
+      "source_path": "ios-reminders/2026-10-15_130516/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-scheduled.png"
+    },
+    {
+      "name": "native-reminders-cancelled.png",
+      "bytes": 206153,
+      "sha256": "9e72ee6329cf8cfff16796d6059b668d4b8707e10a85bc26cad61c9e06f0c9ce",
+      "source_path": "ios-reminders/2026-10-15_130516/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-cancelled.png"
+    },
+    {
+      "name": "native-largest-search-query-entered.png",
+      "bytes": 219313,
+      "sha256": "c409bd77c734bc995ce26e2fa42283c599f0f39bb36d8d4e31031440978fb8a9",
+      "source_path": "ios-large-text/2026-10-15_131107/Native large-text outing/takeScreenshot/native-search-query-entered.png"
+    },
+    {
+      "name": "native-largest-fixtures-enabled.png",
+      "bytes": 179367,
+      "sha256": "e57a7b48224cc95c3b66e554ce915586ec23953a78cdc0c420dfc1684c5a919b",
+      "source_path": "ios-large-text/2026-10-15_131107/Native large-text outing/takeScreenshot/native-fixtures-enabled.png"
+    },
+    {
+      "name": "failure-restored-saved-not-activated.png",
+      "bytes": 212000,
+      "sha256": "7b70243e352e3fcf6ec54dff948729dd76a81aa8e00c999caffe686220a79c55",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/screenshots/step-207-assertCondition-A_day_with_a_little_more.png"
+    },
+    {
+      "name": "failure-largest-start-offscreen.png",
+      "bytes": 203442,
+      "sha256": "9ed70a927773ee02f28b9fe5d24e5fec6bcb23291aa17ab67e1b9c54c680ef1c",
+      "source_path": "ios-large-text/2026-10-15_131107/Native large-text outing/screenshots/step-083-assertCondition-Start_my_day.png"
+    },
+    {
+      "name": "ios-planning-motion.mp4",
+      "bytes": 29855520,
+      "sha256": "8519013296f2f164ed8f7c93a1243e98d6dc88bf25c1d2b4cf978b7be83c027f",
+      "source_path": "ios/2026-10-15_125709/Native fixture outing smoke/startRecording/ios-planning-motion.mp4"
+    },
+    {
+      "name": "ios-metro-bundle-warm.json",
+      "bytes": 341,
+      "sha256": "d095f2cf25cb7e51c3db28cd04f00305978edfb41ba5918dd51d83b511355a1f",
+      "source_path": "native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "ios-keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "ios-keychain-diagnostics.json",
+      "bytes": 59,
+      "sha256": "4e652ffc5fb2cf91b0753ab7c487f6640f40037449e3e320a76165eba739d8ef",
+      "source_path": "native-test-artifacts/ios-keychain-diagnostics.json"
+    }
+  ]
+}

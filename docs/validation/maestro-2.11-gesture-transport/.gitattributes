@@ -1,0 +1,4 @@
+# Preserve original diagnostic bytes and hashes.
+*.log -text whitespace=cr-at-eol
+*.json -text whitespace=cr-at-eol
+*.txt -text whitespace=cr-at-eol

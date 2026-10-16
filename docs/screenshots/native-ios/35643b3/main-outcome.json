@@ -1,0 +1,22 @@
+{
+  "scope": "main",
+  "port": 7002,
+  "passed": false,
+  "fenced": true,
+  "code": 143,
+  "signal": null,
+  "reason": "runner-host-snapshot-failed",
+  "diagnosticFailure": null,
+  "settleFailure": null,
+  "durationMs": 36058,
+  "identities": [
+    {
+      "pid": 16674,
+      "ppid": 16532,
+      "pgid": 16532,
+      "started": "Fri Oct 16 00:39:39 2026",
+      "command": "/Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/88931AEA-62E6-447F-8697-DCE00A6713849580402416073836375/maestro-driver-ios-config.xctestrun -destination id=88931AEA-62E6-447F-8697-DCE00A671384 -derivedDataPath /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/maestro_xctestrunner_xcodebuild_output13824443171774776806",
+      "kind": "xcodebuild"
+    }
+  ]
+}

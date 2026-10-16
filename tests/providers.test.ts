@@ -92,7 +92,7 @@ describe("Provider integrations", () => {
               {
                 duration: "151s",
                 distanceMeters: 410,
-                polyline: { encodedPolyline: "abc" },
+                polyline: { encodedPolyline: "??AA" },
               },
             ],
           }),
@@ -110,7 +110,7 @@ describe("Provider integrations", () => {
       minutes: 3,
       meters: 410,
       verified: true,
-      polyline: "abc",
+      polyline: "??AA",
     });
   });
   it("fails clearly when route data is missing or quota limited", async () => {

@@ -1,0 +1,11 @@
+{
+  "passed": false,
+  "outcomes": [
+    {
+      "scope": "ready",
+      "passed": false,
+      "fenced": false,
+      "reason": "runner-snapshot-failed"
+    }
+  ]
+}

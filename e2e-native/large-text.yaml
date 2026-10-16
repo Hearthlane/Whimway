@@ -1,0 +1,60 @@
+appId: ${APP_ID || 'com.example.whimway'}
+name: Native large-text outing
+tags: [native, fixtures, accessibility]
+---
+- runFlow: helpers/boot.yaml
+- takeScreenshot: native-large-text-explore
+- runFlow: helpers/create-fixture-plan.yaml
+- takeScreenshot: native-large-text-itinerary
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Adjust plan"
+          direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Adjust plan"
+            TAP_SCREENSHOT_NAME: "native-large-text-adjust-before-tap"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Adjust plan"
+- assertVisible: "Make room for your day"
+- scrollUntilVisible:
+    element: "Update my plan"
+    direction: DOWN
+- takeScreenshot: native-large-text-sheet
+- tapOn: "Close"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TAP_SCREENSHOT_NAME: "native-large-text-start-before-tap"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Start my day"
+- scrollUntilVisible:
+    element: ".*done here.*"
+    direction: DOWN
+- takeScreenshot: native-large-text-day

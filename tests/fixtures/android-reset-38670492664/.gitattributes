@@ -1,0 +1,2 @@
+# Retained artifact bytes are covered by SHA-256 regressions.
+*.txt -text -whitespace

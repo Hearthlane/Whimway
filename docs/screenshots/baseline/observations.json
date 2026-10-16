@@ -1,0 +1,47 @@
+{
+  "captured": "2026-10-13T23:04:55.759Z",
+  "source": "Existing Next.js frontend, synthetic fixtures, Chromium portrait 390×844; not a native device",
+  "views": [
+    {
+      "name": "explore",
+      "width": 390,
+      "height": 2332,
+      "overflow": false,
+      "fields": 3
+    },
+    {
+      "name": "create",
+      "width": 390,
+      "height": 2248,
+      "overflow": false,
+      "fields": 17
+    },
+    {
+      "name": "saved",
+      "width": 390,
+      "height": 1039,
+      "overflow": false,
+      "fields": 0
+    },
+    {
+      "name": "profile",
+      "width": 390,
+      "height": 1856,
+      "overflow": false,
+      "fields": 8
+    },
+    {
+      "name": "plan-list",
+      "width": 390,
+      "height": 3927,
+      "overflow": false
+    },
+    {
+      "name": "plan-map",
+      "width": 390,
+      "height": 1532,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

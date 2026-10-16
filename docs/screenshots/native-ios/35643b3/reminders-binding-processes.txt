@@ -1,0 +1,800 @@
+    1     0     1 Fri Oct 16 00:28:19 2026     /sbin/launchd
+   86     1    86 Fri Oct 16 00:28:22 2026     /usr/libexec/logd
+   87     1    87 Fri Oct 16 00:28:22 2026     /usr/libexec/smd
+   88     1    88 Fri Oct 16 00:28:22 2026     /usr/libexec/UserEventAgent (System)
+   90     1    90 Fri Oct 16 00:28:22 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+   91     1    91 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/MediaRemote.framework/Support/mediaremoted
+   93     1    93 Fri Oct 16 00:28:22 2026     /usr/sbin/systemstats --daemon
+   95     1    95 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/Support/accessoryupdaterd 120
+   97     1    97 Fri Oct 16 00:28:22 2026     /usr/libexec/configd
+   99     1    99 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/powerd.bundle/powerd
+  100     1   100 Fri Oct 16 00:28:22 2026     /usr/libexec/IOMFB_bics_daemon
+  102     1   102 Fri Oct 16 00:28:22 2026     /usr/libexec/amfid
+  104     1   104 Fri Oct 16 00:28:22 2026     /usr/libexec/remoted
+  106     1   106 Fri Oct 16 00:28:22 2026     /usr/libexec/keybagd -t 15
+  107     1   107 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/MobileSoftwareUpdate.framework/Support/softwareupdated
+  108     1   108 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/CoreSpeech.framework/corespeechd_system
+  114     1   114 Fri Oct 16 00:28:22 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  115     1   115 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/iconservicesd
+  116     1   116 Fri Oct 16 00:28:22 2026     /usr/libexec/kernelmanagerd
+  117     1   117 Fri Oct 16 00:28:22 2026     /usr/libexec/diskarbitrationd
+  120     1   120 Fri Oct 16 00:28:22 2026     /usr/libexec/coreduetd
+  121     1   121 Fri Oct 16 00:28:22 2026     /usr/sbin/syslogd
+  123     1   123 Fri Oct 16 00:28:22 2026     /usr/libexec/thermalmonitord
+  124     1   124 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/CoreDuetContext.framework/Resources/contextstored
+  125     1   125 Fri Oct 16 00:28:22 2026     /usr/libexec/xprotectd
+  126     1   126 Fri Oct 16 00:28:22 2026     /usr/libexec/opendirectoryd
+  127     1   127 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/launchservicesd
+  128     1   128 Fri Oct 16 00:28:22 2026     /usr/libexec/timed
+  129     1   129 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/Resources/usbmuxd -launchd
+  130     1   130 Fri Oct 16 00:28:22 2026     /usr/sbin/securityd -i
+  132     1   132 Fri Oct 16 00:28:22 2026     /usr/libexec/locationd
+  134     1   134 Fri Oct 16 00:28:22 2026     autofsd
+  135     1   135 Fri Oct 16 00:28:22 2026     /usr/libexec/dasd
+  136     1   136 Fri Oct 16 00:28:22 2026     /usr/libexec/corerepaird
+  138     1   138 Fri Oct 16 00:28:22 2026     /usr/sbin/distnoted daemon
+  141     1   141 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/logind
+  142     1   142 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/GenerationalStorage.framework/Versions/A/Support/revisiond
+  143     1   143 Fri Oct 16 00:28:22 2026     /usr/sbin/KernelEventAgent
+  145     1   145 Fri Oct 16 00:28:22 2026     /usr/libexec/usermanagerd -t 15
+  147     1   147 Fri Oct 16 00:28:22 2026     /usr/sbin/bluetoothd
+  148     1   148 Fri Oct 16 00:28:22 2026     /usr/sbin/notifyd
+  150     1   150 Fri Oct 16 00:28:22 2026     /usr/libexec/corebrightnessd --launchd
+  151     1   151 Fri Oct 16 00:28:22 2026     /usr/libexec/AirPlayXPCHelper
+  152     1   152 Fri Oct 16 00:28:22 2026     /System/Library/Frameworks/CoreMediaIO.framework/Versions/A/Resources/com.apple.cmio.registerassistantservice
+  153     1   153 Fri Oct 16 00:28:22 2026     aslmanager
+  154     1   154 Fri Oct 16 00:28:22 2026     /System/Library/PrivateFrameworks/TCC.framework/Support/tccd system
+  155     1   155 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow console
+  156     1   156 Fri Oct 16 00:28:22 2026     /usr/sbin/cfprefsd daemon
+  158     1   158 Fri Oct 16 00:28:22 2026     /System/Library/CoreServices/coreservicesd
+  159     1   159 Fri Oct 16 00:28:22 2026     /usr/libexec/fskitd
+  160     1   160 Fri Oct 16 00:28:22 2026     /usr/libexec/trustd
+  161     1   161 Fri Oct 16 00:28:22 2026     /usr/libexec/securityd_system
+  162     1   162 Fri Oct 16 00:28:23 2026     /usr/libexec/runningboardd
+  163     1   163 Fri Oct 16 00:28:23 2026     /usr/libexec/lsd runAsRoot
+  164     1   164 Fri Oct 16 00:28:23 2026     /System/Library/PrivateFrameworks/CoreAnalytics.framework/Support/analyticsd
+  166     1   166 Fri Oct 16 00:28:23 2026     /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+  167     1   167 Fri Oct 16 00:28:23 2026     /usr/libexec/containermanagerd_system --runmode=privileged --user-container-mode=current --bundle-container-mode=global --bundle-container-owner=_appinstalld --system-container-mode=none
+  174     1   174 Fri Oct 16 00:28:23 2026     /usr/libexec/mobileassetd
+  176     1   176 Fri Oct 16 00:28:23 2026     /usr/libexec/eligibilityd
+  180     1   180 Fri Oct 16 00:28:23 2026     /usr/sbin/distnoted agent
+  182     1   182 Fri Oct 16 00:28:23 2026     /usr/libexec/airportd
+  183     1   183 Fri Oct 16 00:28:23 2026     /usr/libexec/nehelper
+  184     1   184 Fri Oct 16 00:28:23 2026     /usr/libexec/symptomsd
+  185     1   185 Fri Oct 16 00:28:23 2026     /usr/libexec/syspolicyd
+  187     1   187 Fri Oct 16 00:28:23 2026     /usr/sbin/mDNSResponder
+  190     1   190 Fri Oct 16 00:28:23 2026     /usr/sbin/distnoted agent
+  193     1   193 Fri Oct 16 00:28:23 2026     /System/Library/Frameworks/Security.framework/Versions/A/XPCServices/com.apple.CodeSigningHelper.xpc/Contents/MacOS/com.apple.CodeSigningHelper
+  194     1   194 Fri Oct 16 00:28:24 2026     /System/Library/CoreServices/appleeventsd --server
+  195     1   195 Fri Oct 16 00:28:24 2026     /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd --system
+  198     1   198 Fri Oct 16 00:28:24 2026     /System/Library/DriverExtensions/com.apple.DriverKit-IOUserDockChannelSerial.dext/com.apple.DriverKit-IOUserDockChannelSerial com.apple.IOUserDockChannelSerial 0x1000002cc com.apple.DriverKit-IOUserDockChannelSerial
+  199     1   199 Fri Oct 16 00:28:24 2026     /System/Library/DriverExtensions/com.apple.AppleUserHIDDrivers.dext/com.apple.AppleUserHIDDrivers com.apple.driverkit.AppleUserHIDDrivers 0x1000002cf com.apple.AppleUserHIDDrivers
+  200     1   200 Fri Oct 16 00:28:24 2026     /System/Library/Frameworks/Security.framework/Versions/A/XPCServices/authd.xpc/Contents/MacOS/authd
+  201     1   201 Fri Oct 16 00:28:24 2026     /usr/sbin/coreaudiod
+  203     1   203 Fri Oct 16 00:28:24 2026     /usr/sbin/distnoted agent
+  211     1   211 Fri Oct 16 00:28:24 2026     /usr/sbin/mDNSResponderHelper
+  215     1   215 Fri Oct 16 00:28:24 2026     /System/Library/Frameworks/NetFS.framework/Versions/A/XPCServices/PlugInLibraryService.xpc/Contents/MacOS/PlugInLibraryService
+  216     1   216 Fri Oct 16 00:28:25 2026     /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/biomed
+  222     1   222 Fri Oct 16 00:28:25 2026     /usr/libexec/nsurlsessiond --privileged
+  232     1   232 Fri Oct 16 00:28:25 2026     Core Audio Driver (NullAudio.driver)
+  236     1   236 Fri Oct 16 00:28:25 2026     /usr/libexec/storagekitd
+  240     1   240 Fri Oct 16 00:28:25 2026     Core Audio Driver (ParrotAudioPlugin.driver)
+  241     1   241 Fri Oct 16 00:28:25 2026     /usr/libexec/audioclocksyncd
+  242     1   242 Fri Oct 16 00:28:25 2026     /usr/libexec/mobileactivationd
+  244     1   244 Fri Oct 16 00:28:25 2026     /usr/sbin/distnoted agent
+  247     1   247 Fri Oct 16 00:28:25 2026     /usr/libexec/audiomxd
+  254     1   254 Fri Oct 16 00:28:26 2026     /System/Library/CoreServices/Software Update.app/Contents/Resources/suhelperd
+  257     1   257 Fri Oct 16 00:28:26 2026     /usr/sbin/distnoted agent
+  262     1   262 Fri Oct 16 00:28:26 2026     /System/Library/CoreServices/osanalyticshelper server-init
+  263     1   263 Fri Oct 16 00:28:26 2026     /System/Library/PrivateFrameworks/MobileAssetDaemon.framework/Versions/A/XPCServices/com.apple.MobileAsset.DownloadService.Builtin.xpc/Contents/MacOS/com.apple.MobileAsset.DownloadService.Builtin
+  269     1   269 Fri Oct 16 00:28:26 2026     /usr/libexec/com.apple.cmio.videodriverkithostextension.systemextension/Contents/MacOS/com.apple.cmio.videodriverkithostextension
+  271     1   271 Fri Oct 16 00:28:26 2026     /System/Library/PrivateFrameworks/BackgroundTaskManagement.framework/Resources/backgroundtaskmanagementd -daemon
+  272     1   272 Fri Oct 16 00:28:26 2026     /usr/libexec/rtcreportingd
+  280     1   280 Fri Oct 16 00:28:26 2026     /usr/libexec/triald_system
+  284     1   284 Fri Oct 16 00:28:26 2026     /System/Library/CoreServices/Software Update.app/Contents/Resources/softwareupdated
+  285     1   285 Fri Oct 16 00:28:26 2026     /usr/sbin/distnoted agent
+  289     1   289 Fri Oct 16 00:28:26 2026     /Library/Application Support/Veertu/Anka/addons/addonsd -l/var/run/anka
+  292     1   292 Fri Oct 16 00:28:26 2026     /System/Library/Frameworks/CoreMediaIO.framework/Versions/A/Resources/UVCAssistant.systemextension/Contents/MacOS/UVCAssistant
+  296     1   296 Fri Oct 16 00:28:27 2026     /System/Library/PrivateFrameworks/GeoServices.framework/Versions/A/XPCServices/com.apple.geod.xpc/Contents/MacOS/com.apple.geod
+  297     1   297 Fri Oct 16 00:28:27 2026     /usr/sbin/distnoted agent
+  300     1   300 Fri Oct 16 00:28:27 2026     /usr/libexec/trustd --agent
+  301     1   301 Fri Oct 16 00:28:27 2026     /usr/libexec/containermanagerd --runmode=agent --user-container-mode=current --bundle-container-mode=proxy --system-container-mode=none
+  302     1   302 Fri Oct 16 00:28:27 2026     /usr/libexec/ApplicationFirewall/socketfilterfw
+  306     1   306 Fri Oct 16 00:28:27 2026     /usr/libexec/searchpartyd
+  312     1   312 Fri Oct 16 00:28:27 2026     /System/Library/PrivateFrameworks/ModelCatalogRuntime.framework/Versions/A/modelcatalogd
+  315     1   315 Fri Oct 16 00:28:27 2026     /usr/sbin/netbiosd
+  317     1   317 Fri Oct 16 00:28:27 2026     /usr/libexec/apfsd
+  322     1   322 Fri Oct 16 00:28:27 2026     /System/Library/Frameworks/LocalAuthentication.framework/Support/coreauthd
+  323     1   323 Fri Oct 16 00:28:27 2026     /usr/libexec/applekeystored
+  324     1   324 Fri Oct 16 00:28:27 2026     /usr/sbin/distnoted agent
+  325     1   325 Fri Oct 16 00:28:27 2026     /usr/libexec/biometrickitd --launchd
+  326     1   326 Fri Oct 16 00:28:27 2026     /usr/sbin/cfprefsd agent
+  330     1   330 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/TimeMachine/backupd-helper -launchd
+  331     1   331 Fri Oct 16 00:28:28 2026     /usr/libexec/secd
+  338     1   338 Fri Oct 16 00:28:28 2026     /usr/libexec/AppleQEMUGuestAgent
+  342     1   342 Fri Oct 16 00:28:28 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  344     1   344 Fri Oct 16 00:28:28 2026     /usr/libexec/UserEventAgent (Aqua)
+  345     1   345 Fri Oct 16 00:28:28 2026     /usr/libexec/gamecontrollerd
+  351     1   351 Fri Oct 16 00:28:28 2026     /usr/libexec/seld
+  356     1   356 Fri Oct 16 00:28:28 2026     /usr/sbin/universalaccessd launchd -s
+  357     1   357 Fri Oct 16 00:28:28 2026     /usr/libexec/knowledge-agent
+  358     1   358 Fri Oct 16 00:28:28 2026     /usr/libexec/containermanagerd --runmode=agent --user-container-mode=current --bundle-container-mode=proxy --system-container-mode=none
+  359     1   359 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/WindowManager.app/Contents/MacOS/WindowManager
+  360     1   360 Fri Oct 16 00:28:28 2026     /usr/libexec/pboard
+  361     1   361 Fri Oct 16 00:28:28 2026     /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+  362     1   362 Fri Oct 16 00:28:28 2026     /usr/libexec/lsd
+  363     1   363 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/Dock.app/Contents/MacOS/Dock
+  364     1   364 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/talagentd
+  365     1   365 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  366     1   366 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/SystemUIServer.app/Contents/MacOS/SystemUIServer
+  367     1   367 Fri Oct 16 00:28:28 2026     /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  372     1   372 Fri Oct 16 00:28:29 2026     /System/Library/Frameworks/QuickLookThumbnailing.framework/Support/com.apple.quicklook.ThumbnailsAgent
+  374     1   374 Fri Oct 16 00:28:29 2026     /System/Library/CoreServices/WallpaperAgent.app/Contents/MacOS/WallpaperAgent
+  375     1   375 Fri Oct 16 00:28:29 2026     /usr/sbin/filecoordinationd
+  376     1   376 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
+  377     1   377 Fri Oct 16 00:28:29 2026     /usr/libexec/rapportd
+  378     1   378 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+  379     1   379 Fri Oct 16 00:28:29 2026     automountd
+  380     1   380 Fri Oct 16 00:28:29 2026     /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/HIServices.framework/Versions/A/XPCServices/com.apple.hiservices-xpcservice.xpc/Contents/MacOS/com.apple.hiservices-xpcservice
+  381     1   381 Fri Oct 16 00:28:29 2026     /System/Library/CoreServices/sharedfilelistd
+  382     1   382 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/FileProvider.framework/Support/fileproviderd
+  383     1   383 Fri Oct 16 00:28:29 2026     /usr/libexec/pkd
+  384     1   384 Fri Oct 16 00:28:29 2026     /usr/sbin/distnoted agent
+  385     1   385 Fri Oct 16 00:28:29 2026     /usr/libexec/secinitd
+  386     1   386 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/AMPDevices.framework/Versions/A/Support/AMPDeviceDiscoveryAgent --launchd
+  387     1   387 Fri Oct 16 00:28:29 2026     /usr/libexec/trustd --agent
+  388     1   388 Fri Oct 16 00:28:29 2026     /System/Library/CoreServices/CoreLocationAgent.app/Contents/MacOS/CoreLocationAgent
+  389     1   389 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/TCC.framework/Support/tccd
+  390     1   390 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/SocialLayer.framework/sociallayerd.app/Contents/MacOS/sociallayerd
+  391     1   391 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/CoreSuggestions.framework/Versions/A/Support/suggestd
+  392     1   392 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/CalendarDaemon.framework/Support/calaccessd
+  393     1   393 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/iCloudDriveCore.framework/Versions/A/Support/bird
+  394     1   394 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/TelephonyUtilities.framework/callservicesd
+  395     1   395 Fri Oct 16 00:28:29 2026     /System/Library/CoreServices/iconservicesagent
+  396     1   396 Fri Oct 16 00:28:29 2026     /System/Library/Frameworks/ApplicationServices.framework/Frameworks/ATS.framework/Support/fontd
+  397     1   397 Fri Oct 16 00:28:29 2026     /usr/libexec/ContinuityCaptureAgent server
+  398     1   398 Fri Oct 16 00:28:29 2026     /usr/libexec/intelligentroutingd
+  399     1   399 Fri Oct 16 00:28:29 2026     /System/Library/CoreServices/audioaccessoryd
+  400     1   400 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/MobileTimer.framework/Executables/mobiletimerd
+  401     1   401 Fri Oct 16 00:28:29 2026     /System/Library/PrivateFrameworks/ViewBridge.framework/Versions/A/XPCServices/ViewBridgeAuxiliary.xpc/Contents/MacOS/ViewBridgeAuxiliary
+  404     1   404 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/ChronoCore.framework/Support/chronod
+  405     1   405 Fri Oct 16 00:28:30 2026     /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ATS.framework/Versions/A/Support/fontworker
+  406     1   406 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/UserNotificationsCore.framework/Support/usernotificationsd
+  407     1   407 Fri Oct 16 00:28:30 2026     /System/Library/Frameworks/Accounts.framework/Versions/A/Support/accountsd
+  408     1   408 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/DoNotDisturbServer.framework/Support/donotdisturbd
+  409     1   409 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/CommunicationTrust.framework/Support/communicationtrustd
+  411     1   411 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/Contents/MacOS/identityservicesd
+  414     1   414 Fri Oct 16 00:28:30 2026     /usr/libexec/linkd
+  415     1   415 Fri Oct 16 00:28:30 2026     /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS53YWxscGFwZXIuZXh0ZW5zaW9uLmFlcmlhbHMiLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  417     1   417 Fri Oct 16 00:28:30 2026     /usr/libexec/rosetta/oahd
+  418     1   418 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/CommunicationsFilter.framework/CMFSyncAgent
+  419     1   419 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/CacheDelete.framework/deleted
+  420     1   420 Fri Oct 16 00:28:30 2026     /System/Library/Frameworks/CryptoTokenKit.framework/ctkahp.bundle/Contents/MacOS/ctkahp -d
+  421     1   421 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/SoftwareUpdate.framework/Resources/SoftwareUpdateNotificationManager.app/Contents/MacOS/SoftwareUpdateNotificationManager
+  423     1   423 Fri Oct 16 00:28:30 2026     /System/Library/CoreServices/pbs
+  424     1   424 Fri Oct 16 00:28:30 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+  425     1   425 Fri Oct 16 00:28:30 2026     /System/Library/PrivateFrameworks/SyncedDefaults.framework/Support/syncdefaultsd
+  429     1   429 Fri Oct 16 00:28:31 2026     /System/Library/PrivateFrameworks/SessionCore.framework/Support/liveactivitiesd
+  430     1   430 Fri Oct 16 00:28:31 2026     /System/Library/PrivateFrameworks/PowerLog.framework/Versions/A/XPCServices/PerfPowerTelemetryClientRegistrationService.xpc/Contents/MacOS/PerfPowerTelemetryClientRegistrationService
+  431     1   431 Fri Oct 16 00:28:31 2026     /System/Library/Frameworks/CryptoTokenKit.framework/ctkd -tw
+  432     1   432 Fri Oct 16 00:28:31 2026     /usr/libexec/transparencyd
+  433     1   433 Fri Oct 16 00:28:31 2026     /System/Library/PrivateFrameworks/TextInputUIMacHelper.framework/Versions/A/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService
+  434     1   434 Fri Oct 16 00:28:31 2026     /System/Library/Frameworks/LocalAuthentication.framework/Support/coreauthd
+  435     1   435 Fri Oct 16 00:28:31 2026     /System/Library/CoreServices/Spotlight.app/Contents/MacOS/Spotlight
+  436     1   436 Fri Oct 16 00:28:32 2026     /System/Library/Frameworks/CryptoTokenKit.framework/ctkd -st
+  437     1   437 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord
+  438     1   438 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/HearingCore.framework/heard
+  439     1   439 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/CoreSpeech.framework/corespeechd
+  440     1   440 Fri Oct 16 00:28:32 2026     /usr/libexec/routined LAUNCHED_BY_LAUNCHD
+  441     1   441 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
+  442     1   442 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/CoreDuetContext.framework/Resources/ContextStoreAgent
+  445     1   445 Fri Oct 16 00:28:32 2026     /System/Library/Frameworks/InputMethodKit.framework/Resources/imklaunchagent
+  446     1   446 Fri Oct 16 00:28:32 2026     /Library/Application Support/Veertu/Anka/addons/ankarund
+  448     1   448 Fri Oct 16 00:28:32 2026     /Library/Application Support/Veertu/Anka/addons/ankacpd
+  449     1   449 Fri Oct 16 00:28:32 2026     /System/Library/Image Capture/Support/icdd
+  450     1   450 Fri Oct 16 00:28:32 2026     /System/Library/CoreServices/appplaceholdersyncd
+  451     1   451 Fri Oct 16 00:28:32 2026     /usr/sbin/usernoted
+  452     1   452 Fri Oct 16 00:28:32 2026     /Library/Application Support/Veertu/Anka/addons/copypaste
+  454     1   454 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/AskPermission.framework/Versions/A/Resources/askpermissiond
+  456     1   456 Fri Oct 16 00:28:32 2026     /usr/libexec/sharingd
+  458     1   458 Fri Oct 16 00:28:32 2026     /System/Library/Frameworks/ManagedSettings.framework/Versions/A/ManagedSettingsAgent
+  459     1   459 Fri Oct 16 00:28:32 2026     /System/Library/CoreServices/AirPlayUIAgent.app/Contents/MacOS/AirPlayUIAgent --launchd
+  460     1   460 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/IMCore.framework/imagent.app/Contents/MacOS/imagent
+  461     1   461 Fri Oct 16 00:28:32 2026     /System/Library/CoreServices/diagnostics_agent
+  463     1   463 Fri Oct 16 00:28:32 2026     /System/Library/CoreServices/TextInputMenuAgent.app/Contents/MacOS/TextInputMenuAgent
+  464     1   464 Fri Oct 16 00:28:32 2026     /usr/libexec/remindd
+  465     1   465 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/AppleMediaServices.framework/Resources/amsaccountsd
+  468     1   468 Fri Oct 16 00:28:32 2026     /usr/libexec/nsurlsessiond
+  469     1   469 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/UserActivity.framework/Agents/useractivityd
+  470     1   470 Fri Oct 16 00:28:32 2026     /System/Library/CoreServices/Dock.app/Contents/XPCServices/com.apple.dock.extra.xpc/Contents/MacOS/com.apple.dock.extra
+  471     1   471 Fri Oct 16 00:28:32 2026     /System/Library/Frameworks/CryptoTokenKit.framework/ctkahp.bundle/Contents/MacOS/ctkahp
+  473     1   473 Fri Oct 16 00:28:32 2026     /System/Library/PrivateFrameworks/GeoServices.framework/Versions/A/XPCServices/com.apple.geod.xpc/Contents/MacOS/com.apple.geod
+  477     1   477 Fri Oct 16 00:28:33 2026     /System/Library/PrivateFrameworks/CoreParsec.framework/parsecd
+  478     1   478 Fri Oct 16 00:28:33 2026     /System/Library/Frameworks/ExtensionFoundation.framework/Versions/A/XPCServices/extensionkitservice.xpc/Contents/MacOS/extensionkitservice
+  479     1   479 Fri Oct 16 00:28:33 2026     /System/Library/PrivateFrameworks/CallHistory.framework/Support/CallHistoryPluginHelper
+  480     1   480 Fri Oct 16 00:28:33 2026     /System/Library/PrivateFrameworks/AmbientDisplay.framework/Versions/A/XPCServices/com.apple.AmbientDisplayAgent.xpc/Contents/MacOS/com.apple.AmbientDisplayAgent
+  481     1   481 Fri Oct 16 00:28:34 2026     /System/Library/CoreServices/UIKitSystem.app/Contents/MacOS/UIKitSystem system_app_start
+  482     1   482 Fri Oct 16 00:28:34 2026     /usr/libexec/duetexpertd
+  484     1   484 Fri Oct 16 00:28:34 2026     /System/Applications/Calendar.app/Contents/PlugIns/CalendarWidgetExtension.appex/Contents/MacOS/CalendarWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5pQ2FsLkNhbGVuZGFyV2lkZ2V0RXh0ZW5zaW9uIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  487     1   487 Fri Oct 16 00:28:35 2026     /System/Library/Frameworks/Contacts.framework/Support/contactsd
+  490     1   490 Fri Oct 16 00:28:35 2026     /System/Library/PrivateFrameworks/StatusKit.framework/StatusKitAgent
+  491     1   491 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/PhotoLibraryServices.framework/Versions/A/Support/photolibraryd
+  492     1   492 Fri Oct 16 00:28:36 2026     /System/Library/CoreServices/APFSUserAgent
+  495     1   495 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/FamilyCircle.framework/Versions/A/Resources/familycircled
+  496     1   496 Fri Oct 16 00:28:36 2026     /usr/libexec/spotlightknowledged.updater -u
+  497     1   497 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/AppSSO.framework/Support/AppSSOAgent.app/Contents/MacOS/AppSSOAgent
+  498     1   498 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/AppSSO.framework/Support/AppSSODaemon
+  499     1   499 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  500     1   500 Fri Oct 16 00:28:36 2026     /System/Library/PrivateFrameworks/PhotoAnalysis.framework/Versions/A/Support/photoanalysisd
+  501     1   501 Fri Oct 16 00:28:36 2026     /usr/libexec/neagent
+  502     1   502 Fri Oct 16 00:28:36 2026     /usr/libexec/milod
+  503     1   503 Fri Oct 16 00:28:36 2026     /usr/libexec/nearbyd
+  505     1   505 Fri Oct 16 00:28:37 2026     /System/Library/CoreServices/AccessibilityUIServer.app/Contents/MacOS/AccessibilityUIServer
+  506     1   506 Fri Oct 16 00:28:37 2026     /System/Library/PrivateFrameworks/HomeKitDaemon.framework/Support/homed
+  508     1   508 Fri Oct 16 00:28:37 2026     /System/Library/PrivateFrameworks/IMDPersistence.framework/XPCServices/IMDPersistenceAgent.xpc/Contents/MacOS/IMDPersistenceAgent
+  510     1   510 Fri Oct 16 00:28:37 2026     /usr/libexec/networkserviceproxy
+  511     1   511 Fri Oct 16 00:28:37 2026     /usr/libexec/triald
+  513     1   513 Fri Oct 16 00:28:37 2026     /usr/libexec/appleaccountd
+  514     1   514 Fri Oct 16 00:28:38 2026     /System/Library/PrivateFrameworks/ScreenTimeCore.framework/Versions/A/ScreenTimeAgent
+  515     1   515 Fri Oct 16 00:28:38 2026     /usr/libexec/avconferenced
+  516     1   516 Fri Oct 16 00:28:38 2026     /System/Library/PrivateFrameworks/MediaRemote.framework/Support/mediaremoteagent
+  521     1   521 Fri Oct 16 00:28:38 2026     /usr/libexec/wifip2pd
+  525     1   525 Fri Oct 16 00:28:38 2026     /System/Library/PrivateFrameworks/AppleMediaServicesUI.framework/amsengagementd
+  526     1   526 Fri Oct 16 00:28:39 2026     /System/Library/PrivateFrameworks/CoreFollowUp.framework/Versions/A/Support/followupd
+  527     1   527 Fri Oct 16 00:28:39 2026     /usr/sbin/distnoted agent
+  528     1   528 Fri Oct 16 00:28:39 2026     /usr/libexec/frauddefensed
+  530     1   530 Fri Oct 16 00:28:39 2026     /System/Library/PrivateFrameworks/AuthKit.framework/Versions/A/Support/akd
+  531     1   531 Fri Oct 16 00:28:39 2026     /System/Library/PrivateFrameworks/CoreCDP.framework/Versions/A/Resources/cdpd
+  533     1   533 Fri Oct 16 00:28:39 2026     /System/Library/PrivateFrameworks/CacheDelete.framework/deleted_helper
+  534     1   534 Fri Oct 16 00:28:39 2026     /usr/sbin/distnoted agent
+  536     1   536 Fri Oct 16 00:28:40 2026     /usr/libexec/swcd
+  539     1   539 Fri Oct 16 00:28:40 2026     /System/Library/ExtensionKit/Extensions/WallpaperImageExtension.appex/Contents/MacOS/WallpaperImageExtension -LaunchArguments eyJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUud2FsbHBhcGVyLmV4dGVuc2lvbi5pbWFnZSJ9
+  540     1   540 Fri Oct 16 00:28:40 2026     /System/Applications/Photos.app/Contents/PlugIns/PhotosReliveWidget.appex/Contents/MacOS/PhotosReliveWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QaG90b3MuUGhvdG9zUmVsaXZlV2lkZ2V0IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  541     1   541 Fri Oct 16 00:28:40 2026     /System/Library/Frameworks/Speech.framework/Versions/A/XPCServices/localspeechrecognition.xpc/Contents/MacOS/localspeechrecognition
+  546     1   546 Fri Oct 16 00:28:41 2026     /System/Applications/Weather.app/Contents/PlugIns/WeatherWidget.appex/Contents/MacOS/WeatherWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS53ZWF0aGVyLndpZGdldCIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+  547     1   547 Fri Oct 16 00:28:41 2026     /System/Library/PrivateFrameworks/ContextKit.framework/Versions/A/XPCServices/ContextService.xpc/Contents/MacOS/ContextService
+  549     1   549 Fri Oct 16 00:28:41 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdbulkimport -s mdworker-bundle -c MDSImporterBundleFinder -m com.apple.metadata.mdbulkimport
+  554     1   554 Fri Oct 16 00:28:42 2026     /System/Library/PrivateFrameworks/CloudSubscriptionFeatures.framework/FeatureAccessAgent
+  556     1   556 Fri Oct 16 00:28:43 2026     /System/Library/PrivateFrameworks/AssistantServices.framework/Versions/A/Support/assistantd
+  557     1   557 Fri Oct 16 00:28:43 2026     /System/Applications/Journal.app/Contents/PlugIns/JournalWidgets.appex/Contents/MacOS/JournalWidgets -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5qb3VybmFsLndpZGdldHMiLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  559     1   559 Fri Oct 16 00:28:43 2026     /usr/libexec/siriknowledged
+  560     1   560 Fri Oct 16 00:28:43 2026     /System/Library/PrivateFrameworks/GenerativeExperiencesRuntime.framework/Versions/A/generativeexperiencesd
+  574     1   574 Fri Oct 16 00:28:47 2026     /System/Library/PrivateFrameworks/AppStoreDaemon.framework/Support/appstoreagent
+  575     1   575 Fri Oct 16 00:28:47 2026     /usr/libexec/AssetCache/AssetCache
+  576     1   576 Fri Oct 16 00:28:47 2026     /System/Library/PrivateFrameworks/PackageKit.framework/Resources/installd
+  591     1   591 Fri Oct 16 00:28:48 2026     /System/Library/PrivateFrameworks/IASUtilities.framework/Versions/A/Resources/installerauthagent
+  592     1   592 Fri Oct 16 00:28:48 2026     /usr/libexec/logd_helper
+  593     1   593 Fri Oct 16 00:28:48 2026     /usr/libexec/NRDUpdated
+  594     1   594 Fri Oct 16 00:28:48 2026     /usr/sbin/distnoted agent
+  595     1   595 Fri Oct 16 00:28:48 2026     /System/Library/PrivateFrameworks/AssetCacheServices.framework/Versions/A/XPCServices/AssetCacheLocatorService.xpc/Contents/MacOS/AssetCacheLocatorService -d
+  597     1   597 Fri Oct 16 00:28:48 2026     /System/Library/PrivateFrameworks/TrialServer.framework/Versions/A/XPCServices/TrialArchivingService.xpc/Contents/MacOS/TrialArchivingService
+  606     1   606 Fri Oct 16 00:28:49 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdbulkimport -s mdworker-bundle -c MDSImporterBundleFinder -m com.apple.metadata.mdbulkimport
+  610     1   610 Fri Oct 16 00:28:49 2026     /System/Library/PrivateFrameworks/LockdownMode.framework/Versions/A/XPCServices/lockdownmoded
+  611     1   611 Fri Oct 16 00:28:49 2026     /usr/sbin/distnoted agent
+  612     1   612 Fri Oct 16 00:28:50 2026     /System/Library/PrivateFrameworks/StreamingZip.framework/Versions/A/XPCServices/com.apple.StreamingUnzipService.privileged.xpc/Contents/MacOS/com.apple.StreamingUnzipService.privileged
+  618     1   618 Fri Oct 16 00:28:51 2026     /System/Library/AssetsV2/com_apple_MobileAsset_RecoveryOSUpdateBrain/28f9b40aedc0bda53bdc29e31682c998de89e5cb.asset/AssetData/com.apple.NRD.UpdateBrainService.xpc/Contents/MacOS/com.apple.NRD.UpdateBrainService
+  651     1   651 Fri Oct 16 00:28:52 2026     /System/Library/Frameworks/FinanceKit.framework/financed
+  653     1   653 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/MacinTalk.framework/PlugIns/WardaSynthesizer.appex/Contents/MacOS/WardaSynthesizer -AppleLanguages ("en-US")
+  654     1   654 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/CloudTelemetry.framework/Versions/A/XPCServices/CloudTelemetryService.xpc/Contents/MacOS/CloudTelemetryService
+  655     1   655 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/InstallCoordination.framework/Support/installcoordinationd
+  656     1   656 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/CloudTelemetry.framework/Versions/A/XPCServices/CloudTelemetryService.xpc/Contents/MacOS/CloudTelemetryService
+  658     1   658 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/TextToSpeechVoiceBankingSupport.framework/Support/voicebankingd
+  659     1   659 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/MacinTalk.framework/PlugIns/MacinTalkAUSP.appex/Contents/MacOS/MacinTalkAUSP -AppleLanguages ("en-US")
+  664     1   664 Fri Oct 16 00:28:53 2026     /System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/XPCServices/UARPUpdaterServiceUSBPD.xpc/Contents/MacOS/UARPUpdaterServiceUSBPD
+  665     1   665 Fri Oct 16 00:28:53 2026     /System/iOSSupport/System/Library/ExtensionKit/Extensions/KonaSynthesizer.appex/Contents/MacOS/KonaSynthesizer -AppleLanguages ("en-US")
+  666     1   666 Fri Oct 16 00:28:53 2026     /usr/sbin/distnoted agent
+  668     1   668 Fri Oct 16 00:28:53 2026     /usr/libexec/promotedcontentd
+  670     1   670 Fri Oct 16 00:28:53 2026     /System/iOSSupport/System/Library/ExtensionKit/Extensions/SiriAUSP.appex/Contents/MacOS/SiriAUSP -AppleLanguages ("en-US")
+  671     1   671 Fri Oct 16 00:28:53 2026     /System/iOSSupport/System/Library/ExtensionKit/Extensions/MauiAUSP.appex/Contents/MacOS/MauiAUSP -AppleLanguages ("en-US")
+  672     1   672 Fri Oct 16 00:28:54 2026     /usr/libexec/fairplaydeviceidentityd
+  694     1   694 Fri Oct 16 00:28:56 2026     /System/Library/CoreServices/ControlCenter.app/Contents/PlugIns/DisplayControls.appex/Contents/MacOS/DisplayControls -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5jb250cm9scy5kaXNwbGF5IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  695     1   695 Fri Oct 16 00:28:56 2026     /System/Applications/Utilities/Screenshot.app/Contents/PlugIns/ScreenshotControls.appex/Contents/MacOS/ScreenshotControls -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5jb250cm9scy5zY3JlZW5zaG90IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  696     1   696 Fri Oct 16 00:28:56 2026     /System/Library/CoreServices/WindowManager.app/Contents/PlugIns/WindowManagerControlsExtension.appex/Contents/MacOS/WindowManagerControlsExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5XaW5kb3dNYW5hZ2VyLmNvbnRyb2xzIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  697     1   697 Fri Oct 16 00:28:56 2026     /System/Applications/Shortcuts.app/Contents/PlugIns/ShortcutsWidgetExtension.appex/Contents/MacOS/ShortcutsWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5zaG9ydGN1dHMuU2hvcnRjdXRzV2lkZ2V0IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  700     1   700 Fri Oct 16 00:28:57 2026     /System/Applications/FindMy.app/Contents/PlugIns/FindMyWidgetPeople.appex/Contents/MacOS/FindMyWidgetPeople -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5maW5kbXkuRmluZE15V2lkZ2V0UGVvcGxlIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  707     1   707 Fri Oct 16 00:28:58 2026     /usr/libexec/inputanalyticsd
+  708     1   708 Fri Oct 16 00:28:58 2026     /System/Applications/Notes.app/Contents/PlugIns/com.apple.Notes.WidgetExtension.appex/Contents/MacOS/com.apple.Notes.WidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Ob3Rlcy5XaWRnZXRFeHRlbnNpb24iLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  709     1   709 Fri Oct 16 00:28:58 2026     /System/Applications/Stocks.app/Contents/PlugIns/StocksWidget.appex/Contents/MacOS/StocksWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5zdG9ja3Mud2lkZ2V0IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  711     1   711 Fri Oct 16 00:28:59 2026     /usr/libexec/trustd --agent
+  712     1   712 Fri Oct 16 00:28:59 2026     /System/Applications/FindMy.app/Contents/PlugIns/FindMyWidgetItems.appex/Contents/MacOS/FindMyWidgetItems -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5maW5kbXkuRmluZE15V2lkZ2V0SXRlbXMiLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  713     1   713 Fri Oct 16 00:28:59 2026     /System/Library/CoreServices/Batteries.app/Contents/PlugIns/BatteriesAvocadoWidgetExtension.appex/Contents/MacOS/BatteriesAvocadoWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5CYXR0ZXJpZXMuQmF0dGVyaWVzQXZvY2Fkb1dpZGdldEV4dGVuc2lvbiIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+  714     1   714 Fri Oct 16 00:28:59 2026     /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/HIServices.framework/Versions/A/XPCServices/com.apple.hiservices-xpcservice.xpc/Contents/MacOS/com.apple.hiservices-xpcservice
+  715     1   715 Fri Oct 16 00:28:59 2026     /System/Applications/Tips.app/Contents/PlugIns/TipsWidgetExtension.appex/Contents/MacOS/TipsWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS50aXBzLldpZGdldCIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+  716     1   716 Fri Oct 16 00:28:59 2026     /System/Library/CoreServices/PeopleViewService.app/Contents/PlugIns/PeopleWidget_macOSExtension.appex/Contents/MacOS/PeopleWidget_macOSExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QZW9wbGVWaWV3U2VydmljZS5QZW9wbGVXaWRnZXQtbWFjT1MiLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  717     1   717 Fri Oct 16 00:28:59 2026     /System/Applications/Home.app/Contents/PlugIns/HomeEnergyWidgetsExtension.appex/Contents/MacOS/HomeEnergyWidgetsExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Ib21lLkhvbWVFbmVyZ3lXaWRnZXRzIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  718     1   718 Fri Oct 16 00:28:59 2026     /System/Library/PrivateFrameworks/CloudServices.framework/Helpers/com.apple.sbd
+  719     1   719 Fri Oct 16 00:28:59 2026     /System/Applications/Podcasts.app/Contents/PlugIns/PodcastsWidget.appex/Contents/MacOS/PodcastsWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5wb2RjYXN0cy53aWRnZXQiLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  720     1   720 Fri Oct 16 00:28:59 2026     /System/Applications/Home.app/Contents/PlugIns/HomeWidget.appex/Contents/MacOS/HomeWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Ib21lLkhvbWVXaWRnZXQuSW50ZXJhY3RpdmUiLCJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  721     1   721 Fri Oct 16 00:29:00 2026     /System/Library/PrivateFrameworks/Ecosystem.framework/Support/ecosystemd
+  722     1   722 Fri Oct 16 00:29:00 2026     /System/Applications/Journal.app/Contents/PlugIns/JournalWidgetsSecure.appex/Contents/MacOS/JournalWidgetsSecure -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5qb3VybmFsLndpZGdldHMuc2VjdXJlIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  724     1   724 Fri Oct 16 00:29:00 2026     /System/Applications/News.app/Contents/PlugIns/NewsToday2.appex/Contents/MacOS/NewsToday2 -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5uZXdzLndpZGdldCIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+  725     1   725 Fri Oct 16 00:29:00 2026     /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/Extensions/SafariWidgetExtension.appex/Contents/MacOS/SafariWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5TYWZhcmkuU2FmYXJpV2lkZ2V0RXh0ZW5zaW9uIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  726     1   726 Fri Oct 16 00:29:00 2026     /System/Applications/Reminders.app/Contents/PlugIns/RemindersWidgetExtension.appex/Contents/MacOS/RemindersWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5yZW1pbmRlcnMuV2lkZ2V0RXh0ZW5zaW9uIiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  727     1   727 Fri Oct 16 00:29:00 2026     /System/Library/CoreServices/Screen Time.app/Contents/PlugIns/ScreenTimeWidgetExtension.appex/Contents/MacOS/ScreenTimeWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5TY3JlZW5UaW1lV2lkZ2V0QXBwbGljYXRpb24uU2NyZWVuVGltZVdpZGdldEV4dGVuc2lvbiIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+  728     1   728 Fri Oct 16 00:29:01 2026     /System/Applications/Clock.app/Contents/PlugIns/WorldClockWidget.appex/Contents/MacOS/WorldClockWidget -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5jbG9jay5Xb3JsZENsb2NrV2lkZ2V0IiwidHlwZSI6MSwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+  731     1   731 Fri Oct 16 00:29:02 2026     /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/XPCServices/XProtectPluginService.xpc/Contents/MacOS/XProtectPluginService
+  737     1   737 Fri Oct 16 00:29:04 2026     /System/Library/PrivateFrameworks/IMTransferServices.framework/IMTransferAgent.app/Contents/MacOS/IMTransferAgent
+  738     1   738 Fri Oct 16 00:29:04 2026     /System/Library/CoreServices/WiFiAgent.app/Contents/MacOS/WiFiAgent
+  739     1   739 Fri Oct 16 00:29:04 2026     /System/Library/PrivateFrameworks/WiFiPolicy.framework/XPCServices/WiFiCloudAssetsXPCService.xpc/Contents/MacOS/WiFiCloudAssetsXPCService
+  740     1   740 Fri Oct 16 00:29:04 2026     /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/XPCServices/XProtectPluginService.xpc/Contents/MacOS/XProtectPluginService
+  747     1   747 Fri Oct 16 00:29:05 2026     /usr/libexec/gamepolicyd
+  778     1   778 Fri Oct 16 00:29:06 2026     /usr/sbin/distnoted agent
+  797     1   797 Fri Oct 16 00:29:07 2026     /usr/libexec/gamecontrolleragentd
+  802     1   802 Fri Oct 16 00:29:07 2026     /usr/libexec/modelmanagerd
+  814     1   814 Fri Oct 16 00:29:08 2026     /System/Library/PrivateFrameworks/NewDeviceOutreach.framework/ndoagent
+  834     1   834 Fri Oct 16 00:29:08 2026     /System/Library/PrivateFrameworks/UsageTracking.framework/Versions/A/UsageTrackingAgent
+  835     1   835 Fri Oct 16 00:29:08 2026     /usr/libexec/diagnosticextensionsd
+  836     1   836 Fri Oct 16 00:29:08 2026     /System/Library/PrivateFrameworks/SiriInference.framework/Versions/A/siriinferenced
+  858     1   858 Fri Oct 16 00:29:11 2026     /System/Library/CoreServices/CrashReporterSupportHelper server-init
+  894     1   894 Fri Oct 16 00:29:14 2026     /System/Library/PrivateFrameworks/ModelCatalogRuntime.framework/Versions/A/ModelCatalogAgent
+  895     1   895 Fri Oct 16 00:29:15 2026     /usr/libexec/nfcd
+  896     1   896 Fri Oct 16 00:29:15 2026     /usr/libexec/tailspind
+  897     1   897 Fri Oct 16 00:29:15 2026     /usr/libexec/ospredictiond
+  898     1   898 Fri Oct 16 00:29:15 2026     /System/Library/PrivateFrameworks/JetCore.framework/Support/jetpackassetd
+  899     1   899 Fri Oct 16 00:29:15 2026     /usr/libexec/GamePolicyAgent
+  900     1   900 Fri Oct 16 00:29:15 2026     /System/Library/PrivateFrameworks/HomeKitEvents.framework/Support/homeeventsd
+  901     1   901 Fri Oct 16 00:29:15 2026     /System/Library/Frameworks/NetFS.framework/Versions/A/XPCServices/PlugInLibraryService.xpc/Contents/MacOS/PlugInLibraryService
+  902     1   902 Fri Oct 16 00:29:15 2026     /System/Library/PrivateFrameworks/WeatherDaemon.framework/weatherd
+  903     1   903 Fri Oct 16 00:29:15 2026     /usr/libexec/adprivacyd
+  904     1   904 Fri Oct 16 00:29:15 2026     /System/Library/Frameworks/ExtensionFoundation.framework/Versions/A/XPCServices/extensionkitservice.xpc/Contents/MacOS/extensionkitservice
+  905     1   905 Fri Oct 16 00:29:16 2026     /System/Applications/Calendar.app/Contents/Extensions/CalendarIntentsExtension.appex/Contents/MacOS/CalendarIntentsExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5jYWxlbmRhci5DYWxlbmRhckludGVudHNFeHRlbnNpb24iLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  906     1   906 Fri Oct 16 00:29:16 2026     /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/Extensions/SafariLinkExtension.appex/Contents/MacOS/SafariLinkExtension -LaunchArguments eyJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuU2FmYXJpLlNhZmFyaUxpbmtFeHRlbnNpb24ifQ==
+  907     1   907 Fri Oct 16 00:29:16 2026     /System/Applications/Messages.app/Contents/Extensions/MessagesActionExtension.appex/Contents/MacOS/MessagesActionExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Nb2JpbGVTTVMuTWVzc2FnZXNBY3Rpb25FeHRlbnNpb24iLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+  908     1   908 Fri Oct 16 00:29:16 2026     /usr/libexec/sysmond
+  909     1   909 Fri Oct 16 00:29:17 2026     /System/Library/PrivateFrameworks/StocksKit.framework/XPCServices/StocksKitService.xpc/Contents/MacOS/StocksKitService
+  910    93    93 Fri Oct 16 00:29:17 2026     /usr/sbin/systemstats --logger-helper /private/var/db/systemstats
+  911     1   911 Fri Oct 16 00:29:17 2026     /usr/libexec/assetsubscriptiond
+  919     1   919 Fri Oct 16 00:29:19 2026     /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/ShortcutsViewService.xpc/Contents/MacOS/ShortcutsViewService
+  920     1   920 Fri Oct 16 00:29:20 2026     /System/Library/ExtensionKit/Extensions/HostInferenceProviderService.appex/Contents/MacOS/HostInferenceProviderService -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6OCwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuSG9zdEluZmVyZW5jZVByb3ZpZGVyU2VydmljZSJ9
+  921     1   921 Fri Oct 16 00:29:20 2026     /usr/sbin/distnoted agent
+  945     1   945 Fri Oct 16 00:29:24 2026     /System/Library/PrivateFrameworks/iCloudNotification.framework/iCloudNotificationAgent
+  946     1   946 Fri Oct 16 00:29:24 2026     /System/Library/PrivateFrameworks/CoreAnalytics.framework/Support/analyticsagent
+  981     1   981 Fri Oct 16 00:29:24 2026     /bin/bash /opt/hca/start_hca.sh
+  983     1   983 Fri Oct 16 00:29:24 2026     /System/Library/PrivateFrameworks/BackgroundTaskManagement.framework/Support/BackgroundTaskManagementAgent.app/Contents/MacOS/BackgroundTaskManagementAgent
+  994   981   981 Fri Oct 16 00:29:24 2026     /opt/hca/hosted-compute-agent
+  996   994   981 Fri Oct 16 00:29:25 2026     sudo -n PROVJOBD_E2E=1 /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/provjobd209543876
+  998   996   981 Fri Oct 16 00:29:25 2026     /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/provjobd209543876
+ 1012     1  1012 Fri Oct 16 00:29:28 2026     /System/Library/PrivateFrameworks/SiriSuggestionsSupport.framework/Versions/A/XPCServices/SiriSuggestionsBookkeepingService.xpc/Contents/MacOS/SiriSuggestionsBookkeepingService
+ 1016     1  1016 Fri Oct 16 00:29:31 2026     /System/Applications/News.app/Contents/PlugIns/NewsTag.appex/Contents/MacOS/NewsTag -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5uZXdzLnRhZyIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 1258     1  1258 Fri Oct 16 00:29:55 2026     /System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/Support/fudHelperAgent
+ 1760     1  1760 Fri Oct 16 00:30:57 2026     /System/Library/PrivateFrameworks/OnDeviceStorage.framework/Support/amsondevicestoraged
+ 1761     1  1761 Fri Oct 16 00:30:57 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/remotemanagementd
+ 1762     1  1762 Fri Oct 16 00:30:57 2026     /System/iOSSupport/System/Library/PrivateFrameworks/HomeEnergyDaemon.framework/Support/homeenergyd
+ 1763     1  1763 Fri Oct 16 00:30:57 2026     /System/Library/Frameworks/ManagedAppDistribution.framework/Support/managedappdistributiond
+ 1764     1  1764 Fri Oct 16 00:30:57 2026     /System/Library/PrivateFrameworks/CloudTelemetry.framework/Versions/A/XPCServices/CloudTelemetryService.xpc/Contents/MacOS/CloudTelemetryService
+ 1767     1  1767 Fri Oct 16 00:30:59 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/SecuritySubscriber.xpc/Contents/MacOS/SecuritySubscriber
+ 1768     1  1768 Fri Oct 16 00:30:59 2026     /usr/sbin/distnoted agent
+ 1770     1  1770 Fri Oct 16 00:30:59 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/InteractiveLegacyProfilesSubscriber.xpc/Contents/MacOS/InteractiveLegacyProfilesSubscriber
+ 1771     1  1771 Fri Oct 16 00:30:59 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ScreenSharingSubscriber.xpc/Contents/MacOS/ScreenSharingSubscriber
+ 1772     1  1772 Fri Oct 16 00:31:00 2026     /System/Library/PrivateFrameworks/DeviceCheckInternal.framework/devicecheckd
+ 1773     1  1773 Fri Oct 16 00:31:00 2026     /System/Library/Frameworks/ManagedAppDistribution.framework/Support/managedappdistributionagent
+ 1774     1  1774 Fri Oct 16 00:31:00 2026     /System/Library/PrivateFrameworks/CloudTelemetry.framework/Versions/A/XPCServices/CloudTelemetryService.xpc/Contents/MacOS/CloudTelemetryService
+ 1778     1  1778 Fri Oct 16 00:31:00 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/LegacyProfilesSubscriber.xpc/Contents/MacOS/LegacyProfilesSubscriber
+ 1785     1  1785 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/PasscodeSettingsSubscriber.xpc/Contents/MacOS/PasscodeSettingsSubscriber
+ 1791     1  1791 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/DiskManagementSubscriber.xpc/Contents/MacOS/DiskManagementSubscriber
+ 1793     1  1793 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagedPreferencesSubscriber.xpc/Contents/MacOS/ManagedPreferencesSubscriber
+ 1794     1  1794 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/SoftwareUpdateSubscriber.xpc/Contents/MacOS/SoftwareUpdateSubscriber
+ 1795     1  1795 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/MigrationSubscriber.xpc/Contents/MacOS/MigrationSubscriber
+ 1796     1  1796 Fri Oct 16 00:31:01 2026     /System/Library/PrivateFrameworks/SystemMigration.framework/Resources/systemmigrationd
+ 1799     1  1799 Fri Oct 16 00:31:01 2026     /System/Library/CoreServices/iconservicesagent runAsRoot
+ 1800     1  1800 Fri Oct 16 00:31:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagedAppsSubscriber.xpc/Contents/MacOS/ManagedAppsSubscriber
+ 1801     1  1801 Fri Oct 16 00:31:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagementTestSubscriber.xpc/Contents/MacOS/ManagementTestSubscriber
+ 1808     1  1808 Fri Oct 16 00:31:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagedConfigurationFilesSubscriber.xpc/Contents/MacOS/ManagedConfigurationFilesSubscriber
+ 2063     1  2063 Fri Oct 16 00:31:16 2026     /usr/libexec/online-auth-agent
+ 2095     1  2095 Fri Oct 16 00:31:16 2026     /System/Library/PrivateFrameworks/UIFoundation.framework/Versions/A/XPCServices/nsattributedstringagent.xpc/Contents/MacOS/nsattributedstringagent
+ 2110     1  2110 Fri Oct 16 00:31:16 2026     /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/HIServices.framework/Versions/A/XPCServices/com.apple.hiservices-xpcservice.xpc/Contents/MacOS/com.apple.hiservices-xpcservice
+ 2116     1  2116 Fri Oct 16 00:31:16 2026     /usr/sbin/cfprefsd agent
+ 2130     1  2130 Fri Oct 16 00:31:17 2026     /System/Library/Frameworks/MediaAccessibility.framework/Versions/A/XPCServices/com.apple.accessibility.mediaaccessibilityd.xpc/Contents/MacOS/com.apple.accessibility.mediaaccessibilityd
+ 2134     1  2134 Fri Oct 16 00:31:19 2026     /System/Library/PrivateFrameworks/UIFoundation.framework/Versions/A/XPCServices/nsattributedstringagent.xpc/Contents/MacOS/nsattributedstringagent
+ 2137     1  2137 Fri Oct 16 00:31:19 2026     /System/Library/Frameworks/MediaAccessibility.framework/Versions/A/XPCServices/com.apple.accessibility.mediaaccessibilityd.xpc/Contents/MacOS/com.apple.accessibility.mediaaccessibilityd
+ 2145     1  2145 Fri Oct 16 00:31:22 2026     /System/Library/PrivateFrameworks/Install.framework/Frameworks/DistributionKit.framework/Versions/A/XPCServices/DistributionHelper.xpc/Contents/MacOS/DistributionHelper
+ 2262     1  2262 Fri Oct 16 00:31:28 2026     /usr/libexec/audioanalyticsd
+ 2263     1  2263 Fri Oct 16 00:31:28 2026     /System/Cryptexes/App/usr/libexec/PasswordBreachAgent
+ 2264     1  2264 Fri Oct 16 00:31:28 2026     /System/Library/PrivateFrameworks/DataAccess.framework/Support/dataaccessd
+ 2265     1  2265 Fri Oct 16 00:31:28 2026     /System/Library/PrivateFrameworks/Categories.framework/Versions/A/XPCServices/CategoriesService.xpc/Contents/MacOS/CategoriesService
+ 2267     1  2267 Fri Oct 16 00:31:29 2026     /System/Library/PrivateFrameworks/People.framework/peopled
+ 2268     1  2268 Fri Oct 16 00:31:29 2026     /usr/libexec/proactived
+ 2270     1  2270 Fri Oct 16 00:31:29 2026     /System/Library/PrivateFrameworks/ContextKit.framework/Versions/A/XPCServices/ContextService.xpc/Contents/MacOS/ContextService
+ 2271     1  2271 Fri Oct 16 00:31:29 2026     /usr/libexec/textunderstandingd
+ 2424     1  2424 Fri Oct 16 00:31:44 2026     /System/Cryptexes/App/usr/libexec/SafariBookmarksSyncAgent
+ 2707     1  2707 Fri Oct 16 00:32:01 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/RemoteManagementAgent
+ 2708     1  2708 Fri Oct 16 00:32:01 2026     /System/Library/PrivateFrameworks/AssetCacheServices.framework/Versions/A/XPCServices/AssetCacheLocatorService.xpc/Contents/MacOS/AssetCacheLocatorService -a
+ 2710     1  2710 Fri Oct 16 00:32:02 2026     /System/Library/PrivateFrameworks/SafariFoundation.framework/Versions/A/XPCServices/SafariConfigurationSubscriber.xpc/Contents/MacOS/SafariConfigurationSubscriber
+ 2711     1  2711 Fri Oct 16 00:32:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/SecuritySubscriber.xpc/Contents/MacOS/SecuritySubscriber
+ 2712     1  2712 Fri Oct 16 00:32:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/InteractiveLegacyProfilesSubscriber.xpc/Contents/MacOS/InteractiveLegacyProfilesSubscriber
+ 2713     1  2713 Fri Oct 16 00:32:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ScreenSharingSubscriber.xpc/Contents/MacOS/ScreenSharingSubscriber
+ 2717     1  2717 Fri Oct 16 00:32:02 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/LegacyProfilesSubscriber.xpc/Contents/MacOS/LegacyProfilesSubscriber
+ 2719     1  2719 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/PasscodeSettingsSubscriber.xpc/Contents/MacOS/PasscodeSettingsSubscriber
+ 2720     1  2720 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/AccountSubscriber.xpc/Contents/MacOS/AccountSubscriber
+ 2721     1  2721 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagedAppsSubscriber.xpc/Contents/MacOS/ManagedAppsSubscriber
+ 2722     1  2722 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagementTestSubscriber.xpc/Contents/MacOS/ManagementTestSubscriber
+ 2723     1  2723 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ASConfigurationSubscriber.xpc/Contents/MacOS/ASConfigurationSubscriber
+ 2724     1  2724 Fri Oct 16 00:32:03 2026     /System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/ManagedSettingsSubscriber.xpc/Contents/MacOS/ManagedSettingsSubscriber
+ 2957     1  2957 Fri Oct 16 00:32:17 2026     /System/Library/PrivateFrameworks/PrivateCloudCompute.framework/privatecloudcomputed.app/Contents/MacOS/privatecloudcomputed
+ 2958     1  2958 Fri Oct 16 00:32:17 2026     /usr/libexec/swtransparencyd
+ 2987     1  2987 Fri Oct 16 00:32:17 2026     /System/Library/PrivateFrameworks/AppleIntelligenceReportingProcessing.framework/Versions/A/XPCServices/AppleIntelligenceReportingProcessingService.xpc/Contents/MacOS/AppleIntelligenceReportingProcessingService
+ 3201     1  3201 Fri Oct 16 00:32:29 2026     /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker
+ 3323     1  3323 Fri Oct 16 00:32:31 2026     /System/Library/Frameworks/CoreSpotlight.framework/spotlightknowledged -x
+ 3336     1  3336 Fri Oct 16 00:32:34 2026     /System/Library/PrivateFrameworks/SafariSafeBrowsing.framework/com.apple.Safari.SafeBrowsing.Service
+ 3337     1  3337 Fri Oct 16 00:32:34 2026     /System/Library/PrivateFrameworks/MapsSync.framework/mapssyncd
+ 3344   994   981 Fri Oct 16 00:32:35 2026     /Users/runner/actions-runner/extracted/bin/Runner.Listener run
+ 3347     1  3347 Fri Oct 16 00:32:35 2026     /usr/libexec/aneuserd
+ 3348     1  3348 Fri Oct 16 00:32:35 2026     /usr/libexec/aned
+ 3351  3344   981 Fri Oct 16 00:32:37 2026     /Users/runner/actions-runner/extracted/bin/Runner.Worker spawnclient 143 146
+ 4071     1  4071 Fri Oct 16 00:32:55 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/com.apple.CoreSimulator.CoreSimulatorService
+ 4072     1  4072 Fri Oct 16 00:32:55 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Resources/bin/simdiskimaged
+ 4073     1  4073 Fri Oct 16 00:32:55 2026     /System/Library/PrivateFrameworks/DiskImages2.framework/Versions/A/XPCServices/diskimagescontroller.xpc/Contents/MacOS/diskimagescontroller
+ 4075     1  4075 Fri Oct 16 00:32:55 2026     /usr/libexec/diskimagesiod
+ 4076     1  4076 Fri Oct 16 00:32:55 2026     /usr/libexec/fskit_agent
+ 4081     1  4081 Fri Oct 16 00:32:55 2026     /usr/libexec/diskimagesiod
+ 4086     1  4086 Fri Oct 16 00:32:56 2026     /usr/libexec/diskimagesiod
+ 4091     1  4091 Fri Oct 16 00:32:56 2026     /usr/libexec/diskimagesiod
+ 4096     1  4096 Fri Oct 16 00:32:56 2026     /usr/libexec/diskimagesiod
+ 4102     1  4102 Fri Oct 16 00:32:56 2026     /usr/libexec/diskimagesiod
+ 4107     1  4107 Fri Oct 16 00:32:56 2026     /usr/libexec/diskimagesiod
+ 4112     1  4112 Fri Oct 16 00:32:57 2026     /usr/libexec/diskimagesiod
+ 4117     1  4117 Fri Oct 16 00:32:57 2026     /usr/libexec/diskimagesiod
+ 4122     1  4122 Fri Oct 16 00:32:57 2026     /usr/libexec/diskimagesiod
+ 4128     1  4128 Fri Oct 16 00:32:57 2026     /usr/libexec/diskimagesiod
+ 4133     1  4133 Fri Oct 16 00:32:57 2026     /usr/libexec/diskimagesiod
+ 4138     1  4138 Fri Oct 16 00:32:58 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/SimLaunchHost.arm64.xpc/Contents/MacOS/SimLaunchHost.arm64
+ 4139     1  4139 Fri Oct 16 00:32:58 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/SimulatorTrampoline.xpc/Contents/MacOS/SimulatorTrampoline
+ 4155     1  4155 Fri Oct 16 00:33:00 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimStreamProcessorServices.simdeviceio/Contents/XPCServices/SimStreamProcessorService.xpc/Contents/MacOS/SimStreamProcessorService
+ 4156     1  4156 Fri Oct 16 00:33:00 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimRenderingServices.simdeviceio/Contents/XPCServices/SimRenderServer.xpc/Contents/MacOS/SimRenderServer
+ 4157     1  4157 Fri Oct 16 00:33:00 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimAudioProcessorServices.simdeviceio/Contents/XPCServices/SimAudioProcessorService.xpc/Contents/MacOS/SimAudioProcessorService
+ 4158     1  4158 Fri Oct 16 00:33:01 2026     /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/CVMServer
+ 4159     1  4159 Fri Oct 16 00:33:01 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimRenderingServices.simdeviceio/Contents/XPCServices/SimMetalHost.xpc/Contents/MacOS/SimMetalHost
+ 4160     1  4160 Fri Oct 16 00:33:01 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimRenderingServices.simdeviceio/Contents/XPCServices/SimMetalHost.xpc/Contents/MacOS/SimMetalHost
+ 4161     1  4161 Fri Oct 16 00:33:01 2026     /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/SimRenderingServices.simdeviceio/Contents/XPCServices/SimMetalHost.xpc/Contents/MacOS/SimMetalHost
+ 4162     1  4162 Fri Oct 16 00:33:01 2026     launchd_sim /Users/runner/Library/Developer/CoreSimulator/Devices/88931AEA-62E6-447F-8697-DCE00A671384/data/var/run/launchd_bootstrap.plist
+ 4360  4162  4360 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/UserEventAgent (System)
+ 4361  4162  4361 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app/SpringBoard
+ 4362  4162  4362 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/logd
+ 4363  4162  4363 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AssistantServices.framework/assistantd
+ 4364  4162  4364 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/runningboardd
+ 4365  4162  4365 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/People.framework/peopled
+ 4366  4162  4366 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord
+ 4367  4162  4367 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Accounts.framework/accountsd
+ 4368  4162  4368 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MediaRemote.framework/Support/mediaremoted
+ 4369  4162  4369 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/routined LAUNCHED_BY_LAUNCHD
+ 4370  4162  4370 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
+ 4371  4162  4371 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/HealthKit.framework/healthd
+ 4372  4162  4372 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IDSSimulatorSupport.framework/Support/ids_simd
+ 4373  4162  4373 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/TCC.framework/Support/tccd
+ 4374  4162  4374 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreParsec.framework/parsecd
+ 4375  4162  4375 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/BiomeStreams.framework/Support/biomed
+ 4376  4162  4376 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MobileTimer.framework/Executables/mobiletimerd
+ 4377  4162  4377 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/identityservicesd
+ 4378  4162  4378 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/sbin/syslogd
+ 4379  4162  4379 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/appprotectiond
+ 4380  4162  4380 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/wcd
+ 4381  4162  4381 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AskPermission.framework/Support/askpermissiond
+ 4382  4162  4382 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/backboardd
+ 4383  4162  4383 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/sharingd
+ 4384  4162  4384 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/ManagedSettings.framework/ManagedSettingsAgent
+ 4385  4162  4385 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/locationd
+ 4386  4162  4386 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/NanoPreferencesSync.framework/nanoprefsyncd -companion
+ 4387  4162  4387 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/dasd
+ 4388  4162  4388 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SleepDaemon.framework/sleepd
+ 4389  4162  4389 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/sbin/distnoted daemon
+ 4390  4162  4390 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/PassKitCore.framework/passd
+ 4391  4162  4391 Fri Oct 16 00:33:02 2026     /usr/libexec/CoreSimulatorBridge
+ 4392  4162  4392 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MapsSupport.framework/navd
+ 4393  4162  4393 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/remindd
+ 4394  4162  4394 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/GenerationalStorage.framework/revisiond
+ 4395  4162  4395 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/rapportd
+ 4396  4162  4396 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AppleMediaServices.framework/amsaccountsd
+ 4397  4162  4397 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/configd_sim -d
+ 4398  4162  4398 Fri Oct 16 00:33:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/sbin/notifyd
+ 4403  4162  4403 Fri Oct 16 00:33:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/diagnosticd
+ 4404  4162  4404 Fri Oct 16 00:33:04 2026     aslmanager
+ 4405  4162  4405 Fri Oct 16 00:33:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/logd_helper
+ 4406  4162  4406 Fri Oct 16 00:33:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/sbin/cfprefsd daemon
+ 4407     1  4407 Fri Oct 16 00:33:05 2026     /usr/libexec/diagnosticd
+ 4408  4162  4408 Fri Oct 16 00:33:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ApplePushService.framework/apsd
+ 4409  4162  4409 Fri Oct 16 00:33:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/containermanagerd_system --runmode=privileged --user-container-mode=none --bundle-container-mode=per-user --bundle-container-owner=- --system-container-mode=per-user --system-container-owner=-
+ 4410  4162  4410 Fri Oct 16 00:33:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/lsd
+ 4411  4162  4411 Fri Oct 16 00:33:05 2026     /usr/libexec/triald
+ 4412  4162  4412 Fri Oct 16 00:33:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/gamecontrollerd
+ 4413  4162  4413 Fri Oct 16 00:33:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/containermanagerd --runmode=agent --user-container-mode=current --bundle-container-mode=proxy --bundle-container-owner=- --system-container-mode=proxy --system-container-owner=-
+ 4414     1  4414 Fri Oct 16 00:33:05 2026     /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+ 4416  4162  4416 Fri Oct 16 00:33:06 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/UserNotificationsCore.framework/Support/usernotificationsd
+ 4417  4162  4417 Fri Oct 16 00:33:06 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/nanoregistryd
+ 4418  4162  4418 Fri Oct 16 00:33:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SessionCore.framework/Support/liveactivitiesd
+ 4419  4162  4419 Fri Oct 16 00:33:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/Pasteboard.framework/Support/pasted
+ 4420  4162  4420 Fri Oct 16 00:33:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/DoNotDisturbServer.framework/Support/donotdisturbd
+ 4421  4162  4421 Fri Oct 16 00:33:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ChronoCore.framework/Support/chronod
+ 4422  4162  4422 Fri Oct 16 00:33:08 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/securityd
+ 4424  4162  4424 Fri Oct 16 00:33:09 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IntlPreferences.framework/Support/localizationswitcherd
+ 4425  4162  4425 Fri Oct 16 00:33:09 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/iconservicesagent
+ 4426  4162  4426 Fri Oct 16 00:33:09 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Contacts.framework/Support/contactsd
+ 4428  4162  4428 Fri Oct 16 00:33:10 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/nsurlsessiond
+ 4430  4162  4430 Fri Oct 16 00:33:10 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 4431  4162  4431 Fri Oct 16 00:33:10 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/VoiceShortcuts.framework/Support/siriactionsd
+ 4432  4162  4432 Fri Oct 16 00:33:11 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
+ 4434  4162  4434 Fri Oct 16 00:33:11 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/AccessibilityUIServer.app/AccessibilityUIServer
+ 4435     1  4435 Fri Oct 16 00:33:11 2026     /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+ 4436  4162  4436 Fri Oct 16 00:33:11 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 4437     1  4437 Fri Oct 16 00:33:11 2026     /usr/libexec/taskgated
+ 4439  4162  4439 Fri Oct 16 00:33:12 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/GeoServices.framework/geod
+ 4440  4162  4440 Fri Oct 16 00:33:13 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SyncedDefaults.framework/Support/syncdefaultsd
+ 4442  4162  4442 Fri Oct 16 00:33:14 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/TelephonyUtilities.framework/callservicesd
+ 4443  4162  4443 Fri Oct 16 00:33:14 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FamilyCircle.framework/familycircled
+ 4444  4162  4444 Fri Oct 16 00:33:14 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/StatusKit.framework/StatusKitAgent
+ 4445  4162  4445 Fri Oct 16 00:33:14 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreCDP.framework/cdpd
+ 4446  4162  4446 Fri Oct 16 00:33:14 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/HomeKitDaemon.framework/Support/homed
+ 4452  4162  4452 Fri Oct 16 00:33:15 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/eligibilityd
+ 4454  4162  4454 Fri Oct 16 00:33:15 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ClipServices.framework/clipserviced
+ 4455  4162  4455 Fri Oct 16 00:33:15 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/GenerativeExperiencesRuntime.framework/generativeexperiencesd
+ 4456  4162  4456 Fri Oct 16 00:33:15 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SetupAssistant.framework/budd
+ 4461  4162  4461 Fri Oct 16 00:33:16 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Cryptexes/App/usr/libexec/webbookmarksd
+ 4463  4162  4463 Fri Oct 16 00:33:16 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SystemStatusServer.framework/Support/systemstatusd
+ 4470  4162  4470 Fri Oct 16 00:33:18 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/appleaccountd
+ 4472  4162  4472 Fri Oct 16 00:33:18 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/mobileassetd
+ 4480  4162  4480 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ModelCatalogRuntime.framework/modelcatalogd
+ 4481  4162  4481 Fri Oct 16 00:33:20 2026     /usr/libexec/siriknowledged
+ 4482  4162  4482 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreSpeech.framework/corespeechd
+ 4483  4162  4483 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/linkd
+ 4484  4162  4484 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SiriTTSService.framework/sirittsd
+ 4485  4162  4485 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/iCloudNotification.framework/ind
+ 4486  4162  4486 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SiriInference.framework/Support/siriinferenced
+ 4488  4162  4488 Fri Oct 16 00:33:20 2026     /usr/libexec/assetsubscriptiond
+ 4491  4162  4491 Fri Oct 16 00:33:20 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ContextKit.framework/XPCServices/ContextService.xpc/ContextService
+ 4496  4162  4496 Fri Oct 16 00:33:21 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/findmylocated
+ 4499  4162  4499 Fri Oct 16 00:33:22 2026     /usr/libexec/pkd
+ 4500  4162  4500 Fri Oct 16 00:33:22 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/countryd
+ 4502  4162  4502 Fri Oct 16 00:33:22 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AuthKit.framework/akd
+ 4503  4162  4503 Fri Oct 16 00:33:22 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/PosterBoard.app/PosterBoard
+ 4504  4162  4504 Fri Oct 16 00:33:23 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreFollowUp.framework/followupd
+ 4507  4162  4507 Fri Oct 16 00:33:23 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Speech.framework/XPCServices/localspeechrecognition.xpc/localspeechrecognition
+ 4511  4162  4511 Fri Oct 16 00:33:24 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AppleMediaServicesUI.framework/amsengagementd
+ 4515  4162  4515 Fri Oct 16 00:33:24 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/biomesyncd
+ 4526  4162  4526 Fri Oct 16 00:33:26 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/FinanceKit.framework/financed
+ 4543  4162  4543 Fri Oct 16 00:33:26 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IntelligencePlatformCore.framework/intelligenceplatformd
+ 4544  4162  4544 Fri Oct 16 00:33:26 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/DataAccess.framework/Support/dataaccessd
+ 4550  4162  4550 Fri Oct 16 00:33:28 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/Search.framework/searchd
+ 4576  4162  4576 Fri Oct 16 00:33:29 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/textunderstandingd
+ 4578  4162  4578 Fri Oct 16 00:33:29 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreSuggestions.framework/suggestd
+ 4579  4162  4579 Fri Oct 16 00:33:29 2026     assetsd
+ 4606  4162  4606 Fri Oct 16 00:33:33 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/adprivacyd
+ 4607  4162  4607 Fri Oct 16 00:33:33 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/WeatherDaemon.framework/weatherd
+ 4616  4162  4616 Fri Oct 16 00:33:34 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/EmailDaemon.framework/maild
+ 4618  4162  4618 Fri Oct 16 00:33:34 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/iTunesCloud.framework/Support/itunescloudd
+ 4619  4162  4619 Fri Oct 16 00:33:34 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/tvremoted
+ 4621  4162  4621 Fri Oct 16 00:33:34 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/diagnosticextensionsd
+ 4622  4162  4622 Fri Oct 16 00:33:35 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ContinuousDialogManagerService.framework/assistant_cdmd
+ 4626  4162  4626 Fri Oct 16 00:33:35 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CloudSubscriptionFeatures.framework/featureaccessd
+ 4628  4162  4628 Fri Oct 16 00:33:36 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AvatarPersistence.framework/Support/avatarsd
+ 4637  4162  4637 Fri Oct 16 00:33:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FitnessCoachingServices.framework/fitnesscoachingd
+ 4644  4162  4644 Fri Oct 16 00:33:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/UsageTracking.framework/UsageTrackingAgent
+ 4648  4162  4648 Fri Oct 16 00:33:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Cryptexes/App/usr/libexec/SafariBookmarksSyncAgent
+ 4688  4162  4688 Fri Oct 16 00:33:40 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/FileProvider.framework/Support/fileproviderd
+ 4732  4162  4732 Fri Oct 16 00:33:41 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/sbin/filecoordinationd
+ 4811  4162  4811 Fri Oct 16 00:33:42 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/modelmanagerd
+ 4934  4162  4934 Fri Oct 16 00:33:44 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/nanoregistrylaunchd
+ 4945     1  4945 Fri Oct 16 00:33:45 2026     /System/Library/PrivateFrameworks/CoreFP.framework/Versions/A/fairplayd
+ 4946     1  4946 Fri Oct 16 00:33:46 2026     /System/Library/PrivateFrameworks/CoreFP.framework/Versions/A/XPCServices/com.apple.fpsd.arcadeservice.xpc/Contents/MacOS/com.apple.fpsd.arcadeservice
+ 4947     1  4947 Fri Oct 16 00:33:46 2026     /usr/sbin/distnoted agent
+ 4987  4162  4987 Fri Oct 16 00:33:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/installd
+ 4999  4162  4999 Fri Oct 16 00:33:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MobileInstallation.framework/XPCServices/com.apple.MobileInstallationHelperService.xpc/com.apple.MobileInstallationHelperService
+ 5005  4162  5005 Fri Oct 16 00:33:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IntelligencePlatformCompute.framework/XPCServices/IntelligencePlatformComputeService.xpc/IntelligencePlatformComputeService
+ 5012  4162  5012 Fri Oct 16 00:33:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/managedassetsd
+ 5018  4162  5018 Fri Oct 16 00:33:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/JetCore.framework/Support/jetpackassetd
+ 5019  4162  5019 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FitnessIntelligenceDaemonCore.framework/fitnessintelligenced
+ 5020  4162  5020 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/promotedcontentd
+ 5021  4162  5021 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MediaAnalysis.framework/mediaanalysisd
+ 5022  4162  5022 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ScreenTimeCore.framework/ScreenTimeAgent
+ 5023  4162  5023 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/HomeKitEvents.framework/Support/homeeventsd
+ 5024  4162  5024 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/TextToSpeechVoiceBankingSupport.framework/Support/voicebankingd
+ 5026  4162  5026 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreParsec.framework/parsec-fbf
+ 5027  4162  5027 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/NanoTimeKit.framework/nanotimekitcompaniond
+ 5028  4162  5028 Fri Oct 16 00:33:49 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/deviceaccessd
+ 5029  4162  5029 Fri Oct 16 00:33:50 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/dmd
+ 5031  4162  5031 Fri Oct 16 00:33:50 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SocialLayer.framework/sociallayerd.app/sociallayerd
+ 5033  4162  5033 Fri Oct 16 00:33:51 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/gamed
+ 5034  4162  5034 Fri Oct 16 00:33:52 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AppStoreDaemon.framework/Support/appstored
+ 5035  4162  5035 Fri Oct 16 00:33:52 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/spotlightknowledged.updater -u
+ 5036  4162  5036 Fri Oct 16 00:33:52 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MobileAssetDaemon.framework/XPCServices/com.apple.MobileAsset.DownloadService.Builtin.xpc/com.apple.MobileAsset.DownloadService.Builtin
+ 5038  4162  5038 Fri Oct 16 00:33:53 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/TelephonyUtilities.framework/XPCServices/com.apple.FaceTime.FTConversationService.xpc/com.apple.FaceTime.FTConversationService
+ 5040  4162  5040 Fri Oct 16 00:33:53 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/icloudmailagent
+ 5043  4162  5043 Fri Oct 16 00:33:53 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/swcd
+ 5048  4162  5048 Fri Oct 16 00:33:54 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/profiled
+ 5049  4162  5049 Fri Oct 16 00:33:54 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/CallKit.framework/XPCServices/com.apple.CallKit.CallDirectoryMaintenance.xpc/com.apple.CallKit.CallDirectoryMaintenance
+ 5053  4162  5053 Fri Oct 16 00:33:55 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ActivityAwardsServices.framework/activityawardsd
+ 5055  4162  5055 Fri Oct 16 00:33:55 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/BusinessChatService.framework/businessservicesd
+ 5059  4162  5059 Fri Oct 16 00:33:56 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/KonaSynthesizer.appex/KonaSynthesizer -AppleLanguages ("en-US")
+ 5063  4162  5063 Fri Oct 16 00:33:57 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/ExtensionFoundation.framework/XPCServices/extensionkitservice.xpc/extensionkitservice
+ 5069  4162  5069 Fri Oct 16 00:33:57 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/iTunesStore.framework/Support/itunesstored
+ 5071  4162  5071 Fri Oct 16 00:33:57 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CascadeSets.framework/XPCServices/SetStoreUpdateService.xpc/SetStoreUpdateService
+ 5073  4162  5073 Fri Oct 16 00:33:58 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/ExtensionFoundation.framework/XPCServices/extensionkitservice.xpc/extensionkitservice
+ 5076  4162  5076 Fri Oct 16 00:33:58 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/carkitd
+ 5077  4162  5077 Fri Oct 16 00:33:59 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 5079  4162  5079 Fri Oct 16 00:33:59 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AssetCacheServices.framework/XPCServices/AssetCacheLocatorService.xpc/AssetCacheLocatorService -d
+ 5081     1  5081 Fri Oct 16 00:33:59 2026     /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+ 5090  4162  5090 Fri Oct 16 00:34:00 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/HostInferenceProviderService.appex/HostInferenceProviderService -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Ib3N0SW5mZXJlbmNlUHJvdmlkZXJTZXJ2aWNlIiwidHlwZSI6OCwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+ 5092  4162  5092 Fri Oct 16 00:34:01 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/PromotedContentJetSupport.framework/XPCServices/PromotedContentJetService.xpc/PromotedContentJetService
+ 5094  4162  5094 Fri Oct 16 00:34:01 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CalendarDaemon.framework/Support/calaccessd
+ 5099  4162  5099 Fri Oct 16 00:34:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/AdaptiveMusicApp.app/PlugIns/AdaptiveMusicWidget.appex/AdaptiveMusicWidget -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5BZGFwdGl2ZU11c2ljQXBwLkFkYXB0aXZlTXVzaWNXaWRnZXQiLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+ 5100  4162  5100 Fri Oct 16 00:34:03 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/HealthPluginHost.framework/healthappd
+ 5104  4162  5104 Fri Oct 16 00:34:03 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/InstallCoordination.framework/Support/installcoordinationd
+ 5106  4162  5106 Fri Oct 16 00:34:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MusicLibrary.framework/Support/medialibraryd
+ 5110  4162  5110 Fri Oct 16 00:34:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FitnessIntelligenceDaemonCore.framework/XPCServices/FitnessIntelligenceInferenceService.xpc/FitnessIntelligenceInferenceService
+ 5112  4162  5112 Fri Oct 16 00:34:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MacinTalk.framework/PlugIns/MacinTalkAUSP.appex/MacinTalkAUSP -AppleLanguages ("en-US")
+ 5115  4162  5115 Fri Oct 16 00:34:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FitnessIntelligenceDaemonCore.framework/XPCServices/FitnessIntelligenceSnapshotService.xpc/FitnessIntelligenceSnapshotService
+ 5116  4162  5116 Fri Oct 16 00:34:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/StreamingExtractor.framework/XPCServices/STExtractionService.xpc/STExtractionService
+ 5117  4162  5117 Fri Oct 16 00:34:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/StreamingZip.framework/XPCServices/com.apple.StreamingUnzipService.xpc/com.apple.StreamingUnzipService
+ 5131  4162  5131 Fri Oct 16 00:34:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/ActivitySharingServices.framework/activitysharingd
+ 5132  4162  5132 Fri Oct 16 00:34:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/GradientPoster.app/Extensions/GradientPosterExtension.appex/GradientPosterExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuR3JhZGllbnRQb3N0ZXIuR3JhZGllbnRQb3N0ZXJFeHRlbnNpb24iLCJ0eXBlIjo3fQ==
+ 5133  4162  5133 Fri Oct 16 00:34:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Bridge.app/PlugIns/BridgeWidgetExtension.appex/BridgeWidgetExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5CcmlkZ2UuQnJpZGdlV2lkZ2V0RXh0ZW5zaW9uIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2UsInR5cGUiOjF9
+ 5137  4162  5137 Fri Oct 16 00:34:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FontServices.framework/Support/fontservicesd
+ 5144  4162  5144 Fri Oct 16 00:34:09 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/MauiAUSP.appex/MauiAUSP -AppleLanguages ("en-US")
+ 5146  4162  5146 Fri Oct 16 00:34:10 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CascadeSets.framework/XPCServices/SetStoreUpdateService.xpc/SetStoreUpdateService
+ 5150  4162  5150 Fri Oct 16 00:34:12 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/WeatherPosterApp.app/Extensions/WeatherPoster.appex/WeatherPoster -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6Nywic2VydmljZU5hbWUiOiJjb20uYXBwbGUuUG9zdGVycy5XZWF0aGVyUG9zdGVyQXBwLldlYXRoZXJQb3N0ZXIifQ==
+ 5151  4162  5151 Fri Oct 16 00:34:12 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Batteries.app/PlugIns/BatteriesWidgetExtension.appex/BatteriesWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQmF0dGVyaWVzLkJhdHRlcmllc1dpZGdldCIsInR5cGUiOjF9
+ 5159  4162  5159 Fri Oct 16 00:34:17 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/SiriAUSP.appex/SiriAUSP -AppleLanguages ("en-US")
+ 5168  4162  5168 Fri Oct 16 00:34:21 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/ClockPosterExtension.appex/ClockPosterExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5DbG9ja1Bvc3Rlci5DbG9ja1Bvc3RlckV4dGVuc2lvbiIsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlLCJ0eXBlIjo3fQ==
+ 5170  4162  5170 Fri Oct 16 00:34:21 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/WidgetRenderer_Default.app/WidgetRenderer_Default
+ 5171  4162  5171 Fri Oct 16 00:34:21 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Family.app/Family
+ 5175  4162  5175 Fri Oct 16 00:34:22 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Fitness.app/PlugIns/MirroredWidgetExtension.appex/MirroredWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuRml0bmVzcy5NaXJyb3JlZFdpZGdldCJ9
+ 5180  4162  5180 Fri Oct 16 00:34:23 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 5182     1  5182 Fri Oct 16 00:34:24 2026     /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+ 5184  4162  5184 Fri Oct 16 00:34:25 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Spotlight.app/Spotlight
+ 5187  4162  5187 Fri Oct 16 00:34:26 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AmbientUI.framework/PlugIns/InfographPoster.appex/InfographPoster -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6Nywic2VydmljZU5hbWUiOiJjb20uYXBwbGUuYW1iaWVudC5BbWJpZW50VUkuSW5mb2dyYXBoUG9zdGVyIn0=
+ 5188  4162  5188 Fri Oct 16 00:34:26 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Screen Time.app/PlugIns/ScreenTimeWidgetExtension.appex/ScreenTimeWidgetExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5TY3JlZW5UaW1lV2lkZ2V0QXBwbGljYXRpb24uU2NyZWVuVGltZVdpZGdldEV4dGVuc2lvbiIsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 5193  4162  5193 Fri Oct 16 00:34:28 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/AegirProxyApp.app/Extensions/AegirPoster.appex/AegirPoster -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5OYW5vVW5pdmVyc2UuQWVnaXJQcm94eUFwcC5BZWdpclBvc3RlciIsInR5cGUiOjcsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 5194  4162  5194 Fri Oct 16 00:34:28 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/CollectionsPoster.appex/CollectionsPoster -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6Nywic2VydmljZU5hbWUiOiJjb20uYXBwbGUuV2FsbHBhcGVyS2l0LkNvbGxlY3Rpb25zUG9zdGVyIn0=
+ 5195  4162  5195 Fri Oct 16 00:34:28 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/PhotosPosterProvider.appex/PhotosPosterProvider -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QaG90b3NVSVByaXZhdGUuUGhvdG9zUG9zdGVyUHJvdmlkZXIiLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6N30=
+ 5198  4162  5198 Fri Oct 16 00:34:29 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/AmbientPhotoFramePosterProvider.appex/AmbientPhotoFramePosterProvider -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QaG90b3NVSVByaXZhdGUuUGhvdG9zQW1iaWVudFBvc3RlclByb3ZpZGVyIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2UsInR5cGUiOjd9
+ 5201  4162  5201 Fri Oct 16 00:34:30 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/EmojiPoster.app/Extensions/EmojiPosterExtension.appex/EmojiPosterExtension -LaunchArguments eyJ0eXBlIjo3LCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5FbW9qaVBvc3Rlci5FbW9qaVBvc3RlckV4dGVuc2lvbiIsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 5202  4162  5202 Fri Oct 16 00:34:31 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Batteries.app/PlugIns/BatteriesWidgetIntentsExtension.appex/BatteriesWidgetIntentsExtension -AppleLanguages ("en-US")
+ 5204  4162  5204 Fri Oct 16 00:34:32 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/HealthAlgorithms.framework/XPCServices/DayStreamProcessorService.xpc/DayStreamProcessorService
+ 5205  4162  5205 Fri Oct 16 00:34:32 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/HealthAlgorithms.framework/XPCServices/HistoricalAnalyzerService.xpc/HistoricalAnalyzerService
+ 5234  4162  5234 Fri Oct 16 00:34:33 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/MercuryPosterExtension.appex/MercuryPosterExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5NZXJjdXJ5UG9zdGVyIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2UsInR5cGUiOjd9
+ 5236  4162  5236 Fri Oct 16 00:34:34 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Passbook.app/PlugIns/PassbookWidgetsExtension-iPhone.appex/PassbookWidgetsExtension-iPhone -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuUGFzc2Jvb2suUGFzc2Jvb2tXaWRnZXRzIiwidHlwZSI6MX0=
+ 5261  4162  5261 Fri Oct 16 00:34:35 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/PridePosterApp.app/Extensions/PridePosterExtension.appex/PridePosterExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6Nywic2VydmljZU5hbWUiOiJjb20uYXBwbGUuUHJpZGVQb3N0ZXIuUHJpZGVQb3N0ZXJFeHRlbnNpb24ifQ==
+ 5262  4162  5262 Fri Oct 16 00:34:35 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/MusicRecognition.app/PlugIns/MusicRecognitionControls.appex/MusicRecognitionControls -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5tdXNpY3JlY29nbml0aW9uLk11c2ljUmVjb2duaXRpb25Db250cm9scyIsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 5282  4162  5282 Fri Oct 16 00:34:36 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/UnityPosterApp.app/Extensions/Unity2025Poster.appex/Unity2025Poster -LaunchArguments eyJ0eXBlIjo3LCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Qb3N0ZXJzLlVuaXR5UG9zdGVyQXBwLlVuaXR5MjAyNVBvc3RlciIsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+ 5308  4162  5308 Fri Oct 16 00:34:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/UnityPosterApp.app/Extensions/UnityPoster.appex/UnityPoster -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Qb3N0ZXJzLlVuaXR5UG9zdGVyQXBwLlVuaXR5UG9zdGVyRXh0ZW5zaW9uIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2UsInR5cGUiOjd9
+ 5309  4162  5309 Fri Oct 16 00:34:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/UnityPosterApp.app/Extensions/ExtragalacticPoster.appex/ExtragalacticPoster -LaunchArguments eyJ0eXBlIjo3LCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5Qb3N0ZXJzLlVuaXR5UG9zdGVyQXBwLkV4dHJhZ2FsYWN0aWNQb3N0ZXIiLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+ 5310  4162  5310 Fri Oct 16 00:34:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Health.app/PlugIns/HealthMedicationsWidgetExtension.appex/HealthMedicationsWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuSGVhbHRoLkhlYWx0aE1lZGljYXRpb25zV2lkZ2V0RXh0ZW5zaW9uIn0=
+ 5318  4162  5318 Fri Oct 16 00:34:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 5319  4162  5319 Fri Oct 16 00:34:41 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/MercuryPosterExtension.appex/MercuryPosterExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5NZXJjdXJ5UG9zdGVyIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2UsInR5cGUiOjd9
+ 5320  4162  5320 Fri Oct 16 00:34:41 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/AdaptiveMusicApp.app/PlugIns/AdaptiveMusicControl.appex/AdaptiveMusicControl -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQWRhcHRpdmVNdXNpY0FwcC5BZGFwdGl2ZU11c2ljQ29udHJvbCIsInR5cGUiOjF9
+ 5321  4162  5321 Fri Oct 16 00:34:43 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 5322     1  5322 Fri Oct 16 00:34:44 2026     /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+ 5324  4162  5324 Fri Oct 16 00:34:47 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/MapKit.framework/XPCServices/com.apple.MapKit.SnapshotService.xpc/com.apple.MapKit.SnapshotService
+ 5325  4162  5325 Fri Oct 16 00:34:48 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/GeoAnalytics.framework/geoanalyticsd
+ 5333  4162  5333 Fri Oct 16 00:34:51 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Passbook.app/PlugIns/PassbookLockedWidgetsExtension.appex/PassbookLockedWidgetsExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QYXNzYm9vay5QYXNzYm9va0xvY2tlZFdpZGdldHMiLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+ 5334  4162  5334 Fri Oct 16 00:34:51 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 5338  4162  5338 Fri Oct 16 00:34:53 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Batteries.app/PlugIns/BatteriesAvocadoWidgetExtension.appex/BatteriesAvocadoWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQmF0dGVyaWVzLkJhdHRlcmllc0F2b2NhZG9XaWRnZXRFeHRlbnNpb24ifQ==
+ 5341  4162  5341 Fri Oct 16 00:34:54 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/PeopleViewService.app/PlugIns/PeopleWidget_iOSExtension.appex/PeopleWidget_iOSExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5QZW9wbGVWaWV3U2VydmljZS5QZW9wbGVXaWRnZXQtaU9TIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+ 5342     1  5342 Fri Oct 16 00:34:54 2026     /System/Library/PrivateFrameworks/GeoAnalytics.framework/geoanalyticsd
+ 5349  4162  5349 Fri Oct 16 00:34:55 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/PassbookStub.app/PlugIns/PassbookWidgetsExtension-iPad.appex/PassbookWidgetsExtension-iPad -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuUGFzc2Jvb2tTdHViLlBhc3Nib29rV2lkZ2V0cyJ9
+ 5350  4162  5350 Fri Oct 16 00:34:55 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/News.app/PlugIns/NewsToday2.appex/NewsToday2 -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUubmV3cy53aWRnZXQiLCJ0eXBlIjoxfQ==
+ 5359  4162  5359 Fri Oct 16 00:34:56 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Photos.app/PlugIns/PhotosReliveWidget.appex/PhotosReliveWidget -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5tb2JpbGVzbGlkZXNob3cuUGhvdG9zUmVsaXZlV2lkZ2V0IiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+ 5382  4162  5382 Fri Oct 16 00:34:57 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/AccessibilityUIServer.app/PlugIns/AccessibilityControlsExtension.appex/AccessibilityControlsExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQWNjZXNzaWJpbGl0eVVJU2VydmVyLkFjY2Vzc2liaWxpdHlDb250cm9sc0V4dGVuc2lvbiIsInR5cGUiOjF9
+ 5396     1  5396 Fri Oct 16 00:34:58 2026     /usr/libexec/mlhostd
+ 5401  4162  5401 Fri Oct 16 00:34:58 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/TVRemoteUIService.app/PlugIns/TVRemoteWidgetExtension.appex/TVRemoteWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuVFZSZW1vdGVVSVNlcnZpY2UuVFZSZW1vdGVXaWRnZXQifQ==
+ 5403  4162  5403 Fri Oct 16 00:34:58 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Reminders.app/PlugIns/RemindersWidgetExtension.appex/RemindersWidgetExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5yZW1pbmRlcnMuV2lkZ2V0RXh0ZW5zaW9uIiwiZW5oYW5jZWRTZWN1cml0eSI6ZmFsc2V9
+ 5457  4162  5457 Fri Oct 16 00:34:59 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/ControlCenterControlsExtension.appex/ControlCenterControlsExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQ29udHJvbENlbnRlci5Db250cm9sQ2VudGVyQ29udHJvbHNFeHRlbnNpb24iLCJ0eXBlIjoxfQ==
+ 5490     1  5490 Fri Oct 16 00:34:59 2026     /usr/libexec/wifianalyticsd
+ 5501  4162  5501 Fri Oct 16 00:34:59 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Shortcuts.app/PlugIns/ShortcutsWidgetExtension.appex/ShortcutsWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuc2hvcnRjdXRzLlNob3J0Y3V0c1dpZGdldCJ9
+ 5540  4162  5540 Fri Oct 16 00:35:00 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/SleepWidgetContainer.app/PlugIns/SleepWidgetExtension.appex/SleepWidgetExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5IZWFsdGguU2xlZXAuU2xlZXBXaWRnZXRFeHRlbnNpb24iLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+ 5554  4162  5554 Fri Oct 16 00:35:02 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/News.app/PlugIns/NewsTag.appex/NewsTag -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUubmV3cy50YWcifQ==
+ 5561  4162  5561 Fri Oct 16 00:35:03 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Fitness.app/PlugIns/FitnessWidget.appex/FitnessWidget -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuRml0bmVzcy5GaXRuZXNzV2lkZ2V0IiwidHlwZSI6MX0=
+ 5570     1  5570 Fri Oct 16 00:35:03 2026     /System/Library/PrivateFrameworks/IntelligenceTasksEngine.framework/Support/intelligencetasksd
+ 5575  4162  5575 Fri Oct 16 00:35:04 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/BarcodeScanner.app/PlugIns/BarcodeScannerWidgetExtension.appex/BarcodeScannerWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuQmFyY29kZVNjYW5uZXIuQmFyY29kZVNjYW5uZXJXaWRnZXRFeHRlbnNpb24ifQ==
+ 5608  4162  5608 Fri Oct 16 00:35:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Health.app/PlugIns/HealthMentalHealthWidgetExtension.appex/HealthMentalHealthWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuSGVhbHRoLkhlYWx0aE1lbnRhbEhlYWx0aFdpZGdldEV4dGVuc2lvbiJ9
+ 5609  4162  5609 Fri Oct 16 00:35:05 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Health.app/PlugIns/HealthPlansWidgetExtension.appex/HealthPlansWidgetExtension -LaunchArguments eyJ0eXBlIjoxLCJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5IZWFsdGguSGVhbHRoUGxhbnNXaWRnZXRFeHRlbnNpb24iLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZX0=
+ 5629  4162  5629 Fri Oct 16 00:35:06 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Health.app/PlugIns/HealthBalanceWidgetExtension.appex/HealthBalanceWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuSGVhbHRoLkhlYWx0aEJhbGFuY2VXaWRnZXRFeHRlbnNpb24ifQ==
+ 5654  4162  5654 Fri Oct 16 00:35:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Reminders.app/PlugIns/RemindersSpotlightIndexExtension.appex/RemindersSpotlightIndexExtension -AppleLanguages ("en-US")
+ 5657  4162  5657 Fri Oct 16 00:35:07 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Health.app/PlugIns/HealthCycleTrackingWidgetExtension.appex/HealthCycleTrackingWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuSGVhbHRoLkhlYWx0aEN5Y2xlVHJhY2tpbmdXaWRnZXRFeHRlbnNpb24iLCJ0eXBlIjoxfQ==
+ 5716  4162  5716 Fri Oct 16 00:35:11 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CascadeSets.framework/XPCServices/SetStoreUpdateService.xpc/SetStoreUpdateService
+ 5719  4162  5719 Fri Oct 16 00:35:13 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Screen Time.app/PlugIns/ScreenTimeWidgetIntentsExtension.appex/ScreenTimeWidgetIntentsExtension -AppleLanguages ("en-US")
+ 5720  4162  5720 Fri Oct 16 00:35:15 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CalendarWidget.framework/PlugIns/IntentsExtension.appex/IntentsExtension -AppleLanguages ("en-US")
+ 5722  4162  5722 Fri Oct 16 00:35:16 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/PeopleViewService.app/PlugIns/SelectPerson_iOS.appex/SelectPerson_iOS -AppleLanguages ("en-US")
+ 5724  4162  5724 Fri Oct 16 00:35:17 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Reminders.app/PlugIns/RemindersIntentsExtension.appex/RemindersIntentsExtension -AppleLanguages ("en-US")
+ 5726  4162  5726 Fri Oct 16 00:35:18 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/News.app/PlugIns/NewsTodayIntents.appex/NewsTodayIntents -AppleLanguages ("en-US")
+ 5808  4162  5808 Fri Oct 16 00:35:22 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CommunicationTrust.framework/Support/communicationtrustd
+ 5826  4162  5826 Fri Oct 16 00:35:23 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FontServices.framework/XPCServices/UserFontManager.xpc/UserFontManager
+ 6055  4162  6055 Fri Oct 16 00:35:27 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/MTLCompilerService
+ 7112     1  7112 Fri Oct 16 00:36:05 2026     /usr/sbin/spindump
+ 7891  4162  7891 Fri Oct 16 00:36:17 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/PhotoAnalysis.framework/Support/photoanalysisd
+ 7893  4162  7893 Fri Oct 16 00:36:17 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Translation.framework/translationd
+ 8253  4162  8253 Fri Oct 16 00:36:36 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/RemoteManagement.framework/remotemanagementd
+ 8263  4162  8263 Fri Oct 16 00:36:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/videosubscriptionsd
+ 8264  4162  8264 Fri Oct 16 00:36:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/iCloudDriveCore.framework/bird
+ 8266  4162  8266 Fri Oct 16 00:36:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/coreidvd
+ 8268  4162  8268 Fri Oct 16 00:36:37 2026     /System/Library/Frameworks/StoreKit.framework/Support/storekitd
+ 8269  4162  8269 Fri Oct 16 00:36:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/FamilyControls.framework/FamilyControlsAgent
+ 8270  4162  8270 Fri Oct 16 00:36:37 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/MapsSync.framework/mapssyncd
+ 8275  4162  8275 Fri Oct 16 00:36:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/splashboardd
+ 8277  4162  8277 Fri Oct 16 00:36:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/SeymourServices.framework/fitcored
+ 8284  4162  8284 Fri Oct 16 00:36:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/MobileSafari.app/PlugIns/SafariWidgetExtension.appex/SafariWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUubW9iaWxlc2FmYXJpLlNhZmFyaVdpZGdldEV4dGVuc2lvbiJ9
+ 8286  4162  8286 Fri Oct 16 00:36:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/RemoteManagement.framework/XPCServices/SecuritySubscriber.xpc/SecuritySubscriber
+ 8358  4162  8358 Fri Oct 16 00:36:42 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CoreEmbeddedSpeechRecognition.framework/XPCServices/com.apple.siri.embeddedspeech.xpc/com.apple.siri.embeddedspeech
+ 8554     1  8554 Fri Oct 16 00:36:49 2026     /usr/sbin/WirelessRadioManagerd
+ 8564     1  8564 Fri Oct 16 00:36:52 2026     /usr/libexec/mmaintenanced
+ 8902  4162  8902 Fri Oct 16 00:36:55 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Maps.app/PlugIns/GeneralMapsWidget.appex/GeneralMapsWidget -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUuTWFwcy5HZW5lcmFsTWFwc1dpZGdldCIsInR5cGUiOjF9
+ 9011  3351   981 Fri Oct 16 00:36:56 2026     /bin/bash -e /Users/runner/work/_temp/07eb6018-fad7-4d61-b7ce-353125ef1c08.sh
+ 9161     1  9161 Fri Oct 16 00:37:03 2026     /usr/libexec/feedbackd
+ 9287  4162  9287 Fri Oct 16 00:37:09 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Contacts.framework/Support/postersyncd
+10130     1 10130 Fri Oct 16 00:37:20 2026     /usr/libexec/assessmentagent
+10133     1 10133 Fri Oct 16 00:37:21 2026     /System/Library/PrivateFrameworks/CommerceKit.framework/Versions/A/Resources/commerce
+10141     1 10141 Fri Oct 16 00:37:24 2026     /System/Library/PrivateFrameworks/EmailDaemon.framework/Versions/A/maild
+10183     1 10183 Fri Oct 16 00:37:28 2026     /usr/libexec/tipsd
+10184     1 10184 Fri Oct 16 00:37:28 2026     /usr/libexec/dirhelper
+10198     1 10198 Fri Oct 16 00:37:29 2026     /System/Library/Frameworks/CoreTelephony.framework/Support/CommCenter -L
+10565     1 10565 Fri Oct 16 00:37:31 2026     /System/Library/PrivateFrameworks/CoreRecents.framework/Versions/A/Support/recentsd
+10697     1 10697 Fri Oct 16 00:37:32 2026     /usr/libexec/replayd
+10841  4162 10841 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/PairedSync.framework/Support/pairedsyncd
+10842  4162 10842 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/addressbooksyncd
+10843  4162 10843 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/WatchKit.framework/Support/companionappd
+10844  4162 10844 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/bulletindistributord
+10849  4162 10849 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/brookcompaniond
+10850  4162 10850 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/eventkitsyncd
+10851  4162 10851 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/AppConduit.framework/Support/appconduitd
+10852  4162 10852 Fri Oct 16 00:37:39 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/NanoPassKit.framework/NPKCompanionAgent
+10864  9011   981 Fri Oct 16 00:37:40 2026     node scripts/start-native-test-services.mjs
+10878 10864   981 Fri Oct 16 00:37:40 2026     /Users/runner/hostedtoolcache/node/24.20.0/arm64/bin/node /Users/runner/work/Whimway/Whimway/node_modules/next/dist/bin/next dev --hostname 127.0.0.1
+10879 10864   981 Fri Oct 16 00:37:40 2026     /Users/runner/hostedtoolcache/node/24.20.0/arm64/bin/node --dns-result-order=ipv4first /Users/runner/work/Whimway/Whimway/apps/mobile/node_modules/expo/bin/cli start --dev-client --localhost --port 8081
+10881 10878   981 Fri Oct 16 00:37:41 2026     next-server (v16.4.0) 
+11583     1 11583 Fri Oct 16 00:37:56 2026     /System/Library/Frameworks/ExtensionFoundation.framework/Versions/A/XPCServices/extensionkitservice.xpc/Contents/MacOS/extensionkitservice
+11586     1 11586 Fri Oct 16 00:37:57 2026     /System/Library/CoreServices/ScopedBookmarkAgent
+11614  4162 11614 Fri Oct 16 00:37:59 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/NanoAppRegistry.framework/Support/nanoappregistryd
+11629     1 11629 Fri Oct 16 00:38:05 2026     /System/Library/PrivateFrameworks/IntelligencePlatformCore.framework/Versions/A/intelligenceplatformd
+12953  9011   981 Fri Oct 16 00:38:25 2026     node scripts/run-ios-native-qa.mjs
+12982     1 12982 Fri Oct 16 00:38:27 2026     /System/Library/PrivateFrameworks/ProtectedCloudStorage.framework/Helpers/ProtectedCloudKeySyncing
+12988  4162 12988 Fri Oct 16 00:38:28 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Cryptexes/App/usr/libexec/passwordbreachd
+12992     1 12992 Fri Oct 16 00:38:28 2026     /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XProtectUpdateService.xpc/Contents/MacOS/XProtectUpdateService
+13021  4162 13021 Fri Oct 16 00:38:31 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/IntelligenceTasksEngine.framework/Support/intelligencetasksd
+13027     1 13027 Fri Oct 16 00:38:32 2026     /System/Library/CoreServices/ReportCrash agent
+13028     1 13028 Fri Oct 16 00:38:32 2026     /System/Library/PrivateFrameworks/CoreSymbolication.framework/coresymbolicationd
+13495     1 13495 Fri Oct 16 00:38:37 2026     /System/Library/CoreServices/diagnosticservicesd
+13568     1 13568 Fri Oct 16 00:38:38 2026     /usr/libexec/MTLAssetUpgraderD
+13569     1 13569 Fri Oct 16 00:38:38 2026     /usr/libexec/dmd
+13570     1 13570 Fri Oct 16 00:38:38 2026     /System/Library/Frameworks/MediaExtension.framework/Versions/A/Helpers/MENotificationAgent
+13576  4162 13576 Fri Oct 16 00:38:38 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/MobileCal.app/PlugIns/CalendarWidgetExtension.appex/CalendarWidgetExtension -LaunchArguments eyJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwidHlwZSI6MSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUubW9iaWxlY2FsLkNhbGVuZGFyV2lkZ2V0RXh0ZW5zaW9uIn0=
+13703     1 13703 Fri Oct 16 00:38:40 2026     /System/Library/CoreServices/uncd
+13704     1 13704 Fri Oct 16 00:38:40 2026     /System/Library/CoreServices/UserNotificationCenter.app/Contents/MacOS/UserNotificationCenter
+13769     1 13769 Fri Oct 16 00:38:46 2026     adb -L tcp:5037 fork-server server --reply-fd 4
+13773     1 13773 Fri Oct 16 00:38:47 2026     /usr/libexec/nesessionmanager
+13774     1 13774 Fri Oct 16 00:38:47 2026     /System/Library/Frameworks/SystemExtensions.framework/Versions/A/Helpers/sysextd
+14526     1 14526 Fri Oct 16 00:38:56 2026     /Library/Developer/PrivateFrameworks/CoreDevice.framework/Versions/A/XPCServices/CoreDeviceService.xpc/Contents/MacOS/CoreDeviceService
+14528     1 14528 Fri Oct 16 00:38:57 2026     /Library/Apple/System/Library/PrivateFrameworks/RemotePairing.framework/Versions/A/XPCServices/remotepairingd.xpc/Contents/MacOS/remotepairingd
+14529     1 14529 Fri Oct 16 00:38:57 2026     /Library/Apple/System/Library/PrivateFrameworks/DeviceInterface.framework/Support/deviceinterfaced
+14530     1 14530 Fri Oct 16 00:38:57 2026     /usr/libexec/kernelmanager_helper
+14534     1 14534 Fri Oct 16 00:38:57 2026     /Library/Apple/System/Library/PrivateFrameworks/RemotePairing.framework/Versions/A/Resources/bin/RemotePairingDataVaultHelper
+14559     1 14559 Fri Oct 16 00:39:02 2026     /usr/libexec/cryptexd
+14592     1 14592 Fri Oct 16 00:39:07 2026     /usr/libexec/diskimagesiod
+14687  4162 14687 Fri Oct 16 00:39:08 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/testmanagerd
+15678     1 15678 Fri Oct 16 00:39:14 2026     /System/Library/PrivateFrameworks/PackageKit.framework/Resources/system_installd
+15679     1 15679 Fri Oct 16 00:39:14 2026     /System/Library/PrivateFrameworks/GeoServices.framework/geodMachServiceBridge
+15703     1 15703 Fri Oct 16 00:39:18 2026     /System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService
+15705     1 15705 Fri Oct 16 00:39:19 2026     /System/Library/PrivateFrameworks/AppleCredentialManager.framework/AppleCredentialManagerDaemon
+15996     1 15996 Fri Oct 16 00:39:28 2026     /usr/libexec/tzd
+16531  4162 16531 Fri Oct 16 00:39:33 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/trustd
+16620     1 16620 Fri Oct 16 00:39:37 2026     /usr/libexec/tznotify
+17457     1 17457 Fri Oct 16 00:39:51 2026     /System/Library/PrivateFrameworks/IntelligenceFlowContextRuntime.framework/Versions/A/intelligencecontextd
+17497     1 17497 Fri Oct 16 00:39:58 2026     /System/Library/ExtensionKit/Extensions/DevicePropertiesExtension.appex/Contents/MacOS/DevicePropertiesExtension -LaunchArguments eyJzZXJ2aWNlTmFtZSI6ImNvbS5hcHBsZS5zaXJpLm1ldHJpY3MuRGV2aWNlUHJvcGVydGllc0V4dGVuc2lvbiIsInR5cGUiOjEsImVuaGFuY2VkU2VjdXJpdHkiOmZhbHNlfQ==
+18043     1 18043 Fri Oct 16 00:40:01 2026     /System/Library/PrivateFrameworks/AppleVirtualPlatform.framework/Versions/A/XPCServices/AppleVirtualPlatformIdentityService.xpc/Contents/MacOS/com.apple.Virtualization.AppleVirtualPlatformIdentity
+18256     1 18256 Fri Oct 16 00:40:08 2026     /System/Library/PrivateFrameworks/SiriTTSService.framework/sirittsd
+18257     1 18257 Fri Oct 16 00:40:08 2026     /usr/libexec/biomesyncd
+18360 12953 18360 Fri Oct 16 00:40:09 2026     /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-101.0/arm64/Contents/Home//bin/java --enable-native-access=ALL-UNNAMED -classpath /Users/runner/.maestro/lib/* maestro.cli.AppKt --device 88931AEA-62E6-447F-8697-DCE00A671384 test --driver-host-port 7003 --test-output-dir native-results/ios-reminders -e APP_ID=com.example.whimway -e IOS_DRIVER_PORT=7003 -e EXPO_DEV_URL=exp+whimway://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1&disableAutoLaunch=1 e2e-native/reminders-allow.yaml
+18384     1 18384 Fri Oct 16 00:40:10 2026     cloudphotod
+18389  4162 18389 Fri Oct 16 00:40:11 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/BackgroundShortcutRunner
+19209  4162 19209 Fri Oct 16 00:40:19 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Intents.framework/XPCServices/intents_helper.xpc/intents_helper
+19226 18360 18360 Fri Oct 16 00:40:21 2026     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/88931AEA-62E6-447F-8697-DCE00A6713845642967309658005892/maestro-driver-ios-config.xctestrun -destination id=88931AEA-62E6-447F-8697-DCE00A671384 -derivedDataPath /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/maestro_xctestrunner_xcodebuild_output14277185019856006830
+20687  4162 20687 Fri Oct 16 00:41:02 2026     /Users/runner/Library/Developer/CoreSimulator/Devices/88931AEA-62E6-447F-8697-DCE00A671384/data/Containers/Bundle/Application/972974E4-A5FF-4E2A-AD8E-6F5B25F9325C/maestro-driver-iosUITests-Runner.app/maestro-driver-iosUITests-Runner
+20693  4162 20693 Fri Oct 16 00:41:03 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/DVTInstrumentsFoundation.framework/DTServiceHub
+20759     1 20759 Fri Oct 16 00:41:10 2026     /bin/bash /Library/Application Support/Veertu/Anka/addons/ankaupd.sh
+20780     1 20780 Fri Oct 16 00:41:11 2026     /System/Library/ExtensionKit/Extensions/SearchUploadWorker.appex/Contents/MacOS/SearchUploadWorker -LaunchArguments eyJ0eXBlIjoxLCJlbmhhbmNlZFNlY3VyaXR5IjpmYWxzZSwic2VydmljZU5hbWUiOiJjb20uYXBwbGUudW5pbG9nLlNlYXJjaFVwbG9hZFdvcmtlciJ9
+21334  4162 21334 Fri Oct 16 00:41:18 2026     /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/Contacts.framework/PlugIns/ContactsCoreSpotlightExtension.appex/ContactsCoreSpotlightExtension -AppleLanguages ("en-US")
+21347 19226 21347 Fri Oct 16 00:41:18 2026     /Applications/Xcode_26.6.app/Contents/SharedFrameworks/DVTInstrumentsFoundation.framework/Resources/DTServiceHub
+21414   998   981 Fri Oct 16 00:41:19 2026     (ps)
+21415 20759 20759 Fri Oct 16 00:41:19 2026     (bash)
+21416 21415 20759 Fri Oct 16 00:41:19 2026     (diskutil)
+21417 21415 20759 Fri Oct 16 00:41:19 2026     (grep)
+21418 21415 20759 Fri Oct 16 00:41:19 2026     (sed)
+21419 21415 20759 Fri Oct 16 00:41:19 2026     (sed)
+21420 12953   981 Fri Oct 16 00:41:20 2026     /bin/ps -ww -axo pid=,ppid=,pgid=,lstart=,command=

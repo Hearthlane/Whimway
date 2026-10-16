@@ -1,0 +1,223 @@
+{
+  "scope": "Actual official Maestro YAML-to-command conversion only; no simulator or native flow execution.",
+  "recordedAt": "2026-10-15T16:48:57.3704702-04:00",
+  "tool": {
+    "version": "2.11.0",
+    "primaryRelease": "https://github.com/mobile-dev-inc/maestro/releases/tag/cli-2.11.0",
+    "cliArchive": {
+      "path": "native-results/maestro-parser-validation/maestro-2.11.0-ranged.zip",
+      "sha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"
+    },
+    "officialCliArchiveSha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a",
+    "officialCliDigestSource": "https://api.github.com/repos/mobile-dev-inc/maestro/releases/tags/cli-2.11.0",
+    "converterJar": {
+      "path": "native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/maestro-orchestra.jar",
+      "sha256": "cd1ab3b3f42d7b0df22a594ebf40883e2e98c5cdaed2037ea4b64d00a85aa357"
+    },
+    "java": "Temurin 21.0.12.1+1-LTS existing JRE",
+    "jreArchive": {
+      "path": "native-results/maestro-parser-validation/temurin21-jre.zip",
+      "sha256": "d35f31e712f0fcf6ac5a093edc90204fbff22f720ba3950bd09d331d5e621636"
+    },
+    "compiler": "Eclipse ECJ 3.42.0, official Maven Central; SHA1 independently verified against .jar.sha1",
+    "compilerUrl": "https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.42.0/ecj-3.42.0.jar",
+    "compilerSha1": "22b170025f5e0d849d07f4a84d421e42fae701bf",
+    "compilerJar": {
+      "path": "native-results/maestro-full-parser/ecj-3.42.0.jar",
+      "sha256": "29f6d3918ee02db4400c103bc25dd90a22491c3a395867d9393070cb96a7dd29"
+    },
+    "classFileMajorVersion": 61,
+    "javaExecutable": "native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe"
+  },
+  "harness": {
+    "path": "scripts/CheckNativeFlows.java",
+    "sha256": "8b09d2c944759dbd0127f118400f9acdc378e08c2117da9fc745e339ca8c7435"
+  },
+  "compiledHarness": {
+    "path": "native-results/maestro-full-parser/classes/CheckNativeFlows.class",
+    "sha256": "60cceb76fe02888a8f1c6144f698fe4304c91edfc60513222055bb85ab088d22"
+  },
+  "localCommands": [
+    "& \"native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe\" -jar native-results/maestro-full-parser/ecj-3.42.0.jar -source 17 -target 17 -encoding UTF-8 -d native-results/maestro-full-parser/classes scripts/CheckNativeFlows.java",
+    "& \"native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe\" -Dpolyglot.engine.WarnInterpreterOnly=false -cp \"native-results/maestro-full-parser/classes;native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/*\" CheckNativeFlows native-results/maestro-full-parser/original-ad9/e2e-native",
+    "& \"native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe\" -Dpolyglot.engine.WarnInterpreterOnly=false -cp \"native-results/maestro-full-parser/classes;native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/*\" CheckNativeFlows e2e-native",
+    "& \"native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe\" -Dpolyglot.engine.WarnInterpreterOnly=false -cp \"native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/*\" maestro.cli.AppKt check-syntax native-results/maestro-full-parser/original-ad9/e2e-native/smoke.yaml"
+  ],
+  "ciCommands": [
+    "mkdir -p native-parser-classes",
+    "\"$JAVA_HOME_17_X64/bin/javac\" --release 17 -d native-parser-classes scripts/CheckNativeFlows.java",
+    "\"$JAVA_HOME_17_X64/bin/java\" --enable-native-access=ALL-UNNAMED -cp \"native-parser-classes:$HOME/.maestro/lib/*\" CheckNativeFlows e2e-native"
+  ],
+  "results": {
+    "original": {
+      "commit": "ad9b7819415ddbbf8c2eb607bcc37b8aa0eb02a3",
+      "extraction": "git archive ad9b781 e2e-native, untarred without edits",
+      "graphs": 12,
+      "passed": 6,
+      "failed": 6,
+      "exitCode": 1,
+      "failure": "NumberFormatException: For input string: \"${output.whimwayPlanViewport.swipe.start}\"",
+      "importedLocation": "helpers/scroll-ios-plan.yaml:7:3",
+      "log": {
+        "path": "native-results/maestro-full-parser/original-ad9-full-conversion.log",
+        "sha256": "384d8d836378652abc02e21b2d486670b388b3a3e2d28a776d8a7a948374f39c"
+      }
+    },
+    "shallowOriginal": {
+      "entryPoint": "original-ad9/e2e-native/smoke.yaml",
+      "output": "OK",
+      "exitCode": 0,
+      "log": {
+        "path": "native-results/maestro-full-parser/original-ad9-shallow-check.log",
+        "sha256": "19d8c9921b99c82d78c985136a5e28f6382011641fb6160c0c1a7573a402ea66"
+      }
+    },
+    "current": {
+      "source": "Shared working-tree fixed flow graph, exact hashes below",
+      "graphs": 12,
+      "passed": 12,
+      "failed": 0,
+      "exitCode": 0,
+      "log": {
+        "path": "native-results/maestro-full-parser/current-full-conversion.log",
+        "sha256": "eb75b65b9cc32231e3a770bc37537ebfc2842712c37dcadb7f9310cddcbac7bc"
+      }
+    }
+  },
+  "currentFlowFiles": [
+    {
+      "path": "e2e-native/helpers/boot.yaml",
+      "sha256": "458f8f893540b9170e1ef19b0abd32bb9149c4804ebd2debcc4d3089a0a66311"
+    },
+    {
+      "path": "e2e-native/helpers/cancel-stale-whimway-link.yaml",
+      "sha256": "f77661169c5fb19cd753b84c64295faa8e1e18fbbb9ad5909bfc8b0b74a2d884"
+    },
+    {
+      "path": "e2e-native/helpers/create-fixture-plan.yaml",
+      "sha256": "9143b975987fae0e91157c17430696c190a93ffdf207f59cdf8826de84e1c794"
+    },
+    {
+      "path": "e2e-native/helpers/dismiss-pixel-launcher-anr.yaml",
+      "sha256": "505d2cabb07e8ede4564d369a5ea538abe054026b38c7643fd012e82f2661a28"
+    },
+    {
+      "path": "e2e-native/helpers/observe-ios-plan.js",
+      "sha256": "e13350a5122e0ed9f45cd86676e0a1ce9eae1b561ba3efceb5522df0e5c21e46"
+    },
+    {
+      "path": "e2e-native/helpers/open-whimway-link.yaml",
+      "sha256": "c756d8fca7baea753be6c6456ad78711da5e993e0f86f10f60d0508e5bfa74dc"
+    },
+    {
+      "path": "e2e-native/helpers/prepare-android.mjs",
+      "sha256": "4f0f8121fe446fa617e9d663251b7c6b009596c88e53fe4ffaf89bdf244703f1"
+    },
+    {
+      "path": "e2e-native/helpers/scroll-ios-plan.yaml",
+      "sha256": "79c9470e53855c0fc65f3d60d9401a0e8af21b3d34d58a307e13c2a749c406e8"
+    },
+    {
+      "path": "e2e-native/helpers/swipe-ios-plan.js",
+      "sha256": "4643ebbc7aee20d648e23689b1c0eae56aec2ce285aabe0b0d0278c3310c36c5"
+    },
+    {
+      "path": "e2e-native/helpers/tap-ios-plan.yaml",
+      "sha256": "ddc473653fbf85661452e11cc34ed10519367abfc05d72b6fe9408837398b0af"
+    },
+    {
+      "path": "e2e-native/helpers/warm-ios-bundle.mjs",
+      "sha256": "fabb75973a35a352ff5e66f82822f6183768eabe2d5679677c52eec121690446"
+    },
+    {
+      "path": "e2e-native/ios-ready.yaml",
+      "sha256": "9d01139172806f850fb3fb7173a44b6a33113a25c8427a93e8351985ecb868ca"
+    },
+    {
+      "path": "e2e-native/large-text.yaml",
+      "sha256": "d2eb5de4154b6b5975c02651e0346891daf3ce8044020c1045028dc7340e29cf"
+    },
+    {
+      "path": "e2e-native/README.md",
+      "sha256": "4a6813bf85466f122e3d001611f56f3ed09729175ab758e14de8a002f97dee56"
+    },
+    {
+      "path": "e2e-native/release-launch.yaml",
+      "sha256": "947524c397f2cb4913e6ec82b0106d94362ea219556094bd0115de443309c408"
+    },
+    {
+      "path": "e2e-native/reminders-allow.yaml",
+      "sha256": "d1cafb4208bb285947cbf51ffd838df349b7c3d5a83bdb616769903e19104171"
+    },
+    {
+      "path": "e2e-native/smoke.yaml",
+      "sha256": "b66c90bb70cb058ca436efc414278dea76e1956ed4cedb8717c7331dbe28b187"
+    }
+  ],
+  "originalFlowFiles": [
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/boot.yaml",
+      "sha256": "0cb16bd9b6934387f01f75423267946691f0ea2e3b1fe10435bc900144fafe97"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/cancel-stale-whimway-link.yaml",
+      "sha256": "b47805ff4a446b34cdb25a3777567ce10132363cbd649b67e0837fc04a65bb29"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/create-fixture-plan.yaml",
+      "sha256": "a1d3990957f5b07d4e788b6dfbbbddca07edbfad0fcab27be60463ef2c88f6c1"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/dismiss-pixel-launcher-anr.yaml",
+      "sha256": "3c8015bb9f4fb5e60ed59764a8bab88228b9b67e854d6c3df417f1fef22aa8eb"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/observe-ios-plan.js",
+      "sha256": "cd36603bd4efd17135cea9f4f62c05aa42d4e6dceafcfda5832a2af1d0a3e5df"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/open-whimway-link.yaml",
+      "sha256": "f9aad48930d01d4ed4fb80644a9f6a128fe5cc744caa9e78e78733d1c8914a34"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/prepare-android.mjs",
+      "sha256": "d64d8ad4072871d02ddc8d810553cb8cfa3616360a2cf4d6525352e5dc1e5277"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/scroll-ios-plan.yaml",
+      "sha256": "f8eae645df458d8cffce2a395d139e046bc54d802563bd4449330cdf70b9f245"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/tap-ios-plan.yaml",
+      "sha256": "201f53cab874317aefbfacfccef1a8c3843f0adb272a0137ae4f6cb576447e96"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/helpers/warm-ios-bundle.mjs",
+      "sha256": "bea50bf1cc30347b549c1bbd30f94d1ae13fae411e3da5fbc365386e56bf1dc7"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/ios-ready.yaml",
+      "sha256": "96398a9a519e0f40e9e461ae669bb05538e04e03bb6bcc3208ca3ac94dbb7d52"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/large-text.yaml",
+      "sha256": "be554ed40fa7cda7d4fe53f333efbd938fe3b0c05fab331fa98483a149a2b3d6"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/README.md",
+      "sha256": "d44fa04e8ae09363f44e15d8387ea153a73b39b54f80c7f6b4a7cf54651d2618"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/release-launch.yaml",
+      "sha256": "b0a39ada0fcd34e720696d243624db8c567cfb151c40028cf7c0b879b3b0ba16"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/reminders-allow.yaml",
+      "sha256": "e2a36c0f9d4e5ed8d27059b0cebc161b48eb5fd4e65b5af94a853d3130fc1271"
+    },
+    {
+      "path": "native-results/maestro-full-parser/original-ad9/e2e-native/smoke.yaml",
+      "sha256": "f5190d0d93585bc492e41912b91d226a7559bed8f49b3ba6d200cc6e2f028a51"
+    }
+  ]
+}

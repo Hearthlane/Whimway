@@ -1,0 +1,2 @@
+# Preserve retained JSON bytes covered by SHA-256 regressions.
+*.json -text

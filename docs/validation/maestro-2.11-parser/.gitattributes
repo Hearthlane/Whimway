@@ -1,0 +1,3 @@
+# Preserve original diagnostic bytes and their recorded SHA-256 values.
+*.log -text whitespace=cr-at-eol
+parser-provenance.json -text whitespace=cr-at-eol

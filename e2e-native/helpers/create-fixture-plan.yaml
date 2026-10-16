@@ -1,0 +1,245 @@
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # At the largest iOS text size the default center swipe starts inside the
+      # tall primary action. Use the ScrollView's inset padding, above tabs.
+      - repeat:
+          times: 12
+          while:
+            notVisible: "Use synthetic development fixtures"
+          commands:
+            - swipe:
+                start: 96%, 75%
+                end: 96%, 25%
+                duration: 700
+      # The retained 52 run already had the switch fully visible at y652-680.
+      # Default center swipes left its bounds unchanged and timed out.
+      # One extra gutter swipe uses any remaining range before the real tap;
+      # at the bottom it leaves the already accessible switch in place.
+      - swipe:
+          start: 96%, 75%
+          end: 96%, 25%
+          duration: 700
+      - assertVisible: "Use synthetic development fixtures"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Use synthetic development fixtures"
+          direction: DOWN
+# Set the real UI to ON without assuming its starting state. Never blindly
+# invert the switch or type without confirming it.
+- runFlow:
+    when:
+      visible:
+        text: "Use synthetic development fixtures"
+        checked: false
+    commands:
+      - tapOn:
+          text: "Use synthetic development fixtures"
+          checked: false
+- assertVisible:
+    text: "Use synthetic development fixtures"
+    checked: true
+- takeScreenshot: native-fixtures-enabled
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # The retained failed tap was at y61, behind the safe-area header even
+      # though accessibility considered the field visible. Center before focus.
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: UP
+          centerElement: true
+          timeout: 30000
+      # At the largest text size, UP can exhaust centering attempts with Search
+      # still below the ScrollView's clipped bottom. Move back into its viewport.
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Search a place"
+          direction: UP
+- tapOn: "Search a place"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "^delete$"
+          timeout: 10000
+      # iOS AX hasFocus remained false in a retained hierarchy with the real
+      # keyboard and onFocus ring visible. Prove input readiness through UI.
+      - assertVisible: "Done editing, dismiss keyboard"
+- inputText: "Toronto"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          text: "^Toronto$"
+          above:
+            text: "Done editing, dismiss keyboard"
+      - takeScreenshot: native-search-query-entered
+- extendedWaitUntil:
+    visible: "CF Toronto Eaton Centre"
+    timeout: 15000
+# iOS AX exposed this result behind the software keyboard in run38805051576:
+# its reported center y566 hit the keyboard below the Done bar (y473–539).
+# Dismiss through the actual UI first, then re-find the result in the expanded
+# viewport. A completed tap alone is not evidence that a place was selected.
+- runFlow:
+    when:
+      visible: "Done editing, dismiss keyboard"
+    commands:
+      - tapOn: "Done editing, dismiss keyboard"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: "^delete$"
+          timeout: 10000
+      - assertNotVisible: "Done editing, dismiss keyboard"
+- scrollUntilVisible:
+    element: "CF Toronto Eaton Centre"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: native-search-result-before-selection
+- tapOn: "CF Toronto Eaton Centre"
+# LocationSearch clears its query only after accepting the resolved location.
+# Require that transition and its selected-place label before entering planning.
+- extendedWaitUntil:
+    notVisible: "^Toronto$"
+    timeout: 30000
+- assertVisible: "CF Toronto Eaton Centre"
+- takeScreenshot: native-location-selected
+- scrollUntilVisible:
+    element: ".*find something good"
+    direction: DOWN
+- tapOn: ".*find something good"
+- assertVisible: "What sounds fun[?]"
+- runFlow:
+    when:
+      true: ${typeof VERIFY_CORE_PORTRAIT !== 'undefined' && VERIFY_CORE_PORTRAIT === '1'}
+    commands:
+      - assertVisible: "Surprise me"
+      - assertVisible: "Next"
+      - assertVisible: "Back"
+      - takeScreenshot: native-planner-interests
+- tapOn: "Food & drinks"
+- scrollUntilVisible:
+    element: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- assertVisible: "Who.*joining.*"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Back"
+- assertVisible: "What sounds fun[?]"
+- scrollUntilVisible:
+    element: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- scrollUntilVisible:
+    element: "Skip for now"
+    direction: DOWN
+- tapOn: "Skip for now"
+- assertVisible: "What.*energy today.*"
+- scrollUntilVisible:
+    element: "A little of both"
+    direction: DOWN
+- tapOn: "A little of both"
+- takeScreenshot: native-planner-energy
+- runFlow:
+    when:
+      true: ${typeof VERIFY_CORE_PORTRAIT !== 'undefined' && VERIFY_CORE_PORTRAIT === '1'}
+    commands:
+      - assertVisible: "Next"
+      - tapOn: "Next"
+      - assertVisible: "What.*vibe.*"
+      - assertVisible: "Anything goes"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-vibes
+      - tapOn: "Cozy"
+      - tapOn: "Next"
+      - assertVisible: "What.*budget.*"
+      - assertVisible: "Custom budget per person"
+      - tapOn: "Custom budget per person"
+      - eraseText
+      - inputText: "80"
+      - assertVisible: "Back"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-budget-keyboard
+      - tapOn: "Next"
+      - assertVisible: "When.*adventure.*"
+      - assertNotVisible: "Done editing, dismiss keyboard"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-date
+      - tapOn: "Tomorrow"
+      - tapOn: "Next"
+      - assertVisible: "How long.*out.*"
+      - tapOn: "Custom duration in minutes"
+      - eraseText
+      - inputText: "240"
+      - assertVisible: "Back"
+      - assertVisible: "Next"
+      - takeScreenshot: native-planner-duration-keyboard
+      - tapOn: "Next"
+      - assertVisible: "(?s)Your day,.*your way[.]"
+      - assertNotVisible: "Done editing, dismiss keyboard"
+      - takeScreenshot: native-planner-ready
+- scrollUntilVisible:
+    element: "Make my day"
+    direction: DOWN
+- tapOn: "Make my day"
+# At iOS's largest accessibility size the generated title is visible while
+# Start my day is below the viewport. Confirm generation, read the fixture
+# disclosure, then actually scroll to the CTA instead of waiting at the top.
+- extendedWaitUntil:
+    visible: "A day with a little more whim.*"
+    timeout: 90000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Development fixture.*"
+            TARGET_KIND: "readOnly"
+      - takeScreenshot: native-generated-fixture-disclosure
+- assertVisible: "Development fixture.*"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: scroll-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TARGET_KIND: "control"
+      - takeScreenshot: native-plan-start-ready
+- extendedWaitUntil:
+    visible: "Start my day"
+    timeout: 90000

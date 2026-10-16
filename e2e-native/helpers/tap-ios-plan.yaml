@@ -1,0 +1,16 @@
+# Position through actual native UI observations, then refresh immediately
+# before tapping the verified current control center. No routes/state injected.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runFlow:
+    file: scroll-ios-plan.yaml
+    env:
+      TARGET_KIND: "control"
+- takeScreenshot: ${TAP_SCREENSHOT_NAME}
+- runScript:
+    file: observe-ios-plan.js
+    env:
+      TARGET_KIND: "control"
+- assertTrue: ${output.whimwayPlanViewport.ready === true && typeof output.whimwayPlanViewport.tapPoint === 'string'}
+- tapOn:
+    point: ${output.whimwayPlanViewport.tapPoint}

@@ -1,0 +1,106 @@
+{
+  "source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "run_id": 38821045667,
+  "job_id": 116717636570,
+  "artifact_id": 12013339425,
+  "artifact_zip_sha256": "fcf555c8a6bae7e41d20e1137c4172128c226de3acb45cbe3dc2a7c55931af9e",
+  "release_artifact_id": 12013719073,
+  "release_artifact_zip_sha256": "b8e34c98b5cec0ca59722a6577334f3535723582884e7ddf58b5d80245b9b801",
+  "release_archive_sha256": "e2c3b7f254dbcd886cc2d2ae855a8d78687b464637d1b6fac863e4ae999890cd",
+  "debug_binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "scope": "Fresh source 1d8 Release compilation/install/launch succeeds; SDK-compatible original 298 Debug/current 1d8 Metro preflight fails before any Maestro flow or native Keychain call.",
+  "observations": [
+    "Actual Release launch 2026-10-15T23:28:13.840Z PID 58665; original 1206x2622 Explore first frame shows full destination controls, CTA and three tabs. Simulator ad-hoc identity is not developer/store signing.",
+    "Warm-only HTTP 200/27184 ms/16023676 bytes verifies streamed JavaScript syntax, not native UI.",
+    "Only lifecycle ready outcome exists: passed:false, fenced:false, runner-snapshot-failed. No commands.json report exists; later scopes safely do not execute.",
+    "Initial and failure-time launchctl snapshots return empty output; old wrapper records null status/command-failed without killed/signal metadata. A 5-second timeout is an inference, not established root cause. Later diagnostic read with a 15-second bound succeeds.",
+    "All three Keychain booleans are false only because stage ui-readiness/reason app-not-ready prevents calling native code; no new entitlement defect established.",
+    "Host-only successor b57dc1e adds observable service-first snapshot recovery. Its original attempt and exact failed-job retry fail later host identity checks without a completed product scope; those artifacts are retained separately."
+  ],
+  "retained_files": [
+    {
+      "name": "release-explore.png",
+      "bytes": 241395,
+      "sha256": "438806fe65c412a3d3f5d9e22aeada404abc4dd05ad7d63363a4c97be657ecd0",
+      "source_path": "native-results/38821045667/ios-release/native-smoke.png"
+    },
+    {
+      "name": "release-launch.txt",
+      "bytes": 113,
+      "sha256": "653b63a26a0beaa58d2656dc2b001477d856e87d6b9e3d1c53193987fa3b4c05",
+      "source_path": "native-results/38821045667/ios-release/launch.txt"
+    },
+    {
+      "name": "warm.json",
+      "bytes": 341,
+      "sha256": "c4244022cf7c774a7207f9de33fad0d4b7de9c1ed0d0539b2d2442ee9969604f",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "ready-outcome.json",
+      "bytes": 99,
+      "sha256": "e08e2128a7a37d82306e6877157e69c0488d745773b372f5f5a7daef5e35269f",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready.json"
+    },
+    {
+      "name": "lifecycle-summary.json",
+      "bytes": 166,
+      "sha256": "f377072badf761d75f21786d141f4753403b4cf904db9fdba11d0590f1cbf6d3",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-runner-lifecycle/summary.json"
+    },
+    {
+      "name": "snapshot-diagnostics.json",
+      "bytes": 535,
+      "sha256": "cb796fe3e4940b2c6886c4166d8c8b37041164cddb2cd68da65e720cd29ed942",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/diagnostics.json"
+    },
+    {
+      "name": "failed-services.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/services.stdout.txt"
+    },
+    {
+      "name": "failed-services.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/services.stderr.txt"
+    },
+    {
+      "name": "later-diagnostics.json",
+      "bytes": 969,
+      "sha256": "a1232ed537261528d3777aa523c5fbbd8cc8750982b52cf0ed3d209180a9af19",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-startup-diagnostics/diagnostics.json"
+    },
+    {
+      "name": "later-services.stdout.txt",
+      "bytes": 12254,
+      "sha256": "d0d5162e05685ecefd798f975c67fce8d2bf568c992eddcc13ac2c55cfa06f4f",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-startup-diagnostics/services.stdout.txt"
+    },
+    {
+      "name": "release-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "f8a8502597d381529831632abd7a31066b85f4ac1ef5a59bf5706589bbe609a1",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-simulator-runtime/release/signing-evidence.json"
+    },
+    {
+      "name": "debug-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "b0b779db1df663404e348acc52487b175c52748b2b0308f5fd9921cd9d9c6d59",
+      "source_path": "native-results/38821045667/ios-runtime/native-test-artifacts/ios-simulator-runtime/debug/signing-evidence.json"
+    }
+  ]
+}

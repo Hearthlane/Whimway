@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,8 @@ export function Home() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const [location, setLocation] = useState<Location>();
+  const [locationBusy, setLocationBusy] = useState(false);
+  const locationPending = useRef(false);
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<Status>();
   const [recent, setRecent] = useState<PlanSpec[]>([]);
@@ -36,6 +38,7 @@ export function Home() {
     setRecent(Object.values(getLocal()).slice(-3).reverse());
   }, []);
   function start(surprise = false, interest?: string) {
+    if (locationPending.current) return;
     sessionStorage.setItem(
       "whimway:entry",
       JSON.stringify({
@@ -84,6 +87,10 @@ export function Home() {
             <LocationSearch
               value={location}
               onChange={setLocation}
+              onBusyChange={(busy) => {
+                locationPending.current = busy;
+                setLocationBusy(busy);
+              }}
               demo={demo}
             />
             <div className="prompt-field">
@@ -97,11 +104,19 @@ export function Home() {
               />
             </div>
             <div className="hero-actions">
-              <button className="button primary" onClick={() => start()}>
+              <button
+                className="button primary"
+                disabled={locationBusy}
+                onClick={() => start()}
+              >
                 Find my kind of day
                 <ArrowUpRight size={19} />
               </button>
-              <button className="surprise-button" onClick={() => start(true)}>
+              <button
+                className="surprise-button"
+                disabled={locationBusy}
+                onClick={() => start(true)}
+              >
                 <Sparkles size={16} />
                 Surprise me
               </button>

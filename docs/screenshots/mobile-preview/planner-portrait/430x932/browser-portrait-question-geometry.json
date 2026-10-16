@@ -1,0 +1,704 @@
+[
+  {
+    "heading": "Where are we heading?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 864,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 851,
+        "width": 430,
+        "height": 81
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 88
+      },
+      "That’s the place": {
+        "x": 120.96875,
+        "y": 864,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Near me": {
+        "x": 24,
+        "y": 276,
+        "width": 85.609375,
+        "height": 44
+      },
+      "search": {
+        "x": 73,
+        "y": 209,
+        "width": 316,
+        "height": 54
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "What sounds fun?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Food & drinks": {
+        "x": 24,
+        "y": 164,
+        "width": 185,
+        "height": 48
+      },
+      "Shopping": {
+        "x": 221,
+        "y": 164,
+        "width": 185,
+        "height": 48
+      },
+      "Games & entertainment": {
+        "x": 24,
+        "y": 224,
+        "width": 185,
+        "height": 66
+      },
+      "Nature & outdoors": {
+        "x": 221,
+        "y": 233,
+        "width": 185,
+        "height": 48
+      },
+      "Arts & culture": {
+        "x": 24,
+        "y": 302,
+        "width": 185,
+        "height": 48
+      },
+      "Relaxation": {
+        "x": 221,
+        "y": 302,
+        "width": 185,
+        "height": 48
+      },
+      "Nightlife": {
+        "x": 24,
+        "y": 362,
+        "width": 185,
+        "height": 48
+      },
+      "Family": {
+        "x": 221,
+        "y": 362,
+        "width": 185,
+        "height": 48
+      },
+      "Hidden gems": {
+        "x": 24,
+        "y": 422,
+        "width": 185,
+        "height": 48
+      },
+      "Surprise me": {
+        "x": 221,
+        "y": 422,
+        "width": 185,
+        "height": 48
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "Who’s joining?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Just me": {
+        "x": 24,
+        "y": 164,
+        "width": 93.515625,
+        "height": 48
+      },
+      "A date": {
+        "x": 129.515625,
+        "y": 164,
+        "width": 84.140625,
+        "height": 48
+      },
+      "Friends": {
+        "x": 225.65625,
+        "y": 164,
+        "width": 90.078125,
+        "height": 48
+      },
+      "Family": {
+        "x": 24,
+        "y": 224,
+        "width": 83.640625,
+        "height": 48
+      },
+      "A group": {
+        "x": 119.640625,
+        "y": 224,
+        "width": 92.734375,
+        "height": 48
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "Who’s joining?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Just me": {
+        "x": 24,
+        "y": 164,
+        "width": 93.515625,
+        "height": 48
+      },
+      "A date": {
+        "x": 129.515625,
+        "y": 164,
+        "width": 84.140625,
+        "height": 48
+      },
+      "Friends": {
+        "x": 225.65625,
+        "y": 164,
+        "width": 90.078125,
+        "height": 48
+      },
+      "Family": {
+        "x": 24,
+        "y": 224,
+        "width": 83.640625,
+        "height": 48
+      },
+      "A group": {
+        "x": 119.640625,
+        "y": 224,
+        "width": 92.734375,
+        "height": 48
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "What’s your energy today?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 88
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Chill & relaxed": {
+        "x": 24,
+        "y": 208,
+        "width": 185,
+        "height": 193
+      },
+      "A little of both": {
+        "x": 221,
+        "y": 208,
+        "width": 185,
+        "height": 193
+      },
+      "Active & adventurous": {
+        "x": 24,
+        "y": 413,
+        "width": 382,
+        "height": 104
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "Who’s joining?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Just me": {
+        "x": 24,
+        "y": 164,
+        "width": 93.515625,
+        "height": 48
+      },
+      "A date": {
+        "x": 129.515625,
+        "y": 164,
+        "width": 84.140625,
+        "height": 48
+      },
+      "Friends": {
+        "x": 225.65625,
+        "y": 164,
+        "width": 90.078125,
+        "height": 48
+      },
+      "Family": {
+        "x": 24,
+        "y": 224,
+        "width": 83.640625,
+        "height": 48
+      },
+      "A group": {
+        "x": 119.640625,
+        "y": 224,
+        "width": 92.734375,
+        "height": 48
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "What’s the vibe?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Budget-friendly": {
+        "x": 24,
+        "y": 203,
+        "width": 148.09375,
+        "height": 48
+      },
+      "Cute & romantic": {
+        "x": 184.09375,
+        "y": 203,
+        "width": 151.546875,
+        "height": 48
+      },
+      "Exciting": {
+        "x": 24,
+        "y": 263,
+        "width": 93.71875,
+        "height": 48
+      },
+      "Cozy": {
+        "x": 129.71875,
+        "y": 263,
+        "width": 73.71875,
+        "height": 48
+      },
+      "Trendy": {
+        "x": 215.4375,
+        "y": 263,
+        "width": 86.984375,
+        "height": 48
+      },
+      "Hidden gems": {
+        "x": 24,
+        "y": 323,
+        "width": 128.296875,
+        "height": 48
+      },
+      "Luxurious": {
+        "x": 164.296875,
+        "y": 323,
+        "width": 105.796875,
+        "height": 48
+      },
+      "Anything goes": {
+        "x": 24,
+        "y": 383,
+        "width": 136.34375,
+        "height": 48
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "What’s your budget?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Free": {
+        "x": 24,
+        "y": 203,
+        "width": 69.6875,
+        "height": 48
+      },
+      "Affordable": {
+        "x": 105.6875,
+        "y": 203,
+        "width": 111.3125,
+        "height": 48
+      },
+      "Moderate": {
+        "x": 229,
+        "y": 203,
+        "width": 105.515625,
+        "height": 48
+      },
+      "Treat myself": {
+        "x": 24,
+        "y": 263,
+        "width": 123.328125,
+        "height": 48
+      },
+      "custom": {
+        "x": 24,
+        "y": 327,
+        "width": 382,
+        "height": 55
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "When’s the adventure?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 88
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "Today": {
+        "x": 24,
+        "y": 247,
+        "width": 80.53125,
+        "height": 48
+      },
+      "Tomorrow": {
+        "x": 116.53125,
+        "y": 247,
+        "width": 107.296875,
+        "height": 48
+      },
+      "I’m flexible": {
+        "x": 235.828125,
+        "y": 247,
+        "width": 112.15625,
+        "height": 48
+      },
+      "calendar": {
+        "x": 24,
+        "y": 311,
+        "width": 382,
+        "height": 57
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  },
+  {
+    "heading": "How long are we out?",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "boxes": {
+      "Back": {
+        "x": 24,
+        "y": 816,
+        "width": 84.96875,
+        "height": 56
+      },
+      "footer": {
+        "x": 0,
+        "y": 803,
+        "width": 430,
+        "height": 129
+      },
+      "heading": {
+        "x": 24,
+        "y": 104,
+        "width": 382,
+        "height": 44
+      },
+      "Next": {
+        "x": 120.96875,
+        "y": 816,
+        "width": 285.03125,
+        "height": 56
+      },
+      "A quick outing": {
+        "x": 24,
+        "y": 164,
+        "width": 137.0625,
+        "height": 48
+      },
+      "A few hours": {
+        "x": 173.0625,
+        "y": 164,
+        "width": 118.890625,
+        "height": 48
+      },
+      "Half a day": {
+        "x": 24,
+        "y": 224,
+        "width": 106.5,
+        "height": 48
+      },
+      "All day": {
+        "x": 142.5,
+        "y": 224,
+        "width": 85.375,
+        "height": 48
+      },
+      "custom": {
+        "x": 24,
+        "y": 288,
+        "width": 382,
+        "height": 55
+      }
+    },
+    "scroll": [
+      {
+        "top": 0,
+        "excess": 0
+      }
+    ]
+  }
+]

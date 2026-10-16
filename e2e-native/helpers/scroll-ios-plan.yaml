@@ -1,0 +1,17 @@
+# Read the current XCTest hierarchy and point-sized screen through the local
+# CI observer. Every real gesture stays inside the current clipped timeline.
+# Controls require their whole rectangle and tap center inside BOTH edges.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runScript: observe-ios-plan.js
+- repeat:
+    times: 20
+    while:
+      true: ${!output.whimwayPlanViewport.ready}
+    commands:
+      - assertTrue: ${output.whimwayPlanViewport.direction === 'UP' || output.whimwayPlanViewport.direction === 'DOWN'}
+      # Same Maestro XCTest physical gesture via its JS HTTP client; 2.11's
+      # YAML swipe coordinate converter runs before JavaScript evaluation.
+      - runScript: swipe-ios-plan.js
+      - runScript: observe-ios-plan.js
+- assertTrue: ${output.whimwayPlanViewport.ready === true}

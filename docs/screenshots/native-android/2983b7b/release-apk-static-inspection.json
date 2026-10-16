@@ -1,0 +1,65 @@
+{
+  "scope": "Read-only static Release APK inspection; not native runtime success",
+  "runId": "38805051576",
+  "compilerSourceReported": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "apkArtifactId": "12006123509",
+  "runtimeArtifactId": "12007473010",
+  "releaseApk": {
+    "path": "android-build/app/build/outputs/apk/release/app-release.apk",
+    "sha256": "56b750ea85d6c2bd04de316b207dea230d0e19a256c05078182dab1dbcc84de3",
+    "bytes": 76556703
+  },
+  "debugApk": {
+    "bytes": 168703119,
+    "sha256": "c1692c49485872957b2a52910749c9b869b4b74ab56ef28614b8db8fff287cce"
+  },
+  "bundle": {
+    "bytes": 6503488,
+    "functions": 35050,
+    "hbcVersion": 98,
+    "strings": 46088,
+    "sha256": "225df544b80ccf673512131a12b38155bb70d9c9b366e1cea17c4f02aa62e786",
+    "bytecodeDumpNotForDurableDocs": true,
+    "hbcMagic": "c61fbc03c103191f",
+    "entry": "assets/index.android.bundle",
+    "sourceHash": "bceb4f3253453f772a14bfa577abde0e93eab2ca",
+    "inspection": "Matching installed hermesc1.0/HBC98 parsed the entire bytecode with -b -dump-bytecode; no bundle evaluation"
+  },
+  "fonts": [
+    {
+      "exactSourceMatch": true,
+      "entry": "res/n5.ttf",
+      "sha256": "030d373c4e2a67d5e922a2694e1eaab3b9f1208f1301dba94a70bdebf52c1efa",
+      "source": "@expo-google-fonts/outfit/600SemiBold/Outfit_600SemiBold.ttf",
+      "bytes": 55492
+    },
+    {
+      "exactSourceMatch": true,
+      "entry": "res/7D.ttf",
+      "sha256": "20ccb90498d8ca511bb0be31a74eccd5f29fbe1161852ef72781b703929e98ec",
+      "source": "@expo-google-fonts/dm-sans/400Regular/DMSans_400Regular.ttf",
+      "bytes": 56344
+    },
+    {
+      "exactSourceMatch": true,
+      "entry": "res/t3.ttf",
+      "sha256": "b3ee9c6f271318066adae56c3033e6e4192f88f5d127cb507686d89a0a269168",
+      "source": "@expo-google-fonts/dm-sans/600SemiBold/DMSans_600SemiBold.ttf",
+      "bytes": 56336
+    }
+  ],
+  "startup": {
+    "preventAutoHideLine": 18,
+    "source": "apps/mobile/app/_layout.tsx",
+    "missingStartupFontPackagingDefectObserved": false,
+    "appAndSharedInputsDiff298To956": "empty",
+    "compiledUseFontsAndLoadedOrErrorGatePresent": true,
+    "hideOnLoadedOrErrorLine": 27,
+    "fontsLine": 21
+  },
+  "limitations": [
+    "Static assets do not establish native startup success or font API settlement.",
+    "Retained runtime records new process9251 killed by old remove-task timeout before JS startup; backend agent owns complete causal timing analysis."
+  ],
+  "inspectedAt": "2026-10-15T21:29:04.0100287Z"
+}

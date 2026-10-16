@@ -1,0 +1,57 @@
+{
+  "source": "maestro-xctest-live-ax",
+  "observedAt": "2026-10-15T22:37:22.917Z",
+  "sequence": 16,
+  "driverPort": 7004,
+  "screenBounds": "[0,0][402,874]",
+  "targetText": "Start my day",
+  "targetKind": "control",
+  "observationToken": "2470a560-ca89-4fab-9cf4-31174219cc9a",
+  "device": {
+    "file": "1792102933211-9805bf8c-016-driver-7004-device-info.json",
+    "bytes": 77,
+    "sha256": "32c5b67beb6448d6ba039dea47abd42011e26f22810bef7bd8c86e165725a12f"
+  },
+  "snapshot": {
+    "file": "1792102933211-9805bf8c-016-driver-7004-snapshot.json",
+    "bytes": 49258,
+    "sha256": "9d50d0d8a4255bf3e1e74d4c9f4c74ee03e7715c7d7817c60b700842814dba89"
+  },
+  "ok": true,
+  "ready": false,
+  "fullyVisible": false,
+  "targetBounds": {
+    "left": 24,
+    "top": 772,
+    "right": 378,
+    "bottom": 955,
+    "width": 354,
+    "height": 183
+  },
+  "paneBounds": {
+    "left": 0,
+    "top": 472,
+    "right": 402,
+    "bottom": 840,
+    "width": 402,
+    "height": 368
+  },
+  "clipBounds": {
+    "left": 0,
+    "top": 472,
+    "right": 402,
+    "bottom": 840,
+    "width": 402,
+    "height": 368
+  },
+  "tapCenter": {
+    "x": 201,
+    "y": 863.5
+  },
+  "tapPoint": null,
+  "direction": "DOWN",
+  "swipe": {
+    "start": "97.014925%,79.290618%",
+    "end": "97.014925%,70.823799%"
+  }
+}

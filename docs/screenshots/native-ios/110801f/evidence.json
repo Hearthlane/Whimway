@@ -1,0 +1,136 @@
+{
+  "source_sha": "110801f2c99a9e529bd459f571b7ecc6858b0d74",
+  "mobile_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "debug_binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38832567637,
+  "job_id": 116754533835,
+  "artifact_id": 12017503625,
+  "artifact_zip_sha256": "6a5f1a0d0f781039cf1c2c46954030c15eca42defb492d3a61e22c3921636176",
+  "selected_simulator_uuid": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "scope": "Final recorded iOS CI-host identity/infrastructure blocker after bounded recovery. Fresh original 1d8 Release launches; original SDK 298 Debug/current 1d8 JavaScript remains unverified for complete journeys. No product assertion or native Keychain call executes.",
+  "observations": [
+    "Warm HTTP 200/37639 ms/16023676 bytes succeeds. Original Release/Debug archives and runtime copies verify unchanged; these facts do not establish UI-ready or Keychain success.",
+    "Preflight ps succeeds in 330 ms; selected-Simulator launchctl list times out at 5000 ms (5248 ms elapsed). Its bounded recovery also times out at 15000 ms (15022 ms elapsed), then fresh ps succeeds in 2275 ms.",
+    "Recovery process spawn occurs 6 ms after invocation and callback/exit at 15021–15022 ms. The service read itself does not return identity proof inside the bound; no native authority is granted.",
+    "Observed host load averages are 60.04/172.38/128.04 with 7516192768 bytes physical memory. VM counters are retained raw. These are high measured load figures, not proof of CPU-only, OOM or a product defect.",
+    "A later workflow service diagnostic succeeds at 2026-10-16T01:11:04.393Z. This does not retroactively validate failed preflight or justify cached authority/absence.",
+    "Only ready outcome exists: passed:false/fenced:false/runner-snapshot-failed. No Maestro files or native Keychain call exist; false probe values are ui-readiness/app-not-ready gating. Main/reminders/largest are not admitted.",
+    "The supported conclusion is a CI-host infrastructure blocker for current iOS automated journeys, with no deadline inflation or additional identical retry. Android native and full quality evidence are separate; live provider/signing/legal gates remain."
+  ],
+  "retained_files": [
+    {
+      "name": "ready-outcome.json",
+      "bytes": 99,
+      "sha256": "e08e2128a7a37d82306e6877157e69c0488d745773b372f5f5a7daef5e35269f",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready.json"
+    },
+    {
+      "name": "summary.json",
+      "bytes": 166,
+      "sha256": "f377072badf761d75f21786d141f4753403b4cf904db9fdba11d0590f1cbf6d3",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/summary.json"
+    },
+    {
+      "name": "snapshot1.json",
+      "bytes": 2067,
+      "sha256": "492fb6c64c0feb7e22848c6860135e5128758dc409dde8adb1431136e589e122",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-attempt.json"
+    },
+    {
+      "name": "snapshot2-recovery.json",
+      "bytes": 2071,
+      "sha256": "3c426e4bc88712ed6530aeebb3115e71f3752e9aa74f6c51a8299bac5ff59ff6",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/2-attempt.json"
+    },
+    {
+      "name": "snapshot1-services.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-services.stdout.txt"
+    },
+    {
+      "name": "snapshot1-services.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-services.stderr.txt"
+    },
+    {
+      "name": "snapshot2-services.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/2-services.stdout.txt"
+    },
+    {
+      "name": "snapshot2-services.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/2-services.stderr.txt"
+    },
+    {
+      "name": "failure-diagnostics.json",
+      "bytes": 4702,
+      "sha256": "f60061185b0ec161e8b184e6437dbb6f83e064f4ce8427051a8c0897e2311ecc",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/diagnostics.json"
+    },
+    {
+      "name": "host-uptime.txt",
+      "bytes": 62,
+      "sha256": "0da3ce137d5f0e0d2ec461765f9691236911b21f954d4d536f56623a30aa33d7",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/host-uptime.stdout.txt"
+    },
+    {
+      "name": "host-memory-load.txt",
+      "bytes": 59,
+      "sha256": "5a37b2d1d9c4b3aa8bf94d0ca2499a20bd65d3119b9b77a2376218829d29782e",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/host-memory-load.stdout.txt"
+    },
+    {
+      "name": "host-vm-stat.txt",
+      "bytes": 1247,
+      "sha256": "b15f83c9ccbfdeef9dafa89e8dfc45febd17127427bab771c8b4512708beafcb",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/host-vm-stat.stdout.txt"
+    },
+    {
+      "name": "warm.json",
+      "bytes": 341,
+      "sha256": "2922f2612596496e77ff9ad6033462ba219cc3488f9c27125bf8d72c6e04dc4f",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "later-diagnostics.json",
+      "bytes": 969,
+      "sha256": "6e826d37ff4506f0c080c44a8f32cc3edbcd1c0def19b721378baf97f8e80fd9",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-startup-diagnostics/diagnostics.json"
+    },
+    {
+      "name": "later-services.txt",
+      "bytes": 12250,
+      "sha256": "02b06603e044038386012ebeb129058ad9cc6bb90e36c9333c7f30c4a80933cc",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-startup-diagnostics/services.stdout.txt"
+    },
+    {
+      "name": "release-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "7023ac64dac444f5db01dfd9329a9ce1c771b4102f414ee3e8233e87ef8d6fea",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-simulator-runtime/release/signing-evidence.json"
+    },
+    {
+      "name": "debug-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "fb74e07cad69e4a5e2674592892fb28414d6913446c8700f0c3460057baed062",
+      "source_path": "native-results/38832567637/ios-runtime/native-test-artifacts/ios-simulator-runtime/debug/signing-evidence.json"
+    }
+  ]
+}

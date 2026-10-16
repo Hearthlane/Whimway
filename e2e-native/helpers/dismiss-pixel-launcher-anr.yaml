@@ -1,0 +1,29 @@
+# Hosted Android emulator infrastructure recovery only. Never close an app ANR.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            visible:
+              id: "^android:id/alertTitle$"
+              text: "^Pixel Launcher isn['’]t responding$"
+          commands:
+            - takeScreenshot: android-system-pixel-launcher-anr
+            - tapOn:
+                id: "^android:id/aerr_close$"
+                text: "^Close app$"
+                below:
+                  id: "^android:id/alertTitle$"
+                  text: "^Pixel Launcher isn['’]t responding$"
+                label: "Close only the unresponsive Pixel Launcher system process"
+            - extendedWaitUntil:
+                notVisible:
+                  id: "^android:id/alertTitle$"
+                  text: "^Pixel Launcher isn['’]t responding$"
+                timeout: 10000
+            - takeScreenshot: android-system-pixel-launcher-recovered

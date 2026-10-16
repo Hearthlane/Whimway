@@ -1,0 +1,173 @@
+{
+  "run_id": 38673383523,
+  "job_id": 116221425077,
+  "harness_source_sha": "8eb5c6cb9499f21eeb259c0113247a6450ff855e",
+  "mobile_source_sha": "fb4164400a5e01f35750af728a411b0c51e13dff",
+  "runtime_artifact_id": 11947830342,
+  "original_compiler": {
+    "artifact_id": 11945214746,
+    "run_id": 38672370792,
+    "job_id": 116218260892,
+    "step_number": 10,
+    "source_sha": "fb4164400a5e01f35750af728a411b0c51e13dff"
+  },
+  "scopes": {
+    "main": {
+      "COMPLETED": 188,
+      "SKIPPED": 11
+    },
+    "reminders": {
+      "COMPLETED": 78,
+      "SKIPPED": 12,
+      "WARNED": 1
+    },
+    "large_text": {
+      "COMPLETED": 69,
+      "SKIPPED": 12
+    },
+    "standalone_release": {
+      "COMPLETED": 24,
+      "SKIPPED": 1
+    }
+  },
+  "resets": {
+    "smoke": {
+      "prepared": true,
+      "stable_quiet_ms": 2896,
+      "last_observation": {
+        "elapsed_ms": 4409,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    },
+    "reminders": {
+      "prepared": true,
+      "stable_quiet_ms": 2353,
+      "last_observation": {
+        "elapsed_ms": 3823,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    },
+    "large-text": {
+      "prepared": true,
+      "stable_quiet_ms": 2063,
+      "last_observation": {
+        "elapsed_ms": 3741,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    }
+  },
+  "android_font_scale": 2,
+  "recording": {
+    "duration_seconds": 143.963778,
+    "width": 1080,
+    "height": 2400,
+    "review": "Decoded samples at30/60/90/120/final seconds reviewed; low-bitrate blockiness; no continuous smoothness or device FPS claim"
+  },
+  "scope_limits": [
+    "Explicit synthetic fixture journeys",
+    "No live provider/account integration",
+    "Software emulator; no physical performance, battery, haptics or assistive-technology claim"
+  ],
+  "retained_files": [
+    {
+      "name": "android-planning-motion.mp4",
+      "bytes": 2550554,
+      "sha256": "f00578efbdb4bcd8187a21960c9ea7f2c78a4864e178634aa1dd4f6af1c47855"
+    },
+    {
+      "name": "native-edit-validation.png",
+      "bytes": 178399,
+      "sha256": "9a9a1167d635852a2d77de82fd091abfa8a8d2f374f259095a74ab04ae75b7c9"
+    },
+    {
+      "name": "native-explore.png",
+      "bytes": 188427,
+      "sha256": "89de37b916236f3236f83a31473220ae9f3825e9460523ad1d2f69e584fd5a5a"
+    },
+    {
+      "name": "native-large-text-day.png",
+      "bytes": 208760,
+      "sha256": "36a5e4c87d78883b6a67ee51ef9f77363baa3646ea73c4b32bca219a52d46f44"
+    },
+    {
+      "name": "native-large-text-explore.png",
+      "bytes": 195280,
+      "sha256": "5e2855098510367a0b15f7034e4cee124fe5e8a6bf1d7e5a32bf8891f288c60b"
+    },
+    {
+      "name": "native-large-text-sheet.png",
+      "bytes": 170527,
+      "sha256": "8d18b6f2c126b045058053433cafbdf82db540b97141984fe6f65489bfae3b19"
+    },
+    {
+      "name": "native-planner-budget-keyboard.png",
+      "bytes": 148331,
+      "sha256": "7b135cba3a8bd32b2275693f32e29501de94f04635ece8d34e469a663e8b56bd"
+    },
+    {
+      "name": "native-planner-duration-keyboard.png",
+      "bytes": 138251,
+      "sha256": "8afbac347fb6f131487766300dfd2749bab0dc4a1fe2394dd5c7c6914e172f36"
+    },
+    {
+      "name": "native-planner-ready.png",
+      "bytes": 101666,
+      "sha256": "ee3c505ebed00802eeade084eb4ea784b504cb1f4a73d84c614c9819926f918f"
+    },
+    {
+      "name": "native-profile-preferences.png",
+      "bytes": 188332,
+      "sha256": "98d6d58b3712f5b467e3087de9e87cb46486ccf94c5672a0b4a6707621fdf063"
+    },
+    {
+      "name": "native-profile-save-error.png",
+      "bytes": 192273,
+      "sha256": "1c2d4ad41eaca42be07240e78aad7256aa2bc2e8da39bd3c370401548c4929d4"
+    },
+    {
+      "name": "native-progress-restored.png",
+      "bytes": 177778,
+      "sha256": "77fd8e099d89e004e39cde57fae1b728e6b12cecf6fa0165a47bbb73446d4e5a"
+    },
+    {
+      "name": "native-reminders-cancelled.png",
+      "bytes": 219154,
+      "sha256": "7113072ca216345b8e1257d9981d0b1e4fbae6ee8d3db3e2396150cf49999ac0"
+    },
+    {
+      "name": "native-reminders-scheduled.png",
+      "bytes": 184261,
+      "sha256": "f468cd8828f8250082210e6eb15ef7d8d38b2ee54fb890ab81c5c8524644b31c"
+    }
+  ]
+}

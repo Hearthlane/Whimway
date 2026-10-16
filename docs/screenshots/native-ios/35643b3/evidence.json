@@ -1,0 +1,161 @@
+{
+  "source_sha": "35643b3d2d86b936a9cf38f051d05ab68632716b",
+  "mobile_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "debug_binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38830000043,
+  "job_id": 116746521118,
+  "artifact_id": 12016239728,
+  "artifact_zip_sha256": "35b2c95532f835ebadd88fd23490ea12ef04f33f6b9b12dcca6d06d5372ae230",
+  "selected_simulator_uuid": "88931AEA-62E6-447F-8697-DCE00A671384",
+  "scope": "Actual source 356 host-monitor failures during bootstrap/partial reminder entry; original 1d8 Release and SDK 298 Debug reused. No completed product scope or native Keychain call.",
+  "observations": [
+    "Warm HTTP 200/21581 ms/16023676 bytes succeeds. Actual selected UUID matches xcodebuild destinations and the native driver executable path.",
+    "Ready and main fail passive host reads at a 5000 ms bound (observed 5100/6884 ms) and remain failed, while both cleanup outcomes are fenced:true with known owned xcodebuild identities retained.",
+    "Reminders binds native driver 20687 through selected-Simulator service + fresh host evidence. Its CLI reaches real app heading, strict fixture ON, entered Toronto above the keyboard, actual Done dismissal and CF result selection assertions/captures.",
+    "A passive host read times out at 5000 ms (observed 12903 ms); cleanup is fenced:false and later large-text scope is not admitted. Partial CLI work continues during failure handling. The sole commands.json is empty after termination; positive logs do not establish reminder scheduling or a full flow.",
+    "Keychain booleans are false because ready failed; no native Keychain call or new entitlement defect is established. No product assertion failure is inferred from the host read failures.",
+    "The retained title/keyboard/search PNGs show only normal-font partial reminder entry. No current iOS largest-category/footer/Sheet pass is inferred. Current Android four-scope proof is separate."
+  ],
+  "excerpts": [
+    {
+      "name": "partial-selection-completed.txt",
+      "original_source_path": "native-results/38830000043/ios-runtime/native-results/ios-reminders/2026-10-16_004015/Native fixture reminders schedule and cancel/logs/maestro.log",
+      "original_sha256": "fcd299881893b6ce96bfbb22fabe2636ef28cf4ffe34d23c142810e42d7cd273",
+      "original_line_numbers": [
+        138,
+        30506,
+        36283,
+        37105,
+        38748,
+        39572,
+        45314,
+        46963,
+        46964,
+        49426,
+        51067,
+        51895,
+        56004,
+        58464,
+        59286,
+        59291
+      ],
+      "scope": "Exact selected completed log lines; nested metadata and unfinished commands are omitted, not counted as a full command report."
+    }
+  ],
+  "retained_files": [
+    {
+      "name": "summary.json",
+      "bytes": 3265,
+      "sha256": "70078ee0d66747961c807b741af77aae74328f1da3a8e340e0315c9cbad59616",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/summary.json"
+    },
+    {
+      "name": "ready-outcome.json",
+      "bytes": 837,
+      "sha256": "eca4e089c9e22fd2247f58baac384cb0d8d099d830e3320b6141ca0da2b9ed75",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready.json"
+    },
+    {
+      "name": "main-outcome.json",
+      "bytes": 836,
+      "sha256": "23f6d814c17555bffa66bdb76c8ddd57c4153717e30add0868df802da12789b6",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/main.json"
+    },
+    {
+      "name": "reminders-outcome.json",
+      "bytes": 1251,
+      "sha256": "90ee495ec5e6dce6850bf4093df57114660ace85c2b477843515efed15238703",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders.json"
+    },
+    {
+      "name": "warm.json",
+      "bytes": 341,
+      "sha256": "f7e8c7de167ff61482afceeeb31d8170d0de34f1e8869b90b92c2015f03b7383",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "ready-failed-host-read.json",
+      "bytes": 953,
+      "sha256": "f464b78e43ade01aa6699a87babd18aecf44c59de8bb0f3ab53e65be92ac2adc",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/4-attempt.json"
+    },
+    {
+      "name": "main-failed-host-read.json",
+      "bytes": 953,
+      "sha256": "f01f4c1fad68246fb408232c7f1379f3634d26f4d45a6602506984581552df5e",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/main/snapshots/7-attempt.json"
+    },
+    {
+      "name": "reminders-failed-host-read.json",
+      "bytes": 957,
+      "sha256": "e0804139d01afb64406bfa2590af92203bd912d44d97c4caae4c817680e59d38",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders/snapshots/12-attempt.json"
+    },
+    {
+      "name": "reminders-fresh-binding.json",
+      "bytes": 1693,
+      "sha256": "5bb0aa990b69808cb623952c72fadc2c4573ca261e05aef440cd235f5109c27f",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders/snapshots/11-attempt.json"
+    },
+    {
+      "name": "reminders-binding-services.txt",
+      "bytes": 12281,
+      "sha256": "54e2ca9819b396100e8e588016d10fae65a87c1e2caefb6ce354251da71d283e",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders/snapshots/11-services.stdout.txt"
+    },
+    {
+      "name": "reminders-binding-processes.txt",
+      "bytes": 150278,
+      "sha256": "524eb65d05e352e839fb3ff751fa26dc9104e12db9259889f03d9248d629056c",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-runner-lifecycle/reminders/snapshots/11-ps.stdout.txt"
+    },
+    {
+      "name": "release-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "3276a8bf0d124f52a677245610fae8a577f809a75b1a4e5ee04917a1cf169ce0",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-simulator-runtime/release/signing-evidence.json"
+    },
+    {
+      "name": "debug-signing-evidence.json",
+      "bytes": 1355,
+      "sha256": "064df0e4e6ad8b22c88f11f7ff3e4f01e4a07b5e02182220a1e7984b676a4bf7",
+      "source_path": "native-results/38830000043/ios-runtime/native-test-artifacts/ios-simulator-runtime/debug/signing-evidence.json"
+    },
+    {
+      "name": "native-search-query-entered.png",
+      "bytes": 239484,
+      "sha256": "ef5b692de8721799155aedfb617283f7b45048bd971b9102f2b327fb6ae1916e",
+      "source_path": "native-results/38830000043/ios-runtime/native-results/ios-reminders/2026-10-16_004015/Native fixture reminders schedule and cancel/takeScreenshot/native-search-query-entered.png"
+    },
+    {
+      "name": "native-search-result-before-selection.png",
+      "bytes": 196082,
+      "sha256": "cb5366332a14682ec35c9d4882bfba256cc9f43981dccd4f3955e3e964cf002a",
+      "source_path": "native-results/38830000043/ios-runtime/native-results/ios-reminders/2026-10-16_004015/Native fixture reminders schedule and cancel/takeScreenshot/native-search-result-before-selection.png"
+    },
+    {
+      "name": "native-location-selected.png",
+      "bytes": 206178,
+      "sha256": "8e77a44c73ad5123e33415dbe21d899514ef7e3e39b705f0453f03ef2613a1eb",
+      "source_path": "native-results/38830000043/ios-runtime/native-results/ios-reminders/2026-10-16_004015/Native fixture reminders schedule and cancel/takeScreenshot/native-location-selected.png"
+    },
+    {
+      "name": "partial-selection-completed.txt",
+      "bytes": 2315,
+      "sha256": "81c71fdb005c5fed8fa955776fe1143472bce1d0f07a5d91f43b06dbab291f6a",
+      "source_path": "native-results/38830000043/ios-runtime/native-results/ios-reminders/2026-10-16_004015/Native fixture reminders schedule and cancel/logs/maestro.log"
+    }
+  ]
+}

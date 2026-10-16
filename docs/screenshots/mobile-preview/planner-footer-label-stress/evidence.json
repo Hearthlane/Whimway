@@ -1,0 +1,103 @@
+{
+  "source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "planner_source_sha256": "0dc8745ce1f1f6acfe766ce58e60626e87e0de8010621b8daa1a8c85600fed84",
+  "scope": "RN Web navigation labels at four times computed browser font size, real Back/Next/fixture generation; no OS fontScale, keyboard or native Dynamic Type claim.",
+  "suite": "Final frozen-candidate 47/47 local pass in3.6minutes; exact planner bytes committed unchanged in1d8.",
+  "retained_files": [
+    {
+      "name": "360x800-early-generate-footer-4x.json",
+      "bytes": 1130,
+      "sha256": "d5f435451ee182629808cd58a58a35f3bc818307ee97f0b99a98ad9311f86fa5",
+      "source_path": "test-results-mobile/planner-footer-large-label-73ec2-ion-content-under-4x-labels/early-generate-footer-4x.json"
+    },
+    {
+      "name": "360x800-early-generate-footer-4x.png",
+      "bytes": 42389,
+      "sha256": "5066735a5359b5621ab9e4531c4ee3793b7e7332ee6700dde6c68ccc896a979c",
+      "source_path": "test-results-mobile/planner-footer-large-label-73ec2-ion-content-under-4x-labels/early-generate-footer-4x.png"
+    },
+    {
+      "name": "430x932-interests-footer-4x.json",
+      "bytes": 1150,
+      "sha256": "d41585429c727262818be05bee3a3d879de454d99eac551492a82442e7b429d3",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/interests-footer-4x.json"
+    },
+    {
+      "name": "430x932-interests-footer-4x.png",
+      "bytes": 52005,
+      "sha256": "8b0c0f35c18c5f5a42ccc7d86fecdb0c8a30f68424c7e2c4e50f5506278b617e",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/interests-footer-4x.png"
+    },
+    {
+      "name": "430x932-location-footer-4x.json",
+      "bytes": 1150,
+      "sha256": "d41585429c727262818be05bee3a3d879de454d99eac551492a82442e7b429d3",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/location-footer-4x.json"
+    },
+    {
+      "name": "430x932-location-footer-4x.png",
+      "bytes": 25257,
+      "sha256": "6930c0717236fced0541a4fbc0c0b85d178c63a7b5c3d7b74a19592830c7498c",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/location-footer-4x.png"
+    },
+    {
+      "name": "430x932-ready-footer-4x.json",
+      "bytes": 1653,
+      "sha256": "647c13946f9daae51079dcea4abbc7a7693d33f7c010735e62422d1807f647bc",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/ready-footer-4x.json"
+    },
+    {
+      "name": "430x932-ready-footer-4x.png",
+      "bytes": 37311,
+      "sha256": "eb991176b3d47f7c9d87845fa3400824691b31ba1d443751be8af8a8fc6def84",
+      "source_path": "test-results-mobile/planner-footer-large-label-92430-orking-Back-Next-at-430×932/ready-footer-4x.png"
+    },
+    {
+      "name": "360x722-interests-footer-4x.json",
+      "bytes": 1130,
+      "sha256": "a450f36d898cc63581db935598af517afbce13aee80e68379e4b5d8c4ffd4c6a",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/interests-footer-4x.json"
+    },
+    {
+      "name": "360x722-interests-footer-4x.png",
+      "bytes": 38070,
+      "sha256": "11f10f4a7266fa57a861894a8c89eafd9cc0e8bcee8956a56d2d6dd23fa03156",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/interests-footer-4x.png"
+    },
+    {
+      "name": "360x722-location-footer-4x.json",
+      "bytes": 1130,
+      "sha256": "a450f36d898cc63581db935598af517afbce13aee80e68379e4b5d8c4ffd4c6a",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/location-footer-4x.json"
+    },
+    {
+      "name": "360x722-location-footer-4x.png",
+      "bytes": 24304,
+      "sha256": "433c814ba56628d73810e9306dd90f5a13fa35ca1e85d5974026b35e1b039ea5",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/location-footer-4x.png"
+    },
+    {
+      "name": "360x722-ready-footer-4x.json",
+      "bytes": 1653,
+      "sha256": "71e113cf17cfcc1cfa05ce70773c3c3799f4bfc212f2b8770d81dd31ae4040d2",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/ready-footer-4x.json"
+    },
+    {
+      "name": "360x722-ready-footer-4x.png",
+      "bytes": 35904,
+      "sha256": "018e48b52ea40aec730989dc19bb4e442fb281de44a9240c5cb2153562be4614",
+      "source_path": "test-results-mobile/planner-footer-large-label-c8caf-orking-Back-Next-at-360×722/ready-footer-4x.png"
+    }
+  ],
+  "captured_from_frozen_working_tree": true,
+  "capture_file_times": {
+    "first": "2026-10-15T22:58:30.412Z",
+    "last": "2026-10-15T22:58:37.883Z"
+  },
+  "earlier_component_capture": {
+    "finished_at": "2026-10-15T22:34:55Z",
+    "matching_current_files": 14,
+    "total_files": 14,
+    "raw_backup": "native-results/footer-pre-api-gallery (ignored)"
+  }
+}

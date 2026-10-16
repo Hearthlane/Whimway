@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import { AppError } from "../errors";
 import { counter } from "./limiter";
 export { counter } from "./limiter";
@@ -8,20 +9,25 @@ const limit = (name: string, fallback: number) => {
 };
 export async function rateLimit(
   request: Request,
-  kind: "generate" | "remix" | "read" | "write",
+  kind: "generate" | "remix" | "intent" | "route" | "read" | "write",
   userId?: string,
 ) {
-  // On Vercel, the platform overwrites x-vercel-forwarded-for. Self-hosting must strip incoming forwarded headers.
-  const ip =
-    request.headers.get("x-vercel-forwarded-for") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0] ??
-    "local";
+  // Client-supplied forwarded headers cannot create fresh guest quotas. A
+  // self-hosted ingress must overwrite them before opting into this setting.
+  const forwarded =
+    process.env.VERCEL === "1"
+      ? request.headers.get("x-vercel-forwarded-for")
+      : process.env.TRUSTED_PROXY_HEADERS === "true"
+        ? request.headers.get("x-forwarded-for")
+        : null;
+  const candidate = forwarded?.split(",")[0].trim();
+  const ip = candidate && isIP(candidate) ? candidate : "unresolved-network";
   const identity = createHash("sha256")
     .update(userId ?? ip)
     .digest("hex")
     .slice(0, 24);
   const today = new Date().toISOString().slice(0, 10);
-  const costly = kind === "generate" || kind === "remix";
+  const costly = ["generate", "remix", "intent"].includes(kind);
   const max =
     kind === "generate"
       ? limit(
@@ -30,9 +36,16 @@ export async function rateLimit(
         )
       : kind === "remix"
         ? limit("DAILY_REMIX_LIMIT", 15)
-        : kind === "read"
-          ? 180
-          : 50;
+        : kind === "intent"
+          ? limit(
+              userId ? "DAILY_MEMBER_INTENTS" : "DAILY_GUEST_INTENTS",
+              userId ? 25 : 10,
+            )
+          : kind === "route"
+            ? limit("HOURLY_ROUTE_LIMIT", 120)
+            : kind === "read"
+              ? 180
+              : 50;
   if (
     (await counter(
       `${kind}:${identity}:${costly ? today : Math.floor(Date.now() / 3600000)}`,
@@ -80,8 +93,20 @@ export function sameOrigin(request: Request) {
       403,
     );
 }
+export function mutationAllowed(request: Request) {
+  // Cookie-authenticated requests retain browser CSRF protection. Native
+  // requests carry no browser credentials; they use verified bearer tokens
+  // for private resources, and quota-limited public APIs for guest planning.
+  // No client header is accepted as proof that an app is trustworthy.
+  if (
+    request.headers.has("origin") ||
+    request.headers.has("cookie") ||
+    [...request.headers.keys()].some((name) => name.startsWith("sec-fetch-"))
+  )
+    sameOrigin(request);
+}
 export async function body(request: Request) {
-  sameOrigin(request);
+  mutationAllowed(request);
   if (!request.headers.get("content-type")?.includes("application/json"))
     throw new AppError("INVALID_CONTENT", "Send JSON.");
   if (Number(request.headers.get("content-length") ?? 0) > 32768)

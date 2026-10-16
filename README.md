@@ -1,20 +1,39 @@
 # Whimway
 
+Whimway now includes a genuine **React Native / Expo iOS and Android app** in apps/mobile, alongside the existing Next.js backend and web client. The native app uses Expo Router, Reanimated, Gesture Handler, native Google maps, foreground location, local reminders, secure optional authentication and shared validated planning contracts. It is not a WebView.
+
+Start with [native run and build instructions](docs/mobile-release.md), [the audit](docs/mobile-audit.md), [API contracts](docs/mobile-api.md), [verification checklist](docs/mobile-checklist.md), [requirements mapping](docs/mobile-requirements.md) and [dependency advisories](docs/dependency-advisories.md). Hosted runners compile actual Android APK and iOS simulator apps and retain native test evidence separately from JavaScript exports. Consult the checklist for the verified commit and each test result. Live providers, hosted accounts and signed device builds require external configuration.
+
+```powershell
+# Terminal 1 — backend
+npm ci
+npm run dev
+# Terminal 2 — native development client
+cd apps/mobile
+npm ci
+# Configure .env.local from .env.example: API address + platform maps keys.
+npm start
+```
+
+The original web application and its provider, database and security logic remain below.
+
 A responsive, guest-first area discovery and outing planner. **Good plans start anywhere.**
 
 This repository began as an empty checkout. It now contains a Next.js App Router application with a real Google Places/Routes adapter, OpenAI Responses Structured Outputs, a deterministic planner/editor, device persistence, and optional Supabase authentication and sharing.
 
-**Live services are not configured in the supplied cloud environment.** Automated journeys use explicitly synthetic provider fixtures. Live Google/OpenAI itineraries, Google maps/photos and hosted Supabase login are unverified. The migration and 30 authorization checks passed against an isolated local PostgreSQL instance with simulated Supabase roles. Illustrations are original artwork, labelled as such; they are not venue photography. This is a tested beta implementation, not a verified public launch.
+**Live services are not configured in this checkout.** Automated journeys use explicitly synthetic provider fixtures. Live Google/OpenAI itineraries, Google maps/photos and hosted Supabase login are unverified. The migration and 30 authorization checks passed against an isolated local PostgreSQL instance with simulated Supabase roles. Illustrations are original artwork, labelled as such; they are not venue photography. This is a tested beta implementation, not a verified public launch.
 
 ## Run locally
 
-To preview from GitHub without a local installation, open this repository's **Code → Codespaces → Create codespace on main**. The included container installs dependencies and starts the labelled development preview. Open the forwarded **3000** port in the Codespaces Ports tab if it does not open automatically. Its visibility stays private to your GitHub session. On Create, enable Development preview and search Toronto or Shibuya. Codespaces usage is subject to your GitHub account's allowance; stop the codespace when finished. Hosted Codespaces startup has not been verified in this cloud machine.
+To preview from GitHub without a local installation, select the `codex/native-mobile-experience` branch, then open **Code → Codespaces → Create codespace on codex/native-mobile-experience**. The included container installs dependencies and starts the labelled development preview. Open the forwarded **3000** port in the Codespaces Ports tab if it does not open automatically. Its visibility stays private to your GitHub session. On Create, enable Development preview and search Toronto or Shibuya. Codespaces usage is subject to your GitHub account's allowance; stop the codespace when finished. Hosted Codespaces startup has not been verified in this session.
 
 Node 24 and npm 11 were used. Use the committed npm lockfile.
 
 ```sh
 npm ci
-cp .env.example .env.local
+if [ ! -f .env.local ]; then
+  cp .env.example .env.local
+fi
 # Fill only the services you want to enable; never commit this file.
 npm run dev
 ```
@@ -72,10 +91,13 @@ Share links require signing in and cloud-saving a live plan. They do not expose 
 ## Tests and production
 
 ```sh
+npm ci
+npm ci --prefix apps/mobile
 npm run typecheck
 npm run lint
 npm test
 npm run test:e2e
+npm run test:e2e:mobile
 npm run test:db # Optional: Docker; disposable PostgreSQL authorization checks
 npm run build
 npm start
@@ -83,7 +105,7 @@ npm start
 
 Playwright starts a development server with fixture mode. It uses `/usr/bin/chromium` when present, otherwise an installed Playwright browser. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` for a custom browser or run `npx playwright install --with-deps chromium` on a machine where installation is supported. Stop an existing non-fixture server before running E2E tests.
 
-Tests cover geography, timezones/DST, costs, hours, locks, replacement constraints, scheduling, route failures, structured output rejection, provider normalization, save/share privacy and ownership endpoints. Browser journeys cover Toronto, Shibuya, sparse results, editing/remix, reloads, guest shared-plan duplication, responsive overflow and missing-service states. Hosted Supabase persistence/auth and provider responses are mocked where credentials are absent. Separately, test:db executes the actual migration and 30 owner/other-user/anonymous access checks in isolated PostgreSQL with simulated auth roles; it does not establish hosted authentication readiness.
+Tests cover geography, timezones/DST, costs, hours, locks, replacement constraints, scheduling, route failures, structured output rejection, provider normalization, save/share privacy and ownership endpoints. The retained-web suite covers Toronto, Shibuya, sparse results, editing/remix, reloads, guest shared-plan duplication, responsive overflow and missing-service states. The separate RN Web suite renders the native screen source through an official development export, with fixture generation/editing, local persistence, recovery, modal accessibility and large-text layouts. Its intent-success/error mocks are identified in the [validation record](docs/mobile-checklist.md). Run the browser suites sequentially; native OS execution is recorded separately. Hosted Supabase persistence/auth and provider responses are mocked where credentials are absent. Separately, `test:db` executes the actual migration and 30 owner/other-user/anonymous access checks in isolated PostgreSQL with simulated auth roles; it does not establish hosted authentication readiness.
 
 Production deployment is compatible with Vercel. Import this repository, choose the Next.js preset, set the variables above, apply SQL and rebuild. Expensive endpoints require Redis in production. Configure Google/OpenAI provider quotas and spending alerts as an independent backstop. Do not publish fixtures, legal drafts or unreviewed credentials to a public launch. No public deployment, hosted database migration, provider account, billing setup or cloud publication was performed. A local disposable database was used for authorization testing.
 
@@ -100,9 +122,9 @@ Production deployment is compatible with Vercel. Import this repository, choose 
 
 ## Remaining verification and limits
 
-1. Configure credentials and billing, then exercise a full real Toronto and Shibuya outing, maps, photos, routes, replacements and AI repairs. Official provider policy pages were initially blocked by cloud network settings; review current terms before launch, especially the Places API regional/EEA rules.
+1. Configure credentials and billing, then exercise a full live Toronto and Shibuya outing, maps, photos, routes, replacements and AI repairs. Review current provider terms and Places API regional/EEA requirements before launch; links and native integration constraints are in the audit and release guide.
 2. Run the SQL and verify RLS with two actual users plus an anonymous session. Test magic-link delivery, cookie refresh, share revocation and account deletion. The migration passes local PostgreSQL ownership checks; hosted sessions and email delivery still need verification.
-3. Timezones use offline `tz-lookup`. Currency is inferred for common countries, defaults to USD for unsupported country codes and can be explicitly adjusted. Verify border/island selections and currency before travel.
+3. Timezones use offline `tz-lookup`. Country-to-currency inference uses a CLDR-derived 255-entry table; an unknown country requires an explicit currency instead of silently defaulting to USD. The native planner exposes a currency override. Prices in a different provider currency remain unknown rather than being converted without a rate. Verify border/island selections and destination currency before travel.
 4. Future holiday hours, admission/reservations, dietary compliance, accessibility, driving traffic and unknown prices remain uncertain and are labelled. Provider failure stops an edit/generation instead of inventing routes or venues. Reopening unavailable places can return a partial plan or a recovery error.
-5. Mobile checks ran in Chromium at representative widths; real iOS/Android devices, screen-reader review and legal review remain outstanding. Automated WCAG accessibility checks pass, including contrast on the tested pages. Replace or supplement editorial artwork with properly licensed photography if required before public release.
+5. Application source is `1d8b8877a932395fd0f8d692eaa064382d623ec3` (Expo 57.0.30 / Router 57.0.28 / RN 0.86.3), verified with harness `110801f2c99a9e529bd459f571b7ecc6858b0d74`. [Full hosted quality](https://github.com/Hearthlane/Whimway/actions/runs/38832567624) passes 612 tests/34 files, SQL 30, types/lint/Next/online alignment, 58-asset exports (web 5.7/iOS 8.0/Android 8.2 MB), retained web 16/16 (1.4 minutes) and RN Web 47/47 (3.2 minutes). [Current Android native checks](https://github.com/Hearthlane/Whimway/actions/runs/38832567637) pass all four scopes: main, reminders, OS fontScale 2.0 and standalone Release. Both platforms compile; iOS Release installs/launches cleanly. Current iOS journeys remain unverified because fresh Simulator identity reads time out before Maestro, including bounded recovery; high host load is recorded. No product assertion or native Keychain call executes in that run. Live providers, iOS journey verification on a healthy target, physical-device performance/assistive checks, signing and legal approval remain release gates.
 6. Preferences sync through Profile when saved to an account. A deliberately skipped place saves on the current device; use Profile Save to sync that choice. Usage telemetry includes server event names/timestamps, provider-attempt counts and AI input/output token counts; no returning-user analytics or advertising tracking is installed.

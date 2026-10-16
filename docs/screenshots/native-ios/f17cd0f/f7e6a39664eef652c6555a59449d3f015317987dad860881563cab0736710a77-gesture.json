@@ -1,0 +1,26 @@
+{
+  "source": "maestro-xctest-one-shot-gesture",
+  "observationIdentitySha256": "f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77",
+  "driverPort": 7004,
+  "sequence": 16,
+  "observedAt": "2026-10-15T22:37:22.917Z",
+  "dispatchedAt": "2026-10-15T22:37:24.230Z",
+  "payload": {
+    "startX": 389.9999985,
+    "startY": 693.00000132,
+    "endX": 389.9999985,
+    "endY": 619.00000326,
+    "duration": 0.6,
+    "appIds": [
+      "com.example.whimway"
+    ]
+  },
+  "native": {
+    "status": 200,
+    "reason": null,
+    "bodyBytes": 0,
+    "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bodyTruncated": false,
+    "bodyFile": "f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77-native-body.bin"
+  }
+}

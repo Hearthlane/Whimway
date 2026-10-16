@@ -1,0 +1,7 @@
+appId: ${APP_ID || 'com.example.whimway'}
+name: Native iOS JavaScript startup readiness
+---
+# A real UI gate warms the cold Metro bundle before the native Keychain probe.
+# The main journey then resets the app again and retains its own boot checks.
+- runFlow: helpers/boot.yaml
+- takeScreenshot: native-ios-javascript-ready

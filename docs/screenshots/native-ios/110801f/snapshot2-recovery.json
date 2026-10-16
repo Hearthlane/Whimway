@@ -1,0 +1,81 @@
+{
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "sequence": 2,
+  "phase": "preflight",
+  "attempt": 2,
+  "recovery": true,
+  "observation": "native-full",
+  "reason": "runner-snapshot-failed",
+  "commands": {
+    "ps": {
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 2275,
+      "startedAt": "2026-10-16T01:10:42.024Z",
+      "timing": {
+        "execFileReturnMs": 5,
+        "spawnEventMs": 6,
+        "exitEventMs": 2274,
+        "closeEventMs": 2275,
+        "callbackMs": 2275
+      },
+      "stdout": {
+        "file": "2-ps.stdout.txt",
+        "bytes": 135772,
+        "sha256": "8f98bfdf4ada7b1e4736f5bd64399c6982888e54029da432025e23ba7b2cb79e"
+      },
+      "stderr": {
+        "file": "2-ps.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "services": {
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "launchctl",
+        "list"
+      ],
+      "status": null,
+      "error": "command-failed",
+      "code": null,
+      "killed": true,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "deadlineMs": 15000,
+      "elapsedMs": 15022,
+      "startedAt": "2026-10-16T01:10:27.002Z",
+      "timing": {
+        "execFileReturnMs": 6,
+        "spawnEventMs": 6,
+        "exitEventMs": 15021,
+        "closeEventMs": 15022,
+        "callbackMs": 15022
+      },
+      "stdout": {
+        "file": "2-services.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "file": "2-services.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

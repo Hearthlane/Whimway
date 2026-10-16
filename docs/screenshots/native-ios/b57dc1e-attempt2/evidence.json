@@ -1,0 +1,133 @@
+{
+  "source_sha": "b57dc1e599828242974e0506194b464e29dc3f2a",
+  "mobile_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "debug_binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38825447951,
+  "attempt": 2,
+  "job_id": 116738352619,
+  "artifact_id": 12015634123,
+  "artifact_zip_sha256": "111a24eee213235dd43567d0ff7e7580dec3248eed4b4b0d3bbf121a5f1436c8",
+  "scope": "One accepted exact failed iOS job retry on a fresh hosted runner; no code/deadline change. Host monitor/fence fails during bootstrap, with partial later boot commands but no completed product scope or Keychain call.",
+  "observations": [
+    "Preflight service-only timeout recovers successfully: service 10318 ms within 15000 ms, then fresh ps 198 ms. This is actual native-host recovery evidence, not a UI pass.",
+    "The next monitor service times out at 5000 ms. Service-first recovery succeeds in 1365 ms, but fresh ps times out at 5000 ms (8948 ms observed elapsed), so the wrapper fails closed.",
+    "Fence service returns status 143/killed:true/timedOut:false, with no captured runner identities. Later scopes do not start; the failure remains failed.",
+    "The wrapper exits at 00:16:12. Detached XCTest server 7001 later starts at 00:16:43 and Maestro variables/config complete at 00:16:51–55; animation/screenshot boot work starts, but there is no commands.json or app launch/assertion proof. This partial post-wrapper startup is not a completed UI-ready scope.",
+    "Warm HTTP 200/40136 ms/16023676 bytes succeeds. Three false Keychain values are ui-readiness/app-not-ready gating; no native Keychain defect is established.",
+    "Original attempt 1 and its scheduling-delay excerpt are retained separately. No third retry or product change is inferred."
+  ],
+  "excerpts": [
+    {
+      "name": "partial-maestro-boot.txt",
+      "original_source_path": "native-results/38825447951/ios-runtime-attempt2/native-results/ios-ready/2026-10-16_001533/Native iOS JavaScript startup readiness/logs/maestro.log",
+      "original_sha256": "99eadfc047b9c8ebe9c028eb51a9bd526a8558275681ef52a35726ce5bd73d33",
+      "original_line_numbers": [
+        3,
+        6,
+        11,
+        16,
+        22,
+        24
+      ],
+      "scope": "Exact selected complete original lines, with trailing newlines; omitted metadata is not interpreted as a successful UI assertion."
+    },
+    {
+      "name": "partial-xctest-bootstrap.txt",
+      "original_source_path": "native-results/38825447951/ios-runtime-attempt2/native-results/ios-ready/2026-10-16_001533/xctest_runner_2026-10-16_001546.log",
+      "original_sha256": "7e8e3ff2bb0d2ad1f52e425ed3c0be1e42dd2089549ddda10e08043d233d3d48",
+      "original_line_numbers": [
+        49,
+        53,
+        60,
+        61
+      ],
+      "scope": "Exact selected complete original lines, with trailing newlines; omitted metadata is not interpreted as a successful UI assertion."
+    }
+  ],
+  "retained_files": [
+    {
+      "name": "snapshot-1.json",
+      "bytes": 1692,
+      "sha256": "1792d3853a0f7dde1fe8c52910d87346612895d7d1e0941fa54b0efecd239692",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-attempt.json"
+    },
+    {
+      "name": "snapshot-2.json",
+      "bytes": 1659,
+      "sha256": "81a2e04465119387c2207677010472bd0869bd0c44c51c18c60954e2b142f982",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/2-attempt.json"
+    },
+    {
+      "name": "snapshot-3.json",
+      "bytes": 1690,
+      "sha256": "0a454611303d13b1a1bafe830fba379c5306b2b4396213f4accf019660515289",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/3-attempt.json"
+    },
+    {
+      "name": "snapshot-4.json",
+      "bytes": 1690,
+      "sha256": "51e9890690556fb4f01ddb58808953b2ec1ba9f621c0ba582510552f45e36068",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/4-attempt.json"
+    },
+    {
+      "name": "snapshot-5.json",
+      "bytes": 1671,
+      "sha256": "64766d500fbea6f7a9e98157fe70ba48c6085cd30210e42f36f483e35fb77f57",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/5-attempt.json"
+    },
+    {
+      "name": "ready-outcome.json",
+      "bytes": 246,
+      "sha256": "f9514dbd91da22c0074ebff16481989a428691606f8899e03849d6150146a3fe",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready.json"
+    },
+    {
+      "name": "summary.json",
+      "bytes": 341,
+      "sha256": "41633f894fe034c7f93161375cd2278ec3fc2e76515646229c18faebc57bdf08",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/summary.json"
+    },
+    {
+      "name": "failure-diagnostics.json",
+      "bytes": 2530,
+      "sha256": "23b92f820636ebd51b07f155effea7fb1699c9ce11d97134fdac47c12e8133b1",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-runner-lifecycle/ready/diagnostics.json"
+    },
+    {
+      "name": "warm.json",
+      "bytes": 341,
+      "sha256": "9044e7e8b2b369a128e22d74d8a00acc9cfddbbbc8f7fd9d178531646656e105",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "later-diagnostics.json",
+      "bytes": 984,
+      "sha256": "93b552cca6e6191a731e67292fd4eba72ae5b99d73c230fde67b96fb806582d6",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-test-artifacts/ios-startup-diagnostics/diagnostics.json"
+    },
+    {
+      "name": "partial-maestro-boot.txt",
+      "bytes": 647,
+      "sha256": "db3a6e39ee49f361f4b7f8f733e6aafcad40510bdaf8f4407cdbe851e8307c3c",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-results/ios-ready/2026-10-16_001533/Native iOS JavaScript startup readiness/logs/maestro.log"
+    },
+    {
+      "name": "partial-xctest-bootstrap.txt",
+      "bytes": 503,
+      "sha256": "dddd1cb3e5623bac25c3fe65899b8d6d487550f52e94f9d79822b900ed1e88c4",
+      "source_path": "native-results/38825447951/ios-runtime-attempt2/native-results/ios-ready/2026-10-16_001533/xctest_runner_2026-10-16_001546.log"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+# Cancel only a leftover own-app link confirmation before resetting the app.
+appId: ${APP_ID || 'com.example.whimway'}
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            visible: '^Open in [“"]Whimway[”"][?]$'
+          commands:
+            - takeScreenshot: ios-system-stale-whimway-link
+            - tapOn:
+                text: "^Cancel$"
+                below:
+                  text: '^Open in [“"]Whimway[”"][?]$'
+                label: "Cancel only the stale Whimway development link"
+            - extendedWaitUntil:
+                notVisible: '^Open in [“"]Whimway[”"][?]$'
+                timeout: 10000

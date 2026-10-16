@@ -1,0 +1,24 @@
+import {createServer} from 'node:http';
+import {spawn} from 'node:child_process';
+import {writeFile} from 'node:fs/promises';
+import {startIOSViewportServer} from '../../scripts/native-ios-viewport-server.mjs';
+import {startIOSGestureBroker} from '../../scripts/native-ios-gesture-server.mjs';
+import {resolve} from 'node:path';
+const directory=resolve('native-results/maestro-js-http-check');
+let mode='success',moved=false,calls=[];
+const rawNode=(identifier,label,frame,children)=>({identifier,label,frame,enabled:true,...(children?{children}: {})});
+const driver=createServer((req,res)=>{let bytes='';req.on('data',b=>bytes+=b);req.on('end',()=>{
+ calls.push({method:req.method,path:req.url,body:JSON.parse(bytes||'{}'),contentType:req.headers['content-type']});
+ if(req.method!=='POST'){res.writeHead(405);return res.end();}
+ if(req.url==='/deviceInfo')return res.end(JSON.stringify({widthPoints:402,heightPoints:874,widthPixels:1206,heightPixels:2622}));
+ if(req.url==='/viewHierarchy')return res.end(JSON.stringify({depth:3,axElement:rawNode('','Whimway',{X:0,Y:0,Width:402,Height:874},[rawNode('plan-timeline','',{X:0,Y:472,Width:402,Height:368},[rawNode('','Adjust plan',{X:24,Y:moved?600:827,Width:354,Height:82})])])}));
+ if(req.url==='/swipeV2'){const p=JSON.parse(bytes);if(p.startY<=472||p.endY<=472||p.startY>=840||p.endY>=840||p.duration!==0.6||JSON.stringify(p.appIds)!=='["com.example.whimway"]'){res.writeHead(400);return res.end('fixture rejected geometry');}if(mode==='http408'){res.writeHead(408);return res.end('{"errorMessage":"isolated timeout fixture"}');}moved=true;return res.end();}
+ res.writeHead(404);res.end();
+});});
+await new Promise(r=>driver.listen(7004,'127.0.0.1',r));
+const observer=await startIOSViewportServer({artifactDirectory:directory+'/observer-fixtures',port:8766,allowedDriverPorts:[7004]});
+const broker=await startIOSGestureBroker({consumeObservation:observer.consumeObservation,artifactDirectory:directory+'/broker-fixtures',port:8767,allowedDriverPorts:[7004]});
+const reports=[];
+try{for(mode of ['success','http408']){moved=false;calls=[];const outcome=await new Promise((resolveRun)=>{const child=spawn(resolve('native-results/maestro-parser-validation/temurin21/jdk-21.0.12.1+1-jre/bin/java.exe'),['--enable-native-access=ALL-UNNAMED','-cp',resolve(directory+'/classes')+';'+resolve('native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/*'),'GraalHttpCheck',mode],{cwd:process.cwd(),env:{...process.env,MAESTRO_CLI_NO_ANALYTICS:'1'}});let stdout='',stderr='';const timer=setTimeout(()=>child.kill(),45000);child.stdout.on('data',b=>stdout+=b);child.stderr.on('data',b=>stderr+=b);child.on('close',(code,signal)=>{clearTimeout(timer);resolveRun({code,signal,stdout,stderr});});});
+await writeFile(directory+'/'+mode+'-jvm.log',outcome.stdout+'\nSTDERR\n'+outcome.stderr);const report={case:mode,...outcome,calls:[...calls],gestureRequests:calls.filter(x=>x.path==='/swipeV2').length};reports.push(report);console.log(JSON.stringify({case:mode,code:outcome.code,gestureRequests:report.gestureRequests,lastOutput:outcome.stdout.slice(-500),stderr:outcome.stderr.slice(-800)}));}
+}finally{await writeFile(directory+'/report.json',JSON.stringify({scope:'isolated actual Maestro GraalJS+HTTP adapter; no simulator/native Keychain/UI proof',reports},null,2));broker.closeAllConnections();observer.closeAllConnections();driver.closeAllConnections();await Promise.all([new Promise(r=>broker.close(r)),new Promise(r=>observer.close(r)),new Promise(r=>driver.close(r))]);}

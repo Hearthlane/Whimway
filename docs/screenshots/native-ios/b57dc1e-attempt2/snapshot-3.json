@@ -1,0 +1,66 @@
+{
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "sequence": 3,
+  "phase": "monitor",
+  "attempt": 1,
+  "recovery": false,
+  "reason": "runner-snapshot-failed",
+  "commands": {
+    "ps": {
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 164,
+      "startedAt": "2026-10-16T00:15:29.227Z",
+      "stdout": {
+        "file": "3-ps.stdout.txt",
+        "bytes": 153119,
+        "sha256": "71eb13c2bbc334d1cef942aeabda13368874f1730e2f99d24815f1ef361ed71f"
+      },
+      "stderr": {
+        "file": "3-ps.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "services": {
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "launchctl",
+        "list"
+      ],
+      "status": null,
+      "error": "command-failed",
+      "code": null,
+      "killed": true,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "deadlineMs": 5000,
+      "elapsedMs": 5032,
+      "startedAt": "2026-10-16T00:15:29.235Z",
+      "stdout": {
+        "file": "3-services.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "file": "3-services.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

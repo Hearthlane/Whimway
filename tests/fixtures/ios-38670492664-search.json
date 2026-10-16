@@ -1,0 +1,110 @@
+{
+  "run": "38670492664",
+  "description": "Exact selected node attributes and ancestor bounds from actual Search assertion failures. Reminders screenshot shows native keyboard and onFocus ring despite focused:false; large text has no keyboard and Search crosses its clipped scroll viewport.",
+  "producerSources": {
+    "maestroCommit": "df40dea5dee0b8639aade6e80b558950e982e8a2",
+    "focusMapping": "maestro-client/src/main/java/maestro/drivers/IOSDriver.kt:197-220",
+    "snapshotFocus": "maestro-ios-xctest-runner/maestro-driver-iosUITests/Routes/Models/AXElement.swift:32",
+    "reactNativeFocus": "apps/mobile/node_modules/react-native/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm:400-403",
+    "appDoneBar": "apps/mobile/src/components/ui.tsx:544-585",
+    "snapshotFocusCurrent": "maestro-ios-xctest-runner/maestro-driver-iosUITests/Routes/Handlers/ViewHierarchyHandler.swift:353",
+    "note": "Pinned current primary Maestro source; hosted CLI version was not retained in this artifact."
+  },
+  "reminders": {
+    "source": "ios-reminders/2026-10-15_025959/Native fixture reminders schedule and cancel/screen-hierarchy/step-043-assertCondition-Search_a_place.json",
+    "screenshot": "ios-reminders/2026-10-15_025959/Native fixture reminders schedule and cancel/screenshots/step-043-assertCondition-Search_a_place.png",
+    "ancestorBounds": [
+      "[0,62][402,494]",
+      "[0,62][402,1050]",
+      "[0,62][402,1050]",
+      "[24,277][378,557]",
+      "[24,345][378,401]",
+      "[73,346][361,400]"
+    ],
+    "nodes": [
+      {
+        "accessibilityText": "Search a place",
+        "hintText": "City, neighbourhood, anywhere…",
+        "bounds": "[73,346][361,400]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Done editing, dismiss keyboard",
+        "bounds": "[322,495][386,539]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "delete",
+        "resource-id": "delete",
+        "bounds": "[348,698][399,752]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "return",
+        "resource-id": "Return",
+        "bounds": "[300,752][399,806]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      }
+    ]
+  },
+  "largeText": {
+    "source": "ios-large-text/2026-10-15_030256/Native large-text outing/screen-hierarchy/step-046-assertCondition-Search_a_place.json",
+    "screenshot": "ios-large-text/2026-10-15_030256/Native large-text outing/screenshots/step-046-assertCondition-Search_a_place.png",
+    "ancestorBounds": [
+      "[0,62][402,738]",
+      "[0,-304][402,2920]",
+      "[0,-304][402,2920]",
+      "[24,435][378,1348]",
+      "[24,707][378,815]",
+      "[73,708][361,814]"
+    ],
+    "nodes": [
+      {
+        "accessibilityText": "Search a place",
+        "hintText": "City, neighbourhood, anywhere…",
+        "bounds": "[73,708][361,814]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      }
+    ]
+  },
+  "enteredQuery": {
+    "run": "38668397703",
+    "source": "ios-large-text/2026-10-15_022152/Native large-text outing/screen-hierarchy/step-035-assertCondition-CF_Toronto_Eaton_Centre.json",
+    "nodes": [
+      {
+        "accessibilityText": "Search a place",
+        "value": "Toronto",
+        "text": "Toronto",
+        "hintText": "City, neighbourhood, anywhere…",
+        "bounds": "[73,69][361,175]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      },
+      {
+        "accessibilityText": "Done editing, dismiss keyboard",
+        "bounds": "[260,473][386,539]",
+        "enabled": "true",
+        "focused": "false",
+        "selected": "false",
+        "checked": "false"
+      }
+    ]
+  }
+}

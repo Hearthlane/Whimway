@@ -27,6 +27,63 @@ export const interests = [
   "Hidden gems",
   "Surprise me",
 ] as const;
+export const companions = [
+  "solo",
+  "date",
+  "friends",
+  "family",
+  "group",
+] as const;
+export const energies = ["chill", "balanced", "active"] as const;
+export const vibes = [
+  "budget-friendly",
+  "romantic",
+  "exciting",
+  "cozy",
+  "trendy",
+  "hidden-gems",
+  "luxurious",
+  "anything",
+] as const;
+// Prompt intake intentionally precedes PlanRequest: location and timing may be
+// unknown. A query is never treated as a verified provider location.
+export const IntentRequest = z.object({
+  prompt: z.string().trim().min(5).max(1500),
+  timezone: z.string().min(1).max(80).optional(),
+});
+export type IntentRequest = z.infer<typeof IntentRequest>;
+export const PlanningIntent = z.object({
+  locationQuery: z.string().min(1).max(200).optional(),
+  dateChoice: z.enum(["today", "tomorrow", "flexible", "specific"]).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  duration: z.number().int().min(60).max(720).optional(),
+  budget: z.number().min(0).max(1000000).optional(),
+  participants: z.number().int().min(1).max(20).optional(),
+  companion: z.enum(companions).optional(),
+  energy: z.enum(energies).optional(),
+  vibes: z.array(z.enum(vibes)).max(3).optional(),
+  interests: z.array(z.enum(interests)).max(10).optional(),
+  mode: z.enum(["WALK", "DRIVE"]).optional(),
+  dietary: z.string().max(300).optional(),
+  accessibility: z.string().max(300).optional(),
+  warnings: z.array(z.string().max(240)).max(5),
+});
+export type PlanningIntent = z.infer<typeof PlanningIntent>;
+export const NavigationRequest = z.object({
+  from: Point,
+  to: Point,
+  toId: z.string().min(1).max(250),
+  mode: z.enum(["WALK", "DRIVE"]),
+  demo: z.boolean().default(false),
+});
+export type NavigationRequest = z.infer<typeof NavigationRequest>;
 export const PlanRequest = z.object({
   location: Location,
   area: AreaBoundary,
@@ -38,6 +95,9 @@ export const PlanRequest = z.object({
   budget: z.number().min(0).max(1000000),
   hardBudget: z.boolean().default(false),
   participants: z.number().int().min(1).max(20),
+  companion: z.enum(companions).optional(),
+  energy: z.enum(energies).optional(),
+  vibes: z.array(z.enum(vibes)).max(3).optional(),
   mode: z.enum(["WALK", "DRIVE"]),
   excludedPlaceIds: z.array(z.string().max(250)).max(100).default([]),
   dietary: z.string().max(300).default(""),
@@ -105,8 +165,8 @@ export type CandidatePlace = z.infer<typeof CandidatePlace>;
 export const TravelLeg = z.object({
   from: z.string(),
   to: z.string(),
-  minutes: z.number(),
-  meters: z.number(),
+  minutes: z.number().nonnegative(),
+  meters: z.number().nonnegative(),
   polyline: z.string(),
   verified: z.boolean(),
 });
@@ -186,7 +246,7 @@ export const Selection = z.object({
     .array(
       z.object({
         placeId: z.string(),
-        minutes: z.number().int().min(15).max(180),
+        minutes: z.number().int().min(15).max(240),
         reason: z.string().max(240),
       }),
     )

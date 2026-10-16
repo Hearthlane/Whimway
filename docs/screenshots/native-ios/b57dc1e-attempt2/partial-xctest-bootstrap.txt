@@ -1,0 +1,4 @@
+2026-10-16 00:16:43.710103+0000 maestro-driver-iosUITests-Runner[20024:61247] [FlyingFox] starting server 127.0.0.1:7001
+2026-10-16 00:16:44.971674+0000 maestro-driver-iosUITests-Runner[20024:61359] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+2026-10-16 00:16:55.119871+0000 maestro-driver-iosUITests-Runner[20024:61247] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-16 00:17:05.792848+0000 maestro-driver-iosUITests-Runner[20024:61250] [FlyingFox] <127.0.0.1> request: GET /screenshot

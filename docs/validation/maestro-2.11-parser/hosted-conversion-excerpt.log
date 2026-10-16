@@ -1,0 +1,16 @@
+2026-10-15T20:49:47.3007611Z   MAESTRO_VERSION: 2.11.0
+2026-10-15T20:50:04.2794670Z 2.11.0
+2026-10-15T20:50:07.4487818Z Official converter: file:/home/runner/.maestro/lib/maestro-orchestra.jar
+2026-10-15T20:50:08.3313889Z PARSED helpers/boot.yaml
+2026-10-15T20:50:08.3373420Z PARSED helpers/cancel-stale-whimway-link.yaml
+2026-10-15T20:50:08.4404002Z PARSED helpers/create-fixture-plan.yaml
+2026-10-15T20:50:08.4457870Z PARSED helpers/dismiss-pixel-launcher-anr.yaml
+2026-10-15T20:50:08.4501610Z PARSED helpers/open-whimway-link.yaml
+2026-10-15T20:50:08.4551087Z PARSED helpers/scroll-ios-plan.yaml
+2026-10-15T20:50:08.4603200Z PARSED helpers/tap-ios-plan.yaml
+2026-10-15T20:50:08.4741583Z PARSED ios-ready.yaml
+2026-10-15T20:50:08.5331320Z PARSED large-text.yaml
+2026-10-15T20:50:08.5402381Z PARSED release-launch.yaml
+2026-10-15T20:50:08.5793713Z PARSED reminders-allow.yaml
+2026-10-15T20:50:08.6553059Z PARSED smoke.yaml
+2026-10-15T20:50:08.6618669Z Converted 12/12 native flow graphs with official Maestro classes.

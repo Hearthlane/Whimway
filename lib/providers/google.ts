@@ -8,10 +8,13 @@ import {
   type Point,
   type TravelLeg,
 } from "../schema";
-import { safeUrl } from "../geo";
+import { safeUrl, decodePolyline } from "../geo";
 import { AppError, providerFetch, requireEnv } from "../errors";
 import type { PlacesProvider, RouteProvider } from "./types";
 import { z } from "zod";
+import { currencyForCountry } from "./currency-data";
+import { providerSignal } from "../server/provider-context";
+export { currencies } from "./currency-data";
 const Money = z.object({
   currencyCode: z.string().optional(),
   units: z.union([z.string(), z.number()]).optional(),
@@ -84,50 +87,40 @@ const RawPlace = z.object({
 const fields =
   "id,displayName,location,formattedAddress,primaryType,types,googleMapsUri,businessStatus,rating,userRatingCount";
 const detailFields = `${fields},websiteUri,photos,priceRange,currentOpeningHours,regularOpeningHours,addressComponents,accessibilityOptions`;
-export const currencies: Record<string, string> = {
-  CA: "CAD",
-  US: "USD",
-  JP: "JPY",
-  GB: "GBP",
-  FR: "EUR",
-  DE: "EUR",
-  ES: "EUR",
-  IT: "EUR",
-  NL: "EUR",
-  PT: "EUR",
-  IE: "EUR",
-  AT: "EUR",
-  BE: "EUR",
-  FI: "EUR",
-  GR: "EUR",
-  AU: "AUD",
-  NZ: "NZD",
-  IN: "INR",
-  SG: "SGD",
-  KR: "KRW",
-  CN: "CNY",
-  HK: "HKD",
-  TW: "TWD",
-  TH: "THB",
-  MX: "MXN",
-  BR: "BRL",
-  CH: "CHF",
-  SE: "SEK",
-  NO: "NOK",
-  DK: "DKK",
-  PL: "PLN",
-  CZ: "CZK",
-  ZA: "ZAR",
-  AE: "AED",
-  ID: "IDR",
-  MY: "MYR",
-  PH: "PHP",
-  VN: "VND",
-  TR: "TRY",
-  HU: "HUF",
-  IS: "ISK",
-  IL: "ILS",
-};
+const locationFields =
+  "id,displayName,location,formattedAddress,addressComponents";
+const operationReuseLimit = 64;
+function checkOperation() {
+  const signal = providerSignal();
+  if (signal?.aborted)
+    throw signal.reason?.name === "TimeoutError"
+      ? new AppError(
+          "REQUEST_TIMEOUT",
+          "Planning took too long. Try fewer stops or adjust your outing and try again.",
+          504,
+        )
+      : new AppError("REQUEST_CANCELLED", "This request was cancelled.", 499);
+}
+async function reuseWithinOperation<T>(
+  pending: Map<string, Promise<T>>,
+  key: string,
+  load: () => Promise<T>,
+): Promise<T> {
+  checkOperation();
+  let result = pending.get(key);
+  if (!result) {
+    result = load();
+    if (pending.size < operationReuseLimit) pending.set(key, result);
+  }
+  try {
+    const value = await result;
+    checkOperation();
+    return value;
+  } catch (error) {
+    if (pending.get(key) === result) pending.delete(key);
+    throw error;
+  }
+}
 const moneyAmount = (m: z.infer<typeof Money>) =>
   Number(m.units ?? 0) + (m.nanos ?? 0) / 1e9;
 export function normalize(input: unknown, currency: string): CandidatePlace {
@@ -142,14 +135,23 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
     "garden",
   ].includes(type);
   const range = p.priceRange;
+  const lower = range?.startPrice ? moneyAmount(range.startPrice) : null;
+  const upper = range?.endPrice ? moneyAmount(range.endPrice) : null;
   const valid = Boolean(
     range?.startPrice &&
     range?.endPrice &&
     range.startPrice.currencyCode === currency &&
-    range.endPrice.currencyCode === currency,
+    range.endPrice.currencyCode === currency &&
+    lower !== null &&
+    upper !== null &&
+    Number.isFinite(lower) &&
+    Number.isFinite(upper) &&
+    lower >= 0 &&
+    upper >= lower,
   );
-  const low = valid ? moneyAmount(range!.startPrice!) : browse ? 0 : null,
-    high = valid ? moneyAmount(range!.endPrice!) : browse ? 0 : null;
+  const freeBrowse = browse && !range;
+  const low = valid ? lower : freeBrowse ? 0 : null,
+    high = valid ? upper : freeBrowse ? 0 : null;
   const hours = p.currentOpeningHours ?? p.regularOpeningHours;
   const timezone = tzLookup(p.location.latitude, p.location.longitude);
   const today = DateTime.now().setZone(timezone).startOf("day");
@@ -208,13 +210,13 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
       low,
       high,
       currency,
-      source: valid ? "provider-range" : browse ? "free-browse" : "unknown",
+      source: valid ? "provider-range" : freeBrowse ? "free-browse" : "unknown",
       confidence: valid
         ? "published-range"
-        : browse
+        : freeBrowse
           ? "category-estimate"
           : "unknown",
-      optional: browse,
+      optional: freeBrowse,
     },
     hours: hours?.weekdayDescriptions ?? [],
     periods,
@@ -261,6 +263,12 @@ const searches: Record<string, string> = {
   "Surprise me": "interesting things to do",
 };
 export class GooglePlaces implements PlacesProvider {
+  // The API creates a fresh provider for every operation. Never share these
+  // promises across provider instances or persist provider-derived data.
+  private readonly detailsInOperation = new Map<
+    string,
+    Promise<CandidatePlace>
+  >();
   async search(req: PlanRequest, query?: string) {
     const categories = query
       ? [query]
@@ -336,6 +344,14 @@ export class GooglePlaces implements PlacesProvider {
   async details(id: string, currency: string) {
     if (!/^[\w-]+$/.test(id))
       throw new AppError("INVALID_PLACE", "Invalid place ID.");
+    const result = await reuseWithinOperation(
+      this.detailsInOperation,
+      JSON.stringify([id, currency]),
+      () => this.fetchDetails(id, currency),
+    );
+    return structuredClone(result);
+  }
+  private async fetchDetails(id: string, currency: string) {
     try {
       return normalize(
         await call(`places/${encodeURIComponent(id)}`, undefined, detailFields),
@@ -358,7 +374,7 @@ export class GooglePlaces implements PlacesProvider {
       await call(
         `places/${encodeURIComponent(id)}${session ? `?sessionToken=${encodeURIComponent(session)}` : ""}`,
         undefined,
-        `${fields},addressComponents`,
+        locationFields,
       ),
     );
     const country = raw.addressComponents?.find((a) =>
@@ -369,7 +385,7 @@ export class GooglePlaces implements PlacesProvider {
       name: raw.displayName?.text ?? raw.formattedAddress ?? "Selected area",
       center: { lat: raw.location.latitude, lng: raw.location.longitude },
       timezone: tzLookup(raw.location.latitude, raw.location.longitude),
-      currency: currencies[country ?? ""] ?? "USD",
+      currency: currencyForCountry(country),
     };
   }
 }
@@ -405,10 +421,14 @@ export async function resolvePoint(point: Point): Promise<Location> {
     center: point,
     name: result?.formatted_address ?? "Dropped pin",
     timezone: tzLookup(point.lat, point.lng),
-    currency: currencies[country ?? ""] ?? "USD",
+    currency: currencyForCountry(country),
   };
 }
 export class GoogleRoutes implements RouteProvider {
+  private readonly routesInOperation = new Map<
+    string,
+    Promise<Omit<TravelLeg, "from" | "to">>
+  >();
   async leg(
     from: Point,
     to: Point,
@@ -416,6 +436,28 @@ export class GoogleRoutes implements RouteProvider {
     fromId: string,
     toId: string,
   ): Promise<TravelLeg> {
+    // Key all effective provider options, including precise ordered endpoints.
+    // IDs describe itinerary edges, not the route, and are remapped per caller.
+    const body = JSON.stringify({
+      origin: {
+        location: { latLng: { latitude: from.lat, longitude: from.lng } },
+      },
+      destination: {
+        location: { latLng: { latitude: to.lat, longitude: to.lng } },
+      },
+      travelMode: mode,
+      computeAlternativeRoutes: false,
+      polylineQuality: "OVERVIEW",
+      routingPreference: mode === "DRIVE" ? "TRAFFIC_UNAWARE" : undefined,
+    });
+    const route = await reuseWithinOperation(this.routesInOperation, body, () =>
+      this.computeRoute(body),
+    );
+    return { from: fromId, to: toId, ...route };
+  }
+  private async computeRoute(
+    body: string,
+  ): Promise<Omit<TravelLeg, "from" | "to">> {
     const response = await providerFetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
@@ -426,18 +468,7 @@ export class GoogleRoutes implements RouteProvider {
           "X-Goog-FieldMask":
             "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
         },
-        body: JSON.stringify({
-          origin: {
-            location: { latLng: { latitude: from.lat, longitude: from.lng } },
-          },
-          destination: {
-            location: { latLng: { latitude: to.lat, longitude: to.lng } },
-          },
-          travelMode: mode,
-          computeAlternativeRoutes: false,
-          polylineQuality: "OVERVIEW",
-          routingPreference: mode === "DRIVE" ? "TRAFFIC_UNAWARE" : undefined,
-        }),
+        body,
       },
     );
     const data = z
@@ -445,9 +476,18 @@ export class GoogleRoutes implements RouteProvider {
         routes: z
           .array(
             z.object({
-              duration: z.string().regex(/^\d+(\.\d+)?s$/),
-              distanceMeters: z.number(),
-              polyline: z.object({ encodedPolyline: z.string() }),
+              duration: z
+                .string()
+                .regex(/^\d+(\.\d+)?s$/)
+                .refine((value) => Number.isFinite(parseFloat(value))),
+              distanceMeters: z.number().nonnegative(),
+              polyline: z.object({
+                encodedPolyline: z
+                  .string()
+                  .min(1)
+                  .max(250000)
+                  .regex(/^[\x3f-\x7e]+$/),
+              }),
             }),
           )
           .min(1),
@@ -460,9 +500,28 @@ export class GoogleRoutes implements RouteProvider {
         422,
       );
     const r = data.data.routes[0];
+    try {
+      const points = decodePolyline(r.polyline.encodedPolyline);
+      const alreadyThere =
+        points.length === 1 &&
+        r.distanceMeters === 0 &&
+        parseFloat(r.duration) === 0;
+      if (
+        (!alreadyThere && points.length < 2) ||
+        points.length > 30000 ||
+        points.some(
+          (point) => Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180,
+        )
+      )
+        throw new Error("Invalid route geometry");
+    } catch {
+      throw new AppError(
+        "NO_ROUTE",
+        "The routing service returned unusable route geometry. Try another travel mode or destination.",
+        422,
+      );
+    }
     return {
-      from: fromId,
-      to: toId,
       minutes: Math.ceil(parseFloat(r.duration) / 60),
       meters: r.distanceMeters,
       polyline: r.polyline.encodedPolyline,

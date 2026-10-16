@@ -1,0 +1,16 @@
+{
+  "name": "decode-uri-component",
+  "version": "0.5.0",
+  "private": true,
+  "description": "MIT-licensed decode-uri-component 0.5.0 with a CommonJS export for query-string 7",
+  "license": "MIT",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "exports": {
+    "types": "./index.d.ts",
+    "default": "./index.cjs"
+  },
+  "sideEffects": false,
+  "engines": { "node": ">=14.16" },
+  "files": ["index.cjs", "index.d.ts", "LICENSE", "UPSTREAM.md"]
+}

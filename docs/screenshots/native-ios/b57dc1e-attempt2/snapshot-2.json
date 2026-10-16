@@ -1,0 +1,66 @@
+{
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "sequence": 2,
+  "phase": "preflight",
+  "attempt": 2,
+  "recovery": true,
+  "reason": null,
+  "commands": {
+    "ps": {
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 198,
+      "startedAt": "2026-10-16T00:15:28.861Z",
+      "stdout": {
+        "file": "2-ps.stdout.txt",
+        "bytes": 152624,
+        "sha256": "a817ce2ce07a497fd77c4fbf04f5c23beeb1805b9a6c81acb307c57445675e6f"
+      },
+      "stderr": {
+        "file": "2-ps.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "services": {
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "launchctl",
+        "list"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 15000,
+      "elapsedMs": 10318,
+      "startedAt": "2026-10-16T00:15:18.543Z",
+      "stdout": {
+        "file": "2-services.stdout.txt",
+        "bytes": 12188,
+        "sha256": "b8a37a50618c8fa385a1efcdfe44ce212626070c0c1b05456be26cd77e5ae538"
+      },
+      "stderr": {
+        "file": "2-services.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

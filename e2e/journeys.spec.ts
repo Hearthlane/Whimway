@@ -32,6 +32,85 @@ async function generate(page: Page, city = "Toronto") {
   await expect(page.locator(".stop-card")).toHaveCount(4);
   await expect(page.locator(".notice.error")).toHaveCount(0);
 }
+test("A fast create click waits for the selected place and its destination date", async ({
+  page,
+}) => {
+  await page.goto("/create");
+  await page
+    .getByLabel("Development preview: synthetic places, prices, hours and map")
+    .check();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(/\/api\/location\?/, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  let generated = false;
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/generate")) generated = true;
+  });
+  await page
+    .getByRole("combobox", { name: "Search for an area", exact: true })
+    .first()
+    .fill("Remote");
+  await page.getByRole("option").first().getByRole("button").click();
+  const make = page.getByRole("button", { name: "Make my day", exact: true });
+  await expect(make).toBeDisabled();
+  // A real rapid click is queued while lookup remains unresolved; the control
+  // must become usable only after onChange has initialized the destination date.
+  const click = make.click();
+  expect(generated).toBe(false);
+  release();
+  await click;
+  await expect(page.getByLabel("Outing date")).not.toHaveValue("");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "No suitable destinations",
+  );
+  expect(generated).toBe(true);
+  await expect(page).toHaveURL(/\/create/);
+});
+
+test("Home keeps a fast start and Enter from dropping an unresolved selected location", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Development preview · synthetic test data").check();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(/\/api\/location\?/, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page
+    .getByRole("combobox", { name: "Search for an area", exact: true })
+    .fill("Toronto");
+  await page.getByRole("option").first().getByRole("button").click();
+  const start = page.getByRole("button", { name: "Find my kind of day" });
+  await expect(start).toBeDisabled();
+  await page.getByLabel("Describe your outing").fill("An art afternoon");
+  await page.getByLabel("Describe your outing").press("Enter");
+  await expect(page).toHaveURL(/\/$/);
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("whimway:entry")),
+  ).toBeNull();
+  const click = start.click();
+  release();
+  await click;
+  await expect(page).toHaveURL(/\/create/);
+  await expect(
+    page
+      .getByRole("combobox", { name: "Search for an area", exact: true })
+      .first(),
+  ).toHaveValue("CF Toronto Eaton Centre");
+  await expect(page.getByLabel("Outing date")).not.toHaveValue("");
+  await expect(page.getByLabel("Describe your plan")).toHaveValue(
+    "An art afternoon",
+  );
+});
 test("Toronto: boundary, diverse fixture IDs, timing, budget, map sync and reload", async ({
   page,
 }) => {

@@ -1,0 +1,31 @@
+{
+  "simulator_only": true,
+  "signing_mode": "xcode-ad-hoc-verified-copy",
+  "configuration": "release",
+  "checkout_sha": "35643b3d2d86b936a9cf38f051d05ab68632716b",
+  "binary_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "original_app": "apps/mobile/ios/build/Build/Products/Release-iphonesimulator/Whimway.app",
+  "original_archive": "apps/mobile/ios/whimway-ios-simulator.tar.gz",
+  "original_app_tree_sha256": "5ff9fed5ea6e6c6a6d55eef2635eb18ba8a1d84b4e6db210094e99135a731d0a",
+  "original_archive_sha256": "e2c3b7f254dbcd886cc2d2ae855a8d78687b464637d1b6fac863e4ae999890cd",
+  "runtime_app": "native-test-artifacts/ios-simulator-runtime/release/Whimway.app",
+  "signature_verified": true,
+  "originals_unchanged": true,
+  "runtime_copy_unchanged": true,
+  "runtime_app_tree_sha256": "5ff9fed5ea6e6c6a6d55eef2635eb18ba8a1d84b4e6db210094e99135a731d0a",
+  "host_signature_entitlements": {},
+  "simulator_embedded_entitlements": {
+    "application-identifier": "FAKETEAMID.com.example.whimway",
+    "aps-environment": "development"
+  },
+  "simulator_embedded_sections": {
+    "__entitlements": {
+      "bytes": 330,
+      "sha256": "6e5440c9d1d45229a1ced23a493ed407ac9611c7fcdd02231d0e65e4d27f5aa2"
+    },
+    "__ents_der": {
+      "bytes": 97,
+      "sha256": "7d9a4ad0330acf6eb0b40c13aea5a6b613b1288695a46b5857781f4bc73a2078"
+    }
+  }
+}

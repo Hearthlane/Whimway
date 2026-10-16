@@ -1,0 +1,14 @@
+Official converter: file:/C:/Users/yychim/Documents/ChatGPT/Whimway/native-results/maestro-parser-validation/cli-2.11.0/maestro/lib/maestro-orchestra.jar
+PARSED helpers\boot.yaml
+PARSED helpers\cancel-stale-whimway-link.yaml
+PARSED helpers\create-fixture-plan.yaml
+PARSED helpers\dismiss-pixel-launcher-anr.yaml
+PARSED helpers\open-whimway-link.yaml
+PARSED helpers\scroll-ios-plan.yaml
+PARSED helpers\tap-ios-plan.yaml
+PARSED ios-ready.yaml
+PARSED large-text.yaml
+PARSED release-launch.yaml
+PARSED reminders-allow.yaml
+PARSED smoke.yaml
+Converted 12/12 native flow graphs with official Maestro classes.

@@ -1,0 +1,210 @@
+# Real native development client; all venue/price/route inputs are synthetic.
+appId: ${APP_ID || 'com.example.whimway'}
+name: Native fixture outing smoke
+tags: [native, fixtures, smoke]
+---
+- runFlow: helpers/boot.yaml
+- takeScreenshot: native-explore
+- assertNotVisible: ".*[Ss]end.*notifications.*"
+- tapOn: "Near me"
+- tapOn:
+    text: "Don.t [Aa]llow"
+    optional: true
+- extendedWaitUntil:
+    visible: "Location is off.*"
+    timeout: 10000
+- tapOn: "^Saved(, tab, 2 of 3)?$"
+- assertVisible: "Your next good day lives here."
+- tapOn: "^Profile(, tab, 3 of 3)?$"
+- assertVisible: "Guest, with all the good stuff."
+- scrollUntilVisible:
+    element: "Usual budget"
+    direction: DOWN
+- tapOn: "Usual budget"
+- eraseText
+- tapOn: "Done editing, dismiss keyboard"
+- scrollUntilVisible:
+    element: "Save my preferences"
+    direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # iOS AX exposed this child below its clipped ScrollView; screen-level
+      # visibility alone returned before any real scroll (run38670492664).
+      - scrollUntilVisible:
+          element: "Save my preferences"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- takeScreenshot: native-profile-empty-budget-before-save
+- tapOn: "Save my preferences"
+- assertVisible: "Enter a usual budget from 0 to 1,000,000 per person[.]"
+- assertVisible: "Save my preferences"
+- takeScreenshot: native-profile-save-error
+- scrollUntilVisible:
+    element: "Usual budget"
+    direction: UP
+- tapOn: "Usual budget"
+- inputText: "80"
+- tapOn: "Done editing, dismiss keyboard"
+- scrollUntilVisible:
+    element: "Save my preferences"
+    direction: DOWN
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element: "Save my preferences"
+          direction: DOWN
+          centerElement: true
+          timeout: 15000
+- takeScreenshot: native-profile-valid-budget-before-save
+- tapOn: "Save my preferences"
+- assertVisible: "Preferences saved on this device."
+- takeScreenshot: native-profile-preferences
+- tapOn: "^Explore(, tab, 1 of 3)?$"
+- startRecording:
+    path: "${maestro.platform}-planning-motion"
+    label: "Record native question transitions and itinerary reveal"
+- runFlow:
+    file: helpers/create-fixture-plan.yaml
+    env:
+      VERIFY_CORE_PORTRAIT: "1"
+- takeScreenshot: native-itinerary
+- stopRecording
+- scrollUntilVisible:
+    element: "Adjust plan"
+    direction: DOWN
+- tapOn: "Adjust plan"
+- assertVisible: "Make room for your day"
+- swipe:
+    from:
+      text: "Make room for your day"
+    direction: DOWN
+    duration: 400
+- assertNotVisible: "Make room for your day"
+- tapOn: "Adjust plan"
+- assertVisible: "Make room for your day"
+- tapOn: "Plan duration"
+- eraseText
+- inputText: "0"
+- takeScreenshot: native-edit-keyboard
+- tapOn: "Done editing, dismiss keyboard"
+- tapOn: "Update my plan"
+- extendedWaitUntil:
+    visible: "Enter a whole number from 60 to 720 minutes[.]"
+    timeout: 10000
+- takeScreenshot: native-edit-validation
+- tapOn: "Plan duration"
+- eraseText
+- inputText: "240"
+- tapOn: "Done editing, dismiss keyboard"
+- tapOn: "Update my plan"
+- extendedWaitUntil:
+    notVisible: "Make room for your day"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "Your route, timing and estimates are updated."
+    direction: UP
+- scrollUntilVisible:
+    element: "Want reminders for your day[?]"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "Want reminders for your day[?]"
+- assertVisible: "A little nudge for your day[?]"
+- tapOn: "Yes, remind me"
+- tapOn:
+    text: "Don.t [Aa]llow"
+    optional: true
+- scrollUntilVisible:
+    element: "Reminders are off.*"
+    direction: UP
+- assertNotVisible: ".*Custom sound.*"
+- takeScreenshot: native-reminders-denied
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+      - tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TAP_SCREENSHOT_NAME: "native-day-start-before-tap"
+- assertVisible: "0 DONE.*0 SKIPPED"
+- scrollUntilVisible:
+    element: ".*done here.*"
+    direction: DOWN
+- tapOn: ".*done here.*"
+- scrollUntilVisible:
+    element: "1 DONE.*0 SKIPPED"
+    direction: UP
+- takeScreenshot: native-day-progress
+- killApp
+- launchApp:
+    permissions:
+      location: "${maestro.platform === 'android' ? 'deny' : 'never'}"
+      notifications: deny
+- runFlow: helpers/dismiss-pixel-launcher-anr.yaml
+- extendedWaitUntil:
+    visible: "Development Build|Where are we heading[?]"
+    timeout: 60000
+- openLink: ${EXPO_DEV_URL}
+- runFlow: helpers/open-whimway-link.yaml
+- extendedWaitUntil:
+    visible: "Where are we heading[?]"
+    timeout: 120000
+- takeScreenshot: native-explore-before-progress-restore
+# The retained iOS post-relaunch tap completed while Explore remained selected.
+# Retry only this idempotent tab interaction if its hierarchy does not change.
+- tapOn:
+    text: "^Saved(, tab, 2 of 3)?$"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "GOOD DAYS, KEPT CLOSE"
+    timeout: 10000
+- takeScreenshot: native-saved-before-progress-restore
+- extendedWaitUntil:
+    visible: "A day with a little more whim.*"
+    timeout: 20000
+- tapOn: "A day with a little more whim.*"
+# Saved hydrates current provider details before navigation. The retained
+# run38805051576 frame still showed an in-flight /api/hydrate request after
+# 20s. Observe the real destination within the existing API105s deadline plus
+# 10s UI margin; a failed/cancelled opening that remains Saved never passes.
+- extendedWaitUntil:
+    visible: "YOUR GOOD DAY"
+    timeout: 115000
+- assertNotVisible: ".*Refreshing your saved day.*"
+- assertNotVisible: "Cancel opening"
+- assertVisible:
+    id: "plan-timeline"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element: "Start my day"
+          direction: UP
+          timeout: 20000
+      - tapOn: "Start my day"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: helpers/tap-ios-plan.yaml
+          env:
+            TARGET_TEXT: "Start my day"
+            TAP_SCREENSHOT_NAME: "native-restored-day-start-before-tap"
+- assertVisible: "1 DONE.*0 SKIPPED"
+- takeScreenshot: native-progress-restored

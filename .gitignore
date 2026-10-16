@@ -5,4 +5,17 @@ node_modules/
 coverage/
 playwright-report/
 test-results/
+test-results-mobile/
+native-results/
+native-test-artifacts/
+native-test-services.log
 *.tsbuildinfo
+.expo/
+dist/
+dist-qa/
+apps/mobile/android/
+apps/mobile/ios/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

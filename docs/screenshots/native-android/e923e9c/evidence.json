@@ -1,0 +1,175 @@
+{
+  "run_id": 38733708887,
+  "job_id": 116417631007,
+  "source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+  "runtime_artifact_id": 11975295522,
+  "original_compiler": {
+    "artifact_id": 11974182216,
+    "run_id": 38733708887,
+    "job_id": 116417631007,
+    "step_number": 10,
+    "source_sha": "e923e9c16181a9ea6f02f28b79ff8250f2b984e9",
+    "release_apk_sha256": "1d8e080bc80f9fba5f77c12df5f8a1031bf88038b2b4fbf2319e571da6de240b",
+    "debug_apk_sha256": "586f03b0864177be82422824c1a724b6d543f3253afc8a5d644ca7258b3a676a"
+  },
+  "scopes": {
+    "main": {
+      "COMPLETED": 190,
+      "SKIPPED": 14
+    },
+    "reminders": {
+      "COMPLETED": 78,
+      "SKIPPED": 13,
+      "WARNED": 1,
+      "warning": "Optional Allow button absent"
+    },
+    "large_text": {
+      "COMPLETED": 69,
+      "SKIPPED": 13
+    },
+    "standalone_release": {
+      "COMPLETED": 24,
+      "SKIPPED": 1
+    }
+  },
+  "resets": {
+    "smoke": {
+      "prepared": true,
+      "stable_quiet_ms": 2647,
+      "last_observation": {
+        "elapsed_ms": 4216,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    },
+    "reminders": {
+      "prepared": true,
+      "stable_quiet_ms": 2061,
+      "last_observation": {
+        "elapsed_ms": 3647,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    },
+    "large-text": {
+      "prepared": true,
+      "stable_quiet_ms": 2045,
+      "last_observation": {
+        "elapsed_ms": 3612,
+        "processes": 0,
+        "tasks": 0,
+        "activities": 0,
+        "pending_kill": false,
+        "quiet": true
+      },
+      "actual_boot": {
+        "manual_clear_branch": "SKIPPED",
+        "prepared_branch": "COMPLETED",
+        "clearState": false,
+        "stopApp": false
+      }
+    }
+  },
+  "android_font_scale": 2,
+  "performance": {
+    "context": "Hosted software emulator; workloads differ; not physical speed, battery, haptics or FPS evidence",
+    "release_activity_cold_launch_ms": 3439,
+    "release_activity_wait_ms": 3485,
+    "release_janky_frames": 174,
+    "release_total_frames": 201,
+    "release_janky_percent": 86.57,
+    "release_median_frame_ms": 65,
+    "release_pss_kib": 178324,
+    "debug_janky_frames": 608,
+    "debug_total_frames": 716,
+    "debug_janky_percent": 84.92,
+    "debug_pss_kib": 765653
+  },
+  "scope_limits": [
+    "Explicit synthetic fixture journeys",
+    "Release compile-check backend intentionally unreachable; local Saved state remains usable",
+    "No live provider/account integration",
+    "Notification schedule/cancel assertions do not establish delivery or tap handling",
+    "No physical performance or assistive-technology claim"
+  ],
+  "retained_files": [
+    {
+      "name": "native-planner-budget-keyboard.png",
+      "bytes": 148557,
+      "sha256": "9cb0c2325011dd461f72925a74aca6f28a4991ef390c429273cceefd4ed4c376",
+      "source_path": "android/2026-10-15_124743/Native fixture outing smoke/takeScreenshot/native-planner-budget-keyboard.png"
+    },
+    {
+      "name": "native-planner-duration-keyboard.png",
+      "bytes": 138503,
+      "sha256": "fe12ffa0e792e0610bfdfec966c58986edec6f11cb02bd9c57e578f5057e16f0",
+      "source_path": "android/2026-10-15_124743/Native fixture outing smoke/takeScreenshot/native-planner-duration-keyboard.png"
+    },
+    {
+      "name": "native-profile-save-error.png",
+      "bytes": 192815,
+      "sha256": "061a786a846b7af04cf9bc550f346543a1620fd4decfbb0fefe8e16188c56e91",
+      "source_path": "android/2026-10-15_124743/Native fixture outing smoke/takeScreenshot/native-profile-save-error.png"
+    },
+    {
+      "name": "native-profile-preferences.png",
+      "bytes": 188866,
+      "sha256": "75effa98d61ad340a13faa0596f56fb427f7dcca332203cccc6b9edf647da90f",
+      "source_path": "android/2026-10-15_124743/Native fixture outing smoke/takeScreenshot/native-profile-preferences.png"
+    },
+    {
+      "name": "native-progress-restored.png",
+      "bytes": 177757,
+      "sha256": "f420f401d5a7e05c36e91f9d9fa6190278bd6d303d8489aa4e972e9e19942560",
+      "source_path": "android/2026-10-15_124743/Native fixture outing smoke/takeScreenshot/native-progress-restored.png"
+    },
+    {
+      "name": "native-large-text-explore.png",
+      "bytes": 197149,
+      "sha256": "06c850b9adf13c75fa6f68ed2539b7104ebd925aaeb862795fec0891c05009a4",
+      "source_path": "android-large-text/2026-10-15_125903/Native large-text outing/takeScreenshot/native-large-text-explore.png"
+    },
+    {
+      "name": "native-large-text-sheet.png",
+      "bytes": 168766,
+      "sha256": "fcc5d1db94b78a0d345af7ef1c7fbb84d82a18c8ff5310edcc8214bf41795bbd",
+      "source_path": "android-large-text/2026-10-15_125903/Native large-text outing/takeScreenshot/native-large-text-sheet.png"
+    },
+    {
+      "name": "android-release-saved.png",
+      "bytes": 190865,
+      "sha256": "5fe7a3e4d6e70310f070752f352081a324d17bb2bae19901c4b37067a5db676d",
+      "source_path": "android-release/2026-10-15_130116/Standalone Android Release guest probe/takeScreenshot/android-release-saved.png"
+    },
+    {
+      "name": "native-reminders-scheduled.png",
+      "bytes": 169853,
+      "sha256": "cfc4f6251c75ce8848ecd12d0bf2b73ab831abbe339878451895755932e39a0f",
+      "source_path": "android-reminders/2026-10-15_125529/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-scheduled.png"
+    },
+    {
+      "name": "native-reminders-cancelled.png",
+      "bytes": 193491,
+      "sha256": "c852951a5123646283b4af70e8740caf0cb357b764215d62e5afa1106a4b4b07",
+      "source_path": "android-reminders/2026-10-15_125529/Native fixture reminders schedule and cancel/takeScreenshot/native-reminders-cancelled.png"
+    }
+  ]
+}

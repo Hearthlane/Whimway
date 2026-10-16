@@ -1,0 +1,26 @@
+{
+  "run": "38668397703",
+  "artifact": "11943902468",
+  "description": "Exact selected Switch attributes from retained pre-tap Maestro log events; no post-tap state was captured for large text.",
+  "screenBounds": "[0,0][402,874]",
+  "largeText": {
+    "source": "ios-large-text/2026-10-15_022152/Native large-text outing/logs/maestro.log",
+    "line": 173,
+    "attributes": {
+      "accessibilityText": "Use synthetic development fixtures",
+      "bounds": "[24,735][87,763]",
+      "checked": "false",
+      "value": "0"
+    }
+  },
+  "reminders": {
+    "source": "ios-reminders/2026-10-15_021854/Native fixture reminders schedule and cancel/logs/maestro.log",
+    "line": 189,
+    "attributes": {
+      "accessibilityText": "Use synthetic development fixtures",
+      "bounds": "[24,652][87,680]",
+      "checked": "false",
+      "value": "0"
+    }
+  }
+}

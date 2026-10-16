@@ -1,0 +1,193 @@
+{
+  "scope": "ready",
+  "port": 7001,
+  "simulator": "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+  "reason": "runner-snapshot-failed",
+  "observedAt": "2026-10-16T01:10:55.626Z",
+  "captures": [
+    {
+      "name": "host-uptime",
+      "command": "/usr/bin/uptime",
+      "args": [],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 74,
+      "startedAt": "2026-10-16T01:10:44.311Z",
+      "timing": {
+        "execFileReturnMs": 3,
+        "spawnEventMs": 69,
+        "exitEventMs": 72,
+        "closeEventMs": 74,
+        "callbackMs": 74
+      }
+    },
+    {
+      "name": "host-vm-stat",
+      "command": "/usr/bin/vm_stat",
+      "args": [],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 71,
+      "startedAt": "2026-10-16T01:10:44.314Z",
+      "timing": {
+        "execFileReturnMs": 3,
+        "spawnEventMs": 66,
+        "exitEventMs": 69,
+        "closeEventMs": 71,
+        "callbackMs": 71
+      }
+    },
+    {
+      "name": "host-memory-load",
+      "command": "/usr/sbin/sysctl",
+      "args": [
+        "hw.memsize",
+        "vm.loadavg"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 68,
+      "startedAt": "2026-10-16T01:10:44.317Z",
+      "timing": {
+        "execFileReturnMs": 3,
+        "spawnEventMs": 63,
+        "exitEventMs": 66,
+        "closeEventMs": 68,
+        "callbackMs": 68
+      }
+    },
+    {
+      "name": "processes",
+      "command": "/bin/ps",
+      "args": [
+        "-ww",
+        "-axo",
+        "pid=,ppid=,pgid=,lstart=,command="
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 5000,
+      "elapsedMs": 212,
+      "startedAt": "2026-10-16T01:10:44.319Z",
+      "timing": {
+        "execFileReturnMs": 11,
+        "spawnEventMs": 60,
+        "exitEventMs": 212,
+        "closeEventMs": 212,
+        "callbackMs": 212
+      }
+    },
+    {
+      "name": "services",
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "launchctl",
+        "list"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 15000,
+      "elapsedMs": 5489,
+      "startedAt": "2026-10-16T01:10:44.330Z",
+      "timing": {
+        "execFileReturnMs": 24,
+        "spawnEventMs": 50,
+        "exitEventMs": 5489,
+        "closeEventMs": 5489,
+        "callbackMs": 5489
+      }
+    },
+    {
+      "name": "simulator-xctest",
+      "command": "xcrun",
+      "args": [
+        "simctl",
+        "spawn",
+        "10B884BF-749F-4E8B-AFCD-26AB8F1DBD01",
+        "log",
+        "show",
+        "--style",
+        "compact",
+        "--last",
+        "5m",
+        "--info",
+        "--debug",
+        "--predicate",
+        "process CONTAINS[c] \"maestro-driver\" OR process == \"testmanagerd\" OR ((process == \"SpringBoard\" OR process == \"runningboardd\" OR process == \"launchd_sim\") AND (messageType == error OR messageType == fault))"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 15000,
+      "elapsedMs": 11225,
+      "startedAt": "2026-10-16T01:10:44.354Z",
+      "timing": {
+        "execFileReturnMs": 18,
+        "spawnEventMs": 25,
+        "exitEventMs": 11225,
+        "closeEventMs": 11225,
+        "callbackMs": 11225
+      }
+    },
+    {
+      "name": "host-xctest",
+      "command": "/usr/bin/log",
+      "args": [
+        "show",
+        "--style",
+        "compact",
+        "--last",
+        "5m",
+        "--info",
+        "--debug",
+        "--predicate",
+        "process == \"xcodebuild\" OR process == \"testmanagerd\" OR process == \"testmanagerd_sim\" OR (process == \"CoreSimulatorService\" AND (messageType == error OR messageType == fault))"
+      ],
+      "status": 0,
+      "error": null,
+      "code": null,
+      "killed": false,
+      "signal": null,
+      "timedOut": false,
+      "deadlineMs": 15000,
+      "elapsedMs": 4075,
+      "startedAt": "2026-10-16T01:10:44.372Z",
+      "timing": {
+        "execFileReturnMs": 7,
+        "spawnEventMs": 7,
+        "exitEventMs": 4075,
+        "closeEventMs": 4075,
+        "callbackMs": 4075
+      }
+    }
+  ]
+}

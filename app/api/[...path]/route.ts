@@ -7,21 +7,25 @@ import {
   RemixRequest,
   Point,
   interests,
+  IntentRequest,
+  NavigationRequest,
 } from "@/lib/schema";
+import { extractPlanningIntent } from "@/lib/providers/ai";
 import { planner, demoAllowed } from "@/lib/server/providers";
 import {
   GooglePlaces,
+  GoogleRoutes,
   autocomplete,
   resolvePoint,
   photoUrl,
 } from "@/lib/providers/google";
-import { fixtureLocations } from "@/lib/providers/fixtures";
+import { fixtureLocations, FixtureRoutes } from "@/lib/providers/fixtures";
 import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
 import {
   body,
   rateLimit,
   telemetry,
-  sameOrigin,
+  mutationAllowed,
   requestOrigin,
 } from "@/lib/server/security";
 import { AppError } from "@/lib/errors";
@@ -65,7 +69,7 @@ async function handleGET(request: Request, ctx: Context) {
     const path = (await ctx.params).path.join("/");
     const url = new URL(request.url);
     if (path === "status") {
-      const user = await currentUser();
+      const user = await currentUser(request);
       return ok({
         places: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
         maps: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
@@ -84,7 +88,7 @@ async function handleGET(request: Request, ctx: Context) {
     if (path === "auth/signout") {
       throw new AppError("METHOD", "Use the sign-out button.", 405);
     }
-    await rateLimit(request, "read", (await currentUser())?.id);
+    await rateLimit(request, "read", (await currentUser(request))?.id);
     if (path === "autocomplete") {
       const input = z.string().min(2).max(150).parse(url.searchParams.get("q"));
       const session = z.string().uuid().parse(url.searchParams.get("session"));
@@ -116,7 +120,7 @@ async function handleGET(request: Request, ctx: Context) {
         { headers: { "Cache-Control": "no-store" } },
       );
     if (path === "plans") {
-      const { db } = await requireUser();
+      const { db } = await requireUser(request);
       const { data, error } = await db
         .from("plans")
         .select("id,spec,updated_at")
@@ -132,7 +136,7 @@ async function handleGET(request: Request, ctx: Context) {
     }
     if (path.startsWith("plans/")) {
       const id = z.string().uuid().parse(path.slice(6));
-      const { db } = await requireUser();
+      const { db } = await requireUser(request);
       const { data, error } = await db
         .from("plans")
         .select("spec")
@@ -148,7 +152,7 @@ async function handleGET(request: Request, ctx: Context) {
     }
     if (path.startsWith("shared/")) {
       const id = z.string().uuid().parse(path.slice(7));
-      const db = await supabase();
+      const db = await supabase(request);
       const { data, error } = await db.rpc("read_shared_plan", { token: id });
       if (error || !data)
         throw new AppError(
@@ -159,7 +163,7 @@ async function handleGET(request: Request, ctx: Context) {
       return ok(data);
     }
     if (path === "profile") {
-      const { db, user } = await requireUser();
+      const { db, user } = await requireUser(request);
       const { data, error } = await db
         .from("profiles")
         .select("preferences")
@@ -185,16 +189,29 @@ async function handlePOST(request: Request, ctx: Context) {
   try {
     const path = (await ctx.params).path.join("/");
     const input = await body(request);
-    const user = await currentUser();
+    const user = await currentUser(request);
     await rateLimit(
       request,
       path === "generate"
         ? "generate"
         : path === "remix" || path === "edit"
           ? "remix"
-          : "write",
+          : path === "intent"
+            ? "intent"
+            : path === "route"
+              ? "route"
+              : "write",
       user?.id,
     );
+    if (path === "intent")
+      return ok(await extractPlanningIntent(IntentRequest.parse(input)));
+    if (path === "route") {
+      const data = NavigationRequest.parse(input);
+      if (data.demo && !demoAllowed())
+        throw new AppError("DEMO_DISABLED", "Test routes are disabled in this environment.", 403);
+      const routes = data.demo ? new FixtureRoutes() : new GoogleRoutes();
+      return ok(await routes.leg(data.from, data.to, data.mode, "current", data.toId));
+    }
     if (path === "point") return ok(await resolvePoint(Point.parse(input)));
     if (path === "generate") {
       const data = z
@@ -284,7 +301,7 @@ async function handlePOST(request: Request, ctx: Context) {
           "FIXTURE_ONLY",
           "Fixture plans can be saved locally, but not published to cloud storage.",
         );
-      const { db, user } = await requireUser();
+      const { db, user } = await requireUser(request);
       const { error } = await db.from("plans").upsert({
         id: spec.id,
         user_id: user.id,
@@ -302,7 +319,7 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "share") {
       const id = z.string().uuid().parse(input.id);
-      const { db, user } = await requireUser();
+      const { db, user } = await requireUser(request);
       const { data, error } = await db
         .from("plans")
         .select("spec")
@@ -334,7 +351,7 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "auth/signin") {
       const email = z.string().email().max(254).parse(input.email);
-      const db = await supabase();
+      const db = await supabase(request);
       const { error } = await db.auth.signInWithOtp({
         email,
         options: {
@@ -350,8 +367,13 @@ async function handlePOST(request: Request, ctx: Context) {
       return ok({ sent: true });
     }
     if (path === "auth/signout") {
-      const db = await supabase();
-      const { error } = await db.auth.signOut();
+      const db = await supabase(request);
+      const bearer = request.headers.get("authorization")?.slice(7);
+      // Stateless bearer clients have no local SDK session. Revoke the actual
+      // token instead of reporting success after clearing an empty session.
+      const { error } = bearer
+        ? await db.auth.admin.signOut(bearer)
+        : await db.auth.signOut();
       if (error) throw new AppError("AUTH_FAILED", "Could not sign out.", 502);
       return ok({ signedOut: true });
     }
@@ -364,12 +386,13 @@ async function handlePOST(request: Request, ctx: Context) {
           accessibility: z.string().max(300),
           mode: z.enum(["WALK", "DRIVE"]),
           budget: z.number().min(0).max(1000000),
+          budgetCurrency: z.string().regex(/^[A-Z]{3}$/).optional(),
           cuisines: z.string().max(200),
           atmosphere: z.string().max(200),
           disliked: z.array(z.string().max(250)).max(100),
         })
         .parse(input);
-      const { db, user } = await requireUser();
+      const { db, user } = await requireUser(request);
       const { error } = await db
         .from("profiles")
         .upsert({ id: user.id, preferences });
@@ -384,9 +407,9 @@ async function handlePOST(request: Request, ctx: Context) {
 }
 export async function DELETE(request: Request, ctx: Context) {
   try {
-    sameOrigin(request);
+    mutationAllowed(request);
     const path = (await ctx.params).path.join("/");
-    const { db, user } = await requireUser();
+    const { db, user } = await requireUser(request);
     await rateLimit(request, "write", user.id);
     if (path.startsWith("plans/")) {
       const id = z.string().uuid().parse(path.slice(6));

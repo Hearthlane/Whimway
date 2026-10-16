@@ -1,0 +1,108 @@
+{
+  "source_sha": "f17cd0fa219b756415761bc9f8505e3a53e93f4c",
+  "binary_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38810854902,
+  "job_id": 116683650087,
+  "artifact_id": 12011462414,
+  "artifact_zip_sha256": "619f09243722babf0b57de70727ac5be5c057549297519d0fa503fd8c47201a1",
+  "scope": "Historical iOS driver failures, actual broker gestures/Adjust response and failed fixed-header Sheet. Not a full native journey or current 1d8 pass.",
+  "outcomes": {
+    "ui_ready": "XCTest driver bootstrap timeout before flow",
+    "main": "XCTest driver bootstrap timeout before flow",
+    "probe": "false/ui-readiness/app-not-ready; no native Keychain call",
+    "reminders": "6 completed/4 RUNNING; driver7003 EOF/refused before fixture planning",
+    "large": {
+      "completed": 164,
+      "skipped": 12,
+      "failed": 1,
+      "failure_utc": "2026-10-15T22:37:32.767Z",
+      "duration_ms": 21107
+    }
+  },
+  "observations": [
+    "Actual 22 viewport observations and 18 unique native broker responses: all HTTP 200, endpoints inside matching live pane, dispatched within 10 seconds. Selected original observation/gesture records are retained.",
+    "Fully contained Adjust [24,743.667][378,826.333] in pane [0,472][402,840]; actual Maestro point 201,785 tap completes and the real sheet title assertion passes.",
+    "The fixed title [24,157][320,742] consumes 585 points, leaving body [0,750][402,874] 124 points; generic screen-center scrolling cannot reach Update.",
+    "The probe stopped before a native Keychain call. Injected HTTP 408 deduplication is separately tested with simulated XCTest; this hosted run contains no injected 408 case. New source 1d8 moves the title into scroll content and requires native replay."
+  ],
+  "retained_files": [
+    {
+      "name": "failure-fixed-sheet-title.png",
+      "bytes": 166684,
+      "sha256": "a179cafedb85a43e9dac7ac83a6c908b87c3609b8a876083a490bf92d91a417a",
+      "source_path": "native-results/ios-large-text/2026-10-15_223216/Native large-text outing/screenshots/step-177-scrollUntilVisible-Update_my_plan.png"
+    },
+    {
+      "name": "failure-fixed-sheet-hierarchy.json",
+      "bytes": 17693,
+      "sha256": "9e9c78f1a95c4d2ce2f3ef853db0673459a8e64cf7f2e66d8aee96bd6755129c",
+      "source_path": "native-results/ios-large-text/2026-10-15_223216/Native large-text outing/screen-hierarchy/step-177-scrollUntilVisible-Update_my_plan.json"
+    },
+    {
+      "name": "ios-keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "ios-keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "ios-metro-bundle-warm.json",
+      "bytes": 341,
+      "sha256": "28eb81b8eebb222549f2dba05932258d18bea40bcd72ec24c6deb11525ad2a27",
+      "source_path": "native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-016-driver-7004-observation.json",
+      "bytes": 1285,
+      "sha256": "97bc0fa9fced0b6f4c67edaf2a71913473e38c1979f732d9c913cceab557f1d0",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-016-driver-7004-observation.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-016-driver-7004-device-info.json",
+      "bytes": 77,
+      "sha256": "32c5b67beb6448d6ba039dea47abd42011e26f22810bef7bd8c86e165725a12f",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-016-driver-7004-device-info.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-016-driver-7004-snapshot.json",
+      "bytes": 49258,
+      "sha256": "9d50d0d8a4255bf3e1e74d4c9f4c74ee03e7715c7d7817c60b700842814dba89",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-016-driver-7004-snapshot.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-022-driver-7004-observation.json",
+      "bytes": 1270,
+      "sha256": "d2f938d56c9372966a6b696f04c6bda0046efd68e9ef6fe12f796c6005c19b07",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-022-driver-7004-observation.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-022-driver-7004-device-info.json",
+      "bytes": 77,
+      "sha256": "2d0f1a3b1623a00f2aba5035523d85f5d6f4ff4ae8d86c197324185aa44c6f9b",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-022-driver-7004-device-info.json"
+    },
+    {
+      "name": "1792102933211-9805bf8c-022-driver-7004-snapshot.json",
+      "bytes": 49270,
+      "sha256": "06b4e460a0c2725faace93d34394a6a94797505a1e6824c04852b39450bc91a3",
+      "source_path": "native-test-artifacts/ios-plan-viewport/1792102933211-9805bf8c-022-driver-7004-snapshot.json"
+    },
+    {
+      "name": "f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77-gesture.json",
+      "bytes": 766,
+      "sha256": "0905a407838fa6b91e54e3d93ecdb791ad2e2a3171ea5921b8eb189372f4e839",
+      "source_path": "native-test-artifacts/ios-plan-gestures/f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77-gesture.json"
+    },
+    {
+      "name": "f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77-native-body.bin",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-test-artifacts/ios-plan-gestures/f7e6a39664eef652c6555a59449d3f015317987dad860881563cab0736710a77-native-body.bin"
+    }
+  ]
+}

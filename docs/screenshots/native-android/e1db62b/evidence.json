@@ -1,0 +1,117 @@
+{
+  "run_id": 38750438975,
+  "job_id": 116475216674,
+  "source_sha": "e1db62bd3ed3bfe7c1e4b688e358ee4e340e967f",
+  "runtime_artifact_id": 11982804480,
+  "compiler_artifact_id": 11982581917,
+  "release_apk_sha256": "c97ee8dd49ce66f68d77d06e5d5f7eeabc7aa73615a32b6da6e4bac0ce6fa351",
+  "debug_apk_sha256": "d323a1346e839b55213e571b162c8f4a92745935f58cfd599a88cbb3c9d384ad",
+  "scopes": {
+    "main": {
+      "path": "native-results/android/2026-10-15_144727/Native fixture outing smoke",
+      "COMPLETED": 189,
+      "SKIPPED": 17
+    },
+    "reminders": {
+      "path": "native-results/android-reminders/2026-10-15_145520/Native fixture reminders schedule and cancel",
+      "COMPLETED": 79,
+      "SKIPPED": 15,
+      "WARNED": 1
+    },
+    "large_text": {
+      "path": "native-results/android-large-text/2026-10-15_145849/Native large-text outing",
+      "COMPLETED": 74,
+      "SKIPPED": 19
+    },
+    "release": {
+      "path": "native-results/android-release/2026-10-15_150100/Standalone Android Release guest probe",
+      "COMPLETED": 24,
+      "SKIPPED": 1
+    }
+  },
+  "prepared_branches": {
+    "main": {
+      "manual_clear_branch": "SKIPPED",
+      "prepared_launch": "COMPLETED",
+      "clearState": false,
+      "stopApp": false
+    },
+    "reminders": {
+      "manual_clear_branch": "SKIPPED",
+      "prepared_launch": "COMPLETED",
+      "clearState": false,
+      "stopApp": false
+    },
+    "large_text": {
+      "manual_clear_branch": "SKIPPED",
+      "prepared_launch": "COMPLETED",
+      "clearState": false,
+      "stopApp": false
+    }
+  },
+  "os_font_scale": 2,
+  "observations": [
+    "Independently reviewed original fontScale2.0 itinerary: Share/arrow remain inside width; tool words are whole across two rows with Add on its own row",
+    "Actual Adjust sheet opens and shows title, fields, mode controls and Update action; later Day actions are reached",
+    "Only the mint top of the illustration fallback appears in this itinerary frame; complete native fallback containment was not observed"
+  ],
+  "performance": {
+    "scope": "Standalone Release disposable software emulator; different Debug workload",
+    "activity_total_ms": 3561,
+    "activity_wait_ms": 3571,
+    "frames": 204,
+    "janky_frames": 179,
+    "janky_percent": 87.75,
+    "median_ms": 69
+  },
+  "scope_limits": [
+    "Synthetic development fixtures",
+    "Notification schedule/cancel reports do not establish delivery or tap handling",
+    "Software-emulator performance is poor and does not establish physical FPS, battery, haptics or assistive behavior",
+    "Actual largest iOS category and current native Keychain replay remain separate checks"
+  ],
+  "retained_files": [
+    {
+      "name": "native-large-text-itinerary.png",
+      "source_path": "native-results/android-large-text/2026-10-15_145849/Native large-text outing/takeScreenshot/native-large-text-itinerary.png",
+      "bytes": 222039,
+      "sha256": "0ac8e68da1da231fc631f11137ffe03948853abddead1c282683e4031463d856"
+    },
+    {
+      "name": "native-large-text-sheet.png",
+      "source_path": "native-results/android-large-text/2026-10-15_145849/Native large-text outing/takeScreenshot/native-large-text-sheet.png",
+      "bytes": 169838,
+      "sha256": "d28b9f85c7d8e711768523a0c4caa1ff2c9f7b807fb09595b85cf9834284b740"
+    },
+    {
+      "name": "native-large-text-day.png",
+      "source_path": "native-results/android-large-text/2026-10-15_145849/Native large-text outing/takeScreenshot/native-large-text-day.png",
+      "bytes": 199138,
+      "sha256": "6ae9b0ab360589fec1dcbb7ff75dbf00557f65b7fe238ec660c7aa187936964d"
+    },
+    {
+      "name": "reset-smoke.json",
+      "source_path": "native-test-artifacts/android-reset/smoke/reset-evidence.json",
+      "bytes": 2189,
+      "sha256": "2ada39ccb785bb9801cb297ca5cdb9e027e3d46e72f40137e3b327a5c5d6faec"
+    },
+    {
+      "name": "reset-reminders.json",
+      "source_path": "native-test-artifacts/android-reset/reminders/reset-evidence.json",
+      "bytes": 2197,
+      "sha256": "d12316f90165c90224bfba912c513d61264238f8c428216ad21d1d4ed01bdeea"
+    },
+    {
+      "name": "reset-large-text.json",
+      "source_path": "native-test-artifacts/android-reset/large-text/reset-evidence.json",
+      "bytes": 2605,
+      "sha256": "969cf19456925bf9f847ddfb9382c6708cca741a9a8444055054e7f3fe1615e5"
+    },
+    {
+      "name": "android-large-font-scale.txt",
+      "source_path": "native-test-artifacts/android-large-font-scale.txt",
+      "bytes": 4,
+      "sha256": "d526eb4e878a23ef26ae190031b4efd2d58ed66789ac049ea3dbaf74c9df7402"
+    }
+  ]
+}

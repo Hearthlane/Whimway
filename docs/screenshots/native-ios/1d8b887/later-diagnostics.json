@@ -1,0 +1,49 @@
+{
+  "simulator_only": true,
+  "time": "2026-10-15T23:31:49.111Z",
+  "commands": [
+    {
+      "name": "devices",
+      "time": "2026-10-15T23:31:26.938Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "name": "services",
+      "time": "2026-10-15T23:31:27.987Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "name": "installed-app",
+      "time": "2026-10-15T23:31:28.539Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "name": "final-screen",
+      "time": "2026-10-15T23:31:30.178Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "name": "simulator-log",
+      "time": "2026-10-15T23:31:44.633Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "name": "host-log",
+      "time": "2026-10-15T23:31:49.066Z",
+      "status": 0,
+      "signal": null,
+      "error": null
+    }
+  ],
+  "reports": []
+}

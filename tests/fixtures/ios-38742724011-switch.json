@@ -1,0 +1,38 @@
+{
+  "run": "38742724011",
+  "artifact": "11979942574",
+  "description": "Selected actual reminder switch attributes and unchanged centering attempts; failure occurred before the state-dependent tap.",
+  "source": "ios-reminders/2026-10-15_135338/Native fixture reminders schedule and cancel",
+  "hierarchy": "screen-hierarchy/step-035-scrollUntilVisible-Use_synthetic_develop.json",
+  "screenshot": "screenshots/step-035-scrollUntilVisible-Use_synthetic_develop.png",
+  "screenBounds": "[0,0][402,874]",
+  "scrollViewBounds": "[0,62][402,738]",
+  "switch": {
+    "accessibilityText": "Use synthetic development fixtures",
+    "bounds": "[24,652][87,680]",
+    "enabled": "true",
+    "checked": "false",
+    "value": "0"
+  },
+  "discovery": {
+    "status": "COMPLETED",
+    "swipes": 1,
+    "start": "96%, 75%",
+    "end": "96%, 25%",
+    "duration": 700
+  },
+  "centering": {
+    "status": "FAILED",
+    "duration": 15299,
+    "timeout": 15000,
+    "tapReached": false,
+    "log": "logs/maestro.log",
+    "attempts": [
+      { "line": 176, "bounds": "[24,652][87,680]", "visibility": 1 },
+      { "line": 183, "bounds": "[24,652][87,680]", "visibility": 1 },
+      { "line": 190, "bounds": "[24,652][87,680]", "visibility": 1 },
+      { "line": 197, "bounds": "[24,652][87,680]", "visibility": 1 },
+      { "line": 204, "bounds": "[24,652][87,680]", "visibility": 1 }
+    ]
+  }
+}

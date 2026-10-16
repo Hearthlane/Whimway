@@ -1,0 +1,3 @@
+# Provenance hashes describe the original diagnostic bytes, including line ends.
+*.json -text whitespace=cr-at-eol
+*.txt -text -whitespace

@@ -1,0 +1,113 @@
+{
+  "source_sha": "b57dc1e599828242974e0506194b464e29dc3f2a",
+  "mobile_source_sha": "1d8b8877a932395fd0f8d692eaa064382d623ec3",
+  "binary_debug_source_sha": "2983b7bd344d6673c34c4fdb0b4e3d19e38ffe5f",
+  "run_id": 38825447951,
+  "attempt": 1,
+  "job_id": 116731907898,
+  "artifact_id": 12015700233,
+  "artifact_zip_sha256": "4845e6a8fbcc391e330c5a1b5db75610f6e1f195dfca807ac0e272ad1f9df013",
+  "scope": "Actual original b57 iOS host preflight failure before any Maestro/native Keychain call; retained untouched before the authorized exact failed-job retry.",
+  "observations": [
+    "Both concurrent ps and launchctl are explicitly timedOut:true/killed:true/SIGTERM at a 5000 ms bound, with elapsed 8647/7919 ms and empty pipes. The service-only recovery condition does not run when ps also fails.",
+    "Failure-time ps 5000 and service 15000 diagnostics also time out; later sequential workflow service diagnostics succeed. No retained CPU%, load or host-memory-pressure measurement establishes the underlying cause.",
+    "Warm JavaScript verification succeeds HTTP 200/37963 ms/16023676 bytes. Keychain false values are UI-readiness gating with no native call; no app or entitlement defect is established.",
+    "Only ready outcome exists (passed:false/fenced:false/runner-snapshot-failed); later scopes safely remain unexecuted. One exact failed-job retry on a fresh hosted runner executes with no code/deadline change; its separate monitor/fence failure is retained under b57dc1e-attempt2.",
+    "Actual simulator runningboardd at 23:55:37.583 records an event queue expected at 603.449827 but now 665.009210 (61.559383 seconds late). This supports delayed simulator scheduling; CPU/memory cause is not established."
+  ],
+  "retained_files": [
+    {
+      "name": "attempt.json",
+      "bytes": 1706,
+      "sha256": "e2c8f72aa6d14761f4a8a11a7d6d821326884e1f1516f89e8c8023119a8022a0",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-attempt.json"
+    },
+    {
+      "name": "ps.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-ps.stdout.txt"
+    },
+    {
+      "name": "ps.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-ps.stderr.txt"
+    },
+    {
+      "name": "services.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-services.stdout.txt"
+    },
+    {
+      "name": "services.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/snapshots/1-services.stderr.txt"
+    },
+    {
+      "name": "failure-diagnostics.json",
+      "bytes": 2550,
+      "sha256": "3426ceed13e0c2322a69bc27a2552d4d3e3921d026d263421616af048b90c571",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready/diagnostics.json"
+    },
+    {
+      "name": "ready.json",
+      "bytes": 99,
+      "sha256": "e08e2128a7a37d82306e6877157e69c0488d745773b372f5f5a7daef5e35269f",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/ready.json"
+    },
+    {
+      "name": "summary.json",
+      "bytes": 166,
+      "sha256": "f377072badf761d75f21786d141f4753403b4cf904db9fdba11d0590f1cbf6d3",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-runner-lifecycle/summary.json"
+    },
+    {
+      "name": "warm.json",
+      "bytes": 341,
+      "sha256": "f659ccce01bcf675703706fba749f7c7616177cff9adc4ebcbcda74de24818c8",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-metro-bundle-warm.json"
+    },
+    {
+      "name": "keychain-proof.json",
+      "bytes": 79,
+      "sha256": "ef2b627629539b7dccf772c53ef49958834227f5bc059aa9e613a3cb67f28ed6",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-keychain-proof.json"
+    },
+    {
+      "name": "keychain-diagnostics.json",
+      "bytes": 50,
+      "sha256": "d3cabf636981d2fcfc05e5c3607b36c7399a6c231946d75c3f52e57f502e1ff0",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-keychain-diagnostics.json"
+    },
+    {
+      "name": "later-diagnostics.json",
+      "bytes": 969,
+      "sha256": "2fee099fc54ca2c4def6abd0b168bc21f471d140c73409dd5194ba3e4b55821b",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-startup-diagnostics/diagnostics.json"
+    },
+    {
+      "name": "later-services.stdout.txt",
+      "bytes": 12190,
+      "sha256": "a46d121c055fe58285f25cc01e86760f2f470c31687de7b8f6a727b1eb40bc40",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-startup-diagnostics/services.stdout.txt"
+    },
+    {
+      "name": "simulator-late-event-excerpt.txt",
+      "bytes": 178,
+      "sha256": "568c6445ce11fa5e8ee9f7d32e9b22bab76fa91cdd4442fd6a8e4404d6143926",
+      "source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-startup-diagnostics/simulator-log.stdout.txt#L4145"
+    }
+  ],
+  "excerpts": [
+    {
+      "name": "simulator-late-event-excerpt.txt",
+      "original_source_path": "native-results/38825447951/ios-runtime/native-test-artifacts/ios-startup-diagnostics/simulator-log.stdout.txt",
+      "original_sha256": "18d60a49190c67b9f066b9d693d04950ec6ecd6f3a1797c8a308d95f37f694d1",
+      "original_line": 4145,
+      "scope": "Exact unmodified single log line with trailing newline; no omitted surrounding context is interpreted as a CPU/memory measurement."
+    }
+  ]
+}

@@ -4,6 +4,18 @@ import { randomUUID } from "node:crypto";
 const image =
   "postgres:17@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3";
 const name = `whimway-rls-${randomUUID().slice(0, 8)}`;
+const psql = [
+  "psql",
+  "-X",
+  "-h",
+  "127.0.0.1",
+  "-v",
+  "ON_ERROR_STOP=1",
+  "-U",
+  "postgres",
+  "-d",
+  "whimway",
+];
 function docker(args, input) {
   const result = spawnSync("docker", args, {
     encoding: "utf8",
@@ -40,10 +52,12 @@ try {
   for (let attempt = 0; attempt < 30; attempt++) {
     const probe = spawnSync(
       "docker",
-      ["exec", name, "pg_isready", "-U", "postgres", "-d", "whimway", "-q"],
-      { timeout: 3000 },
+      ["exec", name, ...psql, "-A", "-t", "-c", "SELECT 1;"],
+      { encoding: "utf8", timeout: 3000 },
     );
-    if (probe.status === 0) {
+    // The image's temporary initialization server accepts sockets before the
+    // target database exists. TCP plus a real query proves the final server.
+    if (probe.status === 0 && probe.stdout?.trim() === "1") {
       ready = true;
       break;
     }
@@ -63,19 +77,7 @@ try {
     "utf8",
   );
   const result = docker(
-    [
-      "exec",
-      "-i",
-      name,
-      "psql",
-      "-X",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-U",
-      "postgres",
-      "-d",
-      "whimway",
-    ],
+    ["exec", "-i", name, ...psql],
     `${bootstrap}\n${migration}\n${cases}`,
   );
   const passes = (result.stderr.match(/PASS:/g) ?? []).length;

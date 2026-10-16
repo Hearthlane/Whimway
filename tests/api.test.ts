@@ -104,6 +104,13 @@ describe("Application endpoints", () => {
     expect((await post("plans", s)).status).toBe(401);
     expect(state.writes).toHaveLength(0);
   });
+  it("preserves optional budget currency while rejecting invalid profile currency codes", async () => {
+    state.user = { id: "owner", email: "test@example.com" };
+    const preferences = { enabled: true, interests: ["Outdoors"], dietary: "", accessibility: "", mode: "WALK", budget: 6000, cuisines: "", atmosphere: "", disliked: [], budgetCurrency: "JPY" };
+    expect((await post("profile", preferences)).status).toBe(200);
+    expect(state.saved).toMatchObject({ preferences: { budgetCurrency: "JPY", budget: 6000 } });
+    expect((await post("profile", { ...preferences, budgetCurrency: "yen" })).status).toBe(400);
+  });
   it("strips provider content before saving and assigns ownership on the server", async () => {
     state.user = { id: "owner", email: "test@example.com" };
     const s = spec();
