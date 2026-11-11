@@ -464,6 +464,26 @@ const rows: Row[] = [
   ],
   // Vaughan
   [
+    "dave-busters",
+    "Dave & Buster's Vaughan Mills",
+    43.8247,
+    -79.5395,
+    "arcade & sports bar",
+    ["amusement_center", "bar", "game", "restaurant"],
+    [20, 45],
+    [11, 24],
+  ],
+  [
+    "reptilia",
+    "Reptilia Zoo Vaughan",
+    43.8227,
+    -79.525,
+    "indoor reptile zoo",
+    ["tourist_attraction", "reptile_centre"],
+    [25, 30],
+    [10, 18],
+  ],
+  [
     "vaughan-mills",
     "Vaughan Mills",
     43.8253,
@@ -536,9 +556,9 @@ export const gtaCatalog: CandidatePlace[] = rows.map(
             low: price[0],
             high: price[1],
             currency: "CAD",
-            source: price[1] === 0 ? "free-browse" : "provider-range",
+            source: price[0] === 0 ? "free-browse" : "provider-range",
             confidence: "category-estimate",
-            optional: price[1] === 0,
+            optional: price[0] === 0,
           }
         : {
             low: null,
@@ -591,8 +611,10 @@ const vibeTypes: Record<string, RegExp> = {
   outdoorsy: /park|beach|hiking|garden|island/,
   playful: /game|bowling|amusement|board game|arcade/,
 };
+// A meal is a venue whose primary purpose is eating (not a mall that happens to have a food court).
 const isMeal = (p: CandidatePlace) =>
-  /restaurant|brunch|food_court/.test(p.types.join(" ") + p.category);
+  /restaurant|brunch|food court/.test(p.category) ||
+  /restaurant|food_court/.test(p.types[0] ?? "");
 const isSweetOrDrink = (p: CandidatePlace) =>
   /dessert|ice_cream|bar|brewery|wine|cocktail|cafe|bakery/.test(
     p.types.join(" "),
@@ -702,10 +724,33 @@ export function demoSelect(
   // Stay within the per-person budget across the whole outing (published upper range).
   // Free places always fit; unknown prices count as the whole budget.
   let spent = lockedPlaces.reduce((n, p) => n + (p.price.high ?? 0), 0);
-  const cost = (p: CandidatePlace) => p.price.high ?? req.budget;
+  // Free-to-browse places (optional spend) cost their minimum; unknown prices cost the whole budget.
+  const cost = (p: CandidatePlace) =>
+    p.price.optional ? (p.price.low ?? 0) : (p.price.high ?? req.budget);
+  // Evening outings of 3h+ reserve budget for one proper meal before anything else.
+  const wantsMeal =
+    req.duration >= 180 &&
+    meals === 0 &&
+    !action &&
+    (Number(req.startTime.slice(0, 2)) >= 16 ||
+      req.interests.includes("Food & drinks"));
+  const meal = wantsMeal
+    ? pool.find((p) => isMeal(p) && spent + cost(p) <= req.budget * 1.1)
+    : undefined;
+  if (meal) {
+    chosen.push(meal);
+    meals++;
+    spent += cost(meal);
+  }
   for (const p of pool) {
     if (chosen.length + locked.length >= target) break;
-    if (cost(p) > 0 && spent + cost(p) > req.budget * 1.1 && chosen.length + locked.length >= 1) continue;
+    if (chosen.includes(p)) continue;
+    if (
+      cost(p) > 0 &&
+      spent + cost(p) > req.budget * 1.1 &&
+      chosen.length + locked.length >= 1
+    )
+      continue;
     if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
     if (chosen.some((c) => c.category === p.category)) continue;
     if (isMeal(p)) meals++;
@@ -713,8 +758,19 @@ export function demoSelect(
     chosen.push(p);
   }
   // Natural arc: activity → meal → dessert/drinks.
+  // Daytime: activity → meal → treat. Evening: dinner first, then activity, then drinks/dessert.
   const rank = (p: CandidatePlace) =>
-    isMeal(p) ? 1 : isSweetOrDrink(p) && evening ? 2 : 0;
+    evening
+      ? isMeal(p)
+        ? 0
+        : isSweetOrDrink(p)
+          ? 2
+          : 1
+      : isMeal(p)
+        ? 1
+        : isSweetOrDrink(p)
+          ? 2
+          : 0;
   const fresh = chosen.sort((a, b) => rank(a) - rank(b));
   const vibe = req.vibes[0] ?? "chill";
   const options = titles[vibe] ?? titles.chill;
@@ -785,6 +841,7 @@ export function demoSelect(
       const alt = pool.find(
         (p) =>
           !used.has(p.id) &&
+          cost(p) <= cost(place) &&
           open(p, cursor, minutes(p)) &&
           !(isMeal(p) && meals > 1),
       );

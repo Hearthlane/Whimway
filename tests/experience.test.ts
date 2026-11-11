@@ -72,6 +72,11 @@ describe("Natural-language intent", () => {
     expect(d.interests).not.toContain("Outdoors");
     expect(d.startTime).toBe("16:00"); // afternoon already passed today → soon
   });
+  it("starts a bare future weekday around midday, not in 45 minutes", () => {
+    const d = interpret("An adventurous Saturday with three friends", now);
+    expect(d.date).toBe("2026-11-14");
+    expect(d.startTime).toBe("12:00");
+  });
   it("handles tonight, explicit clock times and transit", () => {
     const d = interpret(
       "Something cinematic and romantic tonight at 8pm, we'll take the TTC",

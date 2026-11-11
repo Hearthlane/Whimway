@@ -82,7 +82,7 @@ const vibeWords: [Vibe, RegExp][] = [
   ],
   [
     "playful",
-    /\b(games?|arcade|bowling|mini[- ]?golf|karaoke|escape room|playful|silly|axe throwing)(?![a-z])/,
+    /\b(games?|arcade|bowling|mini[- ]?golf|karaoke|escape room|playful|silly|axe throwing|fun)(?![a-z])/,
   ],
 ];
 const interestWords: [Interest, RegExp][] = [
@@ -93,7 +93,7 @@ const interestWords: [Interest, RegExp][] = [
   ["Shopping", /\b(shop\w*|thrift\w*|market|boutique|vintage|mall)(?![a-z])/],
   [
     "Interactive fun",
-    /\b(games?|arcade|bowling|mini[- ]?golf|karaoke|escape room|axe throwing|activity|activities|adventur\w*|playful)(?![a-z])/,
+    /\b(games?|arcade|bowling|mini[- ]?golf|karaoke|escape room|axe throwing|activity|activities|adventur\w*|playful|fun)(?![a-z])/,
   ],
   [
     "Outdoors",
@@ -284,6 +284,9 @@ export function interpret(input: string, now: DateTime): Draft {
         hour: startHour[partOfDay],
         minute: partOfDay === "evening" ? 30 : 0,
       });
+    // A named future day with no time ("Saturday") starts around noon; today starts soon.
+    else if (day && !day.hasSame(local, "day"))
+      start = start.set({ hour: 12, minute: 0 });
     else start = roundUp(local.plus({ minutes: 45 }));
     // If that time has passed today, start soon instead (or roll to tomorrow when no day was said).
     if (start <= local.plus({ minutes: 20 })) {
