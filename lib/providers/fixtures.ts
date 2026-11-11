@@ -8,6 +8,7 @@ import {
 } from "../schema";
 import { distance } from "../geo";
 import { AppError } from "../errors";
+import { demoSelect, gtaCatalog, inGta } from "./gta-demo";
 import type {
   PlacesProvider,
   RecommendationProvider,
@@ -38,6 +39,7 @@ export const fixtureLocations: Location[] = [
 ];
 export function fixturePlaces(req: PlanRequest): CandidatePlace[] {
   if (req.location.center.lat > 60) return [];
+  if (inGta(req)) return gtaCatalog;
   const jp = req.location.timezone === "Asia/Tokyo";
   const base = fixtureLocations[jp ? 1 : 0].center;
   const labels = jp
@@ -117,7 +119,9 @@ export class FixturePlaces implements PlacesProvider {
       : all;
   }
   async details(id: string) {
-    const place = fixturePlaces(this.req).find((p) => p.id === id);
+    const place = [...fixturePlaces(this.req), ...gtaCatalog].find(
+      (p) => p.id === id,
+    );
     if (!place)
       throw new AppError(
         "PLACE_UNAVAILABLE",
@@ -145,7 +149,11 @@ export class FixtureRoutes implements RouteProvider {
     return {
       from: fromId,
       to: toId,
-      minutes: Math.ceil(meters / (mode === "WALK" ? 75 : 400)),
+      // Rough demo speeds; transit adds an average wait.
+      minutes:
+        mode === "TRANSIT"
+          ? Math.ceil(meters / 300) + (meters > 1200 ? 8 : 0)
+          : Math.ceil(meters / (mode === "WALK" ? 75 : 400)),
       meters,
       polyline: "",
       verified: false,
@@ -158,7 +166,10 @@ export class FixtureAI implements RecommendationProvider {
     candidates: CandidatePlace[],
     locked: { placeId: string; minutes: number; reason: string }[],
     action?: string,
+    previousStops?: { placeId: string }[],
   ): Promise<Selection> {
+    if (candidates.some((p) => p.id.startsWith("gta-")))
+      return demoSelect(req, candidates, locked, action, previousStops);
     const available = candidates.filter(
       (p) => !locked.some((l) => l.placeId === p.id),
     );

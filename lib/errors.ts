@@ -4,6 +4,8 @@ export class AppError extends Error {
     message: string,
     public status = 400,
     public upstreamStatus?: number,
+    /** Internal: the place that caused a scheduling failure (never sent to clients). */
+    public placeId?: string,
   ) {
     super(message);
   }

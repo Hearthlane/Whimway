@@ -59,7 +59,20 @@ export async function rateLimit(
       429,
     );
 }
+/**
+ * Native apps send no Origin. Browsers always send Origin on cross-origin POSTs
+ * and cannot attach the custom X-Whimway-Client header cross-site without a CORS
+ * preflight, which this API never approves — so the pair is safe to accept.
+ */
+export function nativeClient(request: Request) {
+  return (
+    !request.headers.get("origin") &&
+    request.headers.get("x-whimway-client") === "app" &&
+    request.headers.get("sec-fetch-site") !== "cross-site"
+  );
+}
 export function sameOrigin(request: Request) {
+  if (nativeClient(request)) return;
   const origin = request.headers.get("origin");
   let valid = false;
   try {
@@ -107,8 +120,10 @@ export async function body(request: Request) {
     throw new AppError("INVALID_JSON", "Invalid request.");
   }
 }
-export function telemetry(event: string) {
-  console.info(JSON.stringify({ event, at: new Date().toISOString() }));
+export function telemetry(event: string, props: Record<string, unknown> = {}) {
+  console.info(
+    JSON.stringify({ event, ...props, at: new Date().toISOString() }),
+  );
 }
 
 export function requestOrigin(request: Request) {

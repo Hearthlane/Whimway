@@ -36,7 +36,7 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
   const [duration, setDuration] = useState(240);
   const [budget, setBudget] = useState(65);
   const [participants, setParticipants] = useState(2);
-  const [mode, setMode] = useState<"WALK" | "DRIVE">("WALK");
+  const [mode, setMode] = useState<"WALK" | "TRANSIT" | "DRIVE">("WALK");
   const [hardBudget, setHardBudget] = useState(false);
   const [dietary, setDietary] = useState("");
   const [accessibility, setAccessibility] = useState("");
@@ -440,9 +440,10 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
                 Getting around
                 <select
                   value={mode}
-                  onChange={(e) => setMode(e.target.value as "WALK" | "DRIVE")}
+                  onChange={(e) => setMode(e.target.value as "WALK" | "TRANSIT" | "DRIVE")}
                 >
                   <option value="WALK">Walking</option>
+                  <option value="TRANSIT">Transit</option>
                   <option value="DRIVE">Driving</option>
                 </select>
               </label>

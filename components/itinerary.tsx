@@ -41,10 +41,27 @@ import {
 import { api } from "@/lib/client";
 import { saveLocal, getLocal } from "@/lib/storage";
 import { money, timeLabel } from "@/lib/time";
-import { navigationUrl } from "@/lib/navigation";
+import { navigationUrl, travelNoun, travelVerb } from "@/lib/navigation";
 import { MapPanel } from "./map";
 import { PlacePhoto } from "./place-photo";
 import { Button, Notice, Modal, External, Empty } from "./ui";
+import { decodeShare } from "@/lib/share-link";
+async function trackOpen(via: string) {
+  try {
+    let install = localStorage.getItem("whimway:install");
+    if (!install) {
+      install = crypto.randomUUID();
+      localStorage.setItem("whimway:install", install);
+    }
+    await api("events", {
+      name: "shared_plan_opened",
+      installId: install,
+      props: { via, platform: "web" },
+    });
+  } catch {
+    // Analytics are best effort.
+  }
+}
 export function ItineraryView({
   id,
   shared = false,
@@ -96,17 +113,21 @@ export function ItineraryView({
     const controller = new AbortController();
     request.current = controller;
     try {
-      const stored = shared
-        ? await api<PlanSpec>(`shared/${id}`, undefined, {
-            signal: controller.signal,
-          })
-        : (getLocal()[id] ??
-          (await api<PlanSpec>(`plans/${id}`, undefined, {
-            signal: controller.signal,
-          })));
+      const stored =
+        id === "link"
+          ? decodeShare(window.location.hash.slice(1))
+          : shared
+            ? await api<PlanSpec>(`shared/${id}`, undefined, {
+                signal: controller.signal,
+              })
+            : (getLocal()[id] ??
+              (await api<PlanSpec>(`plans/${id}`, undefined, {
+                signal: controller.signal,
+              })));
       const hydrated = await api<Itinerary>("hydrate", stored, {
         signal: controller.signal,
       });
+      if (shared) void trackOpen(id === "link" ? "link" : "account");
       if (
         mounted.current &&
         request.current === controller &&
@@ -481,7 +502,7 @@ export function ItineraryView({
               <Car size={17} />
             )}{" "}
             {(plan.totalMeters / 1000).toFixed(1)} km{" "}
-            {plan.request.mode === "WALK" ? "walking" : "driving"}
+            {travelNoun[plan.request.mode]}
           </span>
           <span>
             <Users size={16} />
@@ -662,8 +683,7 @@ export function ItineraryView({
                 {i > 0 ? (
                   <div className="travel-between">
                     <Footprints size={13} />
-                    {stop.travel} min{" "}
-                    {plan.request.mode === "WALK" ? "walk" : "drive"}
+                    {stop.travel} min {travelVerb[plan.request.mode]}
                     {plan.demo ? " · fixture estimate" : ""}
                   </div>
                 ) : null}
@@ -1222,10 +1242,14 @@ function AdjustForm({
           <select
             value={req.mode}
             onChange={(e) =>
-              setReq({ ...req, mode: e.target.value as "WALK" | "DRIVE" })
+              setReq({
+                ...req,
+                mode: e.target.value as "WALK" | "TRANSIT" | "DRIVE",
+              })
             }
           >
             <option value="WALK">Walking</option>
+            <option value="TRANSIT">Transit</option>
             <option value="DRIVE">Driving</option>
           </select>
         </label>

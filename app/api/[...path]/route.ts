@@ -5,8 +5,10 @@ import {
   PlanSpec,
   EditRequest,
   RemixRequest,
+  MagicEditRequest,
   Point,
   interests,
+  travelModes,
 } from "@/lib/schema";
 import { planner, demoAllowed } from "@/lib/server/providers";
 import {
@@ -27,6 +29,9 @@ import {
 import { AppError } from "@/lib/errors";
 import { withProviderContext } from "@/lib/server/provider-context";
 import { publicSpec, persistSpec } from "@/lib/storage";
+import { providerStats } from "@/lib/server/provider-context";
+import { eventNames } from "@/lib/analytics";
+import { Feedback, TasteProfile } from "@/lib/profile";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
@@ -158,6 +163,22 @@ async function handleGET(request: Request, ctx: Context) {
         );
       return ok(data);
     }
+    if (path === "taste") {
+      const { db, user } = await requireUser();
+      const { data, error } = await db
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error)
+        throw new AppError(
+          "DATABASE_ERROR",
+          "Could not load your taste profile.",
+          503,
+        );
+      const taste = TasteProfile.safeParse(data?.preferences?.taste ?? null);
+      return ok(taste.success ? taste.data : null);
+    }
     if (path === "profile") {
       const { db, user } = await requireUser();
       const { data, error } = await db
@@ -200,10 +221,20 @@ async function handlePOST(request: Request, ctx: Context) {
       const data = z
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
+      const started = Date.now();
       const result = await planner(data.request, data.demo).generate(
         data.request,
       );
-      telemetry("plan_generated");
+      // Cost-per-plan analytics: latency, provider attempts and AI tokens. No content.
+      const stats = providerStats();
+      telemetry("plan_generated", {
+        ms: Date.now() - started,
+        stops: result.stops.length,
+        demo: result.demo,
+        attempts: stats?.attempts,
+        inputTokens: stats?.inputTokens,
+        outputTokens: stats?.outputTokens,
+      });
       return ok(result);
     }
     if (path === "hydrate") {
@@ -244,6 +275,83 @@ async function handlePOST(request: Request, ctx: Context) {
       );
       telemetry("plan_remixed");
       return ok(result);
+    }
+    if (path === "magic-edit") {
+      const data = MagicEditRequest.parse(input);
+      const started = Date.now();
+      const result = await planner(data.spec.request, data.spec.demo).magicEdit(
+        data.spec,
+        data.instruction,
+      );
+      const stats = providerStats();
+      telemetry("magic_edit_applied", {
+        kind: result.op.kind,
+        replaced: result.op.targets.length,
+        ms: Date.now() - started,
+        attempts: stats?.attempts,
+      });
+      return ok({
+        plan: result.plan,
+        changed: result.changed,
+        summary: result.op.summary,
+        kind: result.op.kind,
+      });
+    }
+    if (path === "events") {
+      const data = z
+        .object({
+          name: z.enum(eventNames),
+          installId: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
+          props: z
+            .record(
+              z.string().max(40),
+              z.union([z.string().max(80), z.number(), z.boolean()]),
+            )
+            .refine((p) => Object.keys(p).length <= 12)
+            .default({}),
+        })
+        .parse(input);
+      telemetry(`client_${data.name}`, data.props);
+      if (
+        process.env.NEXT_PUBLIC_SUPABASE_URL &&
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+      ) {
+        const db = await supabase();
+        // Best effort: analytics must never break the product.
+        await db.rpc("track_event", {
+          event_name: data.name,
+          install: data.installId,
+          properties: data.props,
+        });
+      }
+      return ok({ ok: true });
+    }
+    if (path === "feedback") {
+      const feedback = Feedback.parse(input);
+      telemetry("feedback_submitted", {
+        went: feedback.went,
+        rating: feedback.rating ?? null,
+      });
+      if (!user) return ok({ stored: "device" });
+      const { db } = await requireUser();
+      const { error } = await db.from("feedback").upsert(
+        {
+          user_id: user.id,
+          plan_id: feedback.planId,
+          went: feedback.went,
+          rating: feedback.rating ?? null,
+          stops: feedback.stops,
+          note: feedback.note,
+        },
+        { onConflict: "user_id,plan_id" },
+      );
+      if (error)
+        throw new AppError(
+          "SAVE_FAILED",
+          "Could not save feedback to your account. It is kept on this device.",
+          503,
+        );
+      return ok({ stored: "account" });
     }
     if (path === "explore") {
       const data = z
@@ -355,6 +463,26 @@ async function handlePOST(request: Request, ctx: Context) {
       if (error) throw new AppError("AUTH_FAILED", "Could not sign out.", 502);
       return ok({ signedOut: true });
     }
+    if (path === "taste") {
+      const taste = TasteProfile.parse(input);
+      const { db, user } = await requireUser();
+      const { data } = await db
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      const { error } = await db.from("profiles").upsert({
+        id: user.id,
+        preferences: { ...(data?.preferences ?? {}), taste },
+      });
+      if (error)
+        throw new AppError(
+          "SAVE_FAILED",
+          "Could not sync your taste profile.",
+          503,
+        );
+      return ok({ saved: true });
+    }
     if (path === "profile") {
       const preferences = z
         .object({
@@ -362,7 +490,7 @@ async function handlePOST(request: Request, ctx: Context) {
           interests: z.array(z.enum(interests)).max(10),
           dietary: z.string().max(300),
           accessibility: z.string().max(300),
-          mode: z.enum(["WALK", "DRIVE"]),
+          mode: z.enum(travelModes),
           budget: z.number().min(0).max(1000000),
           cuisines: z.string().max(200),
           atmosphere: z.string().max(200),
@@ -370,9 +498,18 @@ async function handlePOST(request: Request, ctx: Context) {
         })
         .parse(input);
       const { db, user } = await requireUser();
-      const { error } = await db
+      const { data: existing } = await db
         .from("profiles")
-        .upsert({ id: user.id, preferences });
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      const { error } = await db.from("profiles").upsert({
+        id: user.id,
+        // Keep the app's taste profile when the web preferences form saves.
+        preferences: existing?.preferences?.taste
+          ? { ...preferences, taste: existing.preferences.taste }
+          : preferences,
+      });
       if (error)
         throw new AppError("SAVE_FAILED", "Could not save preferences.", 503);
       return ok({ saved: true });

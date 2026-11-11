@@ -27,6 +27,25 @@ export const interests = [
   "Hidden gems",
   "Surprise me",
 ] as const;
+export const travelModes = ["WALK", "TRANSIT", "DRIVE"] as const;
+export const companions = ["partner", "friends", "solo", "family"] as const;
+export const vibes = [
+  "romantic",
+  "adventurous",
+  "cozy",
+  "cinematic",
+  "chill",
+  "lively",
+  "artsy",
+  "foodie",
+  "outdoorsy",
+  "playful",
+] as const;
+export type Vibe = (typeof vibes)[number];
+// Category affinity learned from explicit preferences and feedback. Bounded and coarse by design.
+export const Affinity = z
+  .record(z.string().max(60), z.number().min(-3).max(3))
+  .refine((v) => Object.keys(v).length <= 40, "Too many affinities");
 export const PlanRequest = z.object({
   location: Location,
   area: AreaBoundary,
@@ -38,7 +57,13 @@ export const PlanRequest = z.object({
   budget: z.number().min(0).max(1000000),
   hardBudget: z.boolean().default(false),
   participants: z.number().int().min(1).max(20),
-  mode: z.enum(["WALK", "DRIVE"]),
+  mode: z.enum(travelModes),
+  companions: z.enum(companions).optional(),
+  vibes: z.array(z.enum(vibes)).max(4).default([]),
+  // Planning compares per-person prices; "total" records how the user expressed it.
+  budgetBasis: z.enum(["person", "total"]).default("person"),
+  indoorOnly: z.boolean().default(false),
+  affinity: Affinity.default({}),
   excludedPlaceIds: z.array(z.string().max(250)).max(100).default([]),
   dietary: z.string().max(300).default(""),
   accessibility: z.string().max(300).default(""),
@@ -173,6 +198,10 @@ export const remixActions = [
 export const RemixRequest = z.object({
   spec: PlanSpec,
   action: z.enum(remixActions),
+});
+export const MagicEditRequest = z.object({
+  spec: PlanSpec,
+  instruction: z.string().trim().min(2).max(300),
 });
 export const EditRequest = z.object({
   spec: PlanSpec,

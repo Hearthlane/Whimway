@@ -1,6 +1,6 @@
 import { AppError } from "../errors";
 import { counter } from "./limiter";
-import { providerSignal } from "./provider-context";
+import { providerSignal, providerStats } from "./provider-context";
 const providers: Record<string, string> = {
   "places.googleapis.com": "google_places",
   "routes.googleapis.com": "google_routes",
@@ -28,6 +28,8 @@ export const meteredFetch: typeof fetch = async (input, init) => {
         "Whimway has reached its daily provider-request allowance. Try again tomorrow.",
         429,
       );
+    const stats = providerStats();
+    if (stats) stats.attempts[provider] = (stats.attempts[provider] ?? 0) + 1;
     // No URL, place ID, query, credentials, network address or prompt is logged.
     console.info(
       JSON.stringify({
@@ -64,6 +66,11 @@ function requestCancellation(signal: AbortSignal) {
 export function tokenUsage(
   usage: { input_tokens: number; output_tokens: number } | null | undefined,
 ) {
+  const stats = providerStats();
+  if (usage && stats) {
+    stats.inputTokens += usage.input_tokens;
+    stats.outputTokens += usage.output_tokens;
+  }
   if (usage)
     console.info(
       JSON.stringify({
