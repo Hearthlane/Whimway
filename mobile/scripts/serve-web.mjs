@@ -13,8 +13,26 @@ const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 http
   .createServer((req, res) => {
     if (req.url.startsWith("/api/")) {
+      // Only this page's own origin may call through (cross-site requests are refused).
+      // It is then forwarded as the app client, so it also works when the API pins APP_ORIGIN
+      // (e.g. Codespaces, where the app and API sit on different forwarded hosts).
+      const origin = req.headers.origin;
+      const host = req.headers["x-forwarded-host"] ?? req.headers.host;
+      const allowed = [host, process.env.WHIMWAY_APP_ORIGIN && new URL(process.env.WHIMWAY_APP_ORIGIN).host];
+      if (origin && !allowed.includes(new URL(origin).host)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "This request must come from the Whimway app.", code: "INVALID_ORIGIN" }));
+        return;
+      }
+      if (req.headers["sec-fetch-site"] === "cross-site") {
+        res.writeHead(403).end();
+        return;
+      }
+      const headers = { ...req.headers, "x-whimway-client": "app", host: api.host };
+      delete headers.origin;
+      delete headers.referer;
       const upstream = http.request(
-        { hostname: api.hostname, port: api.port, path: req.url, method: req.method, headers: req.headers },
+        { hostname: api.hostname, port: api.port, path: req.url, method: req.method, headers },
         (r) => {
           res.writeHead(r.statusCode ?? 502, r.headers);
           r.pipe(res);

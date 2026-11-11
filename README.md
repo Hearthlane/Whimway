@@ -14,6 +14,14 @@ lib/      Shared, pure domain logic used by BOTH server and app
 supabase/ Postgres migrations with row-level security
 ```
 
+## Browse everything (one command)
+
+```sh
+npm run preview
+```
+
+Then open **http://localhost:8090** — the full app in your browser (onboarding, planning, Magic Edit, polls, saved, sharing). The web app and share links run on http://localhost:3000. In **GitHub Codespaces** (Code → Codespaces → Create codespace) this starts automatically and opens the app port. Everything runs in labelled demo mode with raised fair-use limits; reset the app via You → Delete data on this device.
+
 ## Quick start (no credentials needed)
 
 ```sh

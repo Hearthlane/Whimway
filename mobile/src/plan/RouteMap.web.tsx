@@ -19,9 +19,11 @@ export function RouteMap({ plan, selected, onSelect }: { plan: Itinerary; select
   const b = bounds(all.length ? all : [plan.request.area.center]);
   const latSpan = Math.max(b.maxLat - b.minLat, 0.002);
   const lngSpan = Math.max(b.maxLng - b.minLng, 0.002);
-  const k = Math.min((W - pad * 2) / lngSpan, (H - pad * 2) / (latSpan * 1.38));
+  // Leave room at the bottom for the stop legend so pins are never covered.
+  const legendSpace = 44;
+  const k = Math.min((W - pad * 2) / lngSpan, (H - pad * 2 - legendSpace) / (latSpan * 1.38));
   const x = (lng: number) => W / 2 + (lng - (b.minLng + b.maxLng) / 2) * k;
-  const y = (lat: number) => H / 2 - (lat - (b.minLat + b.maxLat) / 2) * k * 1.38;
+  const y = (lat: number) => (H - legendSpace) / 2 - (lat - (b.minLat + b.maxLat) / 2) * k * 1.38;
   // Nudge pins that would overlap (venues in the same building) so each stays tappable.
   const pins: { x: number; y: number }[] = [];
   const pinAt = (pt: { lat: number; lng: number }) => {

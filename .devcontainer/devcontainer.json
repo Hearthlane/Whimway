@@ -1,14 +1,22 @@
 {
   "name": "Whimway preview",
   "image": "node:24-bookworm",
-  "forwardPorts": [3000],
+  "forwardPorts": [
+    8090,
+    3000
+  ],
   "portsAttributes": {
-    "3000": {
-      "label": "Whimway development preview",
+    "8090": {
+      "label": "Whimway app (browser preview)",
       "onAutoForward": "openBrowser",
+      "visibility": "private"
+    },
+    "3000": {
+      "label": "Whimway API, web app and share links",
+      "onAutoForward": "silent",
       "visibility": "private"
     }
   },
-  "postCreateCommand": "npm ci --no-audit --no-fund",
-  "postAttachCommand": "bash .devcontainer/start-preview.sh"
+  "postCreateCommand": "npm ci --no-audit --no-fund && (cd mobile && npm ci --no-audit --no-fund)",
+  "postAttachCommand": "bash scripts/preview.sh"
 }

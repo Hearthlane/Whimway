@@ -258,6 +258,7 @@ export default function PlanScreen() {
     <View style={{ flex: 1, backgroundColor: color.canvas }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
         <LinearGradient colors={[color.ink, "#24394A"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
+          <View style={s.heroInner}>
           <View style={s.heroTop}>
             <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={s.heroBtn}>
               <Icon name="arrow-left" tint={color.paper} />
@@ -279,6 +280,7 @@ export default function PlanScreen() {
             <Stat icon="clock" label={start.isValid ? `${start.toFormat("h:mm")}–${end.toFormat("h:mm a")}` : "—"} />
             <Stat icon="credit-card" label={`${perPerson}${plan.cost.high ? " pp" : ""}`} sub={plan.request.budgetBasis === "total" && plan.cost.high ? `≈ ${money(plan.cost.high * people)} for ${people}` : undefined} />
             <Stat icon="map-pin" label={`${plan.stops.length} stops`} sub={`${modeCopy[plan.request.mode].label} · ${(plan.totalMeters / 1000).toFixed(1)} km`} />
+          </View>
           </View>
         </LinearGradient>
 
@@ -396,10 +398,12 @@ export default function PlanScreen() {
       ) : null}
 
       <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, space.md) }]}>
+        <View style={s.barInner}>
         <Button testID="magic-edit" label="Magic edit" icon="star" kind="dark" onPress={() => { setEditError(""); setEditOpen(true); }} style={{ flex: 1 }} />
         <IconButton icon={entry?.saved ? "check" : "bookmark"} label={entry?.saved ? "Saved" : "Save plan"} active={entry?.saved} onPress={save} />
         <IconButton icon={sharing ? "loader" : "share"} label="Share plan" onPress={share} />
         <IconButton icon="navigation" label="Start: open directions" onPress={go} tint={color.coralText} />
+        </View>
       </View>
 
       <MagicEditSheet open={editOpen} onClose={() => setEditOpen(false)} plan={plan} busy={editBusy} error={editError} onApply={magicEdit} />
@@ -445,7 +449,8 @@ const s = StyleSheet.create({
   orb: { width: 72, height: 72, borderRadius: 36, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", ...shadow.lift },
   stageRow: { flexDirection: "row", gap: 6 },
   stageDot: { width: 28, height: 4, borderRadius: 2, backgroundColor: color.line },
-  hero: { paddingHorizontal: space.xl, paddingBottom: space.xl, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl },
+  hero: { paddingHorizontal: space.xl, paddingBottom: space.xl, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, alignItems: "center" },
+  heroInner: { width: "100%", maxWidth: 720 },
   heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   heroBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
   stats: { flexDirection: "row", gap: space.sm, marginTop: space.xl },
@@ -454,6 +459,7 @@ const s = StyleSheet.create({
   goodToKnow: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   feedback: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   toast: { position: "absolute", left: space.lg, right: space.lg, flexDirection: "row", alignItems: "center", gap: space.sm, backgroundColor: color.ink, padding: space.md, borderRadius: radius.md, maxWidth: 680, alignSelf: "center", ...shadow.lift },
-  bar: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, backgroundColor: color.paper, borderTopWidth: 1, borderTopColor: color.line },
+  bar: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, backgroundColor: color.paper, borderTopWidth: 1, borderTopColor: color.line, justifyContent: "center" },
+  barInner: { flex: 1, maxWidth: 720, flexDirection: "row", gap: space.sm },
   link: { marginTop: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, fontSize: 13, color: color.ink },
 });
