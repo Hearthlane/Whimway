@@ -171,7 +171,7 @@ export default function PlanHome() {
             Can’t reach the Whimway server. Check your connection and that the API is running, then pull to retry.
           </Notice>
         ) : demo ? (
-          <Notice icon="info">Demo mode: real GTA places, but hours, prices and travel times are estimates. Connect live data before trusting a plan.</Notice>
+          <Notice icon="info">Demo mode. The places are real; hours, prices and travel times are estimates.</Notice>
         ) : null}
 
         <PollCard />
