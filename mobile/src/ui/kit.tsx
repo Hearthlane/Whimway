@@ -16,6 +16,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { color, font, radius, shadow, space, touch, type } from "./theme";
 
 export type IconName = ComponentProps<typeof Feather>["name"];
@@ -211,11 +212,25 @@ export function Notice({ tone = "yellow", icon = "info", children }: { tone?: "y
   );
 }
 
+/** The Whimway spark (same geometry as the app icon). */
+export function Spark({ size = 24, fill = color.paper, accent = color.ink }: { size?: number; fill?: string; accent?: string }) {
+  const spark = (cx: number, cy: number, r: number) => {
+    const i = r * 0.26;
+    return `M${cx} ${cy - r} C${cx + i * 0.35} ${cy - i} ${cx + i} ${cy - i * 0.35} ${cx + r} ${cy} C${cx + i} ${cy + i * 0.35} ${cx + i * 0.35} ${cy + i} ${cx} ${cy + r} C${cx - i * 0.35} ${cy + i} ${cx - i} ${cy + i * 0.35} ${cx - r} ${cy} C${cx - i} ${cy - i * 0.35} ${cx - i * 0.35} ${cy - i} ${cx} ${cy - r} Z`;
+  };
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" accessibilityElementsHidden importantForAccessibility="no">
+      <Path d={spark(47, 52, 30)} fill={fill} />
+      <Path d={spark(73, 27, 8.5)} fill={accent} />
+    </Svg>
+  );
+}
+
 export function Wordmark({ size = 24 }: { size?: number }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="header" accessibilityLabel="Whimway">
-      <View style={[styles.mark, { width: size * 1.25, height: size * 1.25, borderRadius: size }]}>
-        <Icon name="star" size={size * 0.62} tint={color.ink} />
+      <View style={[styles.mark, { width: size * 1.35, height: size * 1.35, borderRadius: size * 0.42 }]}>
+        <Spark size={size * 1.35} />
       </View>
       <Text style={{ fontFamily: font.displayBold, fontSize: size, color: color.ink, letterSpacing: -0.6 }}>
         whimway<Text style={{ color: color.coral }}>.</Text>

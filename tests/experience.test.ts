@@ -365,3 +365,31 @@ describe("Transit navigation", () => {
     expect(navigationUrl).toBeTypeOf("function");
   });
 });
+
+describe("Plan around a favourite", () => {
+  const future = DateTime.now().setZone("America/Toronto").plus({ days: 3 });
+  it("keeps the anchored place, locked, and builds the rest around it", async () => {
+    const area = areaByKey("kensington")!;
+    const r = {
+      ...buildRequest("", interpret("", future), profile, future, { area }),
+      date: future.toISODate()!,
+      startTime: "18:30",
+      anchorPlaceIds: ["gta-bar-raval"],
+    };
+    const plan = await new Planner(
+      new FixturePlaces(r),
+      new FixtureRoutes(),
+      new FixtureAI(),
+      true,
+    ).generate(r);
+    const anchor = plan.stops.find((s) => s.placeId === "gta-bar-raval");
+    expect(anchor).toBeDefined();
+    expect(anchor!.locked).toBe(true);
+    expect(plan.stops.length).toBeGreaterThanOrEqual(2);
+  });
+  it("finds the nearest launch area for a favourite, or none outside the GTA", async () => {
+    const { nearestArea } = await import("@/lib/areas");
+    expect(nearestArea({ lat: 43.8255, lng: -79.3065 })?.key).toBe("markham");
+    expect(nearestArea({ lat: 45.42, lng: -75.69 })).toBeUndefined(); // Ottawa
+  });
+});

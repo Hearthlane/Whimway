@@ -24,9 +24,12 @@ export default function Saved() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
       <ScrollView contentContainerStyle={s.page}>
-        <T v="hero" accessibilityRole="header">
-          Saved
-        </T>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <T v="hero" accessibilityRole="header">
+            Saved
+          </T>
+          <Button testID="open-shared" kind="ghost" icon="link" label="Open a shared plan" onPress={() => router.push("/import")} />
+        </View>
         {!saved.length ? (
           <View style={s.empty}>
             <View style={s.emptyIcon}>

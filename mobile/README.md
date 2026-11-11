@@ -34,7 +34,11 @@ build shows a schematic route sketch instead of map tiles.
 | `(tabs)/index` | “What should we do?” — free text is interpreted on device into editable chips (who, when, budget total/per person, travel, length, area, vibe, indoors). Quick poll. Ideas. Recent plans. |
 | `plan/[id]` | Generation with staged progress → hero summary, route map, Plan Pulse, timeline of stop cards (hours confidence, price, why, directions, website, keep/swap, 👍/👎), Magic Edit with preview + undo, save, share, start navigation, post-outing feedback. |
 | `(tabs)/saved` | Upcoming / been-there, rate past plans, plan again, delete with confirmation. |
-| `(tabs)/profile` | Taste summary + what feedback taught us, optional sign-in (email code), usage-stats toggle, delete device data / account. |
+| `(tabs)/profile` | Taste summary + what feedback taught us, favourite places with “Plan around it”, optional sign-in (email code), usage-stats toggle, delete device data / account, privacy/terms, replay intro. |
+| `import` | Open a friend’s shared plan (paste the link, or deep link `whimway://import?link=…`) and keep your own copy. |
+
+The Plan tab’s area chip includes **Near me** (asks for location once, rounds to ~100 m, GTA-only).
+Any crash shows a recovery screen and sends a scrubbed report (error name, first message line, platform) to the API logs.
 
 ## Verify
 
@@ -70,5 +74,12 @@ row-level security enforces ownership.
 
 ## Ship
 
-Use EAS: `npx eas-cli@latest build --profile production` then `submit`. Bundle IDs are
-`app.whimway` (iOS and Android) in `app.json` — change them to identifiers you own first.
+Config lives in `app.config.ts` (brand icon, adaptive icon, splash, location permission text).
+`eas.json` has development, preview and production profiles — set `EXPO_PUBLIC_API_URL` in
+it to your deployed API first, and add `GOOGLE_MAPS_ANDROID_KEY` as an EAS secret for Android maps.
+
+```bash
+npx eas-cli@latest build --profile preview --platform all
+```
+
+Bundle IDs are `app.whimway` (iOS and Android) — change them to identifiers you own first.

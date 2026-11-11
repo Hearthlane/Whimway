@@ -57,6 +57,11 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Account-free share links (`/p#…`), recipient can copy the plan | **Working**; E2E-tested; private details never in the link |
 | Analytics events + metrics queries (`docs/metrics.sql`) | **Working** (stored once Supabase is configured; console logs otherwise) |
 | Native maps | iOS Apple Maps (no key). Android needs a Maps SDK key in a dev build. Web shows a route sketch |
+| Favourites + “Plan around this place” (anchored plans) | **Working**; tested end to end |
+| Open a shared plan inside the app (paste link or `whimway://import?link=…`) | **Working**; the web share page offers “Open in the Whimway app” |
+| Near me (device location, rounded to ~100 m, GTA-only) | **Working** in the browser preview; native permission prompts untested on devices |
+| Crash screen + scrubbed crash reports (`/api/errors` → server logs) | **Working** |
+| Brand icon, adaptive icon, splash, favicon; `app.config.ts`; `eas.json` | **Done**; store builds need your Expo/Apple/Google accounts |
 | Payments, bookings, social feed | **Deliberately not built** (see roadmap) |
 
 ## What is implemented
@@ -76,6 +81,16 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 **Preserved from the original web app** — worldwide area search, Explore, the web create flow and itinerary editor, device persistence, magic-link web auth, fair-use limits, provider cost ceilings, and all original tests.
 
 A hard budget excludes paid activities with unknown prices. Published ranges and browsing estimates are **not quotes** and omit taxes, tips, optional purchases, fuel, parking and tolls. Confirm prices and admission with venues.
+
+## Turning on live data in a Claude cloud session
+
+This repository has a **whimway** cloud environment that allows Google Places, Routes and Maps and the OpenAI API. To use real places and AI there:
+
+1. **OpenAI:** in the environment’s settings → network secrets, set the `api.openai.com` secret to a valid API key (starts with `sk-`). Add the variable `WHIMWAY_OPENAI_MODEL` (a Structured Outputs–capable model on your account) and `WHIMWAY_OPENAI_KEY=proxy-injected` (the proxy replaces the placeholder with the real key).
+2. **Google:** add network secrets for `places.googleapis.com`, `routes.googleapis.com` and `maps.googleapis.com`, each sending your server key in the **`X-Goog-Api-Key`** header (no prefix). Add the variable `GOOGLE_MAPS_SERVER_KEY=proxy-injected`.
+3. Restart the session and run `npm run preview`. The app switches from demo to live automatically (`/api/status` reports `places: true, ai: true`).
+
+Outside Claude (your laptop, Vercel) put the real values in `.env.local` / project settings instead, as below.
 
 ## Provider configuration
 

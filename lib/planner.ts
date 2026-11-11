@@ -354,7 +354,14 @@ export class Planner {
         "All stops are locked. Unlock a stop before remixing.",
         422,
       );
-    const locked = previous?.stops.filter((s) => s.locked) ?? [];
+    const locked = previous
+      ? previous.stops.filter((s) => s.locked)
+      : request.anchorPlaceIds.map((placeId) => ({
+          placeId,
+          minutes: 60,
+          locked: true,
+          reason: "Your favourite — the plan is built around it.",
+        }));
     const focus: PlanRequest["interests"][number] | undefined =
       action?.includes("More food")
         ? "Food & drinks"

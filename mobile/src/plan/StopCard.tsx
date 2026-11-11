@@ -34,6 +34,8 @@ export function StopCard({
   onSwap,
   onOpenLink,
   onReact,
+  favourite,
+  onFavourite,
 }: {
   plan: Itinerary;
   index: number;
@@ -44,6 +46,8 @@ export function StopCard({
   onSwap: () => void;
   onOpenLink: (kind: "navigation" | "booking") => void;
   onReact: (value: 1 | -1) => void;
+  favourite: boolean;
+  onFavourite: () => void;
 }) {
   const [reaction, setReaction] = useState<1 | -1 | null>(null);
   const reactTo = (value: 1 | -1) => {
@@ -139,6 +143,7 @@ export function StopCard({
           <View style={s.actions}>
             <Action icon="navigation" label={plan.demo ? "Find on Maps" : "Directions"} onPress={() => open_(directions, "navigation")} />
             {website ? <Action icon="external-link" label="Website / book" onPress={() => open_(website, "booking")} /> : null}
+            <Action icon="heart" label={favourite ? "Saved place" : "Save place"} onPress={onFavourite} active={favourite} />
             <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
             {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
           </View>
@@ -159,10 +164,10 @@ export function StopCard({
   );
 }
 
-function Action({ icon, label, onPress }: { icon: Parameters<typeof Icon>[0]["name"]; label: string; onPress: () => void }) {
+function Action({ icon, label, onPress, active }: { icon: Parameters<typeof Icon>[0]["name"]; label: string; onPress: () => void; active?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [s.action, pressed && { opacity: 0.7 }]}>
-      <Icon name={icon} size={14} />
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: active }} onPress={onPress} style={({ pressed }) => [s.action, active && { backgroundColor: color.coralTint, borderColor: color.coral }, pressed && { opacity: 0.7 }]}>
+      <Icon name={icon} size={14} tint={active ? color.coralText : color.ink} />
       <T v="smallStrong">{label}</T>
     </Pressable>
   );

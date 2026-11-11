@@ -460,10 +460,18 @@ export function ItineraryView({
           </div>
           <div className="plan-actions">
             {shared ? (
-              <Button className="primary" onClick={duplicate}>
-                <Copy size={17} />
-                Make it yours
-              </Button>
+              <>
+                <Button className="primary" onClick={duplicate}>
+                  <Copy size={17} />
+                  Make it yours
+                </Button>
+                <a
+                  className="button secondary"
+                  href={`whimway://import?link=${encodeURIComponent(typeof window === "undefined" ? "" : window.location.href)}`}
+                >
+                  Open in the Whimway app
+                </a>
+              </>
             ) : (
               <>
                 <Button

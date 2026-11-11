@@ -1,3 +1,4 @@
+import { distance } from "./geo";
 import type { Location, PlanRequest, Point } from "./schema";
 
 /**
@@ -150,4 +151,14 @@ export function toLocation(area: Area): Location {
 /** Sensible exploration radius by travel mode, in metres. */
 export function defaultRadius(mode: PlanRequest["mode"]) {
   return mode === "WALK" ? 2000 : mode === "TRANSIT" ? 6000 : 12000;
+}
+
+/** Nearest launch area to a point, or undefined if it is outside the GTA beta (> 25 km). */
+export function nearestArea(point: Point) {
+  let best: { area: Area; d: number } | undefined;
+  for (const area of areas) {
+    const d = distance(point, area.center);
+    if (!best || d < best.d) best = { area, d };
+  }
+  return best && best.d <= 25000 ? best.area : undefined;
 }

@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { areaByKey, areas, defaultRadius } from "@shared/areas";
+import * as Location from "expo-location";
+import { areaByKey, areas, defaultRadius, nearestArea, type Area } from "@shared/areas";
 import { buildRequest, describe, interpret } from "@shared/intent";
 import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
 import { useStore } from "@/lib/store";
@@ -24,6 +25,8 @@ type Overrides = {
   duration?: number;
   vibes?: Vibe[];
   areaKey?: string;
+  /** Device location (rounded to ~100 m), only when the user taps "Near me". */
+  near?: { lat: number; lng: number; areaKey: string };
   indoorOnly?: boolean;
 };
 const ZONE = "America/Toronto";
@@ -45,7 +48,10 @@ export default function PlanHome() {
   // Interpret on every keystroke: deterministic, on-device, free.
   const request = useMemo(() => {
     const draft = interpret(text, now);
-    const base = buildRequest(text, draft, profile, now, { area: areaByKey(o.areaKey) });
+    const nearArea: Area | undefined = o.near
+      ? { ...areaByKey(o.near.areaKey)!, key: "near-me", name: "Near you", center: { lat: o.near.lat, lng: o.near.lng } }
+      : undefined;
+    const base = buildRequest(text, draft, profile, now, { area: nearArea ?? areaByKey(o.areaKey) });
     const r: PlanRequest = { ...base };
     if (o.companions) r.companions = o.companions;
     if (o.participants) r.participants = o.participants;
@@ -299,8 +305,12 @@ function Editors({ field, close, request, o, setO, totalBudget, now }: { field: 
       ) : null}
       {field === "area" ? (
         <View style={{ gap: space.sm }}>
+          <NearMe
+            active={Boolean(o.near)}
+            onLocated={(near) => setO({ ...o, near, areaKey: undefined })}
+          />
           {areas.map((a) => (
-            <Pressable key={a.key} accessibilityRole="radio" accessibilityState={{ checked: request.location.name === a.name }} onPress={() => setO({ ...o, areaKey: a.key })} style={[s.areaRow, request.location.name === a.name && { borderColor: color.ink, backgroundColor: color.paper }]}>
+            <Pressable key={a.key} accessibilityRole="radio" accessibilityState={{ checked: request.location.name === a.name }} onPress={() => setO({ ...o, areaKey: a.key, near: undefined })} style={[s.areaRow, request.location.name === a.name && { borderColor: color.ink, backgroundColor: color.paper }]}>
               <Icon name="map-pin" size={16} tint={request.location.name === a.name ? color.coralText : color.muted} />
               <T v="bodyStrong" style={{ flex: 1 }}>
                 {a.name}
@@ -313,6 +323,42 @@ function Editors({ field, close, request, o, setO, totalBudget, now }: { field: 
         </View>
       ) : null}
     </Sheet>
+  );
+}
+
+function NearMe({ active, onLocated }: { active: boolean; onLocated: (near: { lat: number; lng: number; areaKey: string }) => void }) {
+  const [state, setState] = useState<"idle" | "busy" | "denied" | "outside" | "error">("idle");
+  const locate = async () => {
+    setState("busy");
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return setState("denied");
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      // Round to ~100 m: precise enough to plan nearby, never an exact address.
+      const point = { lat: Math.round(pos.coords.latitude * 1000) / 1000, lng: Math.round(pos.coords.longitude * 1000) / 1000 };
+      const area = nearestArea(point);
+      if (!area) return setState("outside");
+      onLocated({ ...point, areaKey: area.key });
+      setState("idle");
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <View style={{ gap: space.sm, marginBottom: space.sm }}>
+      <Pressable accessibilityRole="button" onPress={locate} style={[s.areaRow, active && { borderColor: color.ink, backgroundColor: color.paper }]} testID="near-me">
+        <Icon name="crosshair" size={16} tint={active ? color.coralText : color.muted} />
+        <T v="bodyStrong" style={{ flex: 1 }}>
+          {state === "busy" ? "Finding you…" : "Near me"}
+        </T>
+        <T v="small" tone={color.muted}>
+          {active ? "Using your location" : "Uses location once"}
+        </T>
+      </Pressable>
+      {state === "denied" ? <Notice icon="map-pin">Location is off for Whimway. Pick an area below, or allow location in Settings.</Notice> : null}
+      {state === "outside" ? <Notice icon="map">Whimway is Greater Toronto–only for now. Pick a GTA area below — more cities soon.</Notice> : null}
+      {state === "error" ? <Notice tone="coral" icon="alert-circle">Couldn’t get your location. Pick an area below instead.</Notice> : null}
+    </View>
   );
 }
 

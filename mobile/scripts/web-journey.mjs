@@ -10,7 +10,7 @@ mkdirSync(out, { recursive: true });
 const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullPage: false });
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
-  const ctx = await b.newContext({ ...devices['iPhone 13'] });
+  const ctx = await b.newContext({ ...devices['iPhone 13'], geolocation: { latitude: 43.6487, longitude: -79.4208 }, permissions: ['geolocation'] });
   const p = await ctx.newPage();
   const errors = [];
   const apiCalls = [];
@@ -83,6 +83,9 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await p.waitForTimeout(400);
   const stopsAfter = await p.locator('[data-testid^="stop-"]').allInnerTexts();
   await shot(p, '12-after-edit');
+  // Favourite the first stop (its card is still expanded from the reaction step).
+  const favName = (await p.getByTestId('stop-1').innerText()).split('\n').filter(Boolean)[2];
+  await p.getByTestId('stop-1').getByRole('button', { name: 'Save place' }).click();
   await p.getByLabel('Save plan').click();
   await p.waitForTimeout(300);
   await p.getByLabel('Share plan').click();
@@ -102,6 +105,27 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await p.goto(`${base}/profile`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(500);
   await shot(p, '16-profile');
+  // Favourites → plan around it
+  const favListed = (await p.getByTestId('favourite').allInnerTexts()).join(' ');
+  await p.getByRole('button', { name: 'Plan around it' }).first().click();
+  await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
+  await p.waitForTimeout(400);
+  const anchoredStops = (await p.locator('[data-testid^="stop-"]').allInnerTexts()).join(' ');
+  await shot(p, '17-plan-around-favourite');
+  // Open a shared link inside the app
+  await p.goto(`${base}/import`, { waitUntil: 'networkidle' });
+  await p.getByTestId('import-link').fill(link);
+  await p.getByTestId('import-open').click();
+  await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
+  const importedTitle = await p.getByTestId('plan-title').innerText();
+  // Near me
+  await p.goto(`${base}/`, { waitUntil: 'networkidle' });
+  await p.getByTestId('chip-area').click();
+  await p.getByTestId('near-me').click();
+  await p.getByText('Using your location').waitFor({ timeout: 10000 });
+  await p.getByRole('button', { name: 'Done' }).click();
+  const areaChip = (await p.getByTestId('chip-area').innerText()).trim();
+  await shot(p, '18-near-me');
   const r = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
   r.on('pageerror', e => errors.push('recipient pageerror: ' + e.message));
   await r.goto(link, { waitUntil: 'networkidle' });
@@ -117,9 +141,13 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   assert.equal(stopsAfter.length, stopsBefore.length, "magic edit keeps the stop count");
   assert.deepEqual(summarize(stopsAfter).slice(0, -1), summarize(stopsBefore).slice(0, -1), "kept stops untouched");
   assert.ok(link.includes("/p#"), "account-free share link");
+  assert.ok(favListed.includes(favName), `favourite listed (${favName})`);
+  assert.ok(anchoredStops.includes(favName), "plan built around the favourite");
+  assert.equal(importedTitle, title, "shared link opens inside the app");
+  assert.ok(areaChip.endsWith("Near you"), "near me sets the planning area");
   assert.equal(recipientTitle, title, "recipient sees the plan");
   for (const call of ["POST /api/polls/answer 200", "POST /api/signals 200", "POST /api/magic-edit 200", "POST /api/feedback 200"])
     assert.ok(apiCalls.includes(call), call);
-  console.log(JSON.stringify({ onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
+  console.log(JSON.stringify({ favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
   await b.close();
 })().catch(e => { console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });

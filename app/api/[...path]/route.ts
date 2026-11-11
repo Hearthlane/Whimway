@@ -360,6 +360,24 @@ async function handlePOST(request: Request, ctx: Context) {
       });
       return ok({ tally });
     }
+    if (path === "errors") {
+      // Client crash reports: scrubbed to name / first message line / platform only.
+      const report = z
+        .object({
+          name: z.string().max(60),
+          message: z.string().max(200),
+          platform: z.enum(["ios", "android", "web", "windows", "macos"]),
+        })
+        .parse(input);
+      console.error(
+        JSON.stringify({
+          event: "client_error",
+          ...report,
+          at: new Date().toISOString(),
+        }),
+      );
+      return ok({ logged: true });
+    }
     if (path === "signals") {
       const batch = SignalBatch.parse(input);
       await signalStore().record(batch);

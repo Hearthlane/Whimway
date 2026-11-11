@@ -818,11 +818,13 @@ export function demoSelect(
           reason: reason(p),
         })),
       ]
-    : fresh.map((p) => ({
-        placeId: p.id,
-        minutes: minutes(p),
-        reason: reason(p),
-      }));
+    : // New plan built around anchors (e.g. a favourite): place them in the natural arc too.
+      [...lockedPlaces, ...fresh]
+        .sort((a, b) => rank(a) - rank(b))
+        .map((p) => {
+          const l = locked.find((x) => x.placeId === p.id);
+          return l ?? { placeId: p.id, minutes: minutes(p), reason: reason(p) };
+        });
   // Time-aware pass: swap any new stop that would be closed at its slot for one that is open.
   let cursor = 0;
   let start: ReturnType<typeof localStart> | undefined;

@@ -193,3 +193,49 @@ describe("Account-free share links", () => {
     expect(() => decodeShare("bm90LWEtcGxhbg")).toThrow();
   });
 });
+
+describe("Crash reports and anchors", () => {
+  it("accepts scrubbed crash reports and rejects anything bigger", async () => {
+    expect(
+      (
+        await call(
+          "errors",
+          { name: "TypeError", message: "x is undefined", platform: "ios" },
+          app,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call(
+          "errors",
+          { name: "TypeError", message: "x".repeat(500), platform: "ios" },
+          app,
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await call(
+          "errors",
+          { name: "E", message: "m", platform: "toaster" },
+          app,
+        )
+      ).status,
+    ).toBe(400);
+  });
+  it("never puts anchored favourites into share links", async () => {
+    const plan = (await (
+      await call(
+        "generate",
+        {
+          request: { ...req(), anchorPlaceIds: ["gta-bang-bang"] },
+          demo: true,
+        },
+        app,
+      )
+    ).json()) as Itinerary;
+    expect(plan.stops.some((s) => s.placeId === "gta-bang-bang")).toBe(true);
+    expect(decodeShare(encodeShare(plan)).request.anchorPlaceIds).toEqual([]);
+  });
+});

@@ -64,6 +64,8 @@ export const PlanRequest = z.object({
   budgetBasis: z.enum(["person", "total"]).default("person"),
   indoorOnly: z.boolean().default(false),
   affinity: Affinity.default({}),
+  /** Places the plan must be built around (e.g. a saved favourite). */
+  anchorPlaceIds: z.array(z.string().min(1).max(250)).max(2).default([]),
   excludedPlaceIds: z.array(z.string().max(250)).max(100).default([]),
   dietary: z.string().max(300).default(""),
   accessibility: z.string().max(300).default(""),

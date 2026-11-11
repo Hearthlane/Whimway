@@ -27,7 +27,15 @@ export const TasteProfile = z.object({
   disliked: z.array(z.string().max(250)).max(100).default([]),
   /** Saved favourite places: IDs and a display name only (provider content is not stored). */
   favourites: z
-    .array(z.object({ id: z.string().max(250), name: z.string().max(120) }))
+    .array(
+      z.object({
+        id: z.string().max(250),
+        name: z.string().max(120),
+        /** GTA area key nearest the place, so "plan around it" searches the right neighbourhood. */
+        area: z.string().max(40).optional(),
+        category: z.string().max(60).optional(),
+      }),
+    )
     .max(100)
     .default([]),
   /** Poll answers by poll id (one-tap "this or that" questions). */

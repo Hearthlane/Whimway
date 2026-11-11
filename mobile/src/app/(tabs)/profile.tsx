@@ -1,15 +1,19 @@
+import Constants from "expo-constants";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areaByKey } from "@shared/areas";
+import { buildRequest, interpret } from "@shared/intent";
+import { DateTime } from "luxon";
 import { TasteProfile } from "@shared/profile";
 import { api } from "@/lib/api";
 import { supabase } from "@/lib/auth";
-import { cloudConfigured } from "@/lib/config";
+import { cloudConfigured, SHARE_ORIGIN } from "@/lib/config";
 import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
-import { Button, Card, Chip, Notice, T } from "@/ui/kit";
+import { Button, Card, Chip, IconButton, Notice, T } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
 export default function Profile() {
@@ -74,7 +78,9 @@ export default function Profile() {
             ))}
           </View>
           <T v="small" tone={color.muted}>
-            {Object.keys(profile.polls).length} quick poll{Object.keys(profile.polls).length === 1 ? "" : "s"} answered — each one sharpens your plans.
+            {Object.keys(profile.polls).length
+              ? `${Object.keys(profile.polls).length} quick poll${Object.keys(profile.polls).length === 1 ? "" : "s"} answered — each one sharpens your plans.`
+              : "Answer the quick polls on Plan — each one sharpens your recommendations."}
           </T>
           {loved.length ? (
             <T v="small" tone={color.muted}>
@@ -93,6 +99,44 @@ export default function Profile() {
               <Button kind="ghost" label="Reset" onPress={() => setProfile({ ...profile, disliked: [], affinity: {} })} />
             </View>
           ) : null}
+        </Card>
+
+        <Card style={{ gap: space.md }}>
+          <T v="heading">Favourite places</T>
+          {profile.favourites.length ? (
+            profile.favourites.slice(0, 20).map((f) => (
+              <View key={f.id} style={s.favRow} testID="favourite">
+                <View style={{ flex: 1 }}>
+                  <T v="bodyStrong" numberOfLines={1}>
+                    {f.name}
+                  </T>
+                  <T v="small" tone={color.muted} numberOfLines={1}>
+                    {[f.category, areaByKey(f.area)?.name].filter(Boolean).join(" · ")}
+                  </T>
+                </View>
+                <Button
+                  kind="soft"
+                  label="Plan around it"
+                  icon="star"
+                  onPress={() => {
+                    const now = DateTime.now().setZone("America/Toronto");
+                    const prompt = `Plan something around ${f.name}`;
+                    store.pending.current = {
+                      ...buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) }),
+                      anchorPlaceIds: [f.id],
+                      excludedPlaceIds: profile.disliked.filter((id) => id !== f.id),
+                    };
+                    router.push("/plan/new");
+                  }}
+                />
+                <IconButton icon="x" label={`Remove ${f.name}`} onPress={() => setProfile({ ...profile, favourites: profile.favourites.filter((x) => x.id !== f.id) })} />
+              </View>
+            ))
+          ) : (
+            <T v="small" tone={color.muted}>
+              Tap the heart on any stop to save it. Then plan a whole night around it in one tap.
+            </T>
+          )}
         </Card>
 
         <Card style={{ gap: space.md }}>
@@ -186,8 +230,13 @@ export default function Profile() {
             )
           ) : null}
         </Card>
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: space.lg }}>
+          <Button kind="ghost" label="Privacy" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/privacy`)} />
+          <Button kind="ghost" label="Terms" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/terms`)} />
+          <Button kind="ghost" label="Replay intro" onPress={() => { setProfile({ ...profile, onboarded: false }); router.replace("/onboarding"); }} />
+        </View>
         <T v="small" tone={color.faint} style={{ textAlign: "center" }}>
-          Whimway beta · Greater Toronto
+          Whimway beta {Constants.expoConfig?.version ?? ""} · Greater Toronto
         </T>
       </ScrollView>
     </SafeAreaView>
@@ -199,5 +248,6 @@ const s = StyleSheet.create({
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1, borderColor: color.line, backgroundColor: color.canvas, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
+  favRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   confirm: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: color.coralTint },
 });

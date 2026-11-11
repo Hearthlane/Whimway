@@ -28,6 +28,23 @@ export default function Page() {
         anchors are removed. You may revoke links; deleting a cloud plan removes
         its links.
       </p>
+      <h2>In the Whimway app.</h2>
+      <p>
+        The app keeps your taste profile, plans and feedback on your device.
+        “Near me” asks for your location once, rounds it to about 100 metres and
+        uses it only as the planning area. Usage statistics (for example “plan
+        saved”) are sent only if you allow them, with a random install ID and
+        never your prompts, places or location.
+      </p>
+      <h2>Polls, reactions and community signals.</h2>
+      <p>
+        When you answer a poll, tap 👍/👎 on a plan or stop, or rate an outing,
+        an anonymous vote (a random install ID, a venue type or place ID, and up
+        or down) is stored to learn what people enjoy. Results are only used in
+        aggregate, a venue or category only counts once at least five different
+        people have reacted, and nobody can read individual votes. Re-voting
+        replaces your earlier vote.
+      </p>
       <h2>Usage and deletion.</h2>
       <p>
         Server logs record event names and timestamps, without prompts or

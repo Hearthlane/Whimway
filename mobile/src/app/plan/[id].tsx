@@ -16,6 +16,7 @@ import { FeedbackSheet } from "@/plan/Feedback";
 import { MagicEditSheet } from "@/plan/MagicEdit";
 import { PlanPulse } from "@/plan/PlanPulse";
 import { placeKeys } from "@shared/polls";
+import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
 import { StopCard, TravelConnector } from "@/plan/StopCard";
 import { Badge, Button, Icon, IconButton, Notice, Sheet, T, tap } from "@/ui/kit";
@@ -310,6 +311,21 @@ export default function PlanScreen() {
                     onSelect={() => setSelected(stop.placeId)}
                     onToggleLock={() => toggleLock(i)}
                     onSwap={() => swap(i)}
+                    favourite={store.profile.favourites.some((f) => f.id === stop.placeId)}
+                    onFavourite={() => {
+                      const p = store.profile;
+                      const has = p.favourites.some((f) => f.id === stop.placeId);
+                      const cat = stop.place.category.toLowerCase().slice(0, 60);
+                      store.setProfile({
+                        ...p,
+                        favourites: has
+                          ? p.favourites.filter((f) => f.id !== stop.placeId)
+                          : [{ id: stop.placeId, name: stop.place.name.slice(0, 120), area: nearestArea(stop.place.point)?.key, category: cat }, ...p.favourites].slice(0, 100),
+                        affinity: has ? p.affinity : { ...p.affinity, [cat]: Math.min(3, (p.affinity[cat] ?? 0) + 0.3) },
+                      });
+                      if (!has) store.react("stop", placeKeys(stop.place).map((key) => ({ key, value: 1 as const })));
+                      setToast({ text: has ? `Removed ${stop.place.name} from your places.` : `Saved ${stop.place.name}. Plan around it anytime from You.` });
+                    }}
                     onReact={(value) => {
                       store.react("stop", placeKeys(stop.place).map((key) => ({ key, value })));
                       store.track("stop_reacted", { value });
