@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 const image =
   "postgres:17@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3";
@@ -54,14 +54,18 @@ try {
     new URL("../tests/database/bootstrap.sql", import.meta.url),
     "utf8",
   );
-  const migration = readFileSync(
-    new URL("../supabase/migrations/202610130001_whimway.sql", import.meta.url),
-    "utf8",
-  );
-  const cases = readFileSync(
-    new URL("../tests/database/access.sql", import.meta.url),
-    "utf8",
-  );
+  // Every migration, in filename (timestamp) order, exactly as a fresh project would apply them.
+  const dir = new URL("../supabase/migrations/", import.meta.url);
+  const migration = readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .map((f) => readFileSync(new URL(f, dir), "utf8"))
+    .join("\n");
+  const cases = ["access.sql", "community.sql"]
+    .map((f) =>
+      readFileSync(new URL(`../tests/database/${f}`, import.meta.url), "utf8"),
+    )
+    .join("\n");
   const result = docker(
     [
       "exec",
@@ -79,7 +83,7 @@ try {
     `${bootstrap}\n${migration}\n${cases}`,
   );
   const passes = (result.stderr.match(/PASS:/g) ?? []).length;
-  if (passes < 20)
+  if (passes < 40)
     throw new Error(`Only ${passes} database assertions executed.`);
   console.log(
     `${passes} PostgreSQL authorization assertions passed. No external ports or live Supabase project were used.`,

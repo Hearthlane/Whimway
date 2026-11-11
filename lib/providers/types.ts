@@ -28,5 +28,7 @@ export interface RecommendationProvider {
     locked: { placeId: string; minutes: number; reason: string }[],
     action?: string,
     previousStops?: PlanSpec["stops"],
+    /** Community sentiment per candidate ID in [-1, 1]; a soft tiebreaker only. */
+    crowd?: Record<string, number>,
   ): Promise<Selection>;
 }

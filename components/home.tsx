@@ -128,7 +128,7 @@ export function Home() {
         </div>
         <motion.div
           className="hero-visual"
-          initial={{ opacity: 0, y: reducedMotion ? 0 : 12 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reducedMotion ? 0 : 0.45 }}
         >

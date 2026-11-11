@@ -440,7 +440,9 @@ export function CreatePlan({ currencies }: { currencies: string[] }) {
                 Getting around
                 <select
                   value={mode}
-                  onChange={(e) => setMode(e.target.value as "WALK" | "TRANSIT" | "DRIVE")}
+                  onChange={(e) =>
+                    setMode(e.target.value as "WALK" | "TRANSIT" | "DRIVE")
+                  }
                 >
                   <option value="WALK">Walking</option>
                   <option value="TRANSIT">Transit</option>

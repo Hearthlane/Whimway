@@ -33,6 +33,13 @@ import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { doneSummary } from "@/lib/magic-edit";
 import { Feedback, TasteProfile } from "@/lib/profile";
+import { PollAnswer, SignalBatch, placeKeys, polls } from "@/lib/polls";
+import {
+  crowdSignals,
+  invalidateCrowd,
+  pollSignals,
+  signalStore,
+} from "@/lib/server/signals";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
@@ -164,6 +171,12 @@ async function handleGET(request: Request, ctx: Context) {
         );
       return ok(data);
     }
+    if (path === "polls") {
+      const tallies = await signalStore()
+        .polls()
+        .catch(() => ({}));
+      return ok({ polls, tallies });
+    }
     if (path === "taste") {
       const { db, user } = await requireUser();
       const { data, error } = await db
@@ -223,9 +236,9 @@ async function handlePOST(request: Request, ctx: Context) {
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
       const started = Date.now();
-      const result = await planner(data.request, data.demo).generate(
-        data.request,
-      );
+      const result = await planner(data.request, data.demo)
+        .withCrowd(await crowdSignals())
+        .generate(data.request);
       // Cost-per-plan analytics: latency, provider attempts and AI tokens. No content.
       const stats = providerStats();
       telemetry("plan_generated", {
@@ -269,21 +282,18 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "remix") {
       const data = RemixRequest.parse(input);
-      const result = await planner(data.spec.request, data.spec.demo).generate(
-        data.spec.request,
-        data.spec,
-        data.action,
-      );
+      const result = await planner(data.spec.request, data.spec.demo)
+        .withCrowd(await crowdSignals())
+        .generate(data.spec.request, data.spec, data.action);
       telemetry("plan_remixed");
       return ok(result);
     }
     if (path === "magic-edit") {
       const data = MagicEditRequest.parse(input);
       const started = Date.now();
-      const result = await planner(data.spec.request, data.spec.demo).magicEdit(
-        data.spec,
-        data.instruction,
-      );
+      const result = await planner(data.spec.request, data.spec.demo)
+        .withCrowd(await crowdSignals())
+        .magicEdit(data.spec, data.instruction);
       const stats = providerStats();
       telemetry("magic_edit_applied", {
         kind: result.op.kind,
@@ -328,12 +338,67 @@ async function handlePOST(request: Request, ctx: Context) {
       }
       return ok({ ok: true });
     }
+    if (path === "polls/answer") {
+      const answer = PollAnswer.parse(input);
+      if (!polls.some((p) => p.id === answer.pollId))
+        throw new AppError("NOT_FOUND", "That poll has ended.", 404);
+      const store = signalStore();
+      const tally = await store.answer(
+        answer.pollId,
+        answer.installId,
+        answer.choice,
+      );
+      await store.record({
+        installId: answer.installId,
+        source: "poll",
+        entries: pollSignals(answer.pollId, answer.choice),
+      });
+      invalidateCrowd();
+      telemetry("poll_answered", {
+        poll: answer.pollId,
+        choice: answer.choice,
+      });
+      return ok({ tally });
+    }
+    if (path === "signals") {
+      const batch = SignalBatch.parse(input);
+      await signalStore().record(batch);
+      invalidateCrowd();
+      telemetry("signals_recorded", {
+        source: batch.source,
+        n: batch.entries.length,
+        reason: batch.reason ?? null,
+      });
+      return ok({ recorded: batch.entries.length });
+    }
     if (path === "feedback") {
       const feedback = Feedback.parse(input);
       telemetry("feedback_submitted", {
         went: feedback.went,
         rating: feedback.rating ?? null,
       });
+      // Post-outing reactions are the strongest community signal: did people love it in real life?
+      const installId = z
+        .string()
+        .regex(/^[A-Za-z0-9-]{8,64}$/)
+        .safeParse(input.installId);
+      if (installId.success && feedback.went !== "no" && feedback.stops.length)
+        await signalStore()
+          .record({
+            installId: installId.data,
+            source: "feedback",
+            entries: feedback.stops
+              .flatMap((st) =>
+                placeKeys({
+                  id: st.placeId,
+                  category: st.category,
+                  types: [],
+                }).map((key) => ({ key, value: st.reaction })),
+              )
+              .slice(0, 16),
+          })
+          .then(invalidateCrowd)
+          .catch(() => undefined);
       if (!user) return ok({ stored: "device" });
       const { db } = await requireUser();
       const { error } = await db.from("feedback").upsert(
@@ -364,10 +429,9 @@ async function handlePOST(request: Request, ctx: Context) {
         })
         .parse(input);
       return ok(
-        await planner(data.request, data.demo).explore(
-          data.request,
-          data.query,
-        ),
+        await planner(data.request, data.demo)
+          .withCrowd(await crowdSignals())
+          .explore(data.request, data.query),
       );
     }
     if (path === "place") {

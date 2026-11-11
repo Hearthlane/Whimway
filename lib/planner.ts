@@ -31,11 +31,13 @@ export function costTotal(places: CandidatePlace[]) {
   };
 }
 import { isOutdoor, vibeFit } from "./planner-filters";
+import { crowdFor, type CrowdSignals } from "./crowd";
 export { isOutdoor };
 /** Review-weighted quality nudged by the user's learned category affinity. */
 export function score(
   p: CandidatePlace,
   request?: Partial<Pick<PlanRequest, "affinity" | "vibes" | "budget">>,
+  crowd: CrowdSignals = {},
 ) {
   const affinity = request?.affinity ?? {};
   const taste = Math.max(
@@ -53,8 +55,10 @@ export function score(
     request?.budget !== undefined &&
     p.price.high !== null &&
     p.price.high > request.budget;
+  // Community sentiment nudges (±0.3 max); it never overrides constraints or the user's own taste.
   return (
     quality(p) +
+    crowdFor(p, crowd) * 0.3 +
     taste * 0.15 +
     vibeFit(p, request?.vibes ?? []) * 0.2 -
     (overBudget ? 0.4 : 0)
@@ -319,6 +323,12 @@ export class Planner {
     private ai: RecommendationProvider,
     private demo = false,
   ) {}
+  /** Community signals (what people find fun), loaded by the API before planning. */
+  crowd: CrowdSignals = {};
+  withCrowd(crowd: CrowdSignals) {
+    this.crowd = crowd;
+    return this;
+  }
   // Per-operation memo: one request never pays twice for the same place details.
   private memo = new Map<string, Promise<CandidatePlace>>();
   private details(id: string, currency: string) {
@@ -376,7 +386,9 @@ export class Planner {
         422,
       );
     // Hydrate a bounded shortlist before AI selection, so hours and cost are provider data.
-    candidates.sort((a, b) => score(b, request) - score(a, request));
+    candidates.sort(
+      (a, b) => score(b, request, this.crowd) - score(a, request, this.crowd),
+    );
     const shortlist = diverseShortlist(candidates, lockedPlaces, 12);
     const lockedIdSet = new Set(locked.map((l) => l.placeId));
     candidates = candidatesFor(
@@ -384,7 +396,12 @@ export class Planner {
       await Promise.all(
         shortlist.map((p) => this.details(p.id, request.location.currency)),
       ),
-    ).filter((p) => lockedIdSet.has(p.id) || openDuring(p, request));
+    ).filter(
+      (p) =>
+        lockedIdSet.has(p.id) ||
+        // Strong, well-attested community dislike of this specific venue excludes it.
+        ((this.crowd[`place:${p.id}`] ?? 0) > -0.5 && openDuring(p, request)),
+    );
     if (!candidates.length)
       throw new AppError(
         "NO_SUITABLE_PLACES",
@@ -401,6 +418,9 @@ export class Planner {
           locked,
           action,
           previous?.stops,
+          Object.fromEntries(
+            candidates.map((p) => [p.id, crowdFor(p, this.crowd)]),
+          ),
         ),
       );
       if (!parsed.success)
@@ -568,7 +588,9 @@ export class Planner {
       { ...request, hardBudget: false },
       await this.places.search(request, query),
     );
-    basic.sort((a, b) => score(b, request) - score(a, request));
+    basic.sort(
+      (a, b) => score(b, request, this.crowd) - score(a, request, this.crowd),
+    );
     const detailed = await Promise.all(
       diverseShortlist(basic, [], 10).map((p) =>
         this.details(p.id, request.location.currency),

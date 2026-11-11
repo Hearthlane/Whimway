@@ -73,6 +73,9 @@ export default function Profile() {
               <Chip key={v} icon={vibeCopy[v].icon} label={vibeCopy[v].label} tone="lavender" />
             ))}
           </View>
+          <T v="small" tone={color.muted}>
+            {Object.keys(profile.polls).length} quick poll{Object.keys(profile.polls).length === 1 ? "" : "s"} answered — each one sharpens your plans.
+          </T>
           {loved.length ? (
             <T v="small" tone={color.muted}>
               Learned from your feedback: you love {loved.map(([k]) => k).join(", ")}.

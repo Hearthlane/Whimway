@@ -33,6 +33,7 @@ export function StopCard({
   onToggleLock,
   onSwap,
   onOpenLink,
+  onReact,
 }: {
   plan: Itinerary;
   index: number;
@@ -42,7 +43,14 @@ export function StopCard({
   onToggleLock: () => void;
   onSwap: () => void;
   onOpenLink: (kind: "navigation" | "booking") => void;
+  onReact: (value: 1 | -1) => void;
 }) {
+  const [reaction, setReaction] = useState<1 | -1 | null>(null);
+  const reactTo = (value: 1 | -1) => {
+    tap(value === 1 ? "success" : "select");
+    setReaction(value);
+    onReact(value);
+  };
   const stop = plan.stops[index];
   const [open, setOpen] = useState(false);
   const zone = plan.request.location.timezone;
@@ -134,6 +142,17 @@ export function StopCard({
             <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
             {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
           </View>
+          <View style={s.reactRow}>
+            <T v="small" tone={color.muted} style={{ flex: 1 }}>
+              {reaction === 1 ? "You’re into it — noted." : reaction === -1 ? "Not for you — we’ll skip it." : "Into this one?"}
+            </T>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Into ${stop.place.name}`} accessibilityState={{ selected: reaction === 1 }} onPress={() => reactTo(1)} style={[s.thumb, reaction === 1 && { backgroundColor: color.mint }]} testID={`react-up-${index + 1}`}>
+              <Icon name="thumbs-up" size={16} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Not for us: ${stop.place.name}`} accessibilityState={{ selected: reaction === -1 }} onPress={() => reactTo(-1)} style={[s.thumb, reaction === -1 && { backgroundColor: color.coralTint }]} testID={`react-down-${index + 1}`}>
+              <Icon name="thumbs-down" size={16} />
+            </Pressable>
+          </View>
         </Animated.View>
       ) : null}
     </Animated.View>
@@ -181,6 +200,8 @@ const s = StyleSheet.create({
   fact: { flexDirection: "row", gap: space.sm, alignItems: "flex-start" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.sm },
   action: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: space.md, borderRadius: radius.pill, borderWidth: 1, borderColor: color.line, backgroundColor: color.canvas },
+  reactRow: { flexDirection: "row", alignItems: "center", gap: space.sm, marginTop: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: color.line },
+  thumb: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: color.line, alignItems: "center", justifyContent: "center", backgroundColor: color.paper },
   connector: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingLeft: 26, minHeight: 44 },
   dash: { position: "absolute", left: 30, top: 0, bottom: 0, width: 2, backgroundColor: color.line },
   travelPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: color.canvas, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, marginLeft: 20 },

@@ -17,5 +17,8 @@ export const eventNames = [
   "booking_link_opened",
   "feedback_submitted",
   "app_opened",
+  "poll_answered",
+  "plan_pulse",
+  "stop_reacted",
 ] as const;
 export type EventName = (typeof eventNames)[number];

@@ -320,7 +320,7 @@ export function Profile() {
                 }
               >
                 <option value="WALK">Walking</option>
-                  <option value="TRANSIT">Transit</option>
+                <option value="TRANSIT">Transit</option>
                 <option value="DRIVE">Driving</option>
               </select>
             </label>

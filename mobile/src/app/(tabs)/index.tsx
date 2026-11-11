@@ -8,6 +8,7 @@ import { areaByKey, areas, defaultRadius } from "@shared/areas";
 import { buildRequest, describe, interpret } from "@shared/intent";
 import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
 import { useStore } from "@/lib/store";
+import { PollCard } from "@/plan/PollCard";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Card, Chip, Icon, IconButton, Notice, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
@@ -163,6 +164,8 @@ export default function PlanHome() {
         ) : demo ? (
           <Notice icon="info">Demo mode: real GTA places, but hours, prices and travel times are estimates. Connect live data before trusting a plan.</Notice>
         ) : null}
+
+        <PollCard />
 
         <T v="heading" style={s.section}>
           Need a spark?

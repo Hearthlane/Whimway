@@ -14,6 +14,8 @@ import { modeCopy, money } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { FeedbackSheet } from "@/plan/Feedback";
 import { MagicEditSheet } from "@/plan/MagicEdit";
+import { PlanPulse } from "@/plan/PlanPulse";
+import { placeKeys } from "@shared/polls";
 import { RouteMap } from "@/plan/RouteMap";
 import { StopCard, TravelConnector } from "@/plan/StopCard";
 import { Badge, Button, Icon, IconButton, Notice, Sheet, T, tap } from "@/ui/kit";
@@ -42,7 +44,7 @@ export default function PlanScreen() {
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState("");
   const [changed, setChanged] = useState<string[]>([]);
-  const [toast, setToast] = useState<{ text: string; undo?: Itinerary } | null>(null);
+  const [toast, setToast] = useState<{ text: string; undo?: Itinerary; swapIndex?: number } | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [sharing, setSharing] = useState(false);
@@ -283,6 +285,8 @@ export default function PlanScreen() {
         <View style={s.content}>
           <RouteMap plan={plan} selected={selected} onSelect={setSelected} />
 
+          <PlanPulse key={`${plan.id}-${plan.revision}`} plan={plan} onFix={(instruction) => void magicEdit(instruction)} />
+
           {plan.cost.unknown || plan.cost.high > plan.request.budget ? (
             <Notice icon="credit-card">
               {plan.cost.high > plan.request.budget ? `Top of the range is above your ${money(plan.request.budget)}/person budget. Try “make it cheaper”. ` : ""}
@@ -304,6 +308,15 @@ export default function PlanScreen() {
                     onSelect={() => setSelected(stop.placeId)}
                     onToggleLock={() => toggleLock(i)}
                     onSwap={() => swap(i)}
+                    onReact={(value) => {
+                      store.react("stop", placeKeys(stop.place).map((key) => ({ key, value })));
+                      store.track("stop_reacted", { value });
+                      if (value === -1) {
+                        // Never suggest this exact place to this user again, and offer a swap now.
+                        store.setProfile({ ...store.profile, disliked: [...new Set([...store.profile.disliked, stop.placeId])].slice(-100) });
+                        setToast({ text: `Got it — we’ll skip ${stop.place.name} from now on.`, swapIndex: i });
+                      } else setToast({ text: `Noted — more places like ${stop.place.name}.` });
+                    }}
                     onOpenLink={(kind) => store.track(kind === "booking" ? "booking_link_opened" : "navigation_opened", { scope: "stop" })}
                   />
                 </View>
@@ -349,6 +362,21 @@ export default function PlanScreen() {
           <T v="small" tone={color.paper} style={{ flex: 1 }}>
             {toast.text}
           </T>
+          {toast.swapIndex !== undefined ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                const i = toast.swapIndex!;
+                setToast(null);
+                swap(i);
+              }}
+              hitSlop={10}
+            >
+              <T v="smallStrong" tone={color.coral}>
+                Swap it
+              </T>
+            </Pressable>
+          ) : null}
           {toast.undo ? (
             <Pressable
               accessibilityRole="button"

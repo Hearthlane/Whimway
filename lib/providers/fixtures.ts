@@ -167,9 +167,10 @@ export class FixtureAI implements RecommendationProvider {
     locked: { placeId: string; minutes: number; reason: string }[],
     action?: string,
     previousStops?: { placeId: string }[],
+    crowd: Record<string, number> = {},
   ): Promise<Selection> {
     if (candidates.some((p) => p.id.startsWith("gta-")))
-      return demoSelect(req, candidates, locked, action, previousStops);
+      return demoSelect(req, candidates, locked, action, previousStops, crowd);
     const available = candidates.filter(
       (p) => !locked.some((l) => l.placeId === p.id),
     );

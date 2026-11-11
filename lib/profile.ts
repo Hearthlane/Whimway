@@ -30,6 +30,11 @@ export const TasteProfile = z.object({
     .array(z.object({ id: z.string().max(250), name: z.string().max(120) }))
     .max(100)
     .default([]),
+  /** Poll answers by poll id (one-tap "this or that" questions). */
+  polls: z
+    .record(z.string().max(40), z.enum(["a", "b"]))
+    .refine((v) => Object.keys(v).length <= 60)
+    .default({}),
   /** Product analytics consent. Off until the user agrees. */
   analytics: z.boolean().default(false),
 });

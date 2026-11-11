@@ -693,6 +693,7 @@ export function demoSelect(
   locked: { placeId: string; minutes: number; reason: string }[],
   action?: string,
   previousStops?: { placeId: string }[],
+  crowd: Record<string, number> = {},
 ): Selection {
   const lockedIds = new Set(locked.map((l) => l.placeId));
   const previous = new Set((previousStops ?? []).map((s) => s.placeId));
@@ -708,7 +709,10 @@ export function demoSelect(
     .filter((p) => !lockedIds.has(p.id) && !(action && previous.has(p.id)))
     .sort(
       (a, b) =>
-        relevance(b, req, action, near) - relevance(a, req, action, near),
+        relevance(b, req, action, near) +
+        (crowd[b.id] ?? 0) * 2 -
+        relevance(a, req, action, near) -
+        (crowd[a.id] ?? 0) * 2,
     );
   const evening = Number(req.startTime.slice(0, 2)) >= 16;
   const target = action?.startsWith("Add")
