@@ -40,6 +40,8 @@ const ordinals: [RegExp, (n: number) => number][] = [
   [/\b(second|2nd|stop (?:two|2))\b/, () => 1],
   [/\b(third|3rd|stop (?:three|3))\b/, () => 2],
   [/\b(fourth|4th|stop (?:four|4))\b/, () => 3],
+  [/\b(fifth|5th|stop (?:five|5))\b/, () => 4],
+  [/\b(sixth|6th|stop (?:six|6))\b/, () => 5],
   [/\b(last|final|end|closing|last one)\b/, (n) => n - 1],
   [/\bmiddle\b/, (n) => Math.floor((n - 1) / 2)],
 ];
@@ -309,4 +311,21 @@ export function interpretEdit(
     patch,
     summary: `Reworking ${names(targets)}${withWhat ? ` → ${withWhat}` : newVibes.length ? ` to feel more ${newVibes.join(" & ")}` : ""}; keeping ${n - targets.length ? `the other ${n - targets.length}` : "your constraints"}.${lockedNote}`,
   };
+}
+
+/** The preview summary, rephrased for after the change has been applied. */
+export function doneSummary(summary: string) {
+  return summary
+    .replace(/^Reworking/, "Reworked")
+    .replace(/^Swapping/, "Swapped")
+    .replace(/^Removing/, "Removed")
+    .replace(/^Adding/, "Added")
+    .replace(/^Moving/, "Moved")
+    .replace(/^Replacing/, "Replaced")
+    .replace(/^Ending earlier by dropping/, "Ended earlier by dropping")
+    .replace(/; keeping /, "; kept ")
+    .replace(/everything else stays/, "everything else stayed")
+    .replace(/the rest stays/, "the rest stayed")
+    .replace(/your current stops stay/, "your current stops stayed")
+    .replace(/per-person budget lowered/, "per-person budget now");
 }

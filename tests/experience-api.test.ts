@@ -97,8 +97,9 @@ describe("Magic edit endpoint", () => {
     expect(body.changed).toHaveLength(1);
     expect(body.summary).toMatch(/stop/);
     expect(
-      body.plan.stops.slice(0, 2).map((s: { placeId: string }) => s.placeId),
-    ).toEqual(plan.stops.slice(0, 2).map((s) => s.placeId));
+      body.plan.stops.slice(0, -1).map((s: { placeId: string }) => s.placeId),
+    ).toEqual(plan.stops.slice(0, -1).map((s) => s.placeId));
+    expect(body.done).toMatch(/^(Reworked|Swapped|Replaced)/);
   });
   it("explains a no-op instead of inventing a change", async () => {
     const plan = (await (

@@ -31,6 +31,7 @@ import { withProviderContext } from "@/lib/server/provider-context";
 import { publicSpec, persistSpec } from "@/lib/storage";
 import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
+import { doneSummary } from "@/lib/magic-edit";
 import { Feedback, TasteProfile } from "@/lib/profile";
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -294,6 +295,7 @@ async function handlePOST(request: Request, ctx: Context) {
         plan: result.plan,
         changed: result.changed,
         summary: result.op.summary,
+        done: doneSummary(result.op.summary),
         kind: result.op.kind,
       });
     }

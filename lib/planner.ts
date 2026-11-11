@@ -35,7 +35,7 @@ export { isOutdoor };
 /** Review-weighted quality nudged by the user's learned category affinity. */
 export function score(
   p: CandidatePlace,
-  request?: Partial<Pick<PlanRequest, "affinity" | "vibes">>,
+  request?: Partial<Pick<PlanRequest, "affinity" | "vibes" | "budget">>,
 ) {
   const affinity = request?.affinity ?? {};
   const taste = Math.max(
@@ -48,7 +48,17 @@ export function score(
       ),
     ),
   );
-  return quality(p) + taste * 0.15 + vibeFit(p, request?.vibes ?? []) * 0.2;
+  // A single venue that alone exceeds the per-person budget is a poor shortlist pick.
+  const overBudget =
+    request?.budget !== undefined &&
+    p.price.high !== null &&
+    p.price.high > request.budget;
+  return (
+    quality(p) +
+    taste * 0.15 +
+    vibeFit(p, request?.vibes ?? []) * 0.2 -
+    (overBudget ? 0.4 : 0)
+  );
 }
 /**
  * True unless known hours show the place closed for every 30-minute slot of the

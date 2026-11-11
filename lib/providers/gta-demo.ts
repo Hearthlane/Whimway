@@ -699,11 +699,17 @@ export function demoSelect(
   const chosen: CandidatePlace[] = [];
   const lockedPlaces = candidates.filter((p) => lockedIds.has(p.id));
   let meals = lockedPlaces.filter(isMeal).length;
+  // Stay within the per-person budget across the whole outing (published upper range).
+  // Free places always fit; unknown prices count as the whole budget.
+  let spent = lockedPlaces.reduce((n, p) => n + (p.price.high ?? 0), 0);
+  const cost = (p: CandidatePlace) => p.price.high ?? req.budget;
   for (const p of pool) {
     if (chosen.length + locked.length >= target) break;
+    if (cost(p) > 0 && spent + cost(p) > req.budget * 1.1 && chosen.length + locked.length >= 1) continue;
     if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
     if (chosen.some((c) => c.category === p.category)) continue;
     if (isMeal(p)) meals++;
+    spent += cost(p);
     chosen.push(p);
   }
   // Natural arc: activity → meal → dessert/drinks.
