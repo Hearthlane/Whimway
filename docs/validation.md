@@ -1,5 +1,22 @@
 # Validation record
 
+## Experience companion phase (Nov 2026)
+
+| Check | Outcome |
+| --- | --- |
+| Root typecheck, ESLint | Passed |
+| App typecheck (`mobile/`) | Passed |
+| Vitest | 121 passed across 8 files (intent, Magic Edit, personalization, community signals, polls, GTA demo planning, native-client API, share links) |
+| Playwright (web) | 15 journeys passed, including the account-free share link; accessibility check now audits with reduced motion |
+| App journey (Expo web build in mobile Chromium) | Onboarding → poll → prompt → plan → Plan Pulse → stop reaction → Magic Edit → save → share → feedback → recipient opens link: all assertions passed, zero browser errors |
+| Database | All three migrations + 47 authorization assertions passed on local PostgreSQL 16 (Docker was unavailable; same SQL as `npm run test:db`) |
+| Production build | `next build` passed |
+| Dependency audit | 0 production vulnerabilities after upgrading Next.js to 16.4.6 |
+
+Not verified: physical iOS/Android devices, native map rendering, live Google/OpenAI responses, hosted Supabase auth/email delivery.
+
+## Original build
+
 The supplied repository was empty. Whimway was implemented and checked on this cloud machine with Node 24.19.0, npm 11.9.0 and Chromium.
 
 | Check                                     | Outcome                                                                                                |
