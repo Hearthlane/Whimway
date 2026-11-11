@@ -20,6 +20,7 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   const t0 = Date.now();
   await p.goto(`${base}/`, { waitUntil: 'networkidle' });
   await p.getByTestId('onboarding-next').waitFor();
+  await p.waitForTimeout(2600);
   await shot(p, '01-welcome');
   await p.getByTestId('onboarding-next').click();
   await p.getByTestId('who-partner').click();
@@ -33,6 +34,10 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await p.getByTestId('area-queen-west').click();
   await p.getByTestId('onboarding-next').click();
   await p.getByLabel('What should we call you?').fill('Sam').catch(() => {});
+  await p.getByTestId('onboarding-next').click();
+  await p.waitForTimeout(1400);
+  const personaName = await p.getByTestId('persona').innerText();
+  await shot(p, '03b-reveal');
   await p.getByTestId('onboarding-next').click();
   await p.getByTestId('prompt-input').waitFor();
   const onboardMs = Date.now() - t0;
@@ -84,7 +89,7 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   const stopsAfter = await p.locator('[data-testid^="stop-"]').allInnerTexts();
   await shot(p, '12-after-edit');
   // Favourite the first stop (its card is still expanded from the reaction step).
-  const favName = (await p.getByTestId('stop-1').innerText()).split('\n').filter(Boolean)[2];
+  const favName = (await p.getByTestId('stop-1').innerText()).split('\n').filter(Boolean)[3];
   await p.getByTestId('stop-1').getByRole('button', { name: 'Save place' }).click();
   await p.getByLabel('Save plan').click();
   await p.waitForTimeout(300);
@@ -132,7 +137,7 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await r.waitForTimeout(2500);
   await r.screenshot({ path: `${out}/17-recipient.png` });
   const recipientTitle = (await r.locator('h1').first().innerText().catch(() => '')).slice(0, 80);
-  const summarize = a => a.map(s => s.split('\n').filter(Boolean).slice(0, 3).join(' | '));
+  const summarize = a => a.map(s => s.split('\n').filter(Boolean).slice(0, 4).join(' | '));
   // Assertions: the core journey must hold end to end.
   assert.deepEqual(errors, [], "browser errors");
   assert.ok(chips.some((c) => c.includes("$100 total · $50/person")), "budget understood");
@@ -148,6 +153,7 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   assert.equal(recipientTitle, title, "recipient sees the plan");
   for (const call of ["POST /api/polls/answer 200", "POST /api/signals 200", "POST /api/magic-edit 200", "POST /api/feedback 200"])
     assert.ok(apiCalls.includes(call), call);
-  console.log(JSON.stringify({ favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
+  assert.equal(personaName, 'Romantic Adventurer', 'personality reveal');
+  console.log(JSON.stringify({ personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
   await b.close();
 })().catch(e => { console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });

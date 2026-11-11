@@ -15,9 +15,33 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+import Animated, { FadeIn, SlideInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { color, font, radius, shadow, space, touch, type } from "./theme";
+import { color, font, motion, radius, shadow, space, touch, type } from "./theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+type PressProps = Omit<React.ComponentProps<typeof Pressable>, "style"> & { style?: StyleProp<ViewStyle>; scaleTo?: number };
+/** Pressable with a springy scale: every tappable surface answers the finger. */
+export function Press({ style, scaleTo = 0.96, onPressIn, onPressOut, disabled, ...rest }: PressProps) {
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <AnimatedPressable
+      {...rest}
+      disabled={disabled}
+      onPressIn={(e) => {
+        scale.value = withSpring(scaleTo, motion.spring);
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        scale.value = withSpring(1, motion.spring);
+        onPressOut?.(e);
+      }}
+      style={[style, animated]}
+    />
+  );
+}
 
 export type IconName = ComponentProps<typeof Feather>["name"];
 export function Icon({ name, size = 18, tint = color.ink }: { name: IconName; size?: number; tint?: string }) {
@@ -64,21 +88,22 @@ export function Button({
     soft: { bg: color.paper, fg: color.ink, border: color.line },
   }[kind];
   return (
-    <Pressable
+    <Press
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
+      scaleTo={0.97}
       onPress={() => {
         tap();
         onPress?.();
       }}
-      style={({ pressed }) => [
+      style={[
         styles.button,
         size === "lg" && { minHeight: 58, paddingHorizontal: space.xl },
         { backgroundColor: palette.bg, borderColor: palette.border, opacity: disabled ? 0.45 : 1 },
-        pressed && { transform: [{ scale: 0.98 }], opacity: 0.92 },
+        kind === "primary" && !disabled && styles.buttonGlow,
         style,
       ]}
     >
@@ -92,25 +117,26 @@ export function Button({
           {icon ? <Icon name={icon} size={size === "lg" ? 19 : 16} tint={palette.fg} /> : null}
         </>
       )}
-    </Pressable>
+    </Press>
   );
 }
 
 export function IconButton({ icon, label, onPress, active, tint }: { icon: IconName; label: string; onPress: () => void; active?: boolean; tint?: string }) {
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
+      scaleTo={0.9}
       onPress={() => {
         tap("select");
         onPress();
       }}
       hitSlop={6}
-      style={({ pressed }) => [styles.iconButton, active && { backgroundColor: color.ink, borderColor: color.ink }, pressed && { opacity: 0.7 }]}
+      style={[styles.iconButton, active && { backgroundColor: color.ink, borderColor: color.ink }]}
     >
       <Icon name={icon} size={17} tint={active ? color.paper : tint ?? color.ink} />
-    </Pressable>
+    </Press>
   );
 }
 
@@ -141,19 +167,20 @@ export function Chip({
   const base = [styles.chip, { backgroundColor: selected ? color.ink : tints[tone], borderColor: selected ? color.ink : color.line }];
   if (!onPress) return <View style={base}>{content}</View>;
   return (
-    <Pressable
+    <Press
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
+      scaleTo={0.94}
       onPress={() => {
         tap("select");
         onPress();
       }}
-      style={({ pressed }) => [...base, pressed && { opacity: 0.75 }]}
+      style={base}
     >
       {content}
-    </Pressable>
+    </Press>
   );
 }
 
@@ -177,11 +204,10 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
 /** Bottom sheet built on Modal: native slide on iOS/Android, fade on web. */
 export function Sheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
-  return (
-    <Modal visible={open} transparent animationType={Platform.OS === "web" ? "fade" : "slide"} onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.scrim}>
+  const content = (
+      <Animated.View entering={FadeIn.duration(motion.quick)} style={styles.scrim}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
+        <Animated.View entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
           <View style={styles.grabber} />
           <View style={styles.sheetHeader}>
             <T v="heading" style={{ flex: 1 }} accessibilityRole="header">
@@ -193,8 +219,14 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
             {children}
           </ScrollView>
           {footer}
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
+  );
+  // Web: an in-screen overlay, so sheets stay inside the app frame on desktop browsers.
+  if (Platform.OS === "web") return open ? <View style={[StyleSheet.absoluteFill, { zIndex: 50 }]}>{content}</View> : null;
+  return (
+    <Modal visible={open} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      {content}
     </Modal>
   );
 }
@@ -250,6 +282,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     gap: space.sm,
   },
+  buttonGlow: { shadowColor: color.coral, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   iconButton: {
     width: touch,
     height: touch,
@@ -279,7 +312,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     width: "100%",
-    maxWidth: 640,
+    maxWidth: 430,
     alignSelf: "center",
   },
   grabber: { width: 40, height: 5, borderRadius: 3, backgroundColor: color.line, alignSelf: "center", marginBottom: space.sm },

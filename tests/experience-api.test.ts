@@ -239,3 +239,27 @@ describe("Crash reports and anchors", () => {
     expect(decodeShare(encodeShare(plan)).request.anchorPlaceIds).toEqual([]);
   });
 });
+
+describe("Rate-limit buckets", () => {
+  it("analytics and reactions never use up the allowance for saves and edits", async () => {
+    for (let i = 0; i < 60; i++)
+      expect(
+        (
+          await call(
+            "events",
+            { name: "app_opened", installId: "bucket-test-1" },
+            app,
+          )
+        ).status,
+      ).toBe(200);
+    const plan = (await (
+      await call("generate", { request: req(), demo: true }, app)
+    ).json()) as Itinerary;
+    const edit = await call(
+      "magic-edit",
+      { spec: plan, instruction: "Change the last stop" },
+      app,
+    );
+    expect(edit.status).toBe(200);
+  });
+});

@@ -2,8 +2,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { Linking, Platform, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native";
+import Animated, { FadeInDown, FadeOut, SlideInDown } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { navigationUrl } from "@shared/navigation";
 import { PlanSpec, toSpec, type Itinerary } from "@shared/schema";
@@ -18,11 +18,11 @@ import { PlanPulse } from "@/plan/PlanPulse";
 import { placeKeys } from "@shared/polls";
 import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
-import { StopCard, TravelConnector } from "@/plan/StopCard";
+import { Generating, stages } from "@/plan/Generating";
+import { StopCard } from "@/plan/StopCard";
 import { Badge, Button, Icon, IconButton, Notice, Sheet, T, tap } from "@/ui/kit";
 import { color, radius, shadow, space } from "@/ui/theme";
 
-const stages = ["Reading the vibe…", "Finding real places nearby…", "Checking opening hours…", "Mapping routes between stops…", "Putting it all together…"];
 const friendly: Record<string, string> = {
   NO_SUITABLE_PLACES: "Nothing fit all of that",
   RATE_LIMIT: "You’ve planned a lot today",
@@ -68,9 +68,11 @@ export default function PlanScreen() {
     setError(null);
     setStage(0);
     started.current = Date.now();
-    const timer = setInterval(() => setStage((s) => Math.min(stages.length - 1, s + 1)), 2200);
+    // Demo answers instantly; hold the route animation briefly so the moment reads. Live data sets its own pace.
+    const timer = setInterval(() => setStage((s) => Math.min(stages.length - 1, s + 1)), store.demo ? 520 : 3500);
+    const minimum = new Promise((resolve) => setTimeout(resolve, store.demo ? 2500 : 0));
     try {
-      const result = await api<Itinerary>("generate", { request, demo: store.demo });
+      const [result] = await Promise.all([api<Itinerary>("generate", { request, demo: store.demo }), minimum]);
       store.remember(result);
       store.track("plan_generated", { ms: Date.now() - started.current, stops: result.stops.length, demo: result.demo, mode: result.request.mode });
       tap("success");
@@ -227,23 +229,8 @@ export default function PlanScreen() {
     );
   if (!plan)
     return (
-      <SafeAreaView style={s.center} testID="generating">
-        <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: "center", gap: space.lg }}>
-          <View style={s.orb}>
-            <ActivityIndicator color={color.ink} />
-          </View>
-          <T v="title" accessibilityLiveRegion="polite">
-            {id === "new" ? stages[stage] : "Refreshing live details…"}
-          </T>
-          <View style={s.stageRow}>
-            {stages.map((_, i) => (
-              <View key={i} style={[s.stageDot, i <= stage && { backgroundColor: color.coral }]} />
-            ))}
-          </View>
-          <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
-            Real places, checked against your time, budget and travel.
-          </T>
-        </Animated.View>
+      <SafeAreaView style={s.center}>
+        <Generating stage={stage} refreshing={id !== "new"} />
       </SafeAreaView>
     );
 
@@ -268,7 +255,7 @@ export default function PlanScreen() {
           </View>
           <Animated.View entering={FadeInDown.duration(420)}>
             <T v="eyebrow" tone={color.mint} style={{ marginTop: space.lg }}>
-              {start.isValid ? start.toFormat("cccc, LLL d") : plan.request.date} · {plan.request.location.name}
+              {start.isValid ? start.toFormat("cccc d LLLL") : plan.request.date} in {plan.request.location.name}
             </T>
             <T v="hero" tone={color.paper} style={{ marginTop: space.sm }} testID="plan-title" accessibilityRole="header">
               {plan.title}
@@ -277,11 +264,16 @@ export default function PlanScreen() {
               {plan.summary}
             </T>
           </Animated.View>
-          <View style={s.stats}>
-            <Stat icon="clock" label={start.isValid ? `${start.toFormat("h:mm")}–${end.toFormat("h:mm a")}` : "—"} />
-            <Stat icon="credit-card" label={`${perPerson}${plan.cost.high ? " pp" : ""}`} sub={plan.request.budgetBasis === "total" && plan.cost.high ? `≈ ${money(plan.cost.high * people)} for ${people}` : undefined} />
-            <Stat icon="map-pin" label={`${plan.stops.length} stops`} sub={`${modeCopy[plan.request.mode].label} · ${(plan.totalMeters / 1000).toFixed(1)} km`} />
-          </View>
+          <Animated.View entering={FadeInDown.delay(80).duration(420)} style={s.stats}>
+            <Stat value={start.isValid ? start.toFormat("h:mm a") : "—"} label={end.isValid ? `until ${end.toFormat("h:mm a")}` : ""} />
+            <View style={s.statRule} />
+            <Stat
+              value={plan.cost.high === 0 ? "Free" : perPerson}
+              label={plan.cost.high === 0 ? "nothing to pay" : plan.request.budgetBasis === "total" ? `each, about ${money(plan.cost.high * people)} for ${people}` : "each"}
+            />
+            <View style={s.statRule} />
+            <Stat value={`${plan.stops.length} ${plan.stops.length === 1 ? "stop" : "stops"}`} label={`${(plan.totalMeters / 1000).toFixed(1)} km ${modeCopy[plan.request.mode].label.toLowerCase()}`} />
+          </Animated.View>
           </View>
         </LinearGradient>
 
@@ -299,11 +291,12 @@ export default function PlanScreen() {
 
           <View>
             {plan.stops.map((stop, i) => {
-              const leg = plan.legs.find((l) => l.to === stop.placeId);
+              const next = plan.stops[i + 1];
+              const leg = next ? plan.legs.find((l) => l.to === next.placeId) : undefined;
               return (
                 <View key={stop.placeId}>
-                  {i > 0 ? <TravelConnector minutes={stop.travel} meters={leg?.meters} mode={plan.request.mode} verified={Boolean(leg?.verified)} /> : null}
                   <StopCard
+                    nextLeg={next ? { minutes: next.travel, meters: leg?.meters, verified: Boolean(leg?.verified) } : undefined}
                     plan={plan}
                     index={i}
                     selected={selected === stop.placeId}
@@ -375,7 +368,7 @@ export default function PlanScreen() {
       </ScrollView>
 
       {toast ? (
-        <Animated.View entering={FadeInDown.duration(250)} style={[s.toast, { bottom: 96 + insets.bottom }]} accessibilityLiveRegion="polite">
+        <Animated.View entering={SlideInDown.duration(260)} exiting={FadeOut.duration(160)} style={[s.toast, { bottom: 96 + insets.bottom }]} accessibilityLiveRegion="polite">
           <Icon name="star" size={16} tint={color.coral} />
           <T v="small" tone={color.paper} style={{ flex: 1 }}>
             {toast.text}
@@ -443,18 +436,15 @@ export default function PlanScreen() {
   );
 }
 
-function Stat({ icon, label, sub }: { icon: Parameters<typeof Icon>[0]["name"]; label: string; sub?: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={s.stat}>
-      <Icon name={icon} size={15} tint={color.mint} />
-      <T v="bodyStrong" tone={color.paper} style={{ marginTop: 6 }}>
+      <T v="heading" tone={color.paper} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {value}
+      </T>
+      <T v="small" tone="#AEB9C0" style={{ fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
         {label}
       </T>
-      {sub ? (
-        <T v="small" tone="#AEB9C0" style={{ fontSize: 12 }}>
-          {sub}
-        </T>
-      ) : null}
     </View>
   );
 }
@@ -469,8 +459,9 @@ const s = StyleSheet.create({
   heroInner: { width: "100%", maxWidth: 720 },
   heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   heroBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
-  stats: { flexDirection: "row", gap: space.sm, marginTop: space.xl },
-  stat: { flex: 1, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.md, padding: space.md },
+  stats: { flexDirection: "row", marginTop: space.xl, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.lg, paddingVertical: space.md },
+  stat: { flex: 1, paddingHorizontal: space.md, gap: 2 },
+  statRule: { width: 1, backgroundColor: "rgba(255,255,255,0.14)" },
   content: { padding: space.lg, gap: space.lg, maxWidth: 720, width: "100%", alignSelf: "center" },
   goodToKnow: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   feedback: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },

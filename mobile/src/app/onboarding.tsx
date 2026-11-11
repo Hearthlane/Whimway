@@ -1,15 +1,16 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { StopArt } from "@/plan/StopArt";
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areas } from "@shared/areas";
 import type { TasteProfile } from "@shared/profile";
 import { companions as companionKeys, interests as interestKeys, vibes as vibeKeys } from "@shared/schema";
 import { useStore } from "@/lib/store";
 import { companionCopy, interestCopy, modeCopy, vibeCopy } from "@/lib/copy";
-import { Button, Chip, Icon, T, tap, Wordmark, type IconName } from "@/ui/kit";
-import { color, font, radius, shadow, space } from "@/ui/theme";
+import { Button, Chip, Icon, Press, Spark, T, tap, Wordmark, type IconName } from "@/ui/kit";
+import { color, font, motion, radius, shadow, space } from "@/ui/theme";
 
 const budgets = [
   { value: 20, label: "Under $25", hint: "Free stuff, cheap eats" },
@@ -17,11 +18,74 @@ const budgets = [
   { value: 80, label: "$60–100", hint: "Treat yourselves" },
   { value: 150, label: "$100+", hint: "Go big sometimes" },
 ];
-const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details"] as const;
+const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "reveal"] as const;
+
+// Personality reveal: first vibe gives the adjective, second the noun.
+const adjective: Record<string, string> = { romantic: "Romantic", adventurous: "Bold", cozy: "Cozy", cinematic: "Cinematic", chill: "Easygoing", lively: "Lively", artsy: "Artsy", foodie: "Hungry", outdoorsy: "Fresh-Air", playful: "Playful" };
+const noun: Record<string, string> = { romantic: "Romantic", adventurous: "Adventurer", cozy: "Nester", cinematic: "Scene-Seeker", chill: "Wanderer", lively: "Night Owl", artsy: "Aesthete", foodie: "Taster", outdoorsy: "Rambler", playful: "Game-Starter" };
+export function persona(vibes: string[]) {
+  if (!vibes.length) return "Open-Minded Explorer";
+  if (vibes.length === 1) return `The ${noun[vibes[0]]}`;
+  return `${adjective[vibes[0]]} ${noun[vibes[1]]}`;
+}
+function starterPrompt(p: TasteProfile) {
+  const mood = p.vibes.slice(0, 2).join(" and ") || "memorable";
+  const who = { partner: "with my partner", friends: "with friends", solo: "just for me", family: "with the family" }[p.companions];
+  return `A ${mood} night ${who} this Saturday`;
+}
+
+/** Welcome hero: the product in miniature. A sentence goes in, a night comes out. */
+function MiniDemo() {
+  const stops = [
+    { time: "7:00", name: "Sunset walk", place: { category: "park", types: ["park"] } },
+    { time: "8:15", name: "Dinner for two", place: { category: "restaurant", types: ["restaurant"] } },
+    { time: "9:45", name: "Something sweet", place: { category: "dessert", types: ["ice_cream_shop"] } },
+  ];
+  return (
+    <View style={s.demo} accessibilityLabel="Example: a sentence becomes a three-stop plan" accessible>
+      <Animated.View entering={FadeInDown.delay(250).duration(motion.slow)} style={s.bubble}>
+        <T v="body" tone={color.paper}>
+          “Romantic night, $100, not too far”
+        </T>
+      </Animated.View>
+      <Animated.View entering={ZoomIn.delay(900).duration(motion.standard)} style={s.demoSpark}>
+        <Spark size={30} />
+      </Animated.View>
+      <View style={s.demoStops}>
+        {stops.map((st, i) => (
+          <Animated.View key={st.name} entering={FadeInUp.delay(1250 + i * 220).duration(motion.slow)} style={s.demoStop}>
+            <StopArt place={st.place} height={62} />
+            <View style={{ padding: 8 }}>
+              <T v="smallStrong" style={{ fontSize: 11, lineHeight: 14 }} tone={color.coralText}>
+                {st.time}
+              </T>
+              <T v="smallStrong" style={{ fontSize: 12, lineHeight: 15 }} numberOfLines={2}>
+                {st.name}
+              </T>
+            </View>
+          </Animated.View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ProgressBar({ value }: { value: number }) {
+  const w = useSharedValue(value);
+  useEffect(() => {
+    w.value = withTiming(value, { duration: motion.standard });
+  }, [value, w]);
+  const fill = useAnimatedStyle(() => ({ width: `${w.value * 100}%` }));
+  return (
+    <View style={s.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
+      <Animated.View style={[s.progressFill, fill]} />
+    </View>
+  );
+}
 
 function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconName; label: string; hint?: string; selected: boolean; onPress: () => void; testID?: string }) {
   return (
-    <Pressable
+    <Press
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected }}
@@ -30,7 +94,7 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
         tap("select");
         onPress();
       }}
-      style={({ pressed }) => [s.tile, selected && s.tileOn, pressed && { transform: [{ scale: 0.98 }] }]}
+      style={[s.tile, selected && s.tileOn]}
     >
       {icon ? (
         <View style={[s.tileIcon, selected && { backgroundColor: color.coral }]}>
@@ -46,11 +110,11 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
         </T>
       ) : null}
       {selected ? (
-        <View style={s.check}>
+        <Animated.View entering={ZoomIn.springify().damping(12)} style={s.check}>
           <Icon name="check" size={13} tint={color.ink} />
-        </View>
+        </Animated.View>
       ) : null}
-    </Pressable>
+    </Press>
   );
 }
 
@@ -73,9 +137,10 @@ export default function Onboarding() {
     setProfile({ ...draft, onboarded: true });
     track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: steps[step] });
     tap("success");
-    router.replace("/");
+    router.replace(skipped ? "/" : { pathname: "/", params: { starter: starterPrompt(draft) } });
   };
   const next = () => (step === steps.length - 1 ? finish() : setStep(step + 1));
+  const isReveal = steps[step] === "reveal";
   const current = steps[step];
 
   return (
@@ -88,37 +153,59 @@ export default function Onboarding() {
         ) : (
           <View style={s.topButton} />
         )}
-        <View style={s.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: steps.length - 1, now: step }}>
-          {steps.slice(1).map((_, i) => (
-            <View key={i} style={[s.dot, i < step && { backgroundColor: color.ink }]} />
-          ))}
-        </View>
-        <Pressable accessibilityRole="button" onPress={() => finish(true)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip">
-          <T v="smallStrong" tone={color.muted}>
-            Skip
-          </T>
-        </Pressable>
+        <ProgressBar value={step / (steps.length - 1)} />
+        {isReveal ? (
+          <View style={[s.topButton, { width: 56 }]} />
+        ) : (
+          <Pressable accessibilityRole="button" onPress={() => finish(true)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip">
+            <T v="smallStrong" tone={color.muted}>
+              Skip
+            </T>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
         <Animated.View key={current} entering={FadeInDown.duration(320)}>
           {current === "welcome" ? (
-            <View style={{ gap: space.xl, paddingTop: space.xl }}>
-              <Wordmark size={28} />
-              <View style={s.heroCard}>
-                <T v="eyebrow" tone={color.coralText}>
-                  Your experience companion
-                </T>
-                <T v="hero" style={{ marginTop: space.md }}>
+            <View style={{ gap: space.xl }}>
+              <Wordmark size={24} />
+              <MiniDemo />
+              <View style={{ gap: space.md }}>
+                <T v="hero" style={{ fontSize: 30, lineHeight: 35 }} accessibilityRole="header">
                   From “what should we do?” to “we’re going” in under a minute.
                 </T>
-                <T v="body" tone={color.muted} style={{ marginTop: space.md }}>
-                  Tell us the mood, the budget and who’s coming. We’ll turn it into a real plan with real places, times and routes you can actually follow.
+                <T v="body" tone={color.muted}>
+                  Say the mood, the budget and who’s coming. Get a night of real places, with times and routes you can follow.
                 </T>
               </View>
-              <T v="small" tone={color.muted}>
-                Five quick taps so your first plan already feels like you. Skip anything.
-              </T>
+            </View>
+          ) : null}
+
+          {current === "reveal" ? (
+            <View style={{ gap: space.xl, alignItems: "center", paddingTop: space.lg }}>
+              <Animated.View entering={ZoomIn.springify().damping(11)} style={s.revealMark}>
+                <Spark size={64} />
+              </Animated.View>
+              <Animated.View entering={FadeInDown.delay(250).duration(motion.slow)} style={{ alignItems: "center", gap: space.sm }}>
+                <T v="body" tone={color.muted}>
+                  {draft.name ? `${draft.name}, you’re a` : "You’re a"}
+                </T>
+                <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
+                  {persona(draft.vibes)}
+                </T>
+              </Animated.View>
+              <Animated.View entering={FadeIn.delay(600).duration(motion.slow)} style={s.revealCard}>
+                <RevealRow icon={companionCopy[draft.companions].icon} label="Usually out" value={{ partner: "with my partner", friends: "with friends", solo: "on my own", family: "with family" }[draft.companions]} />
+                <RevealRow icon="credit-card" label="Comfortable spend" value={`about $${draft.budget} each`} />
+                <RevealRow icon={modeCopy[draft.mode].icon} label="Getting around" value={modeCopy[draft.mode].label.toLowerCase()} />
+                <RevealRow icon="map-pin" label="Home base" value={areas.find((a) => a.key === draft.homeArea)?.name ?? "Greater Toronto"} last />
+              </Animated.View>
+              <Animated.View entering={FadeIn.delay(850).duration(motion.slow)}>
+                <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+                  Every plan you rate and every poll you answer sharpens this.
+                </T>
+              </Animated.View>
             </View>
           ) : null}
 
@@ -250,8 +337,8 @@ export default function Onboarding() {
         <Button
           testID="onboarding-next"
           size="lg"
-          label={current === "welcome" ? "Let’s go" : step === steps.length - 1 ? "Start planning" : "Continue"}
-          icon={step === steps.length - 1 ? "star" : "arrow-right"}
+          label={current === "welcome" ? "Get started" : isReveal ? "Plan my first night" : "Continue"}
+          icon={isReveal ? "star" : "arrow-right"}
           onPress={next}
         />
       </View>
@@ -259,14 +346,33 @@ export default function Onboarding() {
   );
 }
 
+function RevealRow({ icon, label, value, last }: { icon: IconName; label: string; value: string; last?: boolean }) {
+  return (
+    <View style={[s.revealRow, !last && { borderBottomWidth: 1, borderBottomColor: color.line }]}>
+      <Icon name={icon} size={16} tint={color.muted} />
+      <T v="small" tone={color.muted} style={{ flex: 1 }}>
+        {label}
+      </T>
+      <T v="bodyStrong">{value}</T>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  demo: { backgroundColor: color.ink, borderRadius: radius.xl, padding: space.lg, gap: space.md, ...shadow.lift },
+  bubble: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md, borderBottomLeftRadius: 4 },
+  demoSpark: { alignSelf: "center", width: 40, height: 40, borderRadius: 14, backgroundColor: color.coral, alignItems: "center", justifyContent: "center" },
+  demoStops: { flexDirection: "row", gap: space.sm },
+  demoStop: { flex: 1, backgroundColor: color.paper, borderRadius: radius.md, overflow: "hidden" },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: color.ink },
+  revealMark: { width: 92, height: 92, borderRadius: 30, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", ...shadow.lift },
+  revealCard: { alignSelf: "stretch", backgroundColor: color.paper, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, paddingHorizontal: space.lg },
+  revealRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 52 },
   safe: { flex: 1, backgroundColor: color.canvas },
   top: { flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.md },
   topButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  progress: { flex: 1, flexDirection: "row", gap: 6 },
-  dot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: color.line },
+  progress: { flex: 1, height: 4, borderRadius: 2, backgroundColor: color.line, overflow: "hidden" },
   body: { padding: space.xl, paddingBottom: space.xxl, maxWidth: 640, width: "100%", alignSelf: "center" },
-  heroCard: { backgroundColor: color.paper, borderRadius: radius.xl, padding: space.xl, borderWidth: 1, borderColor: color.line, ...shadow.card },
   sub: { marginTop: space.sm },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md, marginTop: space.xl },
   tile: { width: "47%", flexGrow: 1, minHeight: 112, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, gap: 6 },

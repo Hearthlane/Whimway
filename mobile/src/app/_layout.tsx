@@ -7,7 +7,10 @@ import { api } from "@/lib/api";
 import { Button, Icon, T } from "@/ui/kit";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { StyleSheet, useWindowDimensions } from "react-native";
+import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
+import { Spark } from "@/ui/kit";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider, useStore } from "@/lib/store";
 import { color } from "@/ui/theme";
@@ -24,14 +27,42 @@ function Navigator() {
       track("app_opened");
     }
   }, [visible, track]);
+  // Launch moment: the spark lands, then the app is revealed beneath it.
+  const [launching, setLaunching] = useState(true);
+  useEffect(() => {
+    if (!visible) return;
+    const t = setTimeout(() => setLaunching(false), 900);
+    return () => clearTimeout(t);
+  }, [visible]);
   if (!visible) return null;
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.canvas } }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: "fade" }} />
-      <Stack.Screen name="plan/[id]" options={{ animation: "slide_from_right" }} />
-      <Stack.Screen name="import" options={{ animation: "slide_from_bottom" }} />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.canvas } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: "fade" }} />
+        <Stack.Screen name="plan/[id]" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="import" options={{ animation: "slide_from_bottom" }} />
+      </Stack>
+      {launching ? (
+        <Animated.View exiting={FadeOut.duration(320)} style={[StyleSheet.absoluteFill, { backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }]} pointerEvents="none">
+          <Animated.View entering={ZoomIn.springify().damping(11)}>
+            <Spark size={120} />
+          </Animated.View>
+        </Animated.View>
+      ) : null}
+    </>
+  );
+}
+
+/** On a desktop browser, present the app at phone size in a device frame. */
+function Frame({ children }: { children: React.ReactNode }) {
+  const { width, height } = useWindowDimensions();
+  if (Platform.OS !== "web" || width < 600) return <>{children}</>;
+  const frameHeight = Math.min(880, height - 48);
+  return (
+    <View style={{ flex: 1, backgroundColor: "#E9E7DF", alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: 412, height: frameHeight, borderRadius: 44, overflow: "hidden", backgroundColor: color.canvas, borderWidth: 10, borderColor: color.ink, shadowColor: color.ink, shadowOpacity: 0.25, shadowRadius: 40, shadowOffset: { width: 0, height: 24 } }}>{children}</View>
+    </View>
   );
 }
 
@@ -40,7 +71,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StoreProvider>
         <StatusBar style="dark" />
-        <Navigator />
+        <Frame>
+          <Navigator />
+        </Frame>
       </StoreProvider>
     </SafeAreaProvider>
   );

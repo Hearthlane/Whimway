@@ -225,9 +225,17 @@ async function handlePOST(request: Request, ctx: Context) {
       request,
       path === "generate"
         ? "generate"
-        : path === "remix" || path === "edit"
+        : path === "remix" || path === "edit" || path === "magic-edit"
           ? "remix"
-          : "write",
+          : [
+                "events",
+                "signals",
+                "polls/answer",
+                "errors",
+                "feedback",
+              ].includes(path)
+            ? "signal"
+            : "write",
       user?.id,
     );
     if (path === "point") return ok(await resolvePoint(Point.parse(input)));

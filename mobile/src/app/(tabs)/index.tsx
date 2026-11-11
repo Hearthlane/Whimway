@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
@@ -40,7 +40,9 @@ function greeting(name: string) {
 export default function PlanHome() {
   const store = useStore();
   const { profile, status, demo, plans } = store;
-  const [text, setText] = useState("");
+  // Arriving from onboarding, the composer starts with a suggestion built from the new taste profile.
+  const { starter } = useLocalSearchParams<{ starter?: string }>();
+  const [text, setText] = useState(typeof starter === "string" ? starter : "");
   const [o, setO] = useState<Overrides>({});
   const [field, setField] = useState<Field | null>(null);
   const now = DateTime.now().setZone(ZONE);
@@ -142,7 +144,8 @@ export default function PlanHome() {
               </Pressable>
             ) : null}
           </View>
-          <View style={s.chips}>
+          {/* One swipeable row keeps "Plan it" in view on small phones. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
             {chipRow.map((c) => (
               <Chip key={c.key} testID={`chip-${c.key}`} icon={c.icon} label={c.label} onPress={() => setField(c.key)} tone={c.key === "budget" ? "yellow" : c.key === "vibe" ? "lavender" : "mint"} />
             ))}
@@ -152,7 +155,7 @@ export default function PlanHome() {
               selected={request.indoorOnly}
               onPress={() => setO({ ...o, indoorOnly: !request.indoorOnly })}
             />
-          </View>
+          </ScrollView>
           <View style={s.actions}>
             <Button testID="plan-it" size="lg" label="Plan it" icon="star" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
             <IconButton icon="shuffle" label="Surprise me" onPress={() => plan(text || "Surprise me with something memorable")} />
@@ -383,7 +386,7 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: space.sm },
   demoPill: { backgroundColor: color.yellowTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   composer: { backgroundColor: color.paper, borderRadius: radius.xl, borderWidth: 1, borderColor: color.line, padding: space.lg, gap: space.md, ...shadow.lift },
-  input: { minHeight: 104, fontFamily: font.body, fontSize: 18, lineHeight: 26, color: color.ink, textAlignVertical: "top", padding: 0 },
+  input: { minHeight: 84, fontFamily: font.body, fontSize: 18, lineHeight: 26, color: color.ink, textAlignVertical: "top", padding: 0 },
   heardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   actions: { flexDirection: "row", gap: space.md, alignItems: "center", marginTop: space.xs },

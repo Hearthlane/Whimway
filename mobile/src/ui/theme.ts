@@ -40,7 +40,8 @@ export const type = {
   bodyStrong: { fontFamily: font.bodyBold, fontSize: 15, lineHeight: 22 },
   small: { fontFamily: font.body, fontSize: 13, lineHeight: 18 },
   smallStrong: { fontFamily: font.bodyMedium, fontSize: 13, lineHeight: 18 },
-  eyebrow: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 14, letterSpacing: 1.4, textTransform: "uppercase" as const },
+  // Small label above content. Sentence case: quieter and easier to read than tracked capitals.
+  eyebrow: { fontFamily: font.bodyMedium, fontSize: 13, lineHeight: 18, letterSpacing: 0.1 },
 };
 export const shadow = {
   card: {
@@ -60,3 +61,6 @@ export const shadow = {
 };
 // Minimum comfortable touch target.
 export const touch = 44;
+
+// Motion tokens: quick for feedback, standard for reveals, spring for anything touched.
+export const motion = { quick: 140, standard: 280, slow: 480, spring: { damping: 16, stiffness: 220, mass: 0.8 } };

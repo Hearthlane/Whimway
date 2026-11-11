@@ -735,7 +735,7 @@ export function demoSelect(
   const wantsMeal =
     req.duration >= 180 &&
     meals === 0 &&
-    !action &&
+    !previousStops?.length &&
     (Number(req.startTime.slice(0, 2)) >= 16 ||
       req.interests.includes("Food & drinks"));
   const meal = wantsMeal
@@ -844,12 +844,19 @@ export function demoSelect(
     const s = ordered[i];
     const place = byId.get(s.placeId)!;
     if (!lockedIds.has(s.placeId) && !open(place, cursor, s.minutes)) {
+      const others = ordered.reduce(
+        (n, o, j) => (j === i ? n : n + cost(byId.get(o.placeId)!)),
+        0,
+      );
+      const hasMeal = ordered.some(
+        (o, j) => j !== i && isMeal(byId.get(o.placeId)!),
+      );
       const alt = pool.find(
         (p) =>
           !used.has(p.id) &&
-          cost(p) <= cost(place) &&
+          (cost(p) <= cost(place) || others + cost(p) <= req.budget * 1.1) &&
           open(p, cursor, minutes(p)) &&
-          !(isMeal(p) && meals > 1),
+          !(isMeal(p) && hasMeal),
       );
       if (alt) {
         used.add(alt.id);
@@ -858,6 +865,11 @@ export function demoSelect(
           minutes: minutes(alt),
           reason: reason(alt),
         };
+      } else if (ordered.length > 1) {
+        // Nothing open fits this slot: a shorter honest plan beats a closed door.
+        ordered.splice(i, 1);
+        i--;
+        continue;
       }
     }
     cursor += ordered[i].minutes + 15;

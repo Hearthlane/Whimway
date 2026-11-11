@@ -8,7 +8,7 @@ const limit = (name: string, fallback: number) => {
 };
 export async function rateLimit(
   request: Request,
-  kind: "generate" | "remix" | "read" | "write",
+  kind: "generate" | "remix" | "read" | "write" | "signal",
   userId?: string,
 ) {
   // On Vercel, the platform overwrites x-vercel-forwarded-for. Self-hosting must strip incoming forwarded headers.
@@ -32,7 +32,9 @@ export async function rateLimit(
         ? limit("DAILY_REMIX_LIMIT", 15)
         : kind === "read"
           ? 180
-          : 50;
+          : kind === "signal"
+            ? 400 // cheap telemetry and reactions; kept apart so they never block saves or edits
+            : 50;
   if (
     (await counter(
       `${kind}:${identity}:${costly ? today : Math.floor(Date.now() / 3600000)}`,
