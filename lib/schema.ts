@@ -63,6 +63,10 @@ export const PlanRequest = z.object({
   // Planning compares per-person prices; "total" records how the user expressed it.
   budgetBasis: z.enum(["person", "total"]).default("person"),
   indoorOnly: z.boolean().default(false),
+  /** How full the outing should feel: fewer, longer stops or more, shorter ones. */
+  pace: z.enum(["relaxed", "balanced", "packed"]).default("balanced"),
+  /** Leave out bars, breweries and other alcohol-led venues. */
+  alcoholFree: z.boolean().default(false),
   affinity: Affinity.default({}),
   /** Places the plan must be built around (e.g. a saved favourite). */
   anchorPlaceIds: z.array(z.string().min(1).max(250)).max(2).default([]),

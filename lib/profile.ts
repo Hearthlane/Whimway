@@ -45,6 +45,30 @@ export const TasteProfile = z.object({
     .default({}),
   /** Product analytics consent. Off until the user agrees. */
   analytics: z.boolean().default(false),
+  pace: z.enum(["relaxed", "balanced", "packed"]).default("balanced"),
+  alcoholFree: z.boolean().default(false),
+  /** Whimway Plus entitlement. In the beta this is a demo flag; production verifies store receipts. */
+  plus: z
+    .object({
+      active: z.boolean(),
+      plan: z.enum(["monthly", "yearly"]),
+      since: z.string().max(40),
+      until: z.string().max(40).optional(),
+      demo: z.boolean().default(true),
+    })
+    .optional(),
+  /** Plans generated in the current calendar month (free allowance). */
+  usage: z
+    .object({ month: z.string().max(7), plans: z.number().int().min(0) })
+    .default({ month: "", plans: 0 }),
+  /** Lifetime counters for the "Your nights" summary. */
+  stats: z
+    .object({
+      plans: z.number().int().min(0),
+      edits: z.number().int().min(0),
+      shares: z.number().int().min(0),
+    })
+    .default({ plans: 0, edits: 0, shares: 0 }),
 });
 export type TasteProfile = z.infer<typeof TasteProfile>;
 export const emptyProfile = (): TasteProfile => TasteProfile.parse({});

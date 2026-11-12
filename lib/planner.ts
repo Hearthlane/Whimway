@@ -30,7 +30,7 @@ export function costTotal(places: CandidatePlace[]) {
     currency: places[0]?.price.currency ?? "USD",
   };
 }
-import { isOutdoor, vibeFit } from "./planner-filters";
+import { isAlcoholLed, isOutdoor, vibeFit } from "./planner-filters";
 import { crowdFor, type CrowdSignals } from "./crowd";
 export { isOutdoor };
 /** Review-weighted quality nudged by the user's learned category affinity. */
@@ -98,7 +98,8 @@ export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
       (!request.hardBudget ||
         (p.price.high !== null && p.price.high <= request.budget)) &&
       (!request.accessibility || p.wheelchairAccessible !== false) &&
-      (!request.indoorOnly || !isOutdoor(p)),
+      (!request.indoorOnly || !isOutdoor(p)) &&
+      (!request.alcoholFree || !isAlcoholLed(p)),
   );
 }
 export function validateRequest(request: PlanRequest, now = DateTime.now()) {
@@ -479,6 +480,35 @@ export class Planner {
       try {
         return await schedule(spec, candidates, this.routes, attempt === 1);
       } catch (e) {
+        // A favourite the plan is built around must be visited while it is open: move it to
+        // the start of the outing before giving up.
+        const anchors = previous ? [] : request.anchorPlaceIds;
+        if (
+          e instanceof AppError &&
+          ["CLOSED", "TOO_LONG"].includes(e.code) &&
+          anchors.length
+        ) {
+          const first = [
+            ...spec.stops.filter((s) => anchors.includes(s.placeId)),
+            ...spec.stops.filter((s) => !anchors.includes(s.placeId)),
+          ];
+          try {
+            return await schedule(
+              { ...spec, stops: first },
+              candidates,
+              this.routes,
+              true,
+            );
+          } catch {
+            const name =
+              candidates.find((p) => p.id === anchors[0])?.name ?? "That place";
+            throw new AppError(
+              "ANCHOR_CLOSED",
+              `${name} isn’t open at that time. Try an earlier start or another day.`,
+              422,
+            );
+          }
+        }
         if (
           !(e instanceof AppError) ||
           attempt === 1 ||

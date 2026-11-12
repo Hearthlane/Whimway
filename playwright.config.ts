@@ -24,6 +24,7 @@ export default defineConfig({
     timeout: 120000,
     env: {
       WHIMWAY_DEMO_MODE: "true",
+      WHIMWAY_EVENT_LOG: "off",
       NEXT_PUBLIC_WHIMWAY_DEMO_MODE: "true",
       DAILY_GUEST_GENERATIONS: "100",
       DAILY_REMIX_LIMIT: "100",

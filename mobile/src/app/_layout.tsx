@@ -42,6 +42,7 @@ function Navigator() {
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: "fade" }} />
         <Stack.Screen name="plan/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="import" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="plus" options={{ animation: "slide_from_bottom" }} />
       </Stack>
       {launching ? (
         <Animated.View exiting={FadeOut.duration(320)} style={[StyleSheet.absoluteFill, { backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }]} pointerEvents="none">

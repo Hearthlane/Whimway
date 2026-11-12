@@ -393,3 +393,36 @@ describe("Plan around a favourite", () => {
     expect(nearestArea({ lat: 45.42, lng: -75.69 })).toBeUndefined(); // Ottawa
   });
 });
+
+describe("Favourites that close early", () => {
+  const future = DateTime.now().setZone("America/Toronto").plus({ days: 3 });
+  const anchored = (startTime: string) => ({
+    ...buildRequest("", interpret("", future), profile, future, {
+      area: areaByKey("downtown")!,
+    }),
+    date: future.toISODate()!,
+    startTime,
+    anchorPlaceIds: ["gta-island"], // demo hours 8:00–22:00
+  });
+  it("moves the favourite to the start of the night so it is open", async () => {
+    const r = anchored("20:30");
+    const plan = await new Planner(
+      new FixturePlaces(r),
+      new FixtureRoutes(),
+      new FixtureAI(),
+      true,
+    ).generate(r);
+    expect(plan.stops[0].placeId).toBe("gta-island");
+  });
+  it("explains clearly when the favourite cannot fit at all", async () => {
+    const r = anchored("21:30");
+    await expect(
+      new Planner(
+        new FixturePlaces(r),
+        new FixtureRoutes(),
+        new FixtureAI(),
+        true,
+      ).generate(r),
+    ).rejects.toMatchObject({ code: "ANCHOR_CLOSED" });
+  });
+});

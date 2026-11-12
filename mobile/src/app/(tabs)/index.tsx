@@ -9,6 +9,7 @@ import { areaByKey, areas, defaultRadius, nearestArea, type Area } from "@shared
 import { buildRequest, describe, interpret } from "@shared/intent";
 import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
 import { useStore } from "@/lib/store";
+import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Card, Chip, Icon, IconButton, Notice, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
@@ -78,7 +79,9 @@ export default function PlanHome() {
   const totalBudget = Math.round(request.budgetBasis === "total" ? request.budget * request.participants : request.budget);
 
   const ready = Boolean(status && ((status.places && status.ai) || status.demo));
+  const left = plansLeft(profile);
   const plan = (prompt = text) => {
+    if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
     store.pending.current = { ...request, prompt: prompt.slice(0, 1500) };
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
     router.push("/plan/new");
@@ -158,8 +161,19 @@ export default function PlanHome() {
           </ScrollView>
           <View style={s.actions}>
             <Button testID="plan-it" size="lg" label="Plan it" icon="star" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
-            <IconButton icon="shuffle" label="Surprise me" onPress={() => plan(text || "Surprise me with something memorable")} />
+            <IconButton
+              icon="shuffle"
+              label="Surprise me"
+              onPress={() => (isPlus(profile) ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
+            />
           </View>
+          {isPlus(profile) ? null : (
+            <Pressable accessibilityRole="button" onPress={() => router.push("/plus")} hitSlop={6} testID="allowance">
+              <T v="small" tone={left <= 1 ? color.coralText : color.muted} style={{ textAlign: "center" }}>
+                {left > 0 ? `${left} of ${FREE.plansPerMonth} free plans left this month.` : "No free plans left this month."} Get unlimited with Plus
+              </T>
+            </Pressable>
+          )}
         </Animated.View>
 
         {status && !ready ? (

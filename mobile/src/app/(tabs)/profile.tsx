@@ -13,6 +13,7 @@ import { supabase } from "@/lib/auth";
 import { cloudConfigured, SHARE_ORIGIN } from "@/lib/config";
 import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
+import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { Button, Card, Chip, IconButton, Notice, T } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
@@ -25,6 +26,9 @@ export default function Profile() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState<"device" | "account" | null>(null);
+  const plus = isPlus(profile);
+  const rated = Object.values(store.plans).filter((p) => p.feedback).length;
+  const nightsOut = Object.values(store.plans).filter((p) => p.feedback && p.feedback.went !== "no").length;
   const loved = Object.entries(profile.affinity).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const sendCode = async () => {
@@ -62,6 +66,65 @@ export default function Profile() {
         <T v="hero" accessibilityRole="header">
           {profile.name ? `Hi, ${profile.name}` : "You"}
         </T>
+
+        <Card style={{ gap: space.md }} >
+          <T v="heading">Your nights</T>
+          <View style={s.statsRow} testID="your-nights">
+            <StatTile value={profile.stats.plans} label={profile.stats.plans === 1 ? "plan made" : "plans made"} />
+            <StatTile value={nightsOut} label={nightsOut === 1 ? "night out" : "nights out"} />
+            <StatTile value={profile.favourites.length} label={profile.favourites.length === 1 ? "saved place" : "saved places"} />
+            <StatTile value={profile.stats.shares} label={profile.stats.shares === 1 ? "plan shared" : "plans shared"} />
+          </View>
+          <T v="small" tone={color.muted}>
+            {nightsOut ? `You went on ${Math.round((nightsOut / Math.max(1, rated)) * 100)}% of the plans you rated.` : "Rate a plan after you go and your history builds here."}
+          </T>
+        </Card>
+
+        <Card style={[{ gap: space.md }, plus && { borderColor: color.ink }]}>
+          <View style={s.rowBetween}>
+            <T v="heading">{plus ? "Whimway Plus" : "Free plan"}</T>
+            <Button testID="plus-open" kind={plus ? "ghost" : "primary"} label={plus ? "Manage" : "See Plus"} onPress={() => router.push("/plus")} />
+          </View>
+          <T v="small" tone={color.muted}>
+            {plus
+              ? "Unlimited plans and edits, favourites, fine-tuning and surprise mode. Demo purchase, no payment taken."
+              : `${Math.min(FREE.plansPerMonth, plansLeft(profile))} of ${FREE.plansPerMonth} free plans left this month, ${FREE.magicEditsPerPlan} Magic Edits per plan.`}
+          </T>
+        </Card>
+
+        <Card style={{ gap: space.md }}>
+          <View style={s.rowBetween}>
+            <T v="heading">Fine-tune</T>
+            {plus ? null : <Chip label="Plus" tone="lavender" />}
+          </View>
+          <T v="smallStrong">Pace</T>
+          <View style={s.chips}>
+            {(["relaxed", "balanced", "packed"] as const).map((pace) => (
+              <Chip
+                key={pace}
+                testID={`pace-${pace}`}
+                label={{ relaxed: "Relaxed, 2 stops", balanced: "Balanced, 3 stops", packed: "Packed, 4 stops" }[pace]}
+                selected={profile.pace === pace}
+                onPress={() => (plus ? setProfile({ ...profile, pace }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
+              />
+            ))}
+          </View>
+          <View style={s.rowBetween}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="bodyStrong">Alcohol-free nights</T>
+              <T v="small" tone={color.muted}>
+                Leave out bars and breweries.
+              </T>
+            </View>
+            <Switch
+              value={profile.alcoholFree}
+              onValueChange={(alcoholFree) => (plus ? setProfile({ ...profile, alcoholFree }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
+              trackColor={{ true: color.ink, false: color.line }}
+              thumbColor={color.paper}
+              accessibilityLabel="Alcohol-free nights"
+            />
+          </View>
+        </Card>
 
         <Card style={{ gap: space.md }}>
           <View style={s.rowBetween}>
@@ -119,10 +182,15 @@ export default function Profile() {
                   label="Plan around it"
                   icon="star"
                   onPress={() => {
+                    if (!plus) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
                     const now = DateTime.now().setZone("America/Toronto");
                     const prompt = `Plan something around ${f.name}`;
+                    const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });
+                    // Late in the day, plan it for tomorrow evening so the place is open.
+                    const late = base.date === now.toISODate() && base.startTime >= "19:30";
                     store.pending.current = {
-                      ...buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) }),
+                      ...base,
+                      ...(late ? { date: now.plus({ days: 1 }).toISODate()!, startTime: "18:30" } : {}),
                       anchorPlaceIds: [f.id],
                       excludedPlaceIds: profile.disliked.filter((id) => id !== f.id),
                     };
@@ -243,7 +311,20 @@ export default function Profile() {
   );
 }
 
+function StatTile({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={s.statTile}>
+      <T v="title">{value}</T>
+      <T v="small" tone={color.muted}>
+        {label}
+      </T>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  statsRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  statTile: { flexGrow: 1, flexBasis: "45%", backgroundColor: color.canvas, borderRadius: radius.md, padding: space.md },
   page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.lg, maxWidth: 680, width: "100%", alignSelf: "center" },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },

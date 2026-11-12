@@ -719,9 +719,11 @@ export function demoSelect(
     ? locked.length + 1
     : previousStops?.length
       ? Math.max(previousStops.length, locked.length + 1)
-      : req.duration >= 360
-        ? 4
-        : 3;
+      : req.pace === "relaxed"
+        ? 2
+        : req.pace === "packed" || req.duration >= 360
+          ? 4
+          : 3;
   const chosen: CandidatePlace[] = [];
   const lockedPlaces = candidates.filter((p) => lockedIds.has(p.id));
   let meals = lockedPlaces.filter(isMeal).length;

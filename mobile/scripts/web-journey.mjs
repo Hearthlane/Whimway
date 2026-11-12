@@ -8,10 +8,12 @@ const base = process.argv[2] ?? "http://localhost:8090";
 const out = process.argv[3] ?? "journey-shots";
 mkdirSync(out, { recursive: true });
 const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullPage: false });
+let page;
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const ctx = await b.newContext({ ...devices['iPhone 13'], geolocation: { latitude: 43.6487, longitude: -79.4208 }, permissions: ['geolocation'] });
   const p = await ctx.newPage();
+  page = p;
   const errors = [];
   const apiCalls = [];
   p.on('pageerror', e => errors.push('pageerror: ' + e.message));
@@ -35,10 +37,16 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await p.getByTestId('onboarding-next').click();
   await p.getByLabel('What should we call you?').fill('Sam').catch(() => {});
   await p.getByTestId('onboarding-next').click();
+  await p.getByTestId('persona').waitFor({ timeout: 15000 });
   await p.waitForTimeout(1400);
   const personaName = await p.getByTestId('persona').innerText();
   await shot(p, '03b-reveal');
   await p.getByTestId('onboarding-next').click();
+  // Plus offer after onboarding: continue free.
+  await p.getByTestId('plus-skip').waitFor();
+  await p.waitForTimeout(700);
+  await shot(p, '03c-paywall');
+  await p.getByTestId('plus-skip').click();
   await p.getByTestId('prompt-input').waitFor();
   const onboardMs = Date.now() - t0;
   // Poll
@@ -90,6 +98,12 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await shot(p, '12-after-edit');
   // Favourite the first stop (its card is still expanded from the reaction step).
   const favName = (await p.getByTestId('stop-1').innerText()).split('\n').filter(Boolean)[3];
+  await p.getByTestId('stop-1').getByRole('button', { name: 'Book or go' }).click();
+  await p.getByTestId('book-directions').waitFor();
+  const bookKinds = await p.locator('[data-testid^="book-"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
+  await p.waitForTimeout(600);
+  await shot(p, '10b-booking');
+  await p.getByLabel('Close').last().click();
   await p.getByTestId('stop-1').getByRole('button', { name: 'Save place' }).click();
   await p.getByLabel('Save plan').click();
   await p.waitForTimeout(300);
@@ -112,6 +126,10 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   await shot(p, '16-profile');
   // Favourites → plan around it
   const favListed = (await p.getByTestId('favourite').allInnerTexts()).join(' ');
+  const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
+  // Plan-around is a Plus feature: free users see the paywall, then start the (demo) trial.
+  await p.getByRole('button', { name: 'Plan around it' }).first().click();
+  await p.getByTestId('plus-start').click();
   await p.getByRole('button', { name: 'Plan around it' }).first().click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   await p.waitForTimeout(400);
@@ -154,6 +172,8 @@ const shot = async (p, name) => p.screenshot({ path: `${out}/${name}.png`, fullP
   for (const call of ["POST /api/polls/answer 200", "POST /api/signals 200", "POST /api/magic-edit 200", "POST /api/feedback 200"])
     assert.ok(apiCalls.includes(call), call);
   assert.equal(personaName, 'Romantic Adventurer', 'personality reveal');
-  console.log(JSON.stringify({ personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
+  assert.ok(bookKinds.includes('book-directions'), 'booking options');
+  assert.ok(/1 plan made/.test(nights), `history counts plans (${nights})`);
+  console.log(JSON.stringify({ nights, bookKinds, personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
   await b.close();
-})().catch(e => { console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });
+})().catch(async e => { await page?.screenshot({ path: `${out}/zz-failure.png` }).catch(() => {}); console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });

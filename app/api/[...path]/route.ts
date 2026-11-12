@@ -31,6 +31,8 @@ import { withProviderContext } from "@/lib/server/provider-context";
 import { publicSpec, persistSpec } from "@/lib/storage";
 import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
+import { summarize } from "@/lib/metrics";
+import { allEvents, logEvent } from "@/lib/server/event-log";
 import { doneSummary } from "@/lib/magic-edit";
 import { Feedback, TasteProfile } from "@/lib/profile";
 import { PollAnswer, SignalBatch, placeKeys, polls } from "@/lib/polls";
@@ -170,6 +172,49 @@ async function handleGET(request: Request, ctx: Context) {
           404,
         );
       return ok(data);
+    }
+    if (path === "admin/metrics") {
+      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.
+      const key = process.env.ADMIN_KEY;
+      const given =
+        request.headers.get("x-admin-key") ?? url.searchParams.get("key");
+      if (key ? given !== key : !demoAllowed())
+        throw new AppError(
+          "FORBIDDEN",
+          "Set ADMIN_KEY and pass it to view metrics.",
+          403,
+        );
+      const store = signalStore();
+      const [tallies, pollTallies] = await Promise.all([
+        store.tallies().catch(() => ({})),
+        store.polls().catch(() => ({})),
+      ]);
+      return ok({
+        summary: summarize(await allEvents()),
+        tallies,
+        polls: pollTallies,
+      });
+    }
+    if (path === "crowd/places") {
+      // Community ratings for specific venues; only keys with 5+ people are ever returned.
+      const ids = z
+        .string()
+        .max(2000)
+        .parse(url.searchParams.get("ids") ?? "")
+        .split(",")
+        .filter(Boolean)
+        .slice(0, 12);
+      const tallies = await signalStore()
+        .tallies()
+        .catch(() => ({}) as Record<string, { up: number; down: number }>);
+      return ok(
+        Object.fromEntries(
+          ids.flatMap((id) => {
+            const t = tallies[`place:${id.replace(/[^\w-]/g, "")}`];
+            return t ? [[id, t]] : [];
+          }),
+        ),
+      );
     }
     if (path === "polls") {
       const tallies = await signalStore()
@@ -332,6 +377,12 @@ async function handlePOST(request: Request, ctx: Context) {
         })
         .parse(input);
       telemetry(`client_${data.name}`, data.props);
+      await logEvent({
+        name: data.name,
+        installId: data.installId,
+        at: new Date().toISOString(),
+        props: data.props,
+      });
       if (
         process.env.NEXT_PUBLIC_SUPABASE_URL &&
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY

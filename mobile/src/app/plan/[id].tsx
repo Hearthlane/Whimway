@@ -16,11 +16,14 @@ import { FeedbackSheet } from "@/plan/Feedback";
 import { MagicEditSheet } from "@/plan/MagicEdit";
 import { PlanPulse } from "@/plan/PlanPulse";
 import { placeKeys } from "@shared/polls";
+import { bookingOptions } from "@shared/booking";
+import { countPlan, editsLeft } from "@shared/plus";
+import { stopDirectionsUrl } from "@shared/navigation";
 import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
 import { Generating, stages } from "@/plan/Generating";
 import { StopCard } from "@/plan/StopCard";
-import { Badge, Button, Icon, IconButton, Notice, Sheet, T, tap } from "@/ui/kit";
+import { Badge, Button, Icon, IconButton, Notice, Press, Sheet, T, tap } from "@/ui/kit";
 import { color, radius, shadow, space } from "@/ui/theme";
 
 const friendly: Record<string, string> = {
@@ -30,6 +33,7 @@ const friendly: Record<string, string> = {
   PAST_TIME: "That time has already passed",
   CONFLICTING_REQUEST: "Two parts of that don’t agree",
   OFFLINE: "You’re offline",
+  ANCHOR_CLOSED: "That place is closed then",
   TIMEOUT: "That took too long",
 };
 
@@ -49,6 +53,17 @@ export default function PlanScreen() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [sharing, setSharing] = useState(false);
+  const [editsUsed, setEditsUsed] = useState(0);
+  const [booking, setBooking] = useState<number | null>(null);
+  const [crowd, setCrowd] = useState<Record<string, { up: number; down: number }>>({});
+  const stopIds = plan?.stops.map((s) => s.placeId).join(",") ?? "";
+  // Community ratings for these venues (the server only returns ones with 5+ people).
+  useEffect(() => {
+    if (!stopIds) return;
+    void api<Record<string, { up: number; down: number }>>(`crowd/places?ids=${encodeURIComponent(stopIds)}`)
+      .then(setCrowd)
+      .catch(() => undefined);
+  }, [stopIds]);
   const started = useRef(Date.now());
   const once = useRef(false);
   const entry = plan ? store.plans[plan.id] : store.plans[id];
@@ -74,6 +89,8 @@ export default function PlanScreen() {
     try {
       const [result] = await Promise.all([api<Itinerary>("generate", { request, demo: store.demo }), minimum]);
       store.remember(result);
+      // Count against this month's free allowance and the lifetime summary.
+      store.setProfile(countPlan({ ...store.profile, stats: { ...store.profile.stats, plans: store.profile.stats.plans + 1 } }));
       store.track("plan_generated", { ms: Date.now() - started.current, stops: result.stops.length, demo: result.demo, mode: result.request.mode });
       tap("success");
       setPlan(result);
@@ -127,6 +144,11 @@ export default function PlanScreen() {
 
   const magicEdit = async (instruction: string) => {
     if (!plan) return;
+    if (editsLeft(store.profile, editsUsed) <= 0) {
+      setEditOpen(false);
+      router.push({ pathname: "/plus", params: { reason: "edits" } });
+      return;
+    }
     setEditBusy(true);
     setEditError("");
     try {
@@ -138,6 +160,8 @@ export default function PlanScreen() {
       setToast({ text: result.done, undo: before });
       setEditOpen(false);
       tap("success");
+      setEditsUsed((n) => n + 1);
+      store.setProfile({ ...store.profile, stats: { ...store.profile.stats, edits: store.profile.stats.edits + 1 } });
       store.track("magic_edit_applied", { kind: result.kind, changed: result.changed.length });
     } catch (e) {
       setEditError(e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.");
@@ -187,6 +211,7 @@ export default function PlanScreen() {
     }
     const day = DateTime.fromISO(`${plan.request.date}T${plan.request.startTime}`).toFormat("cccc h:mm a");
     const message = `${plan.title} — ${day}\n${plan.stops.map((s, i) => `${i + 1}. ${s.place.name}`).join("\n")}\n\nSee the plan (and make it yours): ${url}`;
+    store.setProfile({ ...store.profile, stats: { ...store.profile.stats, shares: store.profile.stats.shares + 1 } });
     store.track("plan_shared", { via: url.includes("/s/") ? "account" : "link", demo: plan.demo });
     setSharing(false);
     try {
@@ -304,6 +329,8 @@ export default function PlanScreen() {
                     onSelect={() => setSelected(stop.placeId)}
                     onToggleLock={() => toggleLock(i)}
                     onSwap={() => swap(i)}
+                    onBook={() => setBooking(i)}
+                    crowd={crowd[stop.placeId]}
                     favourite={store.profile.favourites.some((f) => f.id === stop.placeId)}
                     onFavourite={() => {
                       const p = store.profile;
@@ -426,6 +453,46 @@ export default function PlanScreen() {
           setToast({ text: where === "account" ? "Thanks! Saved to your account and your next plans will reflect it." : "Thanks! Your next plans will reflect it." });
         }}
       />
+      <Sheet open={booking !== null} onClose={() => setBooking(null)} title={booking !== null ? plan.stops[booking].place.name : ""}>
+        {booking !== null
+          ? bookingOptions(plan.stops[booking].place, {
+              date: plan.request.date,
+              time: DateTime.fromISO(plan.stops[booking].arrival).setZone(zone).toFormat("HH:mm"),
+              people,
+              mode: plan.request.mode,
+              demo: plan.demo,
+              directionsUrl: plan.demo
+                ? plan.stops[booking].place.mapsUrl
+                : stopDirectionsUrl({ point: plan.stops[booking].place.point, placeId: plan.stops[booking].placeId }, plan.request.mode, booking > 0 ? plan.stops[booking - 1].place.point : undefined),
+            }).map((o) => (
+              <Press
+                key={o.kind}
+                testID={`book-${o.kind}`}
+                accessibilityRole="link"
+                accessibilityLabel={`${o.label}. ${o.hint}`}
+                onPress={() => {
+                  store.track(o.kind === "directions" || o.kind === "ride" ? "navigation_opened" : "booking_link_opened", { kind: o.kind, scope: "stop" });
+                  void Linking.openURL(o.url);
+                }}
+                style={s.bookRow}
+              >
+                <View style={s.bookIcon}>
+                  <Icon name={o.icon} size={17} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <T v="bodyStrong">{o.label}</T>
+                  <T v="small" tone={color.muted}>
+                    {o.hint}
+                  </T>
+                </View>
+                <Icon name="arrow-up-right" size={16} tint={color.faint} />
+              </Press>
+            ))
+          : null}
+        <T v="small" tone={color.muted} style={{ marginTop: space.md }}>
+          These open the venue or a booking service. Whimway hasn’t reserved anything or checked availability.
+        </T>
+      </Sheet>
       <Sheet open={Boolean(shareLink)} onClose={() => setShareLink("")} title="Share this plan">
         <T v="body" tone={color.muted}>
           Anyone with this link can view the plan and make their own copy — no app needed. Your prompt, dietary and accessibility notes aren’t included.
@@ -468,5 +535,7 @@ const s = StyleSheet.create({
   toast: { position: "absolute", left: space.lg, right: space.lg, flexDirection: "row", alignItems: "center", gap: space.sm, backgroundColor: color.ink, padding: space.md, borderRadius: radius.md, maxWidth: 680, alignSelf: "center", ...shadow.lift },
   bar: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, backgroundColor: color.paper, borderTopWidth: 1, borderTopColor: color.line, justifyContent: "center" },
   barInner: { flex: 1, maxWidth: 720, flexDirection: "row", gap: space.sm },
+  bookRow: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, marginBottom: space.sm, minHeight: 64 },
+  bookIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
   link: { marginTop: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, fontSize: 13, color: color.ink },
 });

@@ -20,5 +20,8 @@ export const eventNames = [
   "poll_answered",
   "plan_pulse",
   "stop_reacted",
+  "paywall_viewed",
+  "plus_started",
+  "plus_cancelled",
 ] as const;
 export type EventName = (typeof eventNames)[number];

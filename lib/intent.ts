@@ -377,6 +377,8 @@ export function buildRequest(
   profile: Pick<
     TasteProfile,
     | "companions"
+    | "pace"
+    | "alcoholFree"
     | "vibes"
     | "interests"
     | "budget"
@@ -457,6 +459,8 @@ export function buildRequest(
     participants,
     mode,
     indoorOnly: draft.indoorOnly ?? false,
+    pace: profile.pace,
+    alcoholFree: profile.alcoholFree,
     affinity: profile.affinity,
     excludedPlaceIds: [
       ...new Set([...(overrides.excludedPlaceIds ?? []), ...profile.disliked]),

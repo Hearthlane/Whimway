@@ -62,7 +62,12 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Near me (device location, rounded to ~100 m, GTA-only) | **Working** in the browser preview; native permission prompts untested on devices |
 | Crash screen + scrubbed crash reports (`/api/errors` → server logs) | **Working** |
 | Brand icon, adaptive icon, splash, favicon; `app.config.ts`; `eas.json` | **Done**; store builds need your Expo/Apple/Google accounts |
-| Payments, bookings, social feed | **Deliberately not built** (see roadmap) |
+| Whimway Plus: free limits, paywall, Plus-only features | **Working as a demo entitlement**; no payment is taken. Real billing needs your store accounts (see `docs/monetization.md`) |
+| Booking options per stop (table search, tickets, website, directions, ride) | **Working** as tracked hand-off links; no partner agreements, nothing is reserved |
+| Community ratings on stops | **Working**; shown only once 5+ people have reacted to a venue |
+| Your history ("Your nights"), pace and alcohol-free preferences | **Working** |
+| Metrics dashboard at `/admin` with recorded daily history | **Working** on a single server (file-backed event log); set `ADMIN_KEY` in production. On serverless hosts use Supabase + `docs/metrics.sql` |
+| Real payments, in-app reservations, social feed | **Not built** (see `docs/monetization.md` and roadmap) |
 
 ## What is implemented
 

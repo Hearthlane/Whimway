@@ -40,6 +40,8 @@ export function StopCard({
   onReact,
   favourite,
   onFavourite,
+  onBook,
+  crowd,
 }: {
   plan: Itinerary;
   index: number;
@@ -54,6 +56,10 @@ export function StopCard({
   onReact: (value: 1 | -1) => void;
   favourite: boolean;
   onFavourite: () => void;
+  /** Opens the booking options for this stop. */
+  onBook: () => void;
+  /** Community rating for this venue (only present once 5+ people have reacted). */
+  crowd?: { up: number; down: number };
 }) {
   const [reaction, setReaction] = useState<1 | -1 | null>(null);
   const reactTo = (value: 1 | -1) => {
@@ -144,6 +150,14 @@ export function StopCard({
               <T v="body" tone={color.inkSoft} style={{ marginTop: space.sm }} numberOfLines={open ? undefined : 2}>
                 {stop.reason}
               </T>
+              {crowd && crowd.up + crowd.down >= 5 ? (
+                <View style={s.crowd} testID={`crowd-${index + 1}`}>
+                  <Icon name="users" size={13} tint={color.success} />
+                  <T v="small" tone={color.success}>
+                    {Math.round((crowd.up / (crowd.up + crowd.down)) * 100)}% of {crowd.up + crowd.down} people on Whimway liked this
+                  </T>
+                </View>
+              ) : null}
               <View style={s.footRow}>
                 <HoursBadge stop={stop} />
                 <View style={{ flex: 1 }} />
@@ -166,8 +180,7 @@ export function StopCard({
                 {stop.place.price.high === null ? "No published price. Confirm before going." : plan.demo ? "Demo price estimate." : "Published range, not a quote."} Plan for about {stop.minutes} minutes here.
               </Fact>
               <View style={s.actions}>
-                <Action icon="navigation" label={plan.demo ? "Find on Maps" : "Directions"} onPress={() => open_(directions, "navigation")} />
-                {website ? <Action icon="external-link" label="Website / book" onPress={() => open_(website, "booking")} /> : null}
+                <Action icon="calendar" label="Book or go" onPress={onBook} primary />
                 <Action icon="heart" label={favourite ? "Saved place" : "Save place"} onPress={onFavourite} active={favourite} />
                 <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
                 {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
@@ -213,11 +226,13 @@ function Fact({ icon, children }: { icon: IconName; children: React.ReactNode })
   );
 }
 
-function Action({ icon, label, onPress, active }: { icon: IconName; label: string; onPress: () => void; active?: boolean }) {
+function Action({ icon, label, onPress, active, primary }: { icon: IconName; label: string; onPress: () => void; active?: boolean; primary?: boolean }) {
   return (
-    <Press accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: active }} onPress={onPress} style={[s.action, active && { backgroundColor: color.coralTint, borderColor: color.coral }]}>
-      <Icon name={icon} size={14} tint={active ? color.coralText : color.ink} />
-      <T v="smallStrong">{label}</T>
+    <Press accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: active }} onPress={onPress} style={[s.action, active && { backgroundColor: color.coralTint, borderColor: color.coral }, primary && { backgroundColor: color.ink, borderColor: color.ink }]}>
+      <Icon name={icon} size={14} tint={primary ? color.paper : active ? color.coralText : color.ink} />
+      <T v="smallStrong" tone={primary ? color.paper : color.ink}>
+        {label}
+      </T>
     </Press>
   );
 }
@@ -236,6 +251,7 @@ const s = StyleSheet.create({
   credit: { position: "absolute", right: 8, bottom: 8, backgroundColor: "rgba(25,38,48,0.6)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   heart: { position: "absolute", top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: color.paper, alignItems: "center", justifyContent: "center" },
   body: { padding: space.lg },
+  crowd: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: space.sm },
   footRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: space.md },
   more: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm, borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.md },
   fact: { flexDirection: "row", gap: space.sm, alignItems: "flex-start" },

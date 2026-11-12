@@ -131,6 +131,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setProfile = useCallback((profile: TasteProfile) => {
+    // Apply immediately so anything tracked in the same tick sees the new consent and stats.
+    stateRef.current = { ...stateRef.current, profile };
     setState((s) => ({ ...s, profile }));
     void AsyncStorage.setItem(KEYS.profile, JSON.stringify(profile)).catch(() => undefined);
     // Sync to the account when signed in; the device copy stays authoritative offline.

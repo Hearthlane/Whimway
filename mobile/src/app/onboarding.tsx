@@ -18,7 +18,7 @@ const budgets = [
   { value: 80, label: "$60–100", hint: "Treat yourselves" },
   { value: 150, label: "$100+", hint: "Go big sometimes" },
 ];
-const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "reveal"] as const;
+const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "building", "reveal"] as const;
 
 // Personality reveal: first vibe gives the adjective, second the noun.
 const adjective: Record<string, string> = { romantic: "Romantic", adventurous: "Bold", cozy: "Cozy", cinematic: "Cinematic", chill: "Easygoing", lively: "Lively", artsy: "Artsy", foodie: "Hungry", outdoorsy: "Fresh-Air", playful: "Playful" };
@@ -137,10 +137,21 @@ export default function Onboarding() {
     setProfile({ ...draft, onboarded: true });
     track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: steps[step] });
     tap("success");
-    router.replace(skipped ? "/" : { pathname: "/", params: { starter: starterPrompt(draft) } });
+    // After the reveal, offer Plus once (skippable), then land on the composer with a first prompt ready.
+    router.replace(skipped ? "/" : { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } });
   };
   const next = () => (step === steps.length - 1 ? finish() : setStep(step + 1));
   const isReveal = steps[step] === "reveal";
+  const isBuilding = steps[step] === "building";
+  // "Building your taste profile": a short beat that makes the reveal feel earned.
+  const [built, setBuilt] = useState(0);
+  useEffect(() => {
+    if (!isBuilding) return;
+    setBuilt(0);
+    const ticks = [500, 1100, 1700].map((ms, i) => setTimeout(() => setBuilt(i + 1), ms));
+    const done = setTimeout(() => setStep((n) => n + 1), 2400);
+    return () => [...ticks, done].forEach(clearTimeout);
+  }, [isBuilding]);
   const current = steps[step];
 
   return (
@@ -178,6 +189,25 @@ export default function Onboarding() {
                 <T v="body" tone={color.muted}>
                   Say the mood, the budget and who’s coming. Get a night of real places, with times and routes you can follow.
                 </T>
+              </View>
+            </View>
+          ) : null}
+
+          {current === "building" ? (
+            <View style={{ alignItems: "center", gap: space.xl, paddingTop: space.xxxl }} testID="building">
+              <Animated.View entering={ZoomIn.springify().damping(12)} style={s.revealMark}>
+                <Spark size={64} />
+              </Animated.View>
+              <T v="title" style={{ textAlign: "center" }} accessibilityLiveRegion="polite">
+                Building your taste profile
+              </T>
+              <View style={{ alignSelf: "stretch", gap: space.md, paddingHorizontal: space.lg }}>
+                {["Reading your vibes", "Matching places around you", "Setting your budget and pace"].map((line, i) => (
+                  <View key={line} style={{ flexDirection: "row", alignItems: "center", gap: space.md, opacity: built >= i ? 1 : 0.35 }}>
+                    <View style={[s.buildDot, built > i && { backgroundColor: color.ink }]}>{built > i ? <Icon name="check" size={12} tint={color.paper} /> : null}</View>
+                    <T v={built === i ? "bodyStrong" : "body"}>{line}</T>
+                  </View>
+                ))}
               </View>
             </View>
           ) : null}
@@ -333,12 +363,12 @@ export default function Onboarding() {
           ) : null}
         </Animated.View>
       </ScrollView>
-      <View style={s.footer}>
+      <View style={[s.footer, isBuilding && { opacity: 0 }]} pointerEvents={isBuilding ? "none" : "auto"}>
         <Button
           testID="onboarding-next"
           size="lg"
-          label={current === "welcome" ? "Get started" : isReveal ? "Plan my first night" : "Continue"}
-          icon={isReveal ? "star" : "arrow-right"}
+          label={current === "welcome" ? "Get started" : isReveal ? "Continue" : "Continue"}
+          icon="arrow-right"
           onPress={next}
         />
       </View>
@@ -366,6 +396,7 @@ const s = StyleSheet.create({
   demoStop: { flex: 1, backgroundColor: color.paper, borderRadius: radius.md, overflow: "hidden" },
   progressFill: { height: 4, borderRadius: 2, backgroundColor: color.ink },
   revealMark: { width: 92, height: 92, borderRadius: 30, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", ...shadow.lift },
+  buildDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: color.line, alignItems: "center", justifyContent: "center" },
   revealCard: { alignSelf: "stretch", backgroundColor: color.paper, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, paddingHorizontal: space.lg },
   revealRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 52 },
   safe: { flex: 1, backgroundColor: color.canvas },

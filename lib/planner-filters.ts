@@ -46,3 +46,21 @@ export function vibeFit(
   const text = [place.category, ...place.types].join(" ").toLowerCase();
   return vibes.filter((v) => vibeTypes[v].test(text)).length;
 }
+
+const ALCOHOL_TYPES = new Set([
+  "bar",
+  "brewery",
+  "wine_bar",
+  "cocktail_bar",
+  "pub",
+  "night_club",
+  "liquor_store",
+  "winery",
+  "distillery",
+]);
+/** True when a venue's primary purpose is alcohol (a restaurant that also has a bar is not). */
+export function isAlcoholLed(place: Pick<CandidatePlace, "types">) {
+  const primary = place.types[0] ?? "";
+  if (/restaurant|cafe|bakery|amusement/.test(primary)) return false;
+  return place.types.some((t) => ALCOHOL_TYPES.has(t));
+}
