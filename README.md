@@ -119,13 +119,14 @@ There is no service-role key in the application. Public keys and map ID are buil
 
 ## Supabase
 
-Apply **all five** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
+Apply **all six** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
 2. `202611110001_experience.sql` — analytics events (`track_event`), feedback, larger profile size
 3. `202611120001_community_signals.sql` — community signals and polls (write-only RPCs, k-anonymous aggregates)
 4. `202611130001_plus_events.sql` — paywall funnel events
 5. `202611140001_entitlements.sql` — Plus entitlements, monthly plan usage, billing webhook secret
+6. `202611150001_edit_usage.sql` — Magic Edit counters per plan
 
 For the app’s email sign-in, edit Authentication → Email Templates → Magic Link to include `{{ .Token }}` (users type a 6-digit code). It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
 
@@ -138,7 +139,7 @@ Share links require signing in and cloud-saving a live plan. They do not expose 
 ```sh
 npm run typecheck
 npm run lint
-npm test            # 121 unit/integration tests
+npm test            # 141 unit/integration tests
 (cd mobile && npx tsc --noEmit)
 npm run test:e2e
 npm run test:db # Optional: Docker; disposable PostgreSQL authorization checks

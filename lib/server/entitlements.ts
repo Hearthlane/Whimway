@@ -118,6 +118,48 @@ export async function requirePlanAllowance(request: Request, userId?: string) {
     );
 }
 
+/** Free accounts get a fixed number of Magic Edits per plan; counted here, not on the device. */
+export async function requireEditAllowance(
+  request: Request,
+  userId: string | undefined,
+  planId: string,
+) {
+  const install = installOf(request);
+  if (!install && !userId) return () => Promise.resolve();
+  const plus = (await entitlementFor(request, userId)).plus;
+  let used: number;
+  const key = usageKey(
+    `${userId ? `u:${userId}` : `i:${install}`}:edit:${planId}`,
+  );
+  if (cloud()) {
+    const db = await supabase();
+    used = Number(
+      (
+        await db.rpc("edits_on_plan", {
+          install: install ?? "unknown-install",
+          plan: planId,
+        })
+      ).data ?? 0,
+    );
+  } else used = memoryUsage.get(key) ?? 0;
+  if (!plus && used >= FREE.magicEditsPerPlan)
+    throw new AppError(
+      "EDIT_LIMIT",
+      `Free includes ${FREE.magicEditsPerPlan} Magic Edits per plan. Whimway Plus has no limit.`,
+      402,
+    );
+  // Call after a successful edit so failed attempts never use up the allowance.
+  return async () => {
+    if (cloud()) {
+      const db = await supabase();
+      await db.rpc("count_edit", {
+        install: install ?? "unknown-install",
+        plan: planId,
+      });
+    } else memoryUsage.set(key, used + 1);
+  };
+}
+
 // ---- Billing webhook (RevenueCat event format) ----
 const grants = new Set([
   "INITIAL_PURCHASE",

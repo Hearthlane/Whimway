@@ -39,6 +39,7 @@ import {
   handleBillingWebhook,
   installOf,
   plansThisMonth,
+  requireEditAllowance,
   requirePlanAllowance,
 } from "@/lib/server/entitlements";
 import { allEvents, logEvent } from "@/lib/server/event-log";
@@ -370,10 +371,16 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "magic-edit") {
       const data = MagicEditRequest.parse(input);
+      const countEdit = await requireEditAllowance(
+        request,
+        user?.id,
+        data.spec.id,
+      );
       const started = Date.now();
       const result = await planner(data.spec.request, data.spec.demo)
         .withCrowd(await crowdSignals())
         .magicEdit(data.spec, data.instruction);
+      await countEdit().catch(() => undefined);
       const stats = providerStats();
       telemetry("magic_edit_applied", {
         kind: result.op.kind,

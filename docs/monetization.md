@@ -96,6 +96,6 @@ Still needs your accounts (about a day of setup, no more code beyond step 3):
    entitlement can follow the person.
 4. **Partner agreements** before adding any referral codes to booking links.
 
-Known limits: guests are counted per install, which a determined person can reset by
-reinstalling; the daily per-network cap still applies. Magic Edit limits are enforced in
-the app only (edits are already rate-limited per day on the server).
+Known limit: guests are counted per install, which a determined person can reset by
+reinstalling; the daily per-network cap still applies. Signed-in accounts are counted
+per account. Magic Edit limits (3 per plan on free) are enforced on the server the same way.

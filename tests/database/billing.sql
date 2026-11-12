@@ -53,3 +53,19 @@ exception when raise_exception then
  perform test.check(true,'malformed install ids are rejected'); end$$;
 reset role;
 rollback;
+-- Magic Edit counters are separate per plan and never touch the monthly plan count.
+begin;
+set role anon;
+set request.jwt.claim.sub='';
+select public.count_edit('install-0007','11111111-1111-4111-8111-111111111111');
+select public.count_edit('install-0007','11111111-1111-4111-8111-111111111111');
+do $$begin
+ if public.edits_on_plan('install-0007','11111111-1111-4111-8111-111111111111') <> 2 then raise exception 'FAILED: edits counted per plan'; end if;
+ raise notice 'PASS: edits are counted per plan';
+ if public.edits_on_plan('install-0007','22222222-2222-4222-8222-222222222222') <> 0 then raise exception 'FAILED: other plan affected'; end if;
+ raise notice 'PASS: another plan starts with no edits used';
+ if public.plans_this_month('install-0007') <> 0 then raise exception 'FAILED: edits changed plan count'; end if;
+ raise notice 'PASS: edits do not use up the monthly plan allowance';
+end$$;
+reset role;
+rollback;

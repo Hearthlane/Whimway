@@ -166,7 +166,10 @@ export default function PlanScreen() {
       store.setProfile({ ...store.profile, stats: { ...store.profile.stats, edits: store.profile.stats.edits + 1 } });
       store.track("magic_edit_applied", { kind: result.kind, changed: result.changed.length });
     } catch (e) {
-      setEditError(e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.");
+      if (e instanceof ApiError && e.code === "EDIT_LIMIT") {
+        setEditOpen(false);
+        router.push({ pathname: "/plus", params: { reason: "edits" } });
+      } else setEditError(e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.");
     } finally {
       setEditBusy(false);
     }

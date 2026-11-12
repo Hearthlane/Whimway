@@ -1,17 +1,31 @@
 # Validation record
 
+## Design, monetisation and billing phase (Nov 2026)
+
+| Check                                         | Outcome                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root + app typechecks, ESLint                 | Passed                                                                                                                                                                                                                                                                                                                               |
+| Vitest                                        | 141 passed across 11 files (adds Plus limits, booking options, alcohol-free, metrics summary, server allowance for plans and edits, billing webhook)                                                                                                                                                                                 |
+| Playwright (web)                              | 15 journeys passed                                                                                                                                                                                                                                                                                                                   |
+| App journey (Expo web build, mobile Chromium) | Onboarding with profile-building and reveal → Plus offer → poll → plan → pulse → reaction → booking options → favourite → Magic Edit → save → share → feedback → history → paywall and demo trial → plan around a favourite → open a shared link in-app → near me → recipient opens link: all assertions passed, zero browser errors |
+| Database                                      | All six migrations + 61 authorization assertions passed on local PostgreSQL 16                                                                                                                                                                                                                                                       |
+| Live allowance check                          | Against the running API: five free plans succeed, the sixth returns 402                                                                                                                                                                                                                                                              |
+| Production build                              | `next build` passed                                                                                                                                                                                                                                                                                                                  |
+
+Not verified: physical devices, native maps and haptics, live Google/OpenAI responses, hosted Supabase, real store purchases (the billing webhook was exercised with simulated events only).
+
 ## Experience companion phase (Nov 2026)
 
-| Check | Outcome |
-| --- | --- |
-| Root typecheck, ESLint | Passed |
-| App typecheck (`mobile/`) | Passed |
-| Vitest | 121 passed across 8 files (intent, Magic Edit, personalization, community signals, polls, GTA demo planning, native-client API, share links) |
-| Playwright (web) | 15 journeys passed, including the account-free share link; accessibility check now audits with reduced motion |
+| Check                                           | Outcome                                                                                                                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root typecheck, ESLint                          | Passed                                                                                                                                                                   |
+| App typecheck (`mobile/`)                       | Passed                                                                                                                                                                   |
+| Vitest                                          | 121 passed across 8 files (intent, Magic Edit, personalization, community signals, polls, GTA demo planning, native-client API, share links)                             |
+| Playwright (web)                                | 15 journeys passed, including the account-free share link; accessibility check now audits with reduced motion                                                            |
 | App journey (Expo web build in mobile Chromium) | Onboarding → poll → prompt → plan → Plan Pulse → stop reaction → Magic Edit → save → share → feedback → recipient opens link: all assertions passed, zero browser errors |
-| Database | All three migrations + 47 authorization assertions passed on local PostgreSQL 16 (Docker was unavailable; same SQL as `npm run test:db`) |
-| Production build | `next build` passed |
-| Dependency audit | 0 production vulnerabilities after upgrading Next.js to 16.4.6 |
+| Database                                        | All three migrations + 47 authorization assertions passed on local PostgreSQL 16 (Docker was unavailable; same SQL as `npm run test:db`)                                 |
+| Production build                                | `next build` passed                                                                                                                                                      |
+| Dependency audit                                | 0 production vulnerabilities after upgrading Next.js to 16.4.6                                                                                                           |
 
 Not verified: physical iOS/Android devices, native map rendering, live Google/OpenAI responses, hosted Supabase auth/email delivery.
 

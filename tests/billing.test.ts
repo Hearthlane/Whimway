@@ -185,3 +185,59 @@ describe("Billing webhook", () => {
     ).toBeNull();
   });
 });
+
+describe("Magic Edit allowance is enforced on the server", () => {
+  it("allows the free edits per plan, then asks for Plus; failed edits are not counted", async () => {
+    const who = { "X-Whimway-Install": "install-edits-1" };
+    let current = await (await plan(who)).json();
+    const locked = {
+      ...current,
+      stops: current.stops.map((s: object) => ({ ...s, locked: true })),
+    };
+    expect(
+      (
+        await post(
+          "magic-edit",
+          { spec: locked, instruction: "make it more romantic" },
+          who,
+        )
+      ).status,
+    ).toBe(422);
+    for (let i = 0; i < FREE.magicEditsPerPlan; i++) {
+      const r = await post(
+        "magic-edit",
+        { spec: current, instruction: "Change the last stop" },
+        who,
+      );
+      expect(r.status).toBe(200);
+      current = (await r.json()).plan;
+    }
+    const blocked = await post(
+      "magic-edit",
+      { spec: current, instruction: "Change the last stop" },
+      who,
+    );
+    expect(blocked.status).toBe(402);
+    expect((await blocked.json()).code).toBe("EDIT_LIMIT");
+    // Plus (demo) is not limited, and a different plan starts fresh.
+    expect(
+      (
+        await post(
+          "magic-edit",
+          { spec: current, instruction: "Change the last stop" },
+          { ...who, "X-Whimway-Demo-Plus": "1" },
+        )
+      ).status,
+    ).toBe(200);
+    const other = await (await plan(who)).json();
+    expect(
+      (
+        await post(
+          "magic-edit",
+          { spec: other, instruction: "Change the last stop" },
+          who,
+        )
+      ).status,
+    ).toBe(200);
+  });
+});

@@ -83,7 +83,7 @@ try {
     `${bootstrap}\n${migration}\n${cases}`,
   );
   const passes = (result.stderr.match(/PASS:/g) ?? []).length;
-  if (passes < 55)
+  if (passes < 60)
     throw new Error(`Only ${passes} database assertions executed.`);
   console.log(
     `${passes} PostgreSQL authorization assertions passed. No external ports or live Supabase project were used.`,
