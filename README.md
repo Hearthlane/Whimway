@@ -62,7 +62,8 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Near me (device location, rounded to ~100 m, GTA-only) | **Working** in the browser preview; native permission prompts untested on devices |
 | Crash screen + scrubbed crash reports (`/api/errors` → server logs) | **Working** |
 | Brand icon, adaptive icon, splash, favicon; `app.config.ts`; `eas.json` | **Done**; store builds need your Expo/Apple/Google accounts |
-| Whimway Plus: free limits, paywall, Plus-only features | **Working as a demo entitlement**; no payment is taken. Real billing needs your store accounts (see `docs/monetization.md`) |
+| Whimway Plus: free limits, paywall, Plus-only features | **Working**; the monthly plan limit and the entitlement are enforced on the server. Purchases are a demo (no payment) until the stores are connected |
+| Billing webhook (`/api/webhooks/billing`, RevenueCat format) | **Implemented and tested with simulated events**; needs your store and RevenueCat accounts (see `docs/monetization.md`) |
 | Booking options per stop (table search, tickets, website, directions, ride) | **Working** as tracked hand-off links; no partner agreements, nothing is reserved |
 | Community ratings on stops | **Working**; shown only once 5+ people have reacted to a venue |
 | Your history ("Your nights"), pace and alcohol-free preferences | **Working** |
@@ -118,11 +119,13 @@ There is no service-role key in the application. Public keys and map ID are buil
 
 ## Supabase
 
-Apply **all three** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
+Apply **all five** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
 2. `202611110001_experience.sql` — analytics events (`track_event`), feedback, larger profile size
 3. `202611120001_community_signals.sql` — community signals and polls (write-only RPCs, k-anonymous aggregates)
+4. `202611130001_plus_events.sql` — paywall funnel events
+5. `202611140001_entitlements.sql` — Plus entitlements, monthly plan usage, billing webhook secret
 
 For the app’s email sign-in, edit Authentication → Email Templates → Magic Link to include `{{ .Token }}` (users type a 6-digit code). It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
 

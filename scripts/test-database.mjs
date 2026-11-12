@@ -61,7 +61,7 @@ try {
     .sort()
     .map((f) => readFileSync(new URL(f, dir), "utf8"))
     .join("\n");
-  const cases = ["access.sql", "community.sql"]
+  const cases = ["access.sql", "community.sql", "billing.sql"]
     .map((f) =>
       readFileSync(new URL(`../tests/database/${f}`, import.meta.url), "utf8"),
     )
@@ -83,7 +83,7 @@ try {
     `${bootstrap}\n${migration}\n${cases}`,
   );
   const passes = (result.stderr.match(/PASS:/g) ?? []).length;
-  if (passes < 40)
+  if (passes < 55)
     throw new Error(`Only ${passes} database assertions executed.`);
   console.log(
     `${passes} PostgreSQL authorization assertions passed. No external ports or live Supabase project were used.`,

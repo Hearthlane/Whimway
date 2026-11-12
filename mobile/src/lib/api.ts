@@ -1,6 +1,13 @@
 import { API_URL } from "./config";
 import { accessToken } from "./auth";
 
+// Who is calling: the install id (for the monthly free allowance) and whether this device
+// holds a demo Plus purchase. The server only honours the demo flag where demo mode is on.
+const client = { installId: "", demoPlus: false };
+export function setClientContext(next: Partial<typeof client>) {
+  Object.assign(client, next);
+}
+
 export class ApiError extends Error {
   constructor(message: string, public code = "ERROR", public status = 0) {
     super(message);
@@ -30,6 +37,8 @@ export async function api<T>(
       method: options.method ?? (body === undefined ? "GET" : "POST"),
       headers: {
         "X-Whimway-Client": "app",
+        ...(client.installId ? { "X-Whimway-Install": client.installId } : {}),
+        ...(client.demoPlus ? { "X-Whimway-Demo-Plus": "1" } : {}),
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },

@@ -4,6 +4,8 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FREE, isPlus, plusBenefits, PRICES, TRIAL_DAYS, yearlySaving, type PlusPlan } from "@shared/plus";
+import * as WebBrowser from "expo-web-browser";
+import { SHARE_ORIGIN } from "@/lib/config";
 import { useStore } from "@/lib/store";
 import { Badge, Button, Icon, IconButton, Notice, Press, Spark, T, tap, type IconName } from "@/ui/kit";
 import { color, motion, radius, shadow, space } from "@/ui/theme";
@@ -25,7 +27,8 @@ const headlines: Record<string, { title: string; body: string }> = {
  */
 export default function Plus() {
   const { reason, starter } = useLocalSearchParams<{ reason?: string; starter?: string }>();
-  const { profile, setProfile, track } = useStore();
+  const { profile, setProfile, track, demo, syncEntitlement, session } = useStore();
+  const [note, setNote] = useState("");
   const [plan, setPlan] = useState<PlusPlan>("yearly");
   const active = isPlus(profile);
   const copy = headlines[reason ?? "default"] ?? headlines.default;
@@ -115,7 +118,28 @@ export default function Plus() {
             })}
           </View>
         )}
-        <Notice icon="info">Demo purchase. No payment is taken in this preview, and prices are still being tested.</Notice>
+        <Notice icon="info">
+          {demo
+            ? "Demo purchase. No payment is taken in this preview, and prices are still being tested."
+            : "Subscriptions open when Whimway launches in the App Store and Google Play. Everything free stays free."}
+        </Notice>
+        {note ? <Notice tone="mint" icon="check">{note}</Notice> : null}
+        <T v="small" tone={color.muted} style={{ textAlign: "center" }}>
+          Plus renews automatically until cancelled. Cancel anytime in your App Store or Google Play subscriptions; access continues until the period ends.
+        </T>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space.sm }}>
+          <Button
+            testID="plus-restore"
+            kind="ghost"
+            label="Restore purchases"
+            onPress={async () => {
+              const active = await syncEntitlement();
+              setNote(active ? "Plus is active on this account." : session ? "No active subscription found for this account." : "Sign in under You to restore a subscription.");
+            }}
+          />
+          <Button kind="ghost" label="Terms" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/terms`)} />
+          <Button kind="ghost" label="Privacy" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/privacy`)} />
+        </View>
       </ScrollView>
 
       <View style={s.footer}>
@@ -134,7 +158,7 @@ export default function Plus() {
           </>
         ) : (
           <>
-            <Button testID="plus-start" size="lg" label={`Try ${TRIAL_DAYS} days free`} icon="star" onPress={start} />
+            <Button testID="plus-start" size="lg" label={`Try ${TRIAL_DAYS} days free`} icon="star" onPress={start} disabled={!demo} />
             <T v="small" tone={color.muted} style={{ textAlign: "center" }}>
               Then ${price.amount.toFixed(2)} {price.currency} a {price.per} (${perMonth} a month). Cancel anytime.
             </T>

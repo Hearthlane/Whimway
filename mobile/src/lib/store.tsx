@@ -6,7 +6,8 @@ import { PlanSpec, type Itinerary, type PlanRequest } from "@shared/schema";
 import { persistSpec } from "@shared/storage";
 import type { EventName } from "@shared/analytics";
 import type { SignalBatch } from "@shared/polls";
-import { api, type Status } from "./api";
+import { api, setClientContext, type Status } from "./api";
+import { isPlus } from "@shared/plus";
 import { supabase } from "./auth";
 
 /**
@@ -43,6 +44,8 @@ type Store = State & {
   /** Explicit, anonymous community reactions (polls, thumbs, plan pulse). */
   react: (source: SignalBatch["source"], entries: SignalBatch["entries"], reason?: SignalBatch["reason"]) => void;
   refreshStatus: () => Promise<void>;
+  /** Ask the server what this account is entitled to (store purchases). Returns true if Plus is active. */
+  syncEntitlement: () => Promise<boolean>;
   resetDevice: () => Promise<void>;
   demo: boolean;
 };
@@ -79,6 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const pending = useRef<PlanRequest | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  setClientContext({ installId: state.installId, demoPlus: Boolean(state.profile.plus?.demo && isPlus(state.profile)) });
 
   // Load persisted state once.
   useEffect(() => {
@@ -133,6 +137,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setProfile = useCallback((profile: TasteProfile) => {
     // Apply immediately so anything tracked in the same tick sees the new consent and stats.
     stateRef.current = { ...stateRef.current, profile };
+    setClientContext({ demoPlus: Boolean(profile.plus?.demo && isPlus(profile)) });
     setState((s) => ({ ...s, profile }));
     void AsyncStorage.setItem(KEYS.profile, JSON.stringify(profile)).catch(() => undefined);
     // Sync to the account when signed in; the device copy stays authoritative offline.
@@ -211,6 +216,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void refreshStatus();
   }, [refreshStatus]);
 
+  const syncEntitlement = useCallback(async () => {
+    try {
+      const e = await api<{ plus: boolean; plan?: "monthly" | "yearly"; until?: string; source: string }>("entitlement");
+      const current = stateRef.current.profile;
+      if (e.plus && e.source === "store")
+        setProfile({ ...current, plus: { active: true, plan: e.plan ?? "monthly", since: current.plus?.since ?? new Date().toISOString(), until: e.until, demo: false } });
+      // A store purchase that has lapsed is removed; a demo purchase is left alone.
+      else if (current.plus && !current.plus.demo) setProfile({ ...current, plus: undefined });
+      return e.plus;
+    } catch {
+      return isPlus(stateRef.current.profile);
+    }
+  }, [setProfile]);
+  const signedIn = Boolean(state.session);
+  useEffect(() => {
+    if (state.ready && signedIn) void syncEntitlement();
+  }, [state.ready, signedIn, syncEntitlement]);
+
   const resetDevice = useCallback(async () => {
     await AsyncStorage.multiRemove([KEYS.profile, KEYS.plans]);
     setLive({});
@@ -219,8 +242,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const demo = Boolean(state.status && (!state.status.places || !state.status.ai) && state.status.demo);
   const value = useMemo<Store>(
-    () => ({ ...state, live, setProfile, remember, setSaved, remove, submitFeedback, pending, track, react, refreshStatus, resetDevice, demo }),
-    [state, live, setProfile, remember, setSaved, remove, submitFeedback, track, react, refreshStatus, resetDevice, demo],
+    () => ({ ...state, live, setProfile, remember, setSaved, remove, submitFeedback, pending, track, react, refreshStatus, syncEntitlement, resetDevice, demo }),
+    [state, live, setProfile, remember, setSaved, remove, submitFeedback, track, react, refreshStatus, syncEntitlement, resetDevice, demo],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

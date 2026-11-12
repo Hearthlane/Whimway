@@ -70,6 +70,8 @@ export default function PlanScreen() {
 
   const fail = (e: unknown) => {
     const err = e instanceof ApiError ? e : new ApiError((e as Error).message);
+    // The server enforces the free monthly allowance; send people to Plus instead of an error.
+    if (err.code === "PLAN_LIMIT") return router.replace({ pathname: "/plus", params: { reason: "limit" } });
     setError({ title: friendly[err.code] ?? "We couldn’t build that plan", message: err.message });
   };
 

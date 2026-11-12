@@ -32,6 +32,15 @@ import { publicSpec, persistSpec } from "@/lib/storage";
 import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { summarize } from "@/lib/metrics";
+import { FREE } from "@/lib/plus";
+import {
+  countPlanMade,
+  entitlementFor,
+  handleBillingWebhook,
+  installOf,
+  plansThisMonth,
+  requirePlanAllowance,
+} from "@/lib/server/entitlements";
 import { allEvents, logEvent } from "@/lib/server/event-log";
 import { doneSummary } from "@/lib/magic-edit";
 import { Feedback, TasteProfile } from "@/lib/profile";
@@ -173,6 +182,16 @@ async function handleGET(request: Request, ctx: Context) {
         );
       return ok(data);
     }
+    if (path === "entitlement") {
+      const user = await currentUser();
+      const entitlement = await entitlementFor(request, user?.id);
+      return ok({
+        ...entitlement,
+        plansUsed: await plansThisMonth(installOf(request), user?.id),
+        plansLimit: entitlement.plus ? null : FREE.plansPerMonth,
+        signedIn: Boolean(user),
+      });
+    }
     if (path === "admin/metrics") {
       // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.
       const key = process.env.ADMIN_KEY;
@@ -264,6 +283,12 @@ export async function POST(request: Request, ctx: Context) {
 async function handlePOST(request: Request, ctx: Context) {
   try {
     const path = (await ctx.params).path.join("/");
+    // Server-to-server: authenticated by its own secret, not by browser origin.
+    if (path === "webhooks/billing") {
+      const result = await handleBillingWebhook(request);
+      telemetry("billing_webhook", result);
+      return ok(result);
+    }
     const input = await body(request);
     const user = await currentUser();
     await rateLimit(
@@ -288,10 +313,12 @@ async function handlePOST(request: Request, ctx: Context) {
       const data = z
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
+      await requirePlanAllowance(request, user?.id);
       const started = Date.now();
       const result = await planner(data.request, data.demo)
         .withCrowd(await crowdSignals())
         .generate(data.request);
+      await countPlanMade(installOf(request), user?.id).catch(() => undefined);
       // Cost-per-plan analytics: latency, provider attempts and AI tokens. No content.
       const stats = providerStats();
       telemetry("plan_generated", {

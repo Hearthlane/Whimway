@@ -65,15 +65,37 @@ planner on the yearly price pays about $3.33 a month, so cost per plan must stay
 under that divided by their monthly plans. Free users are capped at five plans a month,
 which bounds the cost of acquisition.
 
-## What production still needs
+## What is built for billing, and what still needs you
 
-1. **Real billing.** Apple and Google require in-app purchase for digital subscriptions.
-   Use StoreKit / Play Billing (RevenueCat is the usual shortcut). Needs your Apple
-   Developer and Google Play accounts, products created in both stores, and tax/banking set up.
-2. **Server-side entitlement.** Today Plus is a flag on the device, which is fine for a
-   demo and trivially bypassed. Production must verify store receipts on the server,
-   store the entitlement against the account, and enforce the monthly plan limit in
-   `/api/generate` (per account, not per device).
-3. **Legal.** Auto-renewal disclosure on the paywall, restore-purchases button, terms
-   and privacy links: required by both stores.
-4. **Partner agreements** before adding any referral codes.
+Built and tested:
+
+- **Server-enforced allowance.** `/api/generate` counts plans per account (per install for
+  guests) and returns `402 PLAN_LIMIT` after the free five; the app sends people to the
+  paywall. Usage lives in Postgres (`plan_usage`), so reinstalling does not reset a signed-in account.
+- **Server-side entitlement.** `GET /api/entitlement` is the source of truth. The app syncs
+  it at sign-in and from "Restore purchases". Nobody can grant themselves Plus: the
+  `entitlements` table is read-only to its owner.
+- **Billing webhook.** `POST /api/webhooks/billing` accepts RevenueCat-format events,
+  authenticated with `BILLING_WEBHOOK_SECRET`. Purchases, renewals and plan changes grant
+  Plus until the expiry date; cancellation keeps access until then; expiration removes it.
+- **Demo purchases** are honoured only where demo mode is on, never in production.
+- **Paywall requirements**: auto-renewal disclosure, Restore purchases, Terms and Privacy links.
+
+Still needs your accounts (about a day of setup, no more code beyond step 3):
+
+1. **Apple Developer and Google Play accounts**, with two subscription products in each
+   (`plus_monthly`, `plus_yearly`) and a 7-day free trial; banking and tax forms.
+2. **A RevenueCat project** linked to both stores. Set its webhook URL to
+   `https://<your-api>/api/webhooks/billing` with an Authorization header of
+   `Bearer <secret>`; put the same secret in `BILLING_WEBHOOK_SECRET` and store its hash
+   in the database (the SQL is at the top of `supabase/migrations/202611140001_entitlements.sql`).
+   Use the Supabase user id as the RevenueCat app user id.
+3. **The purchase call in the app**: add `react-native-purchases`, and replace the demo
+   `start()` in `mobile/src/app/plus.tsx` with its purchase call (a development build is
+   required; it does not run in Expo Go). Purchases need a signed-in account so the
+   entitlement can follow the person.
+4. **Partner agreements** before adding any referral codes to booking links.
+
+Known limits: guests are counted per install, which a determined person can reset by
+reinstalling; the daily per-network cap still applies. Magic Edit limits are enforced in
+the app only (edits are already rate-limited per day on the server).
