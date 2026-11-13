@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeInDown, FadeOut, SlideInDown } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { navigationUrl } from "@shared/navigation";
+import { navigationUrl , stopDirectionsUrl } from "@shared/navigation";
 import { PlanSpec, toSpec, type Itinerary } from "@shared/schema";
 import { shareUrl } from "@shared/share-link";
 import { api, ApiError } from "@/lib/api";
@@ -18,7 +18,6 @@ import { PlanPulse } from "@/plan/PlanPulse";
 import { placeKeys } from "@shared/polls";
 import { bookingOptions } from "@shared/booking";
 import { countPlan, editsLeft } from "@shared/plus";
-import { stopDirectionsUrl } from "@shared/navigation";
 import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
 import { Generating, stages } from "@/plan/Generating";
@@ -77,7 +76,7 @@ export default function PlanScreen() {
 
   // New plan: generate from the pending request.
   const generate = useCallback(async () => {
-    const request = store.pending.current;
+    const request = store.pendingRef.current;
     if (!request) {
       router.replace("/");
       return;

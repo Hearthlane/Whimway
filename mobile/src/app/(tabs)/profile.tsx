@@ -188,7 +188,7 @@ export default function Profile() {
                     const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });
                     // Late in the day, plan it for tomorrow evening so the place is open.
                     const late = base.date === now.toISODate() && base.startTime >= "19:30";
-                    store.pending.current = {
+                    store.pendingRef.current = {
                       ...base,
                       ...(late ? { date: now.plus({ days: 1 }).toISODate()!, startTime: "18:30" } : {}),
                       anchorPlaceIds: [f.id],

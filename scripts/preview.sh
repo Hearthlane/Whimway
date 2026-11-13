@@ -40,6 +40,8 @@ for _ in $(seq 1 60); do
   curl -fs -o /dev/null "http://127.0.0.1:${APP}/api/status" && break
   sleep 2
 done
+# Compile the web pages once now, so the first visitor (or a shared link) isn't kept waiting.
+for page in / /p /admin /privacy; do curl -fs -o /dev/null --max-time 120 "http://127.0.0.1:${API}${page}" || true; done
 echo
 echo "  App (click through everything): http://localhost:${APP}"
 echo "  Web app + share links:          http://localhost:${API}"

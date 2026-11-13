@@ -8,7 +8,7 @@ import { Badge, Button, Icon, IconButton, T } from "@/ui/kit";
 import { color, radius, space } from "@/ui/theme";
 
 export default function Saved() {
-  const { plans, remove, pending } = useStore();
+  const { plans, remove, pendingRef } = useStore();
   const saved = Object.entries(plans).filter(([, e]) => e.saved);
   const now = DateTime.now().toISODate()!;
   const upcoming = saved.filter(([, e]) => e.meta.date >= now).sort((a, b) => a[1].meta.date.localeCompare(b[1].meta.date));
@@ -17,7 +17,7 @@ export default function Saved() {
   const reuse = (e: PlanEntry) => {
     // "Do it again": same request (vibes, budget, who, where), new date — fresh venues.
     const tomorrow = DateTime.now().setZone(e.spec.request.location.timezone).plus({ days: 1 }).toISODate()!;
-    pending.current = { ...e.spec.request, date: tomorrow, excludedPlaceIds: [] };
+    pendingRef.current = { ...e.spec.request, date: tomorrow, excludedPlaceIds: [] };
     router.push("/plan/new");
   };
 

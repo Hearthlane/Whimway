@@ -54,7 +54,8 @@ export default function Import() {
   };
 
   useEffect(() => {
-    if (params.link) void open(params.link);
+    // Defer to a microtask so the effect only schedules the work.
+    if (params.link) void Promise.resolve().then(() => open(params.link!));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.link]);
 

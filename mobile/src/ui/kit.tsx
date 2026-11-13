@@ -25,17 +25,17 @@ type PressProps = Omit<React.ComponentProps<typeof Pressable>, "style"> & { styl
 /** Pressable with a springy scale: every tappable surface answers the finger. */
 export function Press({ style, scaleTo = 0.96, onPressIn, onPressOut, disabled, ...rest }: PressProps) {
   const scale = useSharedValue(1);
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (
     <AnimatedPressable
       {...rest}
       disabled={disabled}
       onPressIn={(e) => {
-        scale.value = withSpring(scaleTo, motion.spring);
+        scale.set(withSpring(scaleTo, motion.spring));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.value = withSpring(1, motion.spring);
+        scale.set(withSpring(1, motion.spring));
         onPressOut?.(e);
       }}
       style={[style, animated]}
