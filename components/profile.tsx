@@ -9,7 +9,7 @@ type Preferences = {
   interests: string[];
   dietary: string;
   accessibility: string;
-  mode: "WALK" | "DRIVE";
+  mode: "WALK" | "TRANSIT" | "DRIVE";
   budget: number;
   cuisines: string;
   atmosphere: string;
@@ -315,11 +315,12 @@ export function Profile() {
                 onChange={(e) =>
                   setPrefs({
                     ...prefs,
-                    mode: e.target.value as "WALK" | "DRIVE",
+                    mode: e.target.value as "WALK" | "TRANSIT" | "DRIVE",
                   })
                 }
               >
                 <option value="WALK">Walking</option>
+                <option value="TRANSIT">Transit</option>
                 <option value="DRIVE">Driving</option>
               </select>
             </label>

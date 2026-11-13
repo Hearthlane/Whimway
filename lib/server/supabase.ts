@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
+import { cookies, headers } from "next/headers";
 import { AppError } from "../errors";
 export async function supabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +11,16 @@ export async function supabase() {
       "Cloud saving and sharing need Supabase configuration. You can still save plans on this device.",
       503,
     );
+  // Native app: the user's Supabase access token arrives as a bearer token.
+  // Database RLS still enforces ownership via auth.uid() from this JWT.
+  const bearer = (await headers())
+    .get("authorization")
+    ?.match(/^Bearer\s+([\w-]+\.[\w-]+\.[\w-]+)$/)?.[1];
+  if (bearer)
+    return createClient(url, key, {
+      global: { headers: { Authorization: `Bearer ${bearer}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   const jar = await cookies();
   return createServerClient(url, key, {
     cookieOptions: {

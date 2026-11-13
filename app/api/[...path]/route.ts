@@ -5,8 +5,10 @@ import {
   PlanSpec,
   EditRequest,
   RemixRequest,
+  MagicEditRequest,
   Point,
   interests,
+  travelModes,
 } from "@/lib/schema";
 import { planner, demoAllowed } from "@/lib/server/providers";
 import {
@@ -27,6 +29,29 @@ import {
 import { AppError } from "@/lib/errors";
 import { withProviderContext } from "@/lib/server/provider-context";
 import { publicSpec, persistSpec } from "@/lib/storage";
+import { providerStats } from "@/lib/server/provider-context";
+import { eventNames } from "@/lib/analytics";
+import { summarize } from "@/lib/metrics";
+import { FREE } from "@/lib/plus";
+import {
+  countPlanMade,
+  entitlementFor,
+  handleBillingWebhook,
+  installOf,
+  plansThisMonth,
+  requireEditAllowance,
+  requirePlanAllowance,
+} from "@/lib/server/entitlements";
+import { allEvents, logEvent } from "@/lib/server/event-log";
+import { doneSummary } from "@/lib/magic-edit";
+import { Feedback, TasteProfile } from "@/lib/profile";
+import { PollAnswer, SignalBatch, placeKeys, polls } from "@/lib/polls";
+import {
+  crowdSignals,
+  invalidateCrowd,
+  pollSignals,
+  signalStore,
+} from "@/lib/server/signals";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
@@ -158,6 +183,81 @@ async function handleGET(request: Request, ctx: Context) {
         );
       return ok(data);
     }
+    if (path === "entitlement") {
+      const user = await currentUser();
+      const entitlement = await entitlementFor(request, user?.id);
+      return ok({
+        ...entitlement,
+        plansUsed: await plansThisMonth(installOf(request), user?.id),
+        plansLimit: entitlement.plus ? null : FREE.plansPerMonth,
+        signedIn: Boolean(user),
+      });
+    }
+    if (path === "admin/metrics") {
+      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.
+      const key = process.env.ADMIN_KEY;
+      const given =
+        request.headers.get("x-admin-key") ?? url.searchParams.get("key");
+      if (key ? given !== key : !demoAllowed())
+        throw new AppError(
+          "FORBIDDEN",
+          "Set ADMIN_KEY and pass it to view metrics.",
+          403,
+        );
+      const store = signalStore();
+      const [tallies, pollTallies] = await Promise.all([
+        store.tallies().catch(() => ({})),
+        store.polls().catch(() => ({})),
+      ]);
+      return ok({
+        summary: summarize(await allEvents()),
+        tallies,
+        polls: pollTallies,
+      });
+    }
+    if (path === "crowd/places") {
+      // Community ratings for specific venues; only keys with 5+ people are ever returned.
+      const ids = z
+        .string()
+        .max(2000)
+        .parse(url.searchParams.get("ids") ?? "")
+        .split(",")
+        .filter(Boolean)
+        .slice(0, 12);
+      const tallies = await signalStore()
+        .tallies()
+        .catch(() => ({}) as Record<string, { up: number; down: number }>);
+      return ok(
+        Object.fromEntries(
+          ids.flatMap((id) => {
+            const t = tallies[`place:${id.replace(/[^\w-]/g, "")}`];
+            return t ? [[id, t]] : [];
+          }),
+        ),
+      );
+    }
+    if (path === "polls") {
+      const tallies = await signalStore()
+        .polls()
+        .catch(() => ({}));
+      return ok({ polls, tallies });
+    }
+    if (path === "taste") {
+      const { db, user } = await requireUser();
+      const { data, error } = await db
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error)
+        throw new AppError(
+          "DATABASE_ERROR",
+          "Could not load your taste profile.",
+          503,
+        );
+      const taste = TasteProfile.safeParse(data?.preferences?.taste ?? null);
+      return ok(taste.success ? taste.data : null);
+    }
     if (path === "profile") {
       const { db, user } = await requireUser();
       const { data, error } = await db
@@ -184,15 +284,29 @@ export async function POST(request: Request, ctx: Context) {
 async function handlePOST(request: Request, ctx: Context) {
   try {
     const path = (await ctx.params).path.join("/");
+    // Server-to-server: authenticated by its own secret, not by browser origin.
+    if (path === "webhooks/billing") {
+      const result = await handleBillingWebhook(request);
+      telemetry("billing_webhook", result);
+      return ok(result);
+    }
     const input = await body(request);
     const user = await currentUser();
     await rateLimit(
       request,
       path === "generate"
         ? "generate"
-        : path === "remix" || path === "edit"
+        : path === "remix" || path === "edit" || path === "magic-edit"
           ? "remix"
-          : "write",
+          : [
+                "events",
+                "signals",
+                "polls/answer",
+                "errors",
+                "feedback",
+              ].includes(path)
+            ? "signal"
+            : "write",
       user?.id,
     );
     if (path === "point") return ok(await resolvePoint(Point.parse(input)));
@@ -200,10 +314,22 @@ async function handlePOST(request: Request, ctx: Context) {
       const data = z
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
-      const result = await planner(data.request, data.demo).generate(
-        data.request,
-      );
-      telemetry("plan_generated");
+      await requirePlanAllowance(request, user?.id);
+      const started = Date.now();
+      const result = await planner(data.request, data.demo)
+        .withCrowd(await crowdSignals())
+        .generate(data.request);
+      await countPlanMade(installOf(request), user?.id).catch(() => undefined);
+      // Cost-per-plan analytics: latency, provider attempts and AI tokens. No content.
+      const stats = providerStats();
+      telemetry("plan_generated", {
+        ms: Date.now() - started,
+        stops: result.stops.length,
+        demo: result.demo,
+        attempts: stats?.attempts,
+        inputTokens: stats?.inputTokens,
+        outputTokens: stats?.outputTokens,
+      });
       return ok(result);
     }
     if (path === "hydrate") {
@@ -237,13 +363,173 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "remix") {
       const data = RemixRequest.parse(input);
-      const result = await planner(data.spec.request, data.spec.demo).generate(
-        data.spec.request,
-        data.spec,
-        data.action,
-      );
+      const result = await planner(data.spec.request, data.spec.demo)
+        .withCrowd(await crowdSignals())
+        .generate(data.spec.request, data.spec, data.action);
       telemetry("plan_remixed");
       return ok(result);
+    }
+    if (path === "magic-edit") {
+      const data = MagicEditRequest.parse(input);
+      const countEdit = await requireEditAllowance(
+        request,
+        user?.id,
+        data.spec.id,
+      );
+      const started = Date.now();
+      const result = await planner(data.spec.request, data.spec.demo)
+        .withCrowd(await crowdSignals())
+        .magicEdit(data.spec, data.instruction);
+      await countEdit().catch(() => undefined);
+      const stats = providerStats();
+      telemetry("magic_edit_applied", {
+        kind: result.op.kind,
+        replaced: result.op.targets.length,
+        ms: Date.now() - started,
+        attempts: stats?.attempts,
+      });
+      return ok({
+        plan: result.plan,
+        changed: result.changed,
+        summary: result.op.summary,
+        done: doneSummary(result.op.summary),
+        kind: result.op.kind,
+      });
+    }
+    if (path === "events") {
+      const data = z
+        .object({
+          name: z.enum(eventNames),
+          installId: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
+          props: z
+            .record(
+              z.string().max(40),
+              z.union([z.string().max(80), z.number(), z.boolean()]),
+            )
+            .refine((p) => Object.keys(p).length <= 12)
+            .default({}),
+        })
+        .parse(input);
+      telemetry(`client_${data.name}`, data.props);
+      await logEvent({
+        name: data.name,
+        installId: data.installId,
+        at: new Date().toISOString(),
+        props: data.props,
+      });
+      if (
+        process.env.NEXT_PUBLIC_SUPABASE_URL &&
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+      ) {
+        const db = await supabase();
+        // Best effort: analytics must never break the product.
+        await db.rpc("track_event", {
+          event_name: data.name,
+          install: data.installId,
+          properties: data.props,
+        });
+      }
+      return ok({ ok: true });
+    }
+    if (path === "polls/answer") {
+      const answer = PollAnswer.parse(input);
+      if (!polls.some((p) => p.id === answer.pollId))
+        throw new AppError("NOT_FOUND", "That poll has ended.", 404);
+      const store = signalStore();
+      const tally = await store.answer(
+        answer.pollId,
+        answer.installId,
+        answer.choice,
+      );
+      await store.record({
+        installId: answer.installId,
+        source: "poll",
+        entries: pollSignals(answer.pollId, answer.choice),
+      });
+      invalidateCrowd();
+      telemetry("poll_answered", {
+        poll: answer.pollId,
+        choice: answer.choice,
+      });
+      return ok({ tally });
+    }
+    if (path === "errors") {
+      // Client crash reports: scrubbed to name / first message line / platform only.
+      const report = z
+        .object({
+          name: z.string().max(60),
+          message: z.string().max(200),
+          platform: z.enum(["ios", "android", "web", "windows", "macos"]),
+        })
+        .parse(input);
+      console.error(
+        JSON.stringify({
+          event: "client_error",
+          ...report,
+          at: new Date().toISOString(),
+        }),
+      );
+      return ok({ logged: true });
+    }
+    if (path === "signals") {
+      const batch = SignalBatch.parse(input);
+      await signalStore().record(batch);
+      invalidateCrowd();
+      telemetry("signals_recorded", {
+        source: batch.source,
+        n: batch.entries.length,
+        reason: batch.reason ?? null,
+      });
+      return ok({ recorded: batch.entries.length });
+    }
+    if (path === "feedback") {
+      const feedback = Feedback.parse(input);
+      telemetry("feedback_submitted", {
+        went: feedback.went,
+        rating: feedback.rating ?? null,
+      });
+      // Post-outing reactions are the strongest community signal: did people love it in real life?
+      const installId = z
+        .string()
+        .regex(/^[A-Za-z0-9-]{8,64}$/)
+        .safeParse(input.installId);
+      if (installId.success && feedback.went !== "no" && feedback.stops.length)
+        await signalStore()
+          .record({
+            installId: installId.data,
+            source: "feedback",
+            entries: feedback.stops
+              .flatMap((st) =>
+                placeKeys({
+                  id: st.placeId,
+                  category: st.category,
+                  types: [],
+                }).map((key) => ({ key, value: st.reaction })),
+              )
+              .slice(0, 16),
+          })
+          .then(invalidateCrowd)
+          .catch(() => undefined);
+      if (!user) return ok({ stored: "device" });
+      const { db } = await requireUser();
+      const { error } = await db.from("feedback").upsert(
+        {
+          user_id: user.id,
+          plan_id: feedback.planId,
+          went: feedback.went,
+          rating: feedback.rating ?? null,
+          stops: feedback.stops,
+          note: feedback.note,
+        },
+        { onConflict: "user_id,plan_id" },
+      );
+      if (error)
+        throw new AppError(
+          "SAVE_FAILED",
+          "Could not save feedback to your account. It is kept on this device.",
+          503,
+        );
+      return ok({ stored: "account" });
     }
     if (path === "explore") {
       const data = z
@@ -254,10 +540,9 @@ async function handlePOST(request: Request, ctx: Context) {
         })
         .parse(input);
       return ok(
-        await planner(data.request, data.demo).explore(
-          data.request,
-          data.query,
-        ),
+        await planner(data.request, data.demo)
+          .withCrowd(await crowdSignals())
+          .explore(data.request, data.query),
       );
     }
     if (path === "place") {
@@ -355,6 +640,26 @@ async function handlePOST(request: Request, ctx: Context) {
       if (error) throw new AppError("AUTH_FAILED", "Could not sign out.", 502);
       return ok({ signedOut: true });
     }
+    if (path === "taste") {
+      const taste = TasteProfile.parse(input);
+      const { db, user } = await requireUser();
+      const { data } = await db
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      const { error } = await db.from("profiles").upsert({
+        id: user.id,
+        preferences: { ...(data?.preferences ?? {}), taste },
+      });
+      if (error)
+        throw new AppError(
+          "SAVE_FAILED",
+          "Could not sync your taste profile.",
+          503,
+        );
+      return ok({ saved: true });
+    }
     if (path === "profile") {
       const preferences = z
         .object({
@@ -362,7 +667,7 @@ async function handlePOST(request: Request, ctx: Context) {
           interests: z.array(z.enum(interests)).max(10),
           dietary: z.string().max(300),
           accessibility: z.string().max(300),
-          mode: z.enum(["WALK", "DRIVE"]),
+          mode: z.enum(travelModes),
           budget: z.number().min(0).max(1000000),
           cuisines: z.string().max(200),
           atmosphere: z.string().max(200),
@@ -370,9 +675,18 @@ async function handlePOST(request: Request, ctx: Context) {
         })
         .parse(input);
       const { db, user } = await requireUser();
-      const { error } = await db
+      const { data: existing } = await db
         .from("profiles")
-        .upsert({ id: user.id, preferences });
+        .select("preferences")
+        .eq("id", user.id)
+        .maybeSingle();
+      const { error } = await db.from("profiles").upsert({
+        id: user.id,
+        // Keep the app's taste profile when the web preferences form saves.
+        preferences: existing?.preferences?.taste
+          ? { ...preferences, taste: existing.preferences.taste }
+          : preferences,
+      });
       if (error)
         throw new AppError("SAVE_FAILED", "Could not save preferences.", 503);
       return ok({ saved: true });

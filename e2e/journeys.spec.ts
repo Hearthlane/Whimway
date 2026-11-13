@@ -277,6 +277,8 @@ test("Accessibility: discovery, forms, collection, profile and itinerary at phon
   page,
 }) => {
   const { default: AxeBuilder } = await import("@axe-core/playwright");
+  // Audit settled content, not mid-fade frames (entrance animations honour reduced motion).
+  await page.emulateMedia({ reducedMotion: "reduce" });
   for (const path of [
     "/",
     "/create",
@@ -481,4 +483,49 @@ test("Profile sync preserves unsynced skipped places and existing account prefer
       localStorage.getItem("whimway:preferences:dirty"),
     ),
   ).toBeNull();
+});
+
+test("Account-free share link: a recipient opens a redacted plan from the URL fragment and copies it", async ({
+  page,
+  request,
+}) => {
+  const { encodeShare } = await import("../lib/share-link");
+  const { buildRequest, interpret } = await import("../lib/intent");
+  const { emptyProfile } = await import("../lib/profile");
+  const { DateTime } = await import("luxon");
+  const when = DateTime.now().setZone("America/Toronto").plus({ days: 3 });
+  const text =
+    "romantic night with my partner downtown, $100 total, nut allergy";
+  const plan = await (
+    await request.post("/api/generate", {
+      headers: { "X-Whimway-Client": "app" },
+      data: {
+        demo: true,
+        request: {
+          ...buildRequest(
+            text,
+            interpret(text, when),
+            { ...emptyProfile(), dietary: "nut allergy" },
+            when,
+          ),
+          date: when.toISODate(),
+          startTime: "18:30",
+        },
+      },
+    })
+  ).json();
+  expect(plan.stops.length).toBeGreaterThanOrEqual(2);
+  const fragment = encodeShare(plan);
+  // Private details never travel in the link.
+  const decoded = Buffer.from(fragment, "base64url").toString("utf8");
+  expect(decoded).not.toContain("nut allergy");
+  expect(decoded).not.toContain(text);
+  await page.goto(`/p#${fragment}`);
+  await expect(page.getByRole("heading", { name: plan.title })).toBeVisible();
+  await expect(page.locator(".stop-card")).toHaveCount(plan.stops.length);
+  await page
+    .getByRole("button", { name: /make it yours/i })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/plan\//);
 });

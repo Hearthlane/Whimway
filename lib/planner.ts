@@ -6,6 +6,7 @@ import { hoursCheck } from "./hours";
 export { hoursCheck } from "./hours";
 import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
+import { interpretEdit, type EditOp } from "./magic-edit";
 import type {
   CandidatePlace,
   Itinerary,
@@ -29,6 +30,65 @@ export function costTotal(places: CandidatePlace[]) {
     currency: places[0]?.price.currency ?? "USD",
   };
 }
+import { isAlcoholLed, isOutdoor, vibeFit } from "./planner-filters";
+import { crowdFor, type CrowdSignals } from "./crowd";
+export { isOutdoor };
+/** Review-weighted quality nudged by the user's learned category affinity. */
+export function score(
+  p: CandidatePlace,
+  request?: Partial<Pick<PlanRequest, "affinity" | "vibes" | "budget">>,
+  crowd: CrowdSignals = {},
+) {
+  const affinity = request?.affinity ?? {};
+  const taste = Math.max(
+    -3,
+    Math.min(
+      3,
+      [p.category, ...p.types].reduce(
+        (n, key) => n + (affinity[key.toLowerCase()] ?? 0),
+        0,
+      ),
+    ),
+  );
+  // A single venue that alone exceeds the per-person budget is a poor shortlist pick.
+  const overBudget =
+    request?.budget !== undefined &&
+    p.price.high !== null &&
+    p.price.high > request.budget;
+  // Community sentiment nudges (±0.3 max); it never overrides constraints or the user's own taste.
+  return (
+    quality(p) +
+    crowdFor(p, crowd) * 0.3 +
+    taste * 0.15 +
+    vibeFit(p, request?.vibes ?? []) * 0.2 -
+    (overBudget ? 0.4 : 0)
+  );
+}
+/**
+ * True unless known hours show the place closed for every 30-minute slot of the
+ * outing. Unknown hours pass (and are labelled later), so we never invent closures.
+ */
+export function openDuring(place: CandidatePlace, request: PlanRequest) {
+  let start: DateTime;
+  try {
+    start = localStart(
+      request.date,
+      request.startTime,
+      request.location.timezone,
+    );
+  } catch {
+    return true;
+  }
+  for (let t = 0; t + 30 <= request.duration; t += 30) {
+    const check = hoursCheck(
+      place,
+      start.plus({ minutes: t }),
+      start.plus({ minutes: t + 30 }),
+    );
+    if (!check.closed) return true;
+  }
+  return false;
+}
 export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
   return dedupe(places).filter(
     (p) =>
@@ -37,7 +97,9 @@ export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
         inside(p.point, request.area.center, request.area.radius)) &&
       (!request.hardBudget ||
         (p.price.high !== null && p.price.high <= request.budget)) &&
-      (!request.accessibility || p.wheelchairAccessible !== false),
+      (!request.accessibility || p.wheelchairAccessible !== false) &&
+      (!request.indoorOnly || !isOutdoor(p)) &&
+      (!request.alcoholFree || !isAlcoholLed(p)),
   );
 }
 export function validateRequest(request: PlanRequest, now = DateTime.now()) {
@@ -89,7 +151,8 @@ export async function schedule(
     code: string,
     message: string,
   ) => {
-    if (!allowPartial || ref.locked) throw new AppError(code, message, 422);
+    if (!allowPartial || ref.locked)
+      throw new AppError(code, message, 422, undefined, ref.placeId);
     issues.push({ code, message, severity: "warning" });
   };
   for (const ref of spec.stops) {
@@ -261,19 +324,45 @@ export class Planner {
     private ai: RecommendationProvider,
     private demo = false,
   ) {}
+  /** Community signals (what people find fun), loaded by the API before planning. */
+  crowd: CrowdSignals = {};
+  withCrowd(crowd: CrowdSignals) {
+    this.crowd = crowd;
+    return this;
+  }
+  // Per-operation memo: one request never pays twice for the same place details.
+  private memo = new Map<string, Promise<CandidatePlace>>();
+  private details(id: string, currency: string) {
+    const key = `${id}:${currency}`;
+    let hit = this.memo.get(key);
+    if (!hit) {
+      hit = this.places.details(id, currency);
+      hit.catch(() => this.memo.delete(key));
+      this.memo.set(key, hit);
+    }
+    return hit;
+  }
   async generate(
     request: PlanRequest,
     previous?: PlanSpec,
     action?: string,
+    options: { extend?: boolean } = {},
   ): Promise<Itinerary> {
     validateRequest(request);
-    if (previous?.stops.every((s) => s.locked))
+    if (!options.extend && previous?.stops.every((s) => s.locked))
       throw new AppError(
         "ALL_LOCKED",
         "All stops are locked. Unlock a stop before remixing.",
         422,
       );
-    const locked = previous?.stops.filter((s) => s.locked) ?? [];
+    const locked = previous
+      ? previous.stops.filter((s) => s.locked)
+      : request.anchorPlaceIds.map((placeId) => ({
+          placeId,
+          minutes: 60,
+          locked: true,
+          reason: "Your favourite — the plan is built around it.",
+        }));
     const focus: PlanRequest["interests"][number] | undefined =
       action?.includes("More food")
         ? "Food & drinks"
@@ -292,9 +381,7 @@ export class Planner {
       : request;
     const found = await this.places.search(retrievalRequest);
     const lockedPlaces = await Promise.all(
-      locked.map((s) =>
-        this.places.details(s.placeId, request.location.currency),
-      ),
+      locked.map((s) => this.details(s.placeId, request.location.currency)),
     );
     let candidates = candidatesFor({ ...request, hardBudget: false }, [
       ...found,
@@ -307,15 +394,21 @@ export class Planner {
         422,
       );
     // Hydrate a bounded shortlist before AI selection, so hours and cost are provider data.
-    candidates.sort((a, b) => quality(b) - quality(a));
-    const shortlist = diverseShortlist(candidates, lockedPlaces, 10);
+    candidates.sort(
+      (a, b) => score(b, request, this.crowd) - score(a, request, this.crowd),
+    );
+    const shortlist = diverseShortlist(candidates, lockedPlaces, 12);
+    const lockedIdSet = new Set(locked.map((l) => l.placeId));
     candidates = candidatesFor(
       request,
       await Promise.all(
-        shortlist.map((p) =>
-          this.places.details(p.id, request.location.currency),
-        ),
+        shortlist.map((p) => this.details(p.id, request.location.currency)),
       ),
+    ).filter(
+      (p) =>
+        lockedIdSet.has(p.id) ||
+        // Strong, well-attested community dislike of this specific venue excludes it.
+        ((this.crowd[`place:${p.id}`] ?? 0) > -0.5 && openDuring(p, request)),
     );
     if (!candidates.length)
       throw new AppError(
@@ -333,6 +426,9 @@ export class Planner {
           locked,
           action,
           previous?.stops,
+          Object.fromEntries(
+            candidates.map((p) => [p.id, crowdFor(p, this.crowd)]),
+          ),
         ),
       );
       if (!parsed.success)
@@ -384,6 +480,35 @@ export class Planner {
       try {
         return await schedule(spec, candidates, this.routes, attempt === 1);
       } catch (e) {
+        // A favourite the plan is built around must be visited while it is open: move it to
+        // the start of the outing before giving up.
+        const anchors = previous ? [] : request.anchorPlaceIds;
+        if (
+          e instanceof AppError &&
+          ["CLOSED", "TOO_LONG"].includes(e.code) &&
+          anchors.length
+        ) {
+          const first = [
+            ...spec.stops.filter((s) => anchors.includes(s.placeId)),
+            ...spec.stops.filter((s) => !anchors.includes(s.placeId)),
+          ];
+          try {
+            return await schedule(
+              { ...spec, stops: first },
+              candidates,
+              this.routes,
+              true,
+            );
+          } catch {
+            const name =
+              candidates.find((p) => p.id === anchors[0])?.name ?? "That place";
+            throw new AppError(
+              "ANCHOR_CLOSED",
+              `${name} isn’t open at that time. Try an earlier start or another day.`,
+              422,
+            );
+          }
+        }
         if (
           !(e instanceof AppError) ||
           attempt === 1 ||
@@ -391,6 +516,9 @@ export class Planner {
         )
           throw e;
         action = `${action ?? ""} Repair the proposed schedule: ${e.message}`;
+        // Deterministic feedback: never offer the venue that just failed validation again.
+        if (e.placeId && !locked.some((l) => l.placeId === e.placeId))
+          candidates = candidates.filter((p) => p.id !== e.placeId);
       }
     }
     throw new AppError(
@@ -399,10 +527,91 @@ export class Planner {
       422,
     );
   }
+  /**
+   * Magic Edit: apply a free-text instruction as a structured, minimal change.
+   * Kept stops are temporarily locked so they survive verbatim; the user's own
+   * locks are restored afterwards.
+   */
+  async magicEdit(
+    spec: PlanSpec,
+    instruction: string,
+  ): Promise<{ plan: Itinerary; op: EditOp; changed: string[] }> {
+    const currency = spec.request.location.currency;
+    const places = await Promise.all(
+      spec.stops.map((s) => this.details(s.placeId, currency)),
+    );
+    const op = interpretEdit(
+      instruction,
+      spec.stops.map((s, i) => ({
+        placeId: s.placeId,
+        locked: s.locked,
+        name: places[i].name,
+        category: places[i].category,
+        types: places[i].types,
+        priceHigh: places[i].price.high,
+        travel: i ? distance(places[i - 1].point, places[i].point) : 0,
+      })),
+      spec.request,
+    );
+    if (op.kind === "noop")
+      throw new AppError("NOTHING_TO_CHANGE", op.summary, 422);
+    const request: PlanRequest = { ...spec.request, ...op.patch };
+    const before = new Set(spec.stops.map((s) => s.placeId));
+    let plan: Itinerary;
+    if (op.kind === "remove") {
+      plan = await this.edit({
+        ...spec,
+        request,
+        stops: spec.stops.filter((_, i) => !op.targets.includes(i)),
+      });
+    } else {
+      const replaced = op.targets.map((i) => spec.stops[i].placeId);
+      const editRequest = {
+        ...request,
+        excludedPlaceIds: [
+          ...new Set([...request.excludedPlaceIds, ...replaced]),
+        ].slice(-100),
+      };
+      const userLocked = new Set(
+        spec.stops.filter((s) => s.locked).map((s) => s.placeId),
+      );
+      plan = await this.generate(
+        editRequest,
+        {
+          ...spec,
+          request: editRequest,
+          stops: spec.stops.map((s, i) => ({
+            ...s,
+            locked: s.locked || !op.targets.includes(i),
+          })),
+        },
+        op.action,
+        { extend: op.kind === "add" },
+      );
+      plan = {
+        ...plan,
+        // Targeted edits keep the plan's identity; only a full rework renames it.
+        ...(op.targets.length < spec.stops.length
+          ? { title: spec.title, summary: spec.summary }
+          : {}),
+        stops: plan.stops.map((s) => ({
+          ...s,
+          locked: userLocked.has(s.placeId),
+        })),
+      };
+    }
+    return {
+      plan,
+      op,
+      changed: plan.stops
+        .filter((s) => !before.has(s.placeId))
+        .map((s) => s.placeId),
+    };
+  }
   async edit(spec: PlanSpec) {
     const places = await Promise.all(
       spec.stops.map((s) =>
-        this.places.details(s.placeId, spec.request.location.currency),
+        this.details(s.placeId, spec.request.location.currency),
       ),
     );
     return schedule(
@@ -416,10 +625,12 @@ export class Planner {
       { ...request, hardBudget: false },
       await this.places.search(request, query),
     );
-    basic.sort((a, b) => quality(b) - quality(a));
+    basic.sort(
+      (a, b) => score(b, request, this.crowd) - score(a, request, this.crowd),
+    );
     const detailed = await Promise.all(
       diverseShortlist(basic, [], 10).map((p) =>
-        this.places.details(p.id, request.location.currency),
+        this.details(p.id, request.location.currency),
       ),
     );
     return candidatesFor(request, detailed);
@@ -445,7 +656,7 @@ export class Planner {
     }
     const results = await Promise.allSettled(
       hydrated.stops.map((s) =>
-        this.places.details(s.placeId, hydrated.request.location.currency),
+        this.details(s.placeId, hydrated.request.location.currency),
       ),
     );
     const places: CandidatePlace[] = [];
@@ -574,7 +785,10 @@ export function optimizeOrder(
         ];
         if (
           repeats(proposal) <= repeats(best) &&
-          length(proposal) < length(best) - 1
+          // The selection's order carries intent (a meal at mealtime, drinks last), so only
+          // reorder when it removes real backtracking, not to shave a few metres.
+          length(proposal) < length(best) * 0.8 &&
+          length(best) - length(proposal) > 400
         )
           best = proposal;
       }

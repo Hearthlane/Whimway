@@ -36,6 +36,8 @@ export function publicSpec(input: PlanSpec): PlanSpec {
       excludedPlaceIds: [],
       dietary: "",
       accessibility: "",
+      affinity: {},
+      anchorPlaceIds: [],
       start: undefined,
       end: undefined,
       location: {
