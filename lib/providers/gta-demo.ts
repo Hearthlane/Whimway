@@ -13,6 +13,7 @@ import {
 import { distance } from "../geo";
 import { hoursCheck } from "../hours";
 import { localStart } from "../time";
+import { voice } from "./demo-voice";
 
 type Row = [
   key: string,
@@ -523,6 +524,77 @@ const rows: Row[] = [
     [0, 10],
     [9, 16],
   ],
+  // Late-evening and rainy-day additions
+  [
+    "rec-room",
+    "The Rec Room",
+    43.6411,
+    -79.3856,
+    "arcade & games bar",
+    ["amusement_center", "bar", "game", "restaurant"],
+    [20, 40],
+    [11, 24],
+  ],
+  [
+    "second-city",
+    "The Second City Toronto",
+    43.6417,
+    -79.3806,
+    "comedy theatre",
+    ["performing_arts_theater", "comedy_club"],
+    [30, 45],
+    [18, 23],
+  ],
+  [
+    "nathan-phillips",
+    "Nathan Phillips Square",
+    43.6525,
+    -79.3835,
+    "city square",
+    ["plaza", "tourist_attraction"],
+    [0, 0],
+    "always",
+  ],
+  [
+    "harbourfront",
+    "Harbourfront Centre",
+    43.6387,
+    -79.3826,
+    "waterfront arts centre",
+    ["cultural_center", "tourist_attraction", "art_gallery"],
+    [0, 0],
+    [10, 22],
+  ],
+  [
+    "barchef",
+    "BarChef",
+    43.6478,
+    -79.3978,
+    "cocktail bar",
+    ["cocktail_bar", "bar"],
+    [20, 40],
+    [18, 1],
+  ],
+  [
+    "ddo",
+    "David Dunlap Observatory",
+    43.8627,
+    -79.4222,
+    "observatory",
+    ["observatory", "tourist_attraction", "museum"],
+    [15, 25],
+    [19, 23, [5, 6]],
+  ],
+  [
+    "colossus",
+    "Cineplex Cinemas Vaughan",
+    43.7877,
+    -79.544,
+    "cinema",
+    ["movie_theater"],
+    [15, 22],
+    [12, 24],
+  ],
 ];
 
 function periods(h: Row[7]): OpeningPeriod[] {
@@ -630,7 +702,9 @@ function relevance(
 ) {
   const t = text(p);
   let s = 0;
-  for (const v of req.vibes) if (vibeTypes[v]?.test(t)) s += 2;
+  const note = voice[p.id.replace(/^gta-/, "")];
+  for (const v of req.vibes)
+    if (note ? note.vibes.includes(v) : vibeTypes[v]?.test(t)) s += 2.5;
   const a = action.toLowerCase();
   for (const [v, re] of Object.entries(vibeTypes))
     if (a.includes(v) && re.test(t)) s += 3;
@@ -658,7 +732,7 @@ function relevance(
   if (req.interests.includes("Nightlife") && /bar|brewery|cocktail/.test(t))
     s += 1;
   // Prefer places close to the centre of the chosen area (or to kept stops on "less walking").
-  s -= distance(p.point, near ?? req.area.center) / (near ? 500 : 4000);
+  s -= distance(p.point, near ?? req.area.center) / (near ? 500 : 1500);
   return s;
 }
 
@@ -788,13 +862,12 @@ export function demoSelect(
     solo: "you",
     family: "the family",
   }[req.companions ?? "partner"];
+  const group = req.companions === "friends" || req.companions === "family";
   const reason = (p: CandidatePlace) => {
+    const note = voice[p.id.replace(/^gta-/, "")];
+    if (note) return (group ? note.crew : note.date).slice(0, 240);
     const fit = req.vibes.find((v) => vibeTypes[v]?.test(text(p)));
-    if (isMeal(p))
-      return `A proper sit-down ${p.category} to anchor the night${fit ? ` — fits the ${fit} mood` : ""}.`;
-    if (isSweetOrDrink(p))
-      return `An easy ${p.category} stop to linger and talk${fit ? `; leans ${fit}` : ""}.`;
-    return `${p.category[0].toUpperCase()}${p.category.slice(1)} that gives ${who} something to do together${fit ? `, and it's properly ${fit}` : ""}.`;
+    return `${p.category[0].toUpperCase()}${p.category.slice(1)} that gives ${who} something to do together${fit ? `, and it suits a ${fit} mood` : ""}.`;
   };
   const minutes = (p: CandidatePlace) =>
     isMeal(p)
@@ -878,7 +951,44 @@ export function demoSelect(
   }
   return {
     title,
-    summary: `Demo plan for ${who}${req.vibes.length ? `, leaning ${req.vibes.join(" + ")}` : ""}. Real places; hours, prices and travel are demo estimates.`,
+    summary: summarise(
+      ordered.map((o) => byId.get(o.placeId)!).filter(Boolean),
+      req,
+      who,
+    ),
     stops: ordered.slice(0, 8),
   };
+}
+
+/** A short, natural overview of the night, in the planner's voice. */
+function summarise(places: CandidatePlace[], req: PlanRequest, who: string) {
+  const mood = req.vibes.length
+    ? req.vibes.slice(0, 2).join(" and ")
+    : "easygoing";
+  const part =
+    Number(req.startTime.slice(0, 2)) >= 17
+      ? "evening"
+      : Number(req.startTime.slice(0, 2)) >= 12
+        ? "afternoon"
+        : "morning";
+  const article = /^[aeiou]/.test(mood) ? "An" : "A";
+  // Order-free on purpose: the route optimiser may still reorder stops after selection.
+  const meal = places.find(isMeal);
+  const clean = (p: CandidatePlace) =>
+    p.name.replace(/ \(.*\)$/, "").replace(/\.$/, "");
+  const others = places.filter((p) => p !== meal).map(clean);
+  const list =
+    others.length > 1
+      ? `${others.slice(0, -1).join(", ")} and ${others.at(-1)}`
+      : (others[0] ?? "");
+  const mealWord =
+    part === "evening" ? "dinner" : part === "afternoon" ? "a bite" : "brunch";
+  const route = meal
+    ? `${list ? `${list}, with ${mealWord} at ${clean(meal)}` : `${mealWord[0].toUpperCase()}${mealWord.slice(1)} at ${clean(meal)}`}.`
+    : `${list}.`;
+  const free = places.every((p) => (p.price.high ?? 1) === 0);
+  return `${article} ${mood} ${part} for ${who}. ${route}${free ? " It costs nothing." : ""}`.slice(
+    0,
+    350,
+  );
 }

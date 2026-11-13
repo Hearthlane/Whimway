@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:db": "node scripts/test-database.mjs",
-    "preview": "bash scripts/preview.sh"
+    "preview": "bash scripts/preview.sh",
+    "check-setup": "node scripts/check-setup.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",

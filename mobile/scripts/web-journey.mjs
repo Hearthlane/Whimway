@@ -174,6 +174,6 @@ let page;
   assert.equal(personaName, 'Romantic Adventurer', 'personality reveal');
   assert.ok(bookKinds.includes('book-directions'), 'booking options');
   assert.ok(/1 plan made/.test(nights), `history counts plans (${nights})`);
-  console.log(JSON.stringify({ nights, bookKinds, personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: [...new Set(apiCalls)], errors }, null, 2));
+  console.log(JSON.stringify({ nights, bookKinds, personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: Object.entries(apiCalls.reduce((m, c) => ((m[c] = (m[c] || 0) + 1), m), {})).map(([k, n]) => `${n}x ${k}`), errors }, null, 2));
   await b.close();
 })().catch(async e => { await page?.screenshot({ path: `${out}/zz-failure.png` }).catch(() => {}); console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });

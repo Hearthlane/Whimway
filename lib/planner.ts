@@ -785,7 +785,10 @@ export function optimizeOrder(
         ];
         if (
           repeats(proposal) <= repeats(best) &&
-          length(proposal) < length(best) - 1
+          // The selection's order carries intent (a meal at mealtime, drinks last), so only
+          // reorder when it removes real backtracking, not to shave a few metres.
+          length(proposal) < length(best) * 0.8 &&
+          length(best) - length(proposal) > 400
         )
           best = proposal;
       }

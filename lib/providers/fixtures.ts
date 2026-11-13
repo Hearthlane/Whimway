@@ -39,7 +39,25 @@ export const fixtureLocations: Location[] = [
 ];
 export function fixturePlaces(req: PlanRequest): CandidatePlace[] {
   if (req.location.center.lat > 60) return [];
-  if (inGta(req)) return gtaCatalog;
+  // Like a real nearby search: the closest places to the chosen area, nearest first.
+  if (inGta(req))
+    return (
+      [...gtaCatalog]
+        .sort(
+          (a, b) =>
+            distance(a.point, req.area.center) -
+            distance(b.point, req.area.center),
+        )
+        .slice(0, 30)
+        // Stand-in for a search provider's location bias: nearer results rank a little higher.
+        .map((p) => ({
+          ...p,
+          rating: Math.max(
+            3.5,
+            4.7 - (distance(p.point, req.area.center) / 1000) * 0.12,
+          ),
+        }))
+    );
   const jp = req.location.timezone === "Asia/Tokyo";
   const base = fixtureLocations[jp ? 1 : 0].center;
   const labels = jp
