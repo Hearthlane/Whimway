@@ -595,6 +595,137 @@ const rows: Row[] = [
     [15, 22],
     [12, 24],
   ],
+  // More places to eat, so guided planning has real choices per cuisine
+  [
+    "kinka",
+    "Kinka Izakaya",
+    43.6603,
+    -79.3789,
+    "japanese restaurant",
+    ["japanese_restaurant", "restaurant", "bar"],
+    [30, 50],
+    [17, 24],
+  ],
+  [
+    "mothers-dumplings",
+    "Mother's Dumplings",
+    43.6577,
+    -79.3997,
+    "chinese restaurant",
+    ["chinese_restaurant", "restaurant"],
+    [15, 28],
+    [11, 22],
+  ],
+  [
+    "sansotei",
+    "Sansotei Ramen",
+    43.6553,
+    -79.3866,
+    "ramen restaurant",
+    ["ramen_restaurant", "japanese_restaurant", "restaurant"],
+    [16, 24],
+    [11, 22],
+  ],
+  [
+    "buk-chang-dong",
+    "Buk Chang Dong Soon Tofu",
+    43.6636,
+    -79.417,
+    "korean restaurant",
+    ["korean_restaurant", "restaurant"],
+    [14, 22],
+    [11, 22],
+  ],
+  [
+    "seven-lives",
+    "Seven Lives Tacos",
+    43.6545,
+    -79.4006,
+    "mexican restaurant",
+    ["mexican_restaurant", "restaurant"],
+    [10, 20],
+    [12, 19],
+  ],
+  [
+    "la-carnita",
+    "La Carnita",
+    43.6557,
+    -79.4098,
+    "mexican restaurant",
+    ["mexican_restaurant", "restaurant", "bar"],
+    [25, 45],
+    [17, 23],
+  ],
+  [
+    "terroni",
+    "Terroni Queen West",
+    43.647,
+    -79.4057,
+    "italian restaurant",
+    ["italian_restaurant", "restaurant"],
+    [28, 50],
+    [12, 22],
+  ],
+  [
+    "burgers-priest",
+    "The Burger's Priest",
+    43.6487,
+    -79.3961,
+    "burger restaurant",
+    ["hamburger_restaurant", "american_restaurant", "restaurant"],
+    [14, 24],
+    [11, 22],
+  ],
+  [
+    "frans",
+    "Fran's Restaurant",
+    43.6613,
+    -79.3838,
+    "diner",
+    ["diner", "american_restaurant", "restaurant"],
+    [16, 30],
+    [7, 23],
+  ],
+  [
+    "banjara",
+    "Banjara Indian Cuisine",
+    43.6635,
+    -79.4186,
+    "indian restaurant",
+    ["indian_restaurant", "restaurant"],
+    [20, 35],
+    [12, 22],
+  ],
+  [
+    "paramount",
+    "Paramount Fine Foods",
+    43.6569,
+    -79.3813,
+    "middle eastern restaurant",
+    ["middle_eastern_restaurant", "lebanese_restaurant", "restaurant"],
+    [16, 30],
+    [11, 23],
+  ],
+  [
+    "ding-tai-fung",
+    "Ding Tai Fung",
+    43.8497,
+    -79.3516,
+    "chinese restaurant",
+    ["chinese_restaurant", "dim_sum_restaurant", "restaurant"],
+    [18, 32],
+    [11, 21],
+  ],
+  [
+    "congee-queen",
+    "Congee Queen",
+    43.8262,
+    -79.3063,
+    "chinese restaurant",
+    ["chinese_restaurant", "restaurant"],
+    [15, 30],
+    [10, 23],
+  ],
 ];
 
 function periods(h: Row[7]): OpeningPeriod[] {
@@ -828,7 +959,9 @@ export function demoSelect(
     if (
       cost(p) > 0 &&
       spent + cost(p) > req.budget * 1.1 &&
-      chosen.length + locked.length >= 1
+      chosen.length + locked.length >= 1 &&
+      // An explicit "add dessert" is the person choosing to spend a little more.
+      !action?.startsWith("Add")
     )
       continue;
     if (isMeal(p) && meals >= 1) continue; // one proper meal per outing

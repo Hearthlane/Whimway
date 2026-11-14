@@ -48,7 +48,8 @@ export function fixturePlaces(req: PlanRequest): CandidatePlace[] {
             distance(a.point, req.area.center) -
             distance(b.point, req.area.center),
         )
-        .slice(0, 30)
+        // A region-wide search (guided planning widening out) sees the whole catalogue.
+        .slice(0, req.area.radius > 20000 ? undefined : 30)
         // Stand-in for a search provider's location bias: nearer results rank a little higher.
         .map((p) => ({
           ...p,

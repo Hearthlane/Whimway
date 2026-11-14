@@ -42,10 +42,10 @@ export function RouteMap({ plan, selected, onSelect }: { plan: Itinerary; select
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         <Rect x={0} y={0} width={W} height={H} fill={color.mintTint} />
         {Array.from({ length: 9 }, (_, i) => (
-          <Line key={`v${i}`} x1={(i * W) / 8} y1={0} x2={(i * W) / 8} y2={H} stroke="#D3EDE3" strokeWidth={1} />
+          <Line key={`v${i}`} x1={(i * W) / 8} y1={0} x2={(i * W) / 8} y2={H} stroke="#DCE6FB" strokeWidth={1} />
         ))}
         {Array.from({ length: 5 }, (_, i) => (
-          <Line key={`h${i}`} x1={0} y1={(i * H) / 4} x2={W} y2={(i * H) / 4} stroke="#D3EDE3" strokeWidth={1} />
+          <Line key={`h${i}`} x1={0} y1={(i * H) / 4} x2={W} y2={(i * H) / 4} stroke="#DCE6FB" strokeWidth={1} />
         ))}
         {model.paths.map((p, i) => (
           <Polyline

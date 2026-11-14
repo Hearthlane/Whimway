@@ -21,6 +21,7 @@ import { countPlan, editsLeft } from "@shared/plus";
 import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
 import { Generating, stages } from "@/plan/Generating";
+import { Timetable } from "@/plan/Timetable";
 import { StopCard } from "@/plan/StopCard";
 import { Badge, Button, Icon, IconButton, Notice, Press, Sheet, T, tap } from "@/ui/kit";
 import { color, radius, shadow, space } from "@/ui/theme";
@@ -277,7 +278,7 @@ export default function PlanScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.canvas }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        <LinearGradient colors={[color.ink, "#24394A"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
+        <LinearGradient colors={[color.ink, "#1B2660"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
           <View style={s.heroInner}>
           <View style={s.heroTop}>
             <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={s.heroBtn}>
@@ -292,7 +293,7 @@ export default function PlanScreen() {
             <T v="hero" tone={color.paper} style={{ marginTop: space.sm }} testID="plan-title" accessibilityRole="header">
               {plan.title}
             </T>
-            <T v="body" tone="#C9D1D6" style={{ marginTop: space.sm }}>
+            <T v="body" tone="#C7CCE4" style={{ marginTop: space.sm }}>
               {plan.summary}
             </T>
           </Animated.View>
@@ -310,6 +311,8 @@ export default function PlanScreen() {
         </LinearGradient>
 
         <View style={s.content}>
+          <Timetable plan={plan} selected={selected} onSelect={setSelected} />
+
           <RouteMap plan={plan} selected={selected} onSelect={setSelected} />
 
           <PlanPulse key={`${plan.id}-${plan.revision}`} plan={plan} onFix={(instruction) => void magicEdit(instruction)} />
@@ -321,6 +324,9 @@ export default function PlanScreen() {
             </Notice>
           ) : null}
 
+          <T v="heading" style={{ marginTop: space.sm }}>
+            About each stop
+          </T>
           <View>
             {plan.stops.map((stop, i) => {
               const next = plan.stops[i + 1];
@@ -516,7 +522,7 @@ function Stat({ value, label }: { value: string; label: string }) {
       <T v="heading" tone={color.paper} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </T>
-      <T v="small" tone="#AEB9C0" style={{ fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+      <T v="small" tone="#AEB5D3" style={{ fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
         {label}
       </T>
     </View>

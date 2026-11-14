@@ -33,6 +33,7 @@ import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { summarize } from "@/lib/metrics";
 import { FREE } from "@/lib/plus";
+import { groupByKey } from "@/lib/guide";
 import {
   countPlanMade,
   entitlementFor,
@@ -543,6 +544,27 @@ async function handlePOST(request: Request, ctx: Context) {
         await planner(data.request, data.demo)
           .withCrowd(await crowdSignals())
           .explore(data.request, data.query),
+      );
+    }
+    if (path === "guide/options") {
+      const data = z
+        .object({
+          request: PlanRequest,
+          group: z.string().max(40),
+          demo: z.boolean().default(false),
+        })
+        .parse(input);
+      const group = groupByKey(data.group);
+      if (!group)
+        throw new AppError(
+          "UNKNOWN_GROUP",
+          "That category is not available.",
+          422,
+        );
+      return ok(
+        await planner(data.request, data.demo)
+          .withCrowd(await crowdSignals())
+          .options(data.request, group),
       );
     }
     if (path === "place") {

@@ -105,7 +105,7 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
         {label}
       </T>
       {hint ? (
-        <T v="small" tone={selected ? "#C9D1D6" : color.muted}>
+        <T v="small" tone={selected ? "#C7CCE4" : color.muted}>
           {hint}
         </T>
       ) : null}

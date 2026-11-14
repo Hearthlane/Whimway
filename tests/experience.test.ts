@@ -318,7 +318,8 @@ describe("GTA demo planning end-to-end", () => {
     expect(edited.stops.every((s) => !s.locked)).toBe(true);
   });
   it("magic edit preserves user locks and can add a stop", async () => {
-    const r = make("chill afternoon with friends downtown");
+    // Queen West has dessert open late; downtown at 9:30pm on this budget honestly has none.
+    const r = make("chill evening with friends in Queen West");
     const plan = await planner(r).generate(r);
     const spec = {
       ...plan,

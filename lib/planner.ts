@@ -7,6 +7,7 @@ export { hoursCheck } from "./hours";
 import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
 import { interpretEdit, type EditOp } from "./magic-edit";
+import { inGroup, isEatery, type GuideGroup } from "./guide";
 import type {
   CandidatePlace,
   Itinerary,
@@ -99,7 +100,10 @@ export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
         (p.price.high !== null && p.price.high <= request.budget)) &&
       (!request.accessibility || p.wheelchairAccessible !== false) &&
       (!request.indoorOnly || !isOutdoor(p)) &&
-      (!request.alcoholFree || !isAlcoholLed(p)),
+      (!request.alcoholFree || !isAlcoholLed(p)) &&
+      (!request.skipFood ||
+        request.anchorPlaceIds.includes(p.id) ||
+        !isEatery(p)),
   );
 }
 export function validateRequest(request: PlanRequest, now = DateTime.now()) {
@@ -397,7 +401,24 @@ export class Planner {
     candidates.sort(
       (a, b) => score(b, request, this.crowd) - score(a, request, this.crowd),
     );
-    const shortlist = diverseShortlist(candidates, lockedPlaces, 12);
+    // "Add dessert" must have dessert to choose from: seed the shortlist with what was asked for.
+    const asked = (action?.match(/matching: ([^.]+)/)?.[1] ?? "")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
+    const wanted = asked.length
+      ? candidates
+          .filter((p) => {
+            const t = `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
+            return asked.some((w) => t.includes(w));
+          })
+          .slice(0, 3)
+      : [];
+    const shortlist = diverseShortlist(
+      candidates,
+      [...lockedPlaces, ...wanted],
+      12,
+    );
     const lockedIdSet = new Set(locked.map((l) => l.placeId));
     candidates = candidatesFor(
       request,
@@ -635,6 +656,59 @@ export class Planner {
     );
     return candidatesFor(request, detailed);
   }
+  /**
+   * Guided planning: a few open, well-liked places of one kind (a cuisine, a type of fun),
+   * nearest first within the chosen area. Widens to the whole region if the area has none.
+   */
+  async options(request: PlanRequest, group: GuideGroup, limit = 5) {
+    const open: PlanRequest = {
+      ...request,
+      hardBudget: false,
+      skipFood: false,
+    };
+    const collect = async (req: PlanRequest) => {
+      const found = [
+        ...(await this.places.search(req)),
+        ...(await this.places.search(req, group.query).catch(() => [])),
+      ];
+      return candidatesFor(req, found).filter((p) => inGroup(p, group));
+    };
+    let pool = await collect(open);
+    let widened = false;
+    if (pool.length < 2) {
+      widened = true;
+      pool = await collect({
+        ...open,
+        area: {
+          ...open.area,
+          radius: Math.max(open.area.radius, 30000),
+          locked: false,
+        },
+      });
+    }
+    pool.sort(
+      (a, b) =>
+        score(b, request, this.crowd) -
+        distance(b.point, request.area.center) / 4000 -
+        (score(a, request, this.crowd) -
+          distance(a.point, request.area.center) / 4000),
+    );
+    const detailed = await Promise.all(
+      pool
+        .slice(0, limit * 2)
+        .map((p) => this.details(p.id, request.location.currency)),
+    );
+    return {
+      widened,
+      places: detailed
+        .filter((p) => openDuring(p, request))
+        .slice(0, limit)
+        .map((p) => ({
+          ...p,
+          meters: Math.round(distance(p.point, request.area.center)),
+        })),
+    };
+  }
   async hydrate(spec: PlanSpec): Promise<Itinerary> {
     let hydrated = spec;
     if (
@@ -731,10 +805,14 @@ export function diverseShortlist(
   cap: number,
 ) {
   const groups = new Map<string, CandidatePlace[]>();
+  // Restaurants of every cuisine share one group, so a food-heavy area cannot crowd out
+  // dessert, drinks and things to do.
+  const kind = (p: CandidatePlace) =>
+    /restaurant|diner/.test(p.category) ? "restaurant" : p.category;
   for (const p of candidates) {
-    const group = groups.get(p.category) ?? [];
+    const group = groups.get(kind(p)) ?? [];
     group.push(p);
-    groups.set(p.category, group);
+    groups.set(kind(p), group);
   }
   const result = dedupe(locked);
   const seen = new Set(result.map((p) => p.id));

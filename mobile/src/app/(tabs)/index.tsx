@@ -12,7 +12,7 @@ import { useStore } from "@/lib/store";
 import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
-import { Button, Card, Chip, Icon, IconButton, Notice, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
+import { Button, Card, Chip, Icon, IconButton, Notice, Press, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
 
 type Field = "who" | "when" | "budget" | "travel" | "length" | "vibe" | "area";
@@ -124,7 +124,24 @@ export default function PlanHome() {
           </T>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(60).duration(380)} style={s.composer}>
+        <Animated.View entering={FadeInDown.delay(40).duration(380)}>
+          <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" scaleTo={0.98} onPress={() => router.push("/guide")} style={s.guide}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <T v="title" tone={color.ink}>
+                Build it step by step
+              </T>
+              <T v="small" tone={color.inkSoft}>
+                Food, something to do, how you’re getting there. You pick the places.
+              </T>
+            </View>
+            <View style={s.guideGo}>
+              <Icon name="arrow-right" size={22} tint={color.paper} />
+            </View>
+          </Press>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(100).duration(380)} style={s.composer}>
+          <T v="heading">Or just say it</T>
           <TextInput
             testID="prompt-input"
             value={text}
@@ -161,7 +178,7 @@ export default function PlanHome() {
             />
           </ScrollView>
           <View style={s.actions}>
-            <Button testID="plan-it" size="lg" label="Plan it" icon="star" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
+            <Button testID="plan-it" kind="dark" size="lg" label="Plan it" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
             <IconButton
               icon="shuffle"
               label="Surprise me"
@@ -397,6 +414,8 @@ function Stepper({ label, value, onChange, min, max, step = 1, prefix = "" }: { 
 }
 
 const s = StyleSheet.create({
+  guide: { flexDirection: "row", alignItems: "center", gap: space.lg, backgroundColor: color.coral, borderRadius: radius.xl, padding: space.xl, ...shadow.lift },
+  guideGo: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.ink, alignItems: "center", justifyContent: "center" },
   page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.lg, maxWidth: 680, width: "100%", alignSelf: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: space.sm },
   demoPill: { backgroundColor: color.yellowTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },

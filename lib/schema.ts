@@ -67,6 +67,8 @@ export const PlanRequest = z.object({
   pace: z.enum(["relaxed", "balanced", "packed"]).default("balanced"),
   /** Leave out bars, breweries and other alcohol-led venues. */
   alcoholFree: z.boolean().default(false),
+  /** The group has eaten or doesn't want food: leave out restaurants, cafés and dessert. */
+  skipFood: z.boolean().default(false),
   affinity: Affinity.default({}),
   /** Places the plan must be built around (e.g. a saved favourite). */
   anchorPlaceIds: z.array(z.string().min(1).max(250)).max(2).default([]),

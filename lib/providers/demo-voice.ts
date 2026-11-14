@@ -5,6 +5,71 @@ import type { Vibe } from "../schema";
 
 type Note = { vibes: Vibe[]; date: string; crew: string };
 export const voice: Record<string, Note> = {
+  kinka: {
+    vibes: ["lively", "foodie", "playful"],
+    date: "A loud, happy izakaya where the staff shout hello. Order a few small plates and share everything.",
+    crew: "Small plates, cold beer and a room that’s already having fun when you walk in.",
+  },
+  "mothers-dumplings": {
+    vibes: ["cozy", "foodie", "chill"],
+    date: "Handmade dumplings you can watch being folded. Cheap, warm and hard to stop eating.",
+    crew: "Order four kinds of dumplings for the table and fight over the last pan-fried one.",
+  },
+  sansotei: {
+    vibes: ["cozy", "foodie"],
+    date: "A small ramen counter with rich tonkotsu broth. In and out in forty minutes, and you’ll both be warm.",
+    crew: "Quick, filling bowls of ramen. Good when you want to eat well and keep moving.",
+  },
+  "buk-chang-dong": {
+    vibes: ["cozy", "foodie", "chill"],
+    date: "Bubbling tofu stew in a stone pot with all the little side dishes. Simple and comforting.",
+    crew: "Stone-pot tofu stew and free side dishes. One of the best cheap meals in Koreatown.",
+  },
+  "seven-lives": {
+    vibes: ["foodie", "lively", "adventurous"],
+    date: "Baja-style fish tacos from a tiny Kensington counter. Eat them standing outside, then wander the market.",
+    crew: "Big messy tacos for a few dollars each. Grab them and walk through the market.",
+  },
+  "la-carnita": {
+    vibes: ["lively", "foodie", "playful"],
+    date: "Tacos, street corn and loud hip-hop under graffiti walls. Finish with the paleta.",
+    crew: "Tacos to share, strong drinks and music loud enough that nobody minds your laugh.",
+  },
+  terroni: {
+    vibes: ["romantic", "foodie", "cozy"],
+    date: "Proper southern Italian pasta in a busy, candle-warm room. They won’t change the dishes, and they’re right.",
+    crew: "Thin pizzas and big bowls of pasta at long tables. Easy for any group.",
+  },
+  "burgers-priest": {
+    vibes: ["foodie", "chill", "playful"],
+    date: "A classic griddled cheeseburger done right. Ask about the secret menu.",
+    crew: "Smash burgers and a secret menu to argue about. Fast and filling.",
+  },
+  frans: {
+    vibes: ["cozy", "chill", "cinematic"],
+    date: "A neon-signed diner that’s been open since 1940. Milkshakes, booths and breakfast all day.",
+    crew: "Big booths, all-day breakfast and milkshakes. It suits everyone, at any hour.",
+  },
+  banjara: {
+    vibes: ["cozy", "foodie"],
+    date: "Generous North Indian curries and fresh naan. Order the butter chicken and something you’ve never tried.",
+    crew: "Curries made for sharing, with plenty of naan. Great value for a group.",
+  },
+  paramount: {
+    vibes: ["foodie", "lively", "chill"],
+    date: "Charcoal-grilled skewers and bread that comes out puffed and hot from the oven.",
+    crew: "Mixed grill platters, hummus and hot bread for the whole table.",
+  },
+  "ding-tai-fung": {
+    vibes: ["foodie", "cozy"],
+    date: "Soup dumplings and Shanghai-style small plates. Go slowly: the soup inside is hot.",
+    crew: "Baskets of soup dumplings for the table. Order more than you think you need.",
+  },
+  "congee-queen": {
+    vibes: ["foodie", "chill", "cozy"],
+    date: "A huge Cantonese menu with silky congee and crisp salt-and-pepper squid.",
+    crew: "Big plates, a long menu and something for everyone, including the picky one.",
+  },
   ripleys: {
     vibes: ["romantic", "cinematic", "adventurous"],
     date: "Glass tunnels, slow sharks and blue light. It’s dim and quiet enough to actually talk, and nobody is on their phone.",

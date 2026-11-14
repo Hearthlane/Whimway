@@ -1,5 +1,5 @@
-import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
-import { Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit";
+import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
+import { InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold } from "@expo-google-fonts/instrument-sans";
 import { useFonts } from "expo-font";
 import { Stack, type ErrorBoundaryProps } from "expo-router";
 import { Platform, View , StyleSheet, useWindowDimensions } from "react-native";
@@ -17,7 +17,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function Navigator() {
   const { ready, track } = useStore();
-  const [fontsLoaded] = useFonts({ DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, Outfit_500Medium, Outfit_600SemiBold });
+  const [fontsLoaded] = useFonts({ InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
   const visible = ready && fontsLoaded;
   useEffect(() => {
     if (visible) {
@@ -59,7 +59,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   if (Platform.OS !== "web" || width < 600) return <>{children}</>;
   const frameHeight = Math.min(880, height - 48);
   return (
-    <View style={{ flex: 1, backgroundColor: "#E9E7DF", alignItems: "center", justifyContent: "center" }}>
+    <View style={{ flex: 1, backgroundColor: "#E6E8EF", alignItems: "center", justifyContent: "center" }}>
       <View style={{ width: 412, height: frameHeight, borderRadius: 44, overflow: "hidden", backgroundColor: color.canvas, borderWidth: 10, borderColor: color.ink, shadowColor: color.ink, shadowOpacity: 0.25, shadowRadius: 40, shadowOffset: { width: 0, height: 24 } }}>{children}</View>
     </View>
   );

@@ -44,11 +44,11 @@ class ClaudeAI {
     previousStops?: PlanSpec["stops"],
     crowd: Record<string, number> = {},
   ): Promise<Selection> {
-    const use = () => {
+    const fall = () => {
       lastSource = "fallback";
       return fallback.select(req, candidates, locked, action, previousStops, crowd);
     };
-    if (!brain) return use();
+    if (!brain) return fall();
     const ids = new Set(candidates.map((c) => c.id));
     const start = DateTime.fromISO(`${req.date}T${req.startTime}`);
     const prompt = [
@@ -83,7 +83,7 @@ class ClaudeAI {
           reason: String(s.reason ?? "").slice(0, 230),
         }));
       for (const l of locked) if (!seen.has(l.placeId)) stops.unshift(l);
-      if (stops.length < 2 || !raw.title) return use();
+      if (stops.length < 2 || !raw.title) return fall();
       lastSource = "claude";
       lastNote = String(raw.note ?? "").slice(0, 240);
       return {
@@ -93,7 +93,7 @@ class ClaudeAI {
       };
     } catch (e) {
       console.warn("Claude unavailable, using the built-in planner", e);
-      return use();
+      return fall();
     }
   }
 }
