@@ -1,10 +1,8 @@
 import { Image } from "expo-image";
 import { DateTime } from "luxon";
 import { useState } from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, LinearTransition, ZoomIn } from "react-native-reanimated";
-import { safeUrl } from "@shared/geo";
-import { stopDirectionsUrl } from "@shared/navigation";
 import type { Itinerary, ItineraryStop } from "@shared/schema";
 import { API_URL } from "@/lib/config";
 import { money } from "@/lib/copy";
@@ -36,7 +34,6 @@ export function StopCard({
   onSelect,
   onToggleLock,
   onSwap,
-  onOpenLink,
   onReact,
   favourite,
   onFavourite,
@@ -72,13 +69,6 @@ export function StopCard({
   const zone = plan.request.location.timezone;
   const t = (iso: string) => DateTime.fromISO(iso).setZone(zone).toFormat("h:mm a");
   const photo = stop.place.photos[0];
-  const website = safeUrl(stop.place.website);
-  const previous = index > 0 ? plan.stops[index - 1].place.point : undefined;
-  const directions = plan.demo ? stop.place.mapsUrl : stopDirectionsUrl({ point: stop.place.point, placeId: stop.placeId }, plan.request.mode, previous);
-  const open_ = (url: string, kind: "navigation" | "booking") => {
-    onOpenLink(kind);
-    void Linking.openURL(url);
-  };
   const mode = plan.request.mode;
   const verb = mode === "WALK" ? "walk" : mode === "TRANSIT" ? "by transit" : "drive";
   const category = stop.place.category[0].toUpperCase() + stop.place.category.slice(1);

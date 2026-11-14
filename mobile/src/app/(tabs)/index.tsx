@@ -83,7 +83,7 @@ export default function PlanHome() {
   const left = plansLeft(profile);
   const plan = (prompt = text) => {
     if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
-    store.pendingRef.current = { ...request, prompt: prompt.slice(0, 1500) };
+    store.setPending({ ...request, prompt: prompt.slice(0, 1500) });
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
     router.push("/plan/new");
   };

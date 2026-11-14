@@ -63,7 +63,7 @@ export default function PlanScreen() {
       .then(setCrowd)
       .catch(() => undefined);
   }, [stopIds]);
-  const started = useRef(Date.now());
+  const started = useRef(0);
   const once = useRef(false);
   const entry = plan ? store.plans[plan.id] : store.plans[id];
 
@@ -127,9 +127,12 @@ export default function PlanScreen() {
   useEffect(() => {
     if (once.current) return;
     once.current = true;
-    if (id === "new") void generate();
-    else if (!plan) void hydrate();
-    else setSelected(plan.stops[0]?.placeId);
+    // Defer so the effect only schedules the work.
+    void Promise.resolve().then(() => {
+      if (id === "new") return generate();
+      if (!plan) return hydrate();
+      setSelected(plan.stops[0]?.placeId);
+    });
   }, [id, plan, generate, hydrate]);
 
   useEffect(() => {
