@@ -14,11 +14,11 @@ export function Generating({ stage, refreshing }: { stage: number; refreshing?: 
   const pulse = useSharedValue(1);
   const spin = useSharedValue(0);
   useEffect(() => {
-    pulse.value = withRepeat(withSequence(withTiming(1.1, { duration: 800, easing: Easing.inOut(Easing.quad) }), withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) })), -1);
-    spin.value = withRepeat(withTiming(360, { duration: 9000, easing: Easing.linear }), -1);
+    pulse.set(withRepeat(withSequence(withTiming(1.1, { duration: 800, easing: Easing.inOut(Easing.quad) }), withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) })), -1));
+    spin.set(withRepeat(withTiming(360, { duration: 9000, easing: Easing.linear }), -1));
   }, [pulse, spin]);
-  const orb = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
-  const ring = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
+  const orb = useAnimatedStyle(() => ({ transform: [{ scale: pulse.get() }] }));
+  const ring = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.get()}deg` }] }));
 
   return (
     <Animated.View entering={FadeIn.duration(motion.standard)} style={s.wrap} testID="generating">
@@ -52,11 +52,11 @@ function Step({ label, state, last }: { label: string; state: "done" | "now" | "
   const fill = useSharedValue(state === "next" ? 0 : 1);
   const line = useSharedValue(state === "done" ? 1 : 0);
   useEffect(() => {
-    fill.value = withSpring(state === "next" ? 0 : 1, motion.spring);
-    line.value = withTiming(state === "done" ? 1 : 0, { duration: motion.slow });
+    fill.set(withSpring(state === "next" ? 0 : 1, motion.spring));
+    line.set(withTiming(state === "done" ? 1 : 0, { duration: motion.slow }));
   }, [state, fill, line]);
-  const node = useAnimatedStyle(() => ({ transform: [{ scale: 0.6 + fill.value * 0.4 }], opacity: 0.35 + fill.value * 0.65 }));
-  const bar = useAnimatedStyle(() => ({ height: `${line.value * 100}%` }));
+  const node = useAnimatedStyle(() => ({ transform: [{ scale: 0.6 + fill.get() * 0.4 }], opacity: 0.35 + fill.get() * 0.65 }));
+  const bar = useAnimatedStyle(() => ({ height: `${line.get() * 100}%` }));
   return (
     <View style={s.step}>
       <View style={s.rail}>

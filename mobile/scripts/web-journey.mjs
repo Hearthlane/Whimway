@@ -151,7 +151,7 @@ let page;
   await shot(p, '18-near-me');
   const r = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
   r.on('pageerror', e => errors.push('recipient pageerror: ' + e.message));
-  await r.goto(link, { waitUntil: 'networkidle' });
+  await r.goto(link, { waitUntil: 'networkidle', timeout: 90000 });
   await r.waitForTimeout(2500);
   await r.screenshot({ path: `${out}/17-recipient.png` });
   const recipientTitle = (await r.locator('h1').first().innerText().catch(() => '')).slice(0, 80);

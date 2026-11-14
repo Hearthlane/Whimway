@@ -1,0 +1,375 @@
+<title>Whimway Live Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: one phone-width column, centred; a screen at a time, like the app. */
+:root {
+  --canvas: #F8F7F2; --paper: #FFFEFB; --ink: #192630; --muted: #52615D; --faint: #8A958F;
+  --line: #E4E6DE; --coral: #FF705B; --coral-text: #C2412F; --coral-tint: #FFE7E2;
+  --mint: #BDE9DA; --mint-tint: #E6F6F0; --lav: #B8A4F5; --lav-tint: #EEE9FD;
+  --yellow-tint: #FFF4DB; --warn: #8A5A00; --ok: #2F7A5B; --on-coral: #192630;
+  --shadow: 0 6px 14px rgba(25,38,48,.06);
+  --display: "Outfit", "Avenir Next", system-ui, sans-serif;
+  --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #12191F; --paper: #1A242C; --ink: #EEF1EC; --muted: #A9B6B0; --faint: #74817B;
+  --line: #2A3740; --coral: #FF8370; --coral-text: #FF9C8C; --coral-tint: #3A2622;
+  --mint: #2E5C4E; --mint-tint: #1C3029; --lav: #8E7BD6; --lav-tint: #2A2540;
+  --yellow-tint: #332B17; --warn: #E8B860; --ok: #7FD1AE; --on-coral: #192630;
+  --shadow: 0 6px 14px rgba(0,0,0,.3); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --canvas: #12191F; --paper: #1A242C; --ink: #EEF1EC; --muted: #A9B6B0; --faint: #74817B;
+  --line: #2A3740; --coral: #FF8370; --coral-text: #FF9C8C; --coral-tint: #3A2622;
+  --mint: #2E5C4E; --mint-tint: #1C3029; --lav: #8E7BD6; --lav-tint: #2A2540;
+  --yellow-tint: #332B17; --warn: #E8B860; --ok: #7FD1AE; --on-coral: #192630;
+  --shadow: 0 6px 14px rgba(0,0,0,.3); color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--canvas); color: var(--ink); font: 15px/1.47 var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+.app { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; text-wrap: balance; }
+h1 { font-size: 34px; line-height: 1.1; letter-spacing: -.8px; }
+h2 { font-size: 25px; line-height: 1.2; letter-spacing: -.4px; }
+h3 { font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -.2px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; line-height: 18px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 600; font-size: 19px; }
+.mark { width: 28px; height: 28px; border-radius: 9px; background: var(--coral); display: grid; place-items: center; }
+.mark svg { width: 16px; height: 16px; }
+.brain { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: var(--lav-tint); color: var(--ink); white-space: nowrap; }
+.brain i { width: 7px; height: 7px; border-radius: 50%; background: var(--lav); }
+.brain.live i { background: var(--ok); box-shadow: 0 0 0 3px var(--mint-tint); }
+.screen { display: flex; flex-direction: column; gap: 18px; animation: rise .35s ease both; }
+@keyframes rise { from { opacity: .4; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 13px; font-weight: 500; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 14px/1 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; transition: background .15s, border-color .15s, transform .1s; }
+.chip:hover { border-color: var(--faint); }
+.chip:active { transform: scale(.97); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
+.chip.soft { background: var(--canvas); }
+select, textarea, input[type=text] { font: 15px/1.45 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; width: 100%; }
+textarea { min-height: 96px; resize: vertical; }
+:focus-visible { outline: 2px solid var(--coral-text); outline-offset: 2px; }
+.btn { font: 600 16px/1 var(--body); border: 0; border-radius: 999px; padding: 15px 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .1s, filter .15s; }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--coral); color: var(--on-coral); width: 100%; }
+.btn.primary:hover { filter: brightness(1.04); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 11px 16px; font-size: 14px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+.notice { font-size: 13px; line-height: 18px; color: var(--muted); background: var(--yellow-tint); border-radius: 14px; padding: 10px 12px; }
+.error { background: var(--coral-tint); color: var(--ink); }
+/* Generating */
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.step { display: flex; gap: 12px; align-items: center; color: var(--faint); transition: color .3s; }
+.step b { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; font-size: 12px; }
+.step.on { color: var(--ink); }
+.step.on b { border-color: var(--coral); border-top-color: transparent; animation: spin .8s linear infinite; }
+.step.done { color: var(--muted); }
+.step.done b { background: var(--mint); border-color: var(--mint); }
+.step.done b::after { content: "✓"; color: var(--ink); }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* Plan */
+.hero { display: flex; flex-direction: column; gap: 10px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; min-width: 0; }
+.stat strong { display: block; font: 600 17px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.heard { display: flex; flex-wrap: wrap; gap: 6px; }
+.heard span { font-size: 12px; background: var(--mint-tint); border-radius: 999px; padding: 4px 9px; }
+.voice { display: flex; gap: 10px; align-items: flex-start; background: var(--lav-tint); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+.voice .who { font-weight: 700; white-space: nowrap; }
+.timeline { display: flex; flex-direction: column; }
+.stop { display: grid; grid-template-columns: 56px 1fr; gap: 12px; }
+.when { font: 600 14px/1.2 var(--display); font-variant-numeric: tabular-nums; padding-top: 16px; text-align: right; color: var(--muted); }
+.stopcard { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; box-shadow: var(--shadow); }
+.stopcard .row { display: flex; gap: 12px; align-items: center; }
+.art { width: 48px; height: 48px; border-radius: 14px; flex: none; display: grid; place-items: center; font: 600 18px var(--display); color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12.5px; color: var(--muted); }
+.tag { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--canvas); border: 1px solid var(--line); }
+.tag.warn { color: var(--warn); background: var(--yellow-tint); border-color: transparent; }
+.tag.new { background: var(--coral-tint); border-color: transparent; color: var(--ink); }
+.leg { display: grid; grid-template-columns: 56px 1fr; gap: 12px; }
+.leg div:last-child { border-left: 2px dashed var(--line); margin-left: 22px; padding: 10px 0 10px 18px; font-size: 12.5px; color: var(--muted); }
+.edit { display: flex; flex-direction: column; gap: 10px; }
+.editrow { display: flex; gap: 8px; }
+.editrow input { flex: 1; min-width: 0; }
+.editrow .btn { padding: 11px 16px; font-size: 14px; background: var(--ink); color: var(--canvas); }
+.links { display: flex; gap: 8px; flex-wrap: wrap; }
+.links a { color: var(--coral-text); font-size: 13px; font-weight: 500; }
+footer { font-size: 12px; color: var(--faint); text-align: center; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="app">
+  <div class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 11c2-6 4-6 6 0s4 6 6 0" fill="none" stroke="var(--on-coral)" stroke-width="2.2" stroke-linecap="round"/></svg></span>Whimway</div>
+    <span id="brain" class="brain" title="Who is choosing the venues"><i></i><span id="brainText">Connecting to Claude…</span></span>
+  </div>
+
+  <!-- 1. Onboarding -->
+  <section id="s-onboard" class="screen">
+    <div class="hero">
+      <h1>From “what should we do?” to “we’re going” in under a minute.</h1>
+      <p class="muted">Tell Whimway who’s coming and what you’re in the mood for. It builds a real route with times, travel and cost, and you can change any part of it by just saying so.</p>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:18px">
+      <div class="field"><span class="label" id="l-who">Who usually comes along?</span>
+        <div class="chips" role="group" aria-labelledby="l-who" data-pick="companions" data-single>
+          <button class="chip" data-v="partner" aria-pressed="true">A date</button>
+          <button class="chip" data-v="friends" aria-pressed="false">Friends</button>
+          <button class="chip" data-v="solo" aria-pressed="false">Just me</button>
+          <button class="chip" data-v="family" aria-pressed="false">Family</button>
+        </div></div>
+      <div class="field"><span class="label" id="l-vibe">What’s your usual vibe? Pick up to two.</span>
+        <div class="chips" role="group" aria-labelledby="l-vibe" data-pick="vibes" data-max="2">
+          <button class="chip" data-v="cozy" aria-pressed="true">Cozy</button>
+          <button class="chip" data-v="adventurous" aria-pressed="false">Adventurous</button>
+          <button class="chip" data-v="romantic" aria-pressed="false">Romantic</button>
+          <button class="chip" data-v="lively" aria-pressed="false">Lively</button>
+          <button class="chip" data-v="artsy" aria-pressed="false">Artsy</button>
+          <button class="chip" data-v="foodie" aria-pressed="true">Foodie</button>
+          <button class="chip" data-v="chill" aria-pressed="false">Chill</button>
+        </div></div>
+      <div class="field"><label class="label" for="area">Where do you usually start?</label>
+        <select id="area"></select></div>
+      <div class="field"><span class="label" id="l-mode">How do you get around?</span>
+        <div class="chips" role="group" aria-labelledby="l-mode" data-pick="mode" data-single>
+          <button class="chip" data-v="TRANSIT" aria-pressed="true">TTC / transit</button>
+          <button class="chip" data-v="WALK" aria-pressed="false">Walking</button>
+          <button class="chip" data-v="DRIVE" aria-pressed="false">Driving</button>
+        </div></div>
+    </div>
+    <button class="btn primary" id="toCompose">Start planning</button>
+    <p class="notice">This is a demo. Claude plays the planning AI live. Venues are a hand-picked set of real GTA places, and their hours and prices are estimates, so check before you go.</p>
+  </section>
+
+  <!-- 2. Composer -->
+  <section id="s-compose" class="screen" hidden>
+    <div class="hero">
+      <h2>What are you in the mood for?</h2>
+      <p class="muted">Say it the way you’d text a friend. Time, budget, area and who’s coming are all optional.</p>
+    </div>
+    <textarea id="prompt" aria-label="Describe your outing">Date night Saturday, something cozy with good food, under $60 each</textarea>
+    <div class="chips" id="ideas" aria-label="Try one of these">
+      <button class="chip soft">Rainy Sunday afternoon with the kids, indoors</button>
+      <button class="chip soft">Friends tonight in Kensington, cheap eats and games</button>
+      <button class="chip soft">Anniversary dinner in Yorkville then somewhere for a view</button>
+      <button class="chip soft">Solo afternoon in the Distillery, art and coffee</button>
+      <button class="chip soft">4 of us in Markham Friday night, $40 each</button>
+    </div>
+    <button class="btn primary" id="go">Plan it</button>
+    <button class="btn ghost" id="back1">Change my preferences</button>
+  </section>
+
+  <!-- 3. Generating -->
+  <section id="s-gen" class="screen" hidden>
+    <h2 id="genTitle">Planning your outing</h2>
+    <div class="card steps" id="steps">
+      <div class="step"><b></b>Reading what you asked for</div>
+      <div class="step"><b></b>Shortlisting places open at that time</div>
+      <div class="step"><b></b><span id="pickStep">Claude is choosing the stops</span></div>
+      <div class="step"><b></b>Checking hours, travel and cost</div>
+    </div>
+  </section>
+
+  <!-- 4. Plan -->
+  <section id="s-plan" class="screen" hidden>
+    <div class="hero">
+      <span class="label" id="planWhen"></span>
+      <h2 id="planTitle"></h2>
+      <p class="muted" id="planSummary"></p>
+      <div class="heard" id="heard"></div>
+    </div>
+    <div class="voice" id="voice" hidden><span class="who" id="voiceWho">Claude</span><span id="voiceText"></span></div>
+    <div class="stats" id="stats"></div>
+    <div class="timeline" id="timeline"></div>
+    <div id="issues"></div>
+    <div class="card edit">
+      <h3>Change anything</h3>
+      <p class="small muted">Magic Edit. Say what you’d change and the rest of the plan stays put.</p>
+      <div class="chips" id="editIdeas">
+        <button class="chip soft">Make it cheaper</button>
+        <button class="chip soft">Swap the second stop</button>
+        <button class="chip soft">Less walking</button>
+        <button class="chip soft">Add dessert at the end</button>
+        <button class="chip soft">Keep it indoors</button>
+      </div>
+      <form class="editrow" id="editForm">
+        <input type="text" id="editText" aria-label="Describe a change" placeholder="e.g. something livelier after dinner">
+        <button class="btn" id="editGo" type="submit">Apply</button>
+      </form>
+      <p class="small" id="editMsg" role="status"></p>
+    </div>
+    <div class="links">
+      <button class="btn ghost" id="again">Plan something else</button>
+      <button class="btn ghost" id="redo">Try another take</button>
+    </div>
+  </section>
+
+  <footer>Whimway beta · Toronto, Vaughan, Richmond Hill and Markham · Demo venue data</footer>
+</div>
+
+<script src="engine.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const W = window.Whimway;
+  const screens = ["s-onboard", "s-compose", "s-gen", "s-plan"];
+  const show = (id) => { screens.forEach((s) => ($(s).hidden = s !== id)); window.scrollTo({ top: 0 }); };
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+  // Preferences (onboarding)
+  W.areaList.forEach((a) => $("area").insertAdjacentHTML("beforeend", `<option value="${a.key}">${esc(a.name)}</option>`));
+  const saved = store.get("whimway-prefs");
+  const prefs = saved || { companions: "partner", vibes: ["cozy", "foodie"], homeArea: "downtown", mode: "TRANSIT" };
+  $("area").value = prefs.homeArea;
+  document.querySelectorAll("[data-pick]").forEach((group) => {
+    const key = group.dataset.pick, single = group.hasAttribute("data-single"), max = +group.dataset.max || 9;
+    const sync = () => group.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(single ? prefs[key] === c.dataset.v : prefs[key].includes(c.dataset.v))));
+    sync();
+    group.addEventListener("click", (e) => {
+      const c = e.target.closest(".chip"); if (!c) return;
+      if (single) prefs[key] = c.dataset.v;
+      else {
+        const list = prefs[key];
+        if (list.includes(c.dataset.v)) prefs[key] = list.filter((v) => v !== c.dataset.v);
+        else prefs[key] = [...list, c.dataset.v].slice(-max);
+      }
+      sync();
+    });
+  });
+  $("area").addEventListener("change", () => (prefs.homeArea = $("area").value));
+  $("toCompose").onclick = () => { store.set("whimway-prefs", prefs); show("s-compose"); $("prompt").focus(); };
+  $("back1").onclick = () => show("s-onboard");
+  $("ideas").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { $("prompt").value = c.textContent; $("prompt").focus(); } });
+  if (saved) show("s-compose");
+
+  // Claude as the planning brain
+  let claudeReady = false;
+  const setBrain = (mode) => {
+    const b = $("brain");
+    b.classList.toggle("live", mode === "live");
+    $("brainText").textContent = mode === "live" ? "Claude is planning live" : mode === "off" ? "Built-in demo planner" : "Connecting to Claude…";
+  };
+  const connect = async () => {
+    try {
+      const sample = window.claude && (await window.claude.use("sample"));
+      if (!sample) return setBrain("off");
+      W.setBrain(async (prompt) => {
+        try { return await sample.json(prompt); }
+        catch (e) {
+          if (e && e.code === "not_granted") { W.setBrain(null); claudeReady = false; setBrain("off"); }
+          throw e;
+        }
+      });
+      claudeReady = true; setBrain("live");
+    } catch { setBrain("off"); }
+  };
+  connect();
+  setTimeout(() => { if (!claudeReady) setBrain("off"); }, 11000);
+
+  // Generating screen
+  let tick;
+  const progress = (title) => {
+    $("genTitle").textContent = title;
+    $("pickStep").textContent = claudeReady ? "Claude is choosing the stops" : "Choosing the stops";
+    const steps = [...$("steps").children];
+    steps.forEach((s) => (s.className = "step"));
+    let i = 0;
+    const advance = () => { steps.forEach((s, j) => (s.className = "step" + (j < i ? " done" : j === i ? " on" : ""))); };
+    advance();
+    clearInterval(tick);
+    tick = setInterval(() => { if (i < 2) { i++; advance(); } }, 700);
+    return () => { clearInterval(tick); i = 3; advance(); };
+  };
+
+  // Render
+  const palette = ["var(--coral-tint)", "var(--mint)", "var(--lav-tint)", "var(--yellow-tint)", "var(--mint-tint)", "var(--lav)"];
+  const hhmm = (iso) => { const d = iso.slice(11, 16).split(":").map(Number); const h = d[0] % 12 || 12; return `${h}:${String(d[1]).padStart(2, "0")}`; };
+  const ampm = (iso) => (+iso.slice(11, 13) < 12 ? "am" : "pm");
+  const money = (n) => `$${Math.round(n)}`;
+  const modeWord = { WALK: "walk", TRANSIT: "transit", DRIVE: "drive" };
+  let current = null, lastPrompt = "", changed = new Set();
+
+  const render = (res, heard) => {
+    const p = res.itinerary || res.plan;
+    current = p;
+    const start = p.stops[0], end = p.stops[p.stops.length - 1];
+    $("planWhen").textContent = start ? `${new Date(start.arrival.slice(0, 10) + "T12:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} · ${hhmm(start.arrival)}${ampm(start.arrival)} to ${hhmm(end.departure)}${ampm(end.departure)}` : "";
+    $("planTitle").textContent = p.title;
+    $("planSummary").textContent = p.summary;
+    if (heard) $("heard").innerHTML = Object.values(heard).filter(Boolean).map((h) => `<span>${esc(h)}</span>`).join("");
+    const live = res.source === "claude";
+    $("voice").hidden = !(res.note || live);
+    $("voiceWho").textContent = live ? "Claude" : "Note";
+    $("voiceText").textContent = res.note || (live ? "Picked these stops and wrote the reasons; Whimway checked the hours, travel and cost." : "");
+    const per = p.cost.high / Math.max(1, p.request.participants);
+    $("stats").innerHTML = [
+      [`${Math.floor(p.totalMinutes / 60)}h ${String(p.totalMinutes % 60).padStart(2, "0")}m`, "door to door"],
+      [p.cost.high ? `${money(p.cost.low / Math.max(1, p.request.participants))}–${money(per)}` : "Free", "per person, est."],
+      [`${(p.totalMeters / 1000).toFixed(1)} km`, `by ${modeWord[p.request.mode]}`],
+    ].map(([a, b]) => `<div class="stat"><strong>${a}</strong><span>${b}</span></div>`).join("");
+    $("timeline").innerHTML = p.stops.map((s, i) => {
+      const leg = i ? p.legs[i - 1] : null;
+      const price = s.place.price.high == null ? "Price unknown" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low ?? 0)}–${money(s.place.price.high)} pp`;
+      const warn = /closed|uncertain|unknown/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : "";
+      return (leg ? `<div class="leg"><div></div><div>${leg.minutes} min ${modeWord[p.request.mode]} · ${(leg.meters / 1000).toFixed(1)} km</div></div>` : "") +
+        `<div class="stop"><div class="when">${hhmm(s.arrival)}<br><span class="small muted">${ampm(s.arrival)}</span></div>
+        <div class="stopcard"><div class="row"><div class="art" style="background:${palette[i % palette.length]}">${esc(s.place.name[0])}</div>
+        <div style="min-width:0"><h3>${esc(s.place.name)}</h3><div class="meta"><span>${esc(s.place.category)}</span><span>${Math.round((Date.parse(s.departure) - Date.parse(s.arrival)) / 60000)} min</span><span>${price}</span>${s.place.rating ? `<span>★ ${s.place.rating.toFixed(1)}</span>` : ""}</div></div></div>
+        <p class="small">${esc(s.reason)}</p>
+        <div class="meta">${changed.has(s.placeId) ? '<span class="tag new">Just changed</span>' : ""}${warn}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--coral-text)">Open in Maps</a></div></div></div>`;
+    }).join("");
+    $("issues").innerHTML = p.issues.filter((x) => x.severity === "error" || x.code === "OVER_BUDGET").map((x) => `<p class="notice">${esc(x.message)}</p>`).join("");
+  };
+
+  const fail = (where, e) => { console.error(e); return `<p class="notice error">${esc(e && e.message ? e.message : "Something went wrong.")} Try rewording it, or pick one of the ideas.</p>`; };
+
+  const plan = async (text) => {
+    lastPrompt = text; changed = new Set();
+    show("s-gen");
+    const finish = progress("Planning your outing");
+    try {
+      const res = await W.plan(text, prefs);
+      finish();
+      await new Promise((r) => setTimeout(r, 350));
+      $("editMsg").textContent = "";
+      render(res, res.heard);
+      show("s-plan");
+    } catch (e) {
+      finish(); show("s-compose");
+      $("ideas").insertAdjacentHTML("beforebegin", `<div id="planErr">${fail("plan", e)}</div>`);
+    }
+  };
+  $("go").onclick = () => { $("planErr")?.remove(); const t = $("prompt").value.trim(); if (t) plan(t); };
+  $("again").onclick = () => show("s-compose");
+  $("redo").onclick = () => plan(lastPrompt + " (a different take)");
+
+  const edit = async (instruction) => {
+    if (!current || !instruction.trim()) return;
+    const btn = $("editGo"); btn.disabled = true; btn.textContent = "Changing…";
+    $("editMsg").textContent = claudeReady ? "Claude is reworking that part…" : "Reworking that part…";
+    try {
+      const before = new Set(current.stops.map((s) => s.placeId));
+      const res = await W.edit(current, instruction);
+      changed = new Set(res.plan.stops.map((s) => s.placeId).filter((id) => !before.has(id)));
+      render(res);
+      $("editMsg").textContent = res.op && res.op.summary ? `Done. ${res.op.summary}` : "Done.";
+      $("editText").value = "";
+    } catch (e) {
+      $("editMsg").textContent = e && e.message ? e.message : "That change didn’t work. Try saying it another way.";
+    } finally { btn.disabled = false; btn.textContent = "Apply"; }
+  };
+  $("editForm").addEventListener("submit", (e) => { e.preventDefault(); edit($("editText").value); });
+  $("editIdeas").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) edit(c.textContent); });
+})();
+</script>

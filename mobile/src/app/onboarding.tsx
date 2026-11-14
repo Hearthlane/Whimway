@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { StopArt } from "@/plan/StopArt";
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areas } from "@shared/areas";
 import type { TasteProfile } from "@shared/profile";
@@ -73,9 +73,9 @@ function MiniDemo() {
 function ProgressBar({ value }: { value: number }) {
   const w = useSharedValue(value);
   useEffect(() => {
-    w.value = withTiming(value, { duration: motion.standard });
+    w.set(withTiming(value, { duration: motion.standard }));
   }, [value, w]);
-  const fill = useAnimatedStyle(() => ({ width: `${w.value * 100}%` }));
+  const fill = useAnimatedStyle(() => ({ width: `${w.get() * 100}%` }));
   return (
     <View style={s.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
       <Animated.View style={[s.progressFill, fill]} />
@@ -147,8 +147,7 @@ export default function Onboarding() {
   const [built, setBuilt] = useState(0);
   useEffect(() => {
     if (!isBuilding) return;
-    setBuilt(0);
-    const ticks = [500, 1100, 1700].map((ms, i) => setTimeout(() => setBuilt(i + 1), ms));
+    const ticks = [0, 500, 1100, 1700].map((ms, i) => setTimeout(() => setBuilt(i), ms));
     const done = setTimeout(() => setStep((n) => n + 1), 2400);
     return () => [...ticks, done].forEach(clearTimeout);
   }, [isBuilding]);

@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { areaByKey, areas, defaultRadius, nearestArea, type Area } from "@shared/areas";
@@ -49,6 +49,7 @@ export default function PlanHome() {
   const now = DateTime.now().setZone(ZONE);
 
   // Interpret on every keystroke: deterministic, on-device, free.
+  const minuteKey = now.toFormat("yyyy-MM-dd HH:mm");
   const request = useMemo(() => {
     const draft = interpret(text, now);
     const nearArea: Area | undefined = o.near
@@ -74,7 +75,7 @@ export default function PlanHome() {
     }
     return r;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, o, profile, now.toFormat("yyyy-MM-dd HH:mm")]);
+  }, [text, o, profile, minuteKey]);
   const chips = describe(request, now);
   const totalBudget = Math.round(request.budgetBasis === "total" ? request.budget * request.participants : request.budget);
 
@@ -82,7 +83,7 @@ export default function PlanHome() {
   const left = plansLeft(profile);
   const plan = (prompt = text) => {
     if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
-    store.pending.current = { ...request, prompt: prompt.slice(0, 1500) };
+    store.setPending({ ...request, prompt: prompt.slice(0, 1500) });
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
     router.push("/plan/new");
   };

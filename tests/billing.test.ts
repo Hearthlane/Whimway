@@ -241,3 +241,20 @@ describe("Magic Edit allowance is enforced on the server", () => {
     ).toBe(200);
   });
 });
+
+describe("Fair-use limits on shared networks", () => {
+  it("gives each install on the same network its own allowance, with a network ceiling", async () => {
+    vi.stubEnv("DAILY_GUEST_GENERATIONS", "2");
+    vi.stubEnv("NETWORK_SHARE_FACTOR", "2");
+    const net = { "X-Forwarded-For": "203.0.113.7" };
+    const a = { ...net, "X-Whimway-Install": "campus-install-a" };
+    const b = { ...net, "X-Whimway-Install": "campus-install-b" };
+    const c = { ...net, "X-Whimway-Install": "campus-install-c" };
+    expect((await plan(a)).status).toBe(200);
+    expect((await plan(a)).status).toBe(200);
+    expect((await plan(a)).status).toBe(429); // a's own daily allowance
+    expect((await plan(b)).status).toBe(200); // b on the same wifi is not affected
+    expect((await plan(b)).status).toBe(200);
+    expect((await plan(c)).status).toBe(429); // network ceiling: 2 × 2 reached
+  });
+});

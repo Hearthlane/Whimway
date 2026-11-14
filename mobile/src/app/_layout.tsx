@@ -2,15 +2,13 @@ import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-googl
 import { Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit";
 import { useFonts } from "expo-font";
 import { Stack, type ErrorBoundaryProps } from "expo-router";
-import { Platform, View } from "react-native";
+import { Platform, View , StyleSheet, useWindowDimensions } from "react-native";
 import { api } from "@/lib/api";
-import { Button, Icon, T } from "@/ui/kit";
+import { Button, Icon, T , Spark } from "@/ui/kit";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { StyleSheet, useWindowDimensions } from "react-native";
 import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
-import { Spark } from "@/ui/kit";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider, useStore } from "@/lib/store";
 import { color } from "@/ui/theme";

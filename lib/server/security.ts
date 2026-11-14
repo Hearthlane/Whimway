@@ -16,10 +16,15 @@ export async function rateLimit(
     request.headers.get("x-vercel-forwarded-for") ??
     request.headers.get("x-forwarded-for")?.split(",")[0] ??
     "local";
-  const identity = createHash("sha256")
-    .update(userId ?? ip)
-    .digest("hex")
-    .slice(0, 24);
+  // A person is their account, or their app install on this network. Network address
+  // alone would make everyone on shared wifi (a campus, a café) share one allowance.
+  const install = request.headers.get("x-whimway-install");
+  const person =
+    userId ??
+    (install && /^[A-Za-z0-9-]{8,64}$/.test(install) ? `${ip}:${install}` : ip);
+  const hash = (v: string) =>
+    createHash("sha256").update(v).digest("hex").slice(0, 24);
+  const identity = hash(person);
   const today = new Date().toISOString().slice(0, 10);
   const costly = kind === "generate" || kind === "remix";
   const max =
@@ -44,6 +49,21 @@ export async function rateLimit(
     throw new AppError(
       "RATE_LIMIT",
       "You’ve reached the fair-use limit. Try again later.",
+      429,
+    );
+  // Per-network ceiling so rotating install ids cannot multiply a guest's allowance without bound.
+  if (
+    !userId &&
+    person !== ip &&
+    (await counter(
+      `${kind}:net:${hash(ip)}:${costly ? today : Math.floor(Date.now() / 3600000)}`,
+      costly ? 86400 : 3600,
+    )) >
+      max * limit("NETWORK_SHARE_FACTOR", 25)
+  )
+    throw new AppError(
+      "RATE_LIMIT",
+      "Too many requests from this network. Try again later.",
       429,
     );
   if (
