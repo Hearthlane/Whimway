@@ -95,9 +95,21 @@ export default function PlanHome() {
     setGuideSeed({ request: { ...request, prompt: text.slice(0, 1500) }, text: text.slice(0, 400) });
     router.push("/guide");
   };
+  // Upcoming: plans whose start is still ahead, soonest first. Recent: newest made first.
+  const startOf = (e: (typeof plans)[string]) => DateTime.fromISO(`${e.meta.date}T${e.meta.startTime}`, { zone: ZONE });
+  const upcoming = Object.entries(plans)
+    .filter(([, e]) => startOf(e).plus({ hours: 3 }) > now)
+    .sort((a, b) => startOf(a[1]).toMillis() - startOf(b[1]).toMillis())
+    .slice(0, 3);
   const recent = Object.entries(plans)
+    .filter(([id]) => !upcoming.some(([u]) => u === id))
     .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
     .slice(0, 4);
+  const when = (e: (typeof plans)[string]) => {
+    const t = startOf(e);
+    const days = Math.round(t.startOf("day").diff(now.startOf("day"), "days").days);
+    return `${days === 0 ? "Today" : days === 1 ? "Tomorrow" : t.toFormat(days < 7 && days > 0 ? "cccc" : "ccc d LLL")}, ${t.toFormat("h:mm a")}`;
+  };
 
   const chipRow: { key: Field; icon: IconName; label: string }[] = [
     { key: "who", icon: companionCopy[request.companions ?? "partner"].icon, label: chips.who },
@@ -214,6 +226,68 @@ export default function PlanHome() {
           <Notice icon="info">Demo mode. The places are real; hours, prices and travel times are estimates.</Notice>
         ) : null}
 
+        {upcoming.length ? (
+          <>
+            <View style={s.sectionRow}>
+              <T v="heading">Upcoming</T>
+              <Pressable accessibilityRole="button" onPress={() => router.push("/saved")} hitSlop={8}>
+                <T v="smallStrong" tone={color.coralText}>
+                  See all
+                </T>
+              </Pressable>
+            </View>
+            <View style={{ gap: space.sm }}>
+              {upcoming.map(([id, e]) => (
+                <Pressable key={id} testID={`upcoming-${id}`} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
+                  <View style={s.recentIcon}>
+                    <Icon name={e.saved ? "bookmark" : "calendar"} size={16} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <T v="bodyStrong" numberOfLines={1}>
+                      {e.meta.title}
+                    </T>
+                    <T v="small" tone={color.muted} numberOfLines={1}>
+                      {when(e)} · {e.meta.stops} stops
+                    </T>
+                  </View>
+                  <Icon name="chevron-right" tint={color.faint} />
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {recent.length ? (
+          <>
+            <View style={s.sectionRow}>
+              <T v="heading">Recently created</T>
+              <Pressable accessibilityRole="button" onPress={() => router.push("/saved")} hitSlop={8}>
+                <T v="smallStrong" tone={color.coralText}>
+                  See all
+                </T>
+              </Pressable>
+            </View>
+            <View style={{ gap: space.sm }}>
+              {recent.map(([id, e]) => (
+                <Pressable key={id} testID={`recent-${id}`} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
+                  <View style={s.recentIcon}>
+                    <Icon name={e.saved ? "bookmark" : "clock"} size={16} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <T v="bodyStrong" numberOfLines={1}>
+                      {e.meta.title}
+                    </T>
+                    <T v="small" tone={color.muted} numberOfLines={1}>
+                      {when(e)} · {e.meta.stops} stops
+                    </T>
+                  </View>
+                  <Icon name="chevron-right" tint={color.faint} />
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
+
         <PollCard />
 
         <T v="heading" style={s.section}>
@@ -239,31 +313,7 @@ export default function PlanHome() {
           ))}
         </ScrollView>
 
-        {recent.length ? (
-          <>
-            <T v="heading" style={s.section}>
-              Pick up where you left off
-            </T>
-            <View style={{ gap: space.sm }}>
-              {recent.map(([id, e]) => (
-                <Pressable key={id} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
-                  <View style={s.recentIcon}>
-                    <Icon name={e.saved ? "bookmark" : "clock"} size={16} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <T v="bodyStrong" numberOfLines={1}>
-                      {e.meta.title}
-                    </T>
-                    <T v="small" tone={color.muted} numberOfLines={1}>
-                      {DateTime.fromISO(`${e.meta.date}T${e.meta.startTime}`).toFormat("ccc d LLL · h:mm a")} · {e.meta.stops} stops
-                    </T>
-                  </View>
-                  <Icon name="chevron-right" tint={color.faint} />
-                </Pressable>
-              ))}
-            </View>
-          </>
-        ) : null}
+
       </ScrollView>
 
       <Editors field={field} close={() => setField(null)} request={request} o={o} setO={setO} totalBudget={totalBudget} now={now} />
@@ -422,6 +472,7 @@ function Stepper({ label, value, onChange, min, max, step = 1, prefix = "" }: { 
 }
 
 const s = StyleSheet.create({
+  sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: space.xl },
   guide: { flexDirection: "row", alignItems: "center", gap: space.lg, backgroundColor: color.coral, borderRadius: radius.xl, padding: space.xl, ...shadow.lift },
   guideGo: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.ink, alignItems: "center", justifyContent: "center" },
   page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.lg, maxWidth: 680, width: "100%", alignSelf: "center" },

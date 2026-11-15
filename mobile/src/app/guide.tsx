@@ -211,7 +211,7 @@ export default function Guide() {
     if (plansLeft(profile) <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
     store.setPending(request);
     store.track("plan_requested", { words: a.note.trim().split(/\s+/).filter(Boolean).length, edited: 0, guided: true });
-    router.replace("/plan/new");
+    router.push("/options");
   };
 
   const day = (d: number) => (d === 0 ? "Today" : d === 1 ? "Tomorrow" : now.plus({ days: d }).toFormat("cccc"));
@@ -227,7 +227,7 @@ export default function Guide() {
     funPlace: [`${named(a.kind, a.kindText)} near you`, "Open at your time, closest first. Pick one."],
     travel: ["How are you getting around?", "This sets how far apart the stops can be."],
     extras: ["Anything else?", "All optional. Skip it if you’re happy."],
-    review: ["Here’s what you picked", "Whimway fits it into a timetable with travel between stops."],
+    review: ["Here’s what you picked", "Next you’ll get a few different timetables to choose from."],
   };
   const extrasSummary = [a.mood.map((m) => vibeCopy[m].label).join(", "), a.budget ? budgets.find((b) => b.amount === a.budget)?.label : "", a.note.trim() ? `“${a.note.trim().slice(0, 40)}${a.note.trim().length > 40 ? "…" : ""}”` : ""].filter(Boolean).join(" · ");
 
@@ -463,7 +463,7 @@ export default function Guide() {
       </Animated.View>
       {hasFooter ? (
         <Animated.View key={step} entering={FadeInDown.delay(180).duration(320)} style={s.footer}>
-          {step === "extras" ? <Button testID="guide-extras-next" size="lg" kind="dark" label={extrasSummary ? "Continue" : "Skip"} onPress={forward} /> : <Button testID="guide-build" size="lg" label="Build my timetable" onPress={build} />}
+          {step === "extras" ? <Button testID="guide-extras-next" size="lg" kind="dark" label={extrasSummary ? "Continue" : "Skip"} onPress={forward} /> : <Button testID="guide-build" size="lg" label="Show me options" onPress={build} />}
         </Animated.View>
       ) : null}
     </SafeAreaView>

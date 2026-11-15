@@ -27,6 +27,7 @@ await p.getByTestId("plan-it").click();
 await p.getByTestId("guide-food-any").click();
 await p.getByTestId("guide-fun-any").click();
 await p.getByTestId("guide-build").click();
+await p.getByTestId("option-0").click({ timeout: 60000 });
 await p.getByTestId("plan-title").waitFor({ timeout: 60000 });
 await p.waitForTimeout(1500);
 await shot("04-plan");

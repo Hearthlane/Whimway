@@ -407,3 +407,17 @@ export function readText(text: string, prefs: Prefs) {
     heard: [heard.who, heard.when, heard.budget, heard.area].filter(Boolean),
   };
 }
+
+/** A few different plans to choose from; `feedback` is what was missing from the last set. */
+export async function planOptions(
+  a: Answers,
+  prefs: Prefs,
+  feedback = "",
+  avoid: string[] = [],
+) {
+  const req = guidedRequest(a, prefs);
+  lastNote = "";
+  lastSource = "fallback";
+  const options = await plannerFor(req).alternatives(req, feedback, avoid);
+  return { options, source: lastSource, note: lastNote };
+}

@@ -136,6 +136,17 @@ textarea { min-height: 84px; resize: vertical; }
 .other input { flex: 1; min-width: 0; min-height: 52px; }
 .other button { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); border: 0; display: grid; place-items: center; flex: none; }
 .other button[disabled] { opacity: .35; }
+.option { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border-radius: 26px; background: var(--paper); border: 1.5px solid var(--line); overflow: hidden; animation: up .38s ease-out both; transition: transform .12s, border-color .15s; }
+.option:active { transform: scale(.985); }
+.option .ph { display: flex; gap: 2px; height: 96px; position: relative; }
+.option .ph img { flex: 1; min-width: 0; object-fit: cover; background: var(--line); }
+.option .ph .tick { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; }
+.option .ob { display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+.option .oh { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.option .oh h3 { flex: 1; }
+.option .ol { display: flex; gap: 12px; font-size: 15px; }
+.option .ol b { width: 44px; font-variant-numeric: tabular-nums; flex: none; }
+.refine { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 6px; }
 .tb .r { display: grid; grid-template-columns: 58px 1fr; gap: 12px; animation: up .36s ease-out both; }
 .tb .times { display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
 .tb .clock { font: 700 22px/24px var(--display); letter-spacing: -.6px; }
@@ -177,6 +188,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     slash: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.900 4.900l14.200 14.200", shuffle: "M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5",
     zap: "M13 2 3 14h9l-1 8 10-12h-9l1-8z", walk: "M3 11l19-9-9 19-2-8-8-2z", transit: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM1 12h7M16 12h7", car: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5zM18.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z",
     cal: "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18",
+    clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",
     heart: "M20.800 4.600a5.500 5.500 0 0 0-7.800 0L12 5.700l-1-1.100a5.500 5.500 0 0 0-7.800 7.800l1 1L12 21.200l7.800-7.800 1-1a5.500 5.500 0 0 0 0-7.800z",
     users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.900M16 3.100a4 4 0 0 1 0 7.800",
     user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
@@ -211,11 +223,15 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     paint(`
       <div class="q"><p class="small muted">${W.nowHour() < 12 ? "Good morning" : W.nowHour() < 17 ? "Good afternoon" : "Good evening"}</p><h1>What should we do?</h1></div>
       <button class="cta" id="start"><span style="flex:1"><h2>Build it step by step</h2><span class="small" style="color:var(--ink-soft);display:block;margin-top:4px">Food, something to do, how you’re getting there. You pick the places.</span></span><span class="go">${icon("arrow", "#fff", 22)}</span></button>
+      ${(() => { const all = store.get("whimway-plans") || [], now = Date.now(); const up = all.filter((x) => Date.parse(x.start) + 3 * 3600e3 > now).sort((x, y) => Date.parse(x.start) - Date.parse(y.start)).slice(0, 3); const rec = all.filter((x) => !up.includes(x)).slice(0, 3);
+        const row = (x) => `<button class="opt mine" data-id="${esc(x.id)}"><span class="ic">${icon(up.includes(x) ? "cal" : "clock")}</span><span><b>${esc(x.title)}</b><span class="small muted">${new Date(x.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${clock(x.start).join(" ")} · ${x.stops} stops</span></span></button>`;
+        return (up.length ? `<div class="sec"><h3>Upcoming</h3><div class="list">${up.map(row).join("")}</div></div>` : "") + (rec.length ? `<div class="sec"><h3>Recently created</h3><div class="list">${rec.map(row).join("")}</div></div>` : ""); })()}
       <div class="card" style="display:flex;flex-direction:column;gap:12px">
         <h3>Or just say it</h3>
         <textarea id="prompt" aria-label="Describe your outing" placeholder="Date night Saturday, something cozy with good food, under $60 each"></textarea>
         <button class="btn dark" id="say">Next</button>
       </div>`, dir);
+    on(".mine", (el) => { const x = (store.get("whimway-plans") || []).find((y) => y.id === el.dataset.id); if (x) { changed = new Set(); plan({ itinerary: x.itinerary, source: "saved" }, 1); } });
     on("#start", () => { a = fresh(); picked = {}; skip = []; heard = []; step = "who"; guide(1); });
     // Typed ideas are clarified first: only the questions the words left open are asked.
     on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; const r = W.readText(t, prefs); a = { ...fresh(), ...r.answers }; picked = {}; skip = r.skip; heard = r.heard; step = flow()[0]; guide(1); });
@@ -262,7 +278,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
       kind: ["What sounds fun?", "Pick one, or type what you have in mind."],
       funPlace: [`${named(a.kind, a.kindText)} near you`, "Open at your time, closest first. Pick one."],
       travel: ["How are you getting around?", "This sets how far apart the stops can be."],
-      review: ["Here’s what you picked", "Whimway fits it into a timetable with travel between stops."],
+      review: ["Here’s what you picked", "Next you’ll get a few different timetables to choose from."],
     }[step];
     let body = "";
     if (step === "who") body = `<div class="list">${Object.entries(whos).map(([k, w]) => opt(k, w[2], w[0], w[1], a.who === k)).join("")}</div>`;
@@ -281,7 +297,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <button data-to="${a.fun === "yes" ? "funPlace" : "fun"}">${icon("zap", "var(--muted)", 18)}<span><span class="small muted">Something to do</span><br><b>${esc(a.fun === "none" ? "Just the food" : picked.fun ? picked.fun.name : "Whimway picks")}</b></span><em>Change</em></button>
         <button data-to="travel">${icon(modes[a.mode][2], "var(--muted)", 18)}<span><span class="small muted">Getting around</span><br><b>${modes[a.mode][0]}</b></span><em>Change</em></button>
         <button data-to="extras">${icon("pen", "var(--muted)", 18)}<span><span class="small muted">Anything else</span><br><b>${esc(extras() || "Nothing added")}</b></span><em>Change</em></button>
-      </div><button class="btn primary" id="build">Build my timetable</button>`;
+      </div><button class="btn primary" id="build">Show me options</button>`;
     paint(`<div class="bar"><button class="round" id="bk" aria-label="Back">${icon("back")}</button><div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="${f.length}" aria-valuenow="${i + 1}"><div class="fill" id="fill" style="width:${(i / f.length) * 100}%"></div></div><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
       <div class="q"><h1 style="font-size:31px">${esc(T[0])}</h1><p class="muted">${esc(T[1])}</p></div>${heard.length && i === 0 && inFlow && step !== "review" ? `<p class="notice" style="background:var(--blue-tint);color:var(--ink)">Got it: ${esc(heard.join(", "))}. ${f.length > 2 ? "A few quick questions" : "One quick question"} so the plan isn’t guesswork.</p>` : ""}${body}`, dir);
     requestAnimationFrame(() => (document.getElementById("fill").style.width = `${((i + 1) / f.length) * 100}%`));
@@ -302,7 +318,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     if (step === "kind") on(".tile", (el) => { if (a.kind !== el.dataset.v) { a.funPlaceId = undefined; picked.fun = null; } choose(el, { kind: el.dataset.v }); });
     if (step === "fun") on(".opt", (el) => { const v = el.dataset.v; if (v !== "yes") { a.kind = undefined; a.funPlaceId = undefined; picked.fun = null; } choose(el, { fun: v }); });
     if (step === "travel") on(".opt", (el) => choose(el, { mode: el.dataset.v }));
-    if (step === "review") { on(".sum button", (el) => move(el.dataset.to, -1)); on("#build", () => { [a.cuisine, a.kind].filter(Boolean).forEach((k) => (usual[k] = (usual[k] || 0) + 1)); store.set("whimway-usual", usual); run(() => W.planGuided(a, prefs), () => move("review", -1)); }); }
+    if (step === "review") { on(".sum button", (el) => move(el.dataset.to, -1)); on("#build", () => { [a.cuisine, a.kind].filter(Boolean).forEach((k) => (usual[k] = (usual[k] || 0) + 1)); store.set("whimway-usual", usual); choices(""); }); }
     if (groupKey) places(groupKey, step === "foodPlace" ? "food" : "fun");
   };
 
@@ -336,6 +352,34 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     } catch (e) { clearInterval(t); console.error(e); onFail(); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">${esc(e && e.message ? e.message : "That didn’t work.")} Change one of your choices and try again.</p>`); }
   };
 
+  // ── Options: choose between a few plans, or say what's missing ──
+  let shownIds = [];
+  const choices = async (said) => {
+    paint(`<h2>${said ? "Finding something different" : "Building your options"}</h2><div class="card steps">${["Reading what you picked", "Checking what’s open at that time", claudeReady ? "Claude is writing them up" : "Putting them in order", "Working out travel and cost"].map((t) => `<div class="step"><i></i>${t}</div>`).join("")}</div>`, 1);
+    const steps = [...view.querySelectorAll(".step")]; let n = 0;
+    const show = () => steps.forEach((s, j) => (s.className = "step" + (j < n ? " done" : j === n ? " now" : "")));
+    show(); const t = setInterval(() => { if (n < 2) { n++; show(); } }, 600);
+    let res;
+    try { [res] = await Promise.all([W.planOptions(a, prefs, said, shownIds), new Promise((r) => setTimeout(r, said ? 1200 : 1900))]); }
+    catch (e) { clearInterval(t); move("review", -1); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">${esc(e && e.message ? e.message : "That didn’t work.")} Change one of your choices and try again.</p>`); return; }
+    clearInterval(t);
+    if (!res.options.length) { move("review", -1); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">Nothing fits those answers at that time. Try another time, or change one of your picks.</p>`); return; }
+    shownIds = [...new Set([...shownIds, ...res.options.flatMap((o) => o.plan.stops.map((s) => s.placeId))])].slice(-40);
+    const by = (p) => (p.request.mode === "WALK" ? "walk" : p.request.mode === "TRANSIT" ? "transit" : "drive");
+    paint(`<div class="bar"><button class="round" id="bk" aria-label="Back to your answers">${icon("back")}</button><span style="flex:1"></span><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
+      <div class="q"><h1 style="font-size:31px">Pick the one that sounds best</h1><p class="muted">Each one is a full timetable. You can still change any stop after.</p></div>
+      ${res.options.map((o, i) => { const p = o.plan, last = p.stops[p.stops.length - 1]; return `<button class="option" data-i="${i}" style="animation-delay:${80 + i * 110}ms"><span class="ph">${p.stops.slice(0, 4).map((s) => `<img src="photos/${W.photoKind(s.place)}.jpg" alt="">`).join("")}${tick}</span><span class="ob"><span class="oh"><h3 style="font-size:21px">${esc(o.label)}</h3><span class="small muted">${clock(p.stops[0].arrival)[0]}–${clock(last.departure).join(" ")}</span></span>${p.stops.map((s) => `<span class="ol"><b>${clock(s.arrival)[0]}</b>${esc(s.place.name)}</span>`).join("")}<span class="small muted">${p.cost.high ? `${money(p.cost.low)}–${money(p.cost.high)} each` : "Free"} · ${(p.totalMeters / 1000).toFixed(1)} km ${by(p)}</span></span></button>`; }).join("")}
+      <div class="sec refine"><h3>None of these?</h3><p class="small muted">Say what’s missing and you’ll get a different set.</p>
+        <div class="chips">${["More fun", "More lively", "Something outdoors", "Cheaper", "Closer together", "Less food"].map((c) => `<button class="chip nudge">${c}</button>`).join("")}</div>
+        <textarea id="fb" maxlength="300" aria-label="Describe what you want instead" placeholder="We haven’t seen each other in ages. Something we can do together, not just sit and eat."></textarea>
+        <button class="btn dark" id="again2">Show me different options</button></div>`, 1);
+    on("#bk", () => move("review", -1));
+    on("#cl", () => home(-1));
+    on(".option", (el) => { el.classList.add("on"); const o = res.options[+el.dataset.i]; setTimeout(() => { changed = new Set(); plan({ itinerary: o.plan, source: res.source, note: res.note }, 1); }, 260); });
+    on(".nudge", (el) => choices(el.textContent));
+    on("#again2", () => { const v = document.getElementById("fb").value.trim(); if (v.length > 2) choices(v); });
+  };
+
   // ── Plan ──
   let current = null, changed = new Set(), editMsg = "";
   const clock = (iso) => { const [h, m] = iso.slice(11, 16).split(":").map(Number); return [`${h % 12 || 12}:${String(m).padStart(2, "0")}`, h < 12 ? "AM" : "PM"]; };
@@ -350,6 +394,8 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     return cap(s.place.category); };
   const plan = (res, dir) => {
     const p = res.itinerary || res.plan; current = p;
+    const mine = (store.get("whimway-plans") || []).filter((x) => x.id !== p.id);
+    store.set("whimway-plans", [{ id: p.id, title: p.title, start: p.stops[0].arrival, stops: p.stops.length, made: Date.now(), itinerary: p }, ...mine].slice(0, 8));
     const first = p.stops[0], last = p.stops[p.stops.length - 1], people = Math.max(1, p.request.participants);
     const by = p.request.mode === "WALK" ? "walk" : p.request.mode === "TRANSIT" ? "by transit" : "drive";
     const live = res.source === "claude";
