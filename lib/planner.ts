@@ -7,7 +7,8 @@ export { hoursCheck } from "./hours";
 import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
 import { interpretEdit, type EditOp } from "./magic-edit";
-import { inGroup, isEatery, type GuideGroup } from "./guide";
+import { inGroup, isEatery, readStated, type GuideGroup } from "./guide";
+import { interpret } from "./intent";
 import { demoReason } from "./providers/gta-demo";
 import type {
   CandidatePlace,
@@ -737,7 +738,7 @@ export class Planner {
     };
     let places = await rank(await collect(open));
     let widened = false;
-    if (places.length < 2) {
+    if (places.length < 4) {
       const wider = await rank(
         await collect({
           ...open,
@@ -760,6 +761,121 @@ export class Planner {
         meters: Math.round(distance(p.point, request.area.center)),
       })),
     };
+  }
+  /**
+   * Up to three different plans for the same request, so the person chooses instead of
+   * being handed one. Each keeps the places they picked; they differ in how much is added
+   * around them, and never repeat each other's added stops. `feedback` is what the person
+   * said was missing from the last set ("more lively", "something outdoors").
+   */
+  async alternatives(
+    request: PlanRequest,
+    feedback = "",
+    avoid: string[] = [],
+  ): Promise<{ key: string; label: string; blurb: string; plan: Itinerary }[]> {
+    const said = feedback.trim().slice(0, 300);
+    const hints = said ? interpret(said, DateTime.now()) : undefined;
+    const stated = said ? readStated(said) : {};
+    const base: PlanRequest = {
+      ...request,
+      vibes: hints?.vibes.length ? hints.vibes.slice(0, 4) : request.vibes,
+      indoorOnly: hints?.indoorOnly ?? request.indoorOnly,
+      skipFood: stated.food === "none" ? true : request.skipFood,
+      prompt: [request.prompt, said].filter(Boolean).join(". ").slice(0, 1500),
+    };
+    const action = said
+      ? `They looked at the last options and said: "${said}". Build around that.`
+      : undefined;
+    const evening = Number(request.startTime.slice(0, 2)) >= 17;
+    const picked = request.anchorPlaceIds.length > 0;
+    const shapes = [
+      {
+        key: "simple",
+        label: picked ? "Just your picks" : "Short and easy",
+        blurb: "Two stops, no rush.",
+        pace: "relaxed" as const,
+        extra: 0,
+      },
+      {
+        key: "extra",
+        label: picked ? "With something extra" : "A proper outing",
+        blurb: "Three stops, with one more thing to do.",
+        pace: "balanced" as const,
+        extra: 75,
+      },
+      {
+        key: "full",
+        label: evening ? "Make a night of it" : "Make a day of it",
+        blurb: "Four stops for when you want it to last.",
+        pace: "packed" as const,
+        extra: 165,
+      },
+    ];
+    const out: {
+      key: string;
+      label: string;
+      blurb: string;
+      plan: Itinerary;
+    }[] = [];
+    const used = new Set(
+      avoid.filter((id) => !request.anchorPlaceIds.includes(id)),
+    );
+    // Places the person picked themselves may already use the whole budget. Added stops
+    // then get a modest allowance of their own, so "something extra" is still possible.
+    const pickedCost = (
+      await Promise.all(
+        request.anchorPlaceIds.map((id) =>
+          this.details(id, request.location.currency).catch(() => undefined),
+        ),
+      )
+    ).reduce((n, p) => n + (p?.price.high ?? 0), 0);
+    const stopsIn = { relaxed: 2, balanced: 3, packed: 4 };
+    for (const shape of shapes) {
+      const added = Math.max(
+        0,
+        stopsIn[shape.pace] - request.anchorPlaceIds.length,
+      );
+      const variant: PlanRequest = {
+        ...base,
+        budget: picked
+          ? Math.max(base.budget, pickedCost + added * 20)
+          : base.budget,
+        pace: shape.pace,
+        duration: Math.min(720, base.duration + shape.extra),
+        excludedPlaceIds: [
+          ...new Set([...base.excludedPlaceIds, ...used]),
+        ].slice(0, 100),
+      };
+      try {
+        const plan = await this.generate(variant, undefined, action);
+        const ids = plan.stops
+          .map((s) => s.placeId)
+          .sort()
+          .join();
+        if (
+          out.some(
+            (o) =>
+              o.plan.stops
+                .map((s) => s.placeId)
+                .sort()
+                .join() === ids,
+          )
+        )
+          continue;
+        out.push({
+          key: shape.key,
+          label: shape.label,
+          blurb: shape.blurb,
+          plan,
+        });
+        for (const s of plan.stops)
+          if (!request.anchorPlaceIds.includes(s.placeId)) used.add(s.placeId);
+      } catch (e) {
+        // One shape not fitting (too late, too far) should not hide the others.
+        if (!out.length && shape === shapes[shapes.length - 1]) throw e;
+      }
+    }
+    return out;
   }
   async hydrate(spec: PlanSpec): Promise<Itinerary> {
     let hydrated = spec;

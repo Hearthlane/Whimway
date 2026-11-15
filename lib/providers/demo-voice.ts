@@ -5,6 +5,106 @@ import type { Vibe } from "../schema";
 
 type Note = { vibes: Vibe[]; date: string; crew: string };
 export const voice: Record<string, Note> = {
+  ballroom: {
+    vibes: ["playful", "lively"],
+    date: "Ten-pin lanes, ping pong and a big bar under one roof. Loser buys the next round.",
+    crew: "Bowling, ping pong and pitchers downtown. Book two lanes and make teams.",
+  },
+  spin: {
+    vibes: ["playful", "lively"],
+    date: "A ping pong club with cocktails. You’ll both get competitive within five minutes.",
+    crew: "Rent a table by the hour, order snacks, and run a tournament with brackets.",
+  },
+  tilt: {
+    vibes: ["playful", "lively", "cozy"],
+    date: "Pay once at the door and every pinball and arcade machine is free to play.",
+    crew: "One cover charge, then unlimited pinball and old arcade cabinets all night.",
+  },
+  batl: {
+    vibes: ["adventurous", "playful", "lively"],
+    date: "A coach teaches you both to throw an axe, then you play each other. It’s more fun than it sounds.",
+    crew: "Axe throwing with a coach and a tournament at the end. Great for a group that hasn’t seen each other in a while.",
+  },
+  captive: {
+    vibes: ["adventurous", "playful"],
+    date: "An hour locked in a room solving puzzles together. You learn a lot about each other fast.",
+    crew: "Sixty minutes to get out. Someone takes charge, someone finds the key by accident, everyone talks about it after.",
+  },
+  lob: {
+    vibes: ["playful", "lively"],
+    date: "Bocce crossed with mini golf, played with a drink in hand. Easy to be bad at together.",
+    crew: "A nine-hole bocce course with a bar. Nobody is good at it, which is the point.",
+  },
+  "for-the-win": {
+    vibes: ["cozy", "playful", "chill"],
+    date: "Hundreds of board games and staff who’ll teach you one. Order a milkshake and settle in.",
+    crew: "A wall of board games and staff who explain the rules. Good for catching up while you play.",
+  },
+  "comedy-bar": {
+    vibes: ["lively", "playful", "cinematic"],
+    date: "Stand-up and sketch in a small basement room. Sit near the back if you’d rather not be part of the show.",
+    crew: "Cheap tickets, strong line-ups and a bar. You’ll be quoting it on the way home.",
+  },
+  scotiabank: {
+    vibes: ["cinematic", "chill"],
+    date: "The big downtown multiplex with IMAX. Take the long escalator and get the good seats.",
+    crew: "Big screens and every new release. Easy when the group can’t agree on anything else.",
+  },
+  "royal-alex": {
+    vibes: ["romantic", "cinematic", "artsy"],
+    date: "A 1907 theatre with red velvet and gold balconies. Dress up a little.",
+    crew: "A big touring musical in a beautiful old theatre. Book ahead.",
+  },
+  paradise: {
+    vibes: ["cinematic", "cozy", "artsy"],
+    date: "A restored art-deco cinema showing classics and cult films, with a proper bar.",
+    crew: "Old favourites on a big screen in a restored 1930s cinema. Drinks allowed in your seat.",
+  },
+  illusions: {
+    vibes: ["playful", "adventurous", "cinematic"],
+    date: "Rooms built to trick your eyes. You’ll come out with a camera roll of ridiculous photos.",
+    crew: "Tilted rooms and mirror tricks made for group photos. About an hour, lots of laughing.",
+  },
+  hhof: {
+    vibes: ["playful", "cinematic"],
+    date: "The Stanley Cup in an old bank vault, plus games where you shoot on a virtual goalie.",
+    crew: "See the Cup, then take shots against a simulated goalie and argue about who’s best.",
+  },
+  "little-canada": {
+    vibes: ["playful", "cozy", "artsy"],
+    date: "The whole country built in miniature, with tiny trains and a day-night cycle. Oddly charming.",
+    crew: "A miniature Canada with moving trains and hidden jokes to spot. More fun than you’d expect.",
+  },
+  bata: {
+    vibes: ["artsy", "chill"],
+    date: "Four and a half thousand years of shoes, from ancient sandals to celebrity sneakers. Small and surprising.",
+    crew: "A quick, quirky museum. Everyone finds one pair they can’t believe is real.",
+  },
+  "high-park": {
+    vibes: ["outdoorsy", "chill", "romantic"],
+    date: "Trails, a pond and a small free zoo in the city’s biggest park. Bring coffee and wander.",
+    crew: "Room to walk and talk, with a zoo and a hillside garden to stumble on.",
+  },
+  hto: {
+    vibes: ["chill", "romantic", "outdoorsy"],
+    date: "Yellow umbrellas and sand on the edge of the harbour. Good for sitting and watching the boats.",
+    crew: "A city beach with umbrellas by the lake. Easy stop between other things.",
+  },
+  "bellwoods-brewery": {
+    vibes: ["lively", "chill", "foodie"],
+    date: "A tiny brewery with a patio on Ossington and some of the best beer in the city.",
+    crew: "Share a few bottles of whatever’s new on the patio. It fills up, so go early.",
+  },
+  mahjong: {
+    vibes: ["lively", "romantic", "cinematic"],
+    date: "Walk through a pink corner-store front into a hidden bar with a huge mural and good cocktails.",
+    crew: "A hidden bar behind a fake convenience store. Loud, pretty and good for a second round.",
+  },
+  millie: {
+    vibes: ["cozy", "foodie", "playful"],
+    date: "Japanese crêpe cakes with twenty thin layers. Share two flavours.",
+    crew: "Matcha crêpe cake and soft serve to share. A good last stop.",
+  },
   kinka: {
     vibes: ["lively", "foodie", "playful"],
     date: "A loud, happy izakaya where the staff shout hello. Order a few small plates and share everything.",

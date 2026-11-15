@@ -295,7 +295,7 @@ async function handlePOST(request: Request, ctx: Context) {
     const user = await currentUser();
     await rateLimit(
       request,
-      path === "generate"
+      path === "generate" || path === "guide/plans"
         ? "generate"
         : path === "remix" || path === "edit" || path === "magic-edit"
           ? "remix"
@@ -332,6 +332,36 @@ async function handlePOST(request: Request, ctx: Context) {
         outputTokens: stats?.outputTokens,
       });
       return ok(result);
+    }
+    if (path === "guide/plans") {
+      const data = z
+        .object({
+          request: PlanRequest,
+          /** What the person said was missing from the options they were shown. */
+          feedback: z.string().max(300).default(""),
+          /** Stops already shown, so a new set is actually different. */
+          avoid: z.array(z.string().max(250)).max(40).default([]),
+          demo: z.boolean().default(false),
+        })
+        .parse(input);
+      await requirePlanAllowance(request, user?.id);
+      const started = Date.now();
+      const options = await planner(data.request, data.demo)
+        .withCrowd(await crowdSignals())
+        .alternatives(data.request, data.feedback, data.avoid);
+      // A set of options counts as one plan against the monthly allowance, and only the first set.
+      if (!data.feedback)
+        await countPlanMade(installOf(request), user?.id).catch(
+          () => undefined,
+        );
+      telemetry("plan_generated", {
+        ms: Date.now() - started,
+        stops: options[0]?.plan.stops.length ?? 0,
+        demo: data.demo,
+        options: options.length,
+        refined: Boolean(data.feedback),
+      });
+      return ok(options);
     }
     if (path === "hydrate") {
       const spec = PlanSpec.parse(input);

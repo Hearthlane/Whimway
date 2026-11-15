@@ -159,6 +159,57 @@ describe("guided planning", () => {
       kind: "outdoors",
     });
   });
+  it("offers three different plans that all keep the person's picks", async () => {
+    const r = {
+      ...base(),
+      startTime: "14:30",
+      companions: "friends" as const,
+      participants: 4,
+      vibes: ["playful" as const],
+    };
+    const food = (await planner(r).options(r, groupByKey("mexican")!))
+      .places[0];
+    const fun = (await planner(r).options(r, groupByKey("games")!)).places[0];
+    const request = { ...r, anchorPlaceIds: [food.id, fun.id], duration: 210 };
+    const options = await planner(request).alternatives(request);
+    expect(options.map((o) => o.plan.stops.length)).toEqual([2, 3, 4]);
+    for (const o of options)
+      expect(o.plan.stops.map((s) => s.placeId)).toEqual(
+        expect.arrayContaining([food.id, fun.id]),
+      );
+    // The added stops differ between options.
+    const added = options.map((o) =>
+      o.plan.stops
+        .map((s) => s.placeId)
+        .filter((id) => id !== food.id && id !== fun.id),
+    );
+    expect(added[1].some((id) => added[2].includes(id))).toBe(false);
+  });
+  it("without picks, the three plans share no stops, and feedback steers a new set", async () => {
+    const r = { ...base(), companions: "friends" as const, participants: 4 };
+    const first = await planner(r).alternatives(r);
+    expect(first.length).toBe(3);
+    const all = first.flatMap((o) => o.plan.stops.map((s) => s.placeId));
+    expect(new Set(all).size).toBe(all.length);
+    const next = await planner(r).alternatives(
+      r,
+      "none of these are fun, we want games and something lively",
+      all,
+    );
+    expect(next.length).toBeGreaterThanOrEqual(2);
+    const fresh = next.flatMap((o) => o.plan.stops.map((s) => s.placeId));
+    expect(fresh.some((id) => all.includes(id))).toBe(false);
+    expect(next[0].plan.request.vibes).toEqual(
+      expect.arrayContaining(["playful"]),
+    );
+    expect(
+      next.some((o) =>
+        o.plan.stops.some((s) =>
+          /game|bowling|amusement/.test(s.place.types.join(" ")),
+        ),
+      ),
+    ).toBe(true);
+  });
   it("skips restaurants and cafés when the group has eaten", async () => {
     const r = { ...base(), skipFood: true };
     const plan = await planner(r).generate(r);
