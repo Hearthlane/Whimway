@@ -884,7 +884,7 @@ const titles: Record<string, string[]> = {
     "Golden Hour Cut",
     "Scenes From the City",
   ],
-  chill: ["Easy Does It", "Slow Lane Saturday", "No Rush Ramble"],
+  chill: ["Easy Does It", "Slow Lane", "No Rush Ramble"],
   lively: ["Loud, Bright & Ours", "Turn It Up", "The Good Kind of Busy"],
   artsy: ["Gallery Hours", "Colour Outside the Lines", "Muse Mode"],
   foodie: ["Eat Our Way Across Town", "Bite by Bite", "The Tasting Route"],

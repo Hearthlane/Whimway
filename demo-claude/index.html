@@ -1,375 +1,333 @@
 <title>Whimway Live Demo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: one phone-width column, centred; a screen at a time, like the app. */
+/* Layout: one phone-width column, one question per screen, like the app. Single light look by design. */
 :root {
-  --canvas: #F8F7F2; --paper: #FFFEFB; --ink: #192630; --muted: #52615D; --faint: #8A958F;
-  --line: #E4E6DE; --coral: #FF705B; --coral-text: #C2412F; --coral-tint: #FFE7E2;
-  --mint: #BDE9DA; --mint-tint: #E6F6F0; --lav: #B8A4F5; --lav-tint: #EEE9FD;
-  --yellow-tint: #FFF4DB; --warn: #8A5A00; --ok: #2F7A5B; --on-coral: #192630;
-  --shadow: 0 6px 14px rgba(25,38,48,.06);
-  --display: "Outfit", "Avenir Next", system-ui, sans-serif;
-  --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --canvas: #F4F5F8; --paper: #FFFFFF; --ink: #10173A; --ink-soft: #27305A; --muted: #4E5674; --faint: #8B92AB;
+  --line: #E1E4EC; --accent: #FFC53D; --accent-tint: #FFF3CF; --blue: #2B46D9; --blue-tint: #EDF2FF;
+  --lav: #C5B6FF; --lav-tint: #F0ECFF; --warn: #7A5200; --warn-tint: #FFF6DD;
+  --shadow: 0 6px 14px rgba(16,23,58,.07); --lift: 0 10px 22px rgba(16,23,58,.14);
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --canvas: #12191F; --paper: #1A242C; --ink: #EEF1EC; --muted: #A9B6B0; --faint: #74817B;
-  --line: #2A3740; --coral: #FF8370; --coral-text: #FF9C8C; --coral-tint: #3A2622;
-  --mint: #2E5C4E; --mint-tint: #1C3029; --lav: #8E7BD6; --lav-tint: #2A2540;
-  --yellow-tint: #332B17; --warn: #E8B860; --ok: #7FD1AE; --on-coral: #192630;
-  --shadow: 0 6px 14px rgba(0,0,0,.3); color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --canvas: #12191F; --paper: #1A242C; --ink: #EEF1EC; --muted: #A9B6B0; --faint: #74817B;
-  --line: #2A3740; --coral: #FF8370; --coral-text: #FF9C8C; --coral-tint: #3A2622;
-  --mint: #2E5C4E; --mint-tint: #1C3029; --lav: #8E7BD6; --lav-tint: #2A2540;
-  --yellow-tint: #332B17; --warn: #E8B860; --ok: #7FD1AE; --on-coral: #192630;
-  --shadow: 0 6px 14px rgba(0,0,0,.3); color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { background: var(--canvas); color: var(--ink); font: 15px/1.47 var(--body); margin: 0;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
-.app { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; text-wrap: balance; }
-h1 { font-size: 34px; line-height: 1.1; letter-spacing: -.8px; }
-h2 { font-size: 25px; line-height: 1.2; letter-spacing: -.4px; }
-h3 { font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -.2px; }
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 56px; }
+.app { max-width: 440px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: 34px; line-height: 1.06; letter-spacing: -1.1px; font-weight: 700; }
+h2 { font-size: 26px; line-height: 1.15; letter-spacing: -.7px; font-weight: 600; }
+h3 { font-size: 18px; line-height: 1.25; letter-spacing: -.2px; font-weight: 600; }
 p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; line-height: 18px; }
-.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.brand { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 600; font-size: 19px; }
-.mark { width: 28px; height: 28px; border-radius: 9px; background: var(--coral); display: grid; place-items: center; }
-.mark svg { width: 16px; height: 16px; }
-.brain { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: var(--lav-tint); color: var(--ink); white-space: nowrap; }
-.brain i { width: 7px; height: 7px; border-radius: 50%; background: var(--lav); }
-.brain.live i { background: var(--ok); box-shadow: 0 0 0 3px var(--mint-tint); }
-.screen { display: flex; flex-direction: column; gap: 18px; animation: rise .35s ease both; }
-@keyframes rise { from { opacity: .4; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.card { background: var(--paper); border: 1px solid var(--line); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); }
-.field { display: flex; flex-direction: column; gap: 8px; }
-.label { font-size: 13px; font-weight: 500; color: var(--muted); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font: 500 14px/1 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; transition: background .15s, border-color .15s, transform .1s; }
-.chip:hover { border-color: var(--faint); }
-.chip:active { transform: scale(.97); }
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
-.chip.soft { background: var(--canvas); }
-select, textarea, input[type=text] { font: 15px/1.45 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; width: 100%; }
-textarea { min-height: 96px; resize: vertical; }
-:focus-visible { outline: 2px solid var(--coral-text); outline-offset: 2px; }
-.btn { font: 600 16px/1 var(--body); border: 0; border-radius: 999px; padding: 15px 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .1s, filter .15s; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 8px; font: 700 21px var(--display); letter-spacing: -.6px; }
+.mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; }
+.brain { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); white-space: nowrap; }
+.brain i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.brain.live i { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint); }
+.screen { display: flex; flex-direction: column; gap: 22px; }
+.screen.fwd { animation: fromRight .28s cubic-bezier(.22,.8,.3,1) both; }
+.screen.back { animation: fromLeft .28s cubic-bezier(.22,.8,.3,1) both; }
+@keyframes fromRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes fromLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 26px; padding: 18px; }
+.cta { display: flex; align-items: center; gap: 16px; text-align: left; width: 100%; background: var(--accent); border: 0; border-radius: 28px; padding: 22px; box-shadow: var(--lift); transition: transform .12s; }
+.cta:active, .opt:active, .tile:active, .place:active { transform: scale(.98); }
+.cta .go { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; flex: none; }
+textarea, input[type=text] { font: 16px/1.45 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; width: 100%; }
+textarea { min-height: 84px; resize: vertical; }
+.btn { font: 600 16px/1 var(--body); border: 0; border-radius: 999px; padding: 17px 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .1s; }
 .btn:active { transform: scale(.98); }
-.btn.primary { background: var(--coral); color: var(--on-coral); width: 100%; }
-.btn.primary:hover { filter: brightness(1.04); }
-.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 11px 16px; font-size: 14px; }
+.btn.primary { background: var(--accent); color: var(--ink); width: 100%; box-shadow: var(--shadow); }
+.btn.dark { background: var(--ink); color: var(--paper); width: 100%; }
+.btn.ghost { background: var(--paper); border: 1px solid var(--line); padding: 11px 16px; font-size: 14px; }
 .btn[disabled] { opacity: .55; cursor: default; }
-.notice { font-size: 13px; line-height: 18px; color: var(--muted); background: var(--yellow-tint); border-radius: 14px; padding: 10px 12px; }
-.error { background: var(--coral-tint); color: var(--ink); }
+.notice { font-size: 13px; line-height: 18px; color: var(--warn); background: var(--warn-tint); border-radius: 14px; padding: 10px 12px; }
+/* Guide */
+.bar { display: flex; align-items: center; gap: 12px; }
+.round { width: 44px; height: 44px; border-radius: 50%; background: var(--paper); border: 1px solid var(--line); display: grid; place-items: center; flex: none; }
+.track { flex: 1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.fill { height: 100%; width: 0; border-radius: 3px; background: var(--ink); transition: width .42s cubic-bezier(.22,.8,.3,1); }
+.q { display: flex; flex-direction: column; gap: 8px; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.opt { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; min-height: 72px; padding: 12px 16px; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--line); transition: transform .12s, border-color .15s; }
+.opt b, .place b, .tile b { display: block; font-weight: 600; font-size: 17px; line-height: 22px; }
+.opt .ic { width: 44px; height: 44px; border-radius: 50%; background: var(--canvas); display: grid; place-items: center; flex: none; transition: background .15s; }
+.opt > span:nth-child(2), .place > span:nth-child(2) { flex: 1; min-width: 0; }
+.on { border-color: var(--ink) !important; box-shadow: var(--shadow); }
+.opt.on .ic { background: var(--accent); }
+.tick { width: 24px; height: 24px; border-radius: 50%; background: var(--ink); display: none; place-items: center; flex: none; }
+.on .tick { display: grid; animation: pop .18s ease-out; }
+.days { display: flex; flex-wrap: wrap; gap: 8px; }
+.day { min-height: 40px; padding: 0 16px; border-radius: 999px; background: var(--paper); border: 1.5px solid var(--line); font-weight: 500; font-size: 14px; }
+.day.on { background: var(--ink); color: var(--paper); box-shadow: none; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8px; }
+.tile { text-align: left; padding: 0; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--line); overflow: hidden; position: relative; animation: up .32s ease-out both; transition: transform .12s, border-color .15s; }
+.tile svg { display: block; width: 100%; height: 92px; }
+.tile .txt { display: block; padding: 12px; }
+.tile b { font-size: 15px; }
+.tile .tick { position: absolute; top: 8px; right: 8px; }
+.place { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; padding: 8px 16px 8px 8px; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--line); animation: up .32s ease-out both; transition: transform .12s, border-color .15s; }
+.place svg { width: 84px; height: 84px; border-radius: 16px; flex: none; display: block; }
+.place b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.facts i { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
+.link { background: none; border: 0; color: var(--blue); font-weight: 500; font-size: 14px; min-height: 44px; align-self: center; }
+.skel { height: 100px; border-radius: 22px; background: var(--line); opacity: .6; animation: pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse { to { opacity: .3; } }
+.sum { padding: 0 16px; }
+.sum button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 68px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0; }
+.sum button:last-child { border-bottom: 0; }
+.sum span { flex: 1; }
+.sum em { font-style: normal; color: var(--blue); font-weight: 500; font-size: 13px; }
 /* Generating */
 .steps { display: flex; flex-direction: column; gap: 14px; }
 .step { display: flex; gap: 12px; align-items: center; color: var(--faint); transition: color .3s; }
-.step b { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; font-size: 12px; }
-.step.on { color: var(--ink); }
-.step.on b { border-color: var(--coral); border-top-color: transparent; animation: spin .8s linear infinite; }
+.step i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; font-size: 12px; font-style: normal; }
+.step.now { color: var(--ink); }
+.step.now i { border-color: var(--ink); border-top-color: transparent; animation: spin .8s linear infinite; }
 .step.done { color: var(--muted); }
-.step.done b { background: var(--mint); border-color: var(--mint); }
-.step.done b::after { content: "✓"; color: var(--ink); }
+.step.done i { background: var(--accent); border-color: var(--accent); }
+.step.done i::after { content: "✓"; color: var(--ink); }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* Plan */
-.hero { display: flex; flex-direction: column; gap: 10px; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; min-width: 0; }
-.stat strong { display: block; font: 600 17px/1.2 var(--display); font-variant-numeric: tabular-nums; }
-.stat span { font-size: 12px; color: var(--muted); }
-.heard { display: flex; flex-wrap: wrap; gap: 6px; }
-.heard span { font-size: 12px; background: var(--mint-tint); border-radius: 999px; padding: 4px 9px; }
-.voice { display: flex; gap: 10px; align-items: flex-start; background: var(--lav-tint); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
-.voice .who { font-weight: 700; white-space: nowrap; }
-.timeline { display: flex; flex-direction: column; }
-.stop { display: grid; grid-template-columns: 56px 1fr; gap: 12px; }
-.when { font: 600 14px/1.2 var(--display); font-variant-numeric: tabular-nums; padding-top: 16px; text-align: right; color: var(--muted); }
-.stopcard { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; box-shadow: var(--shadow); }
-.stopcard .row { display: flex; gap: 12px; align-items: center; }
-.art { width: 48px; height: 48px; border-radius: 14px; flex: none; display: grid; place-items: center; font: 600 18px var(--display); color: var(--ink); }
-.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12.5px; color: var(--muted); }
-.tag { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--canvas); border: 1px solid var(--line); }
-.tag.warn { color: var(--warn); background: var(--yellow-tint); border-color: transparent; }
-.tag.new { background: var(--coral-tint); border-color: transparent; color: var(--ink); }
-.leg { display: grid; grid-template-columns: 56px 1fr; gap: 12px; }
-.leg div:last-child { border-left: 2px dashed var(--line); margin-left: 22px; padding: 10px 0 10px 18px; font-size: 12.5px; color: var(--muted); }
-.edit { display: flex; flex-direction: column; gap: 10px; }
+.hero { background: linear-gradient(160deg, var(--ink), #1B2660); color: var(--paper); border-radius: 28px; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+.hero .sub { color: #C7CCE4; }
+.hero .when { color: #CFE0FF; font-size: 13px; font-weight: 500; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); background: rgba(255,255,255,.08); border-radius: 18px; padding: 12px 4px; margin-top: 6px; }
+.stats div { padding: 0 10px; border-left: 1px solid rgba(255,255,255,.14); min-width: 0; }
+.stats div:first-child { border-left: 0; }
+.stats strong { display: block; font: 600 18px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: #AEB5D3; }
+.voice { display: flex; gap: 10px; background: var(--blue-tint); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+.voice b { white-space: nowrap; }
+.tt .row { display: grid; grid-template-columns: 86px 28px 1fr; animation: up .36s ease-out both; }
+.tt .clock { font: 700 24px/26px var(--display); letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
+.tt .rail { display: flex; flex-direction: column; align-items: center; }
+.tt .node { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); margin-top: 7px; flex: none; }
+.tt .first .node { background: var(--accent); }
+.tt .solid { flex: 1; width: 3px; background: var(--ink); margin-top: 2px; min-height: 24px; }
+.tt .dash { flex: 1; border-left: 3px dashed var(--line); min-height: 36px; }
+.tt .what { padding: 0 0 12px 8px; min-width: 0; }
+.tt .what b { display: block; font-size: 17px; line-height: 22px; font-weight: 600; }
+.tt .leg { display: flex; align-items: center; padding-left: 8px; font-size: 13px; color: var(--muted); }
+.stop { display: flex; flex-direction: column; gap: 6px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.stop:last-child { border-bottom: 0; padding-bottom: 0; }
+.stop:first-child { padding-top: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 13px; color: var(--muted); align-items: center; }
+.meta a { color: var(--blue); font-weight: 500; }
+.tag { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--accent); color: var(--ink); font-weight: 500; }
+.tag.warn { background: var(--warn-tint); color: var(--warn); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 14px/1 var(--body); background: var(--canvas); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; }
 .editrow { display: flex; gap: 8px; }
 .editrow input { flex: 1; min-width: 0; }
-.editrow .btn { padding: 11px 16px; font-size: 14px; background: var(--ink); color: var(--canvas); }
-.links { display: flex; gap: 8px; flex-wrap: wrap; }
-.links a { color: var(--coral-text); font-size: 13px; font-weight: 500; }
-footer { font-size: 12px; color: var(--faint); text-align: center; }
+.editrow .btn { padding: 11px 18px; font-size: 14px; background: var(--ink); color: var(--paper); }
+.row2 { display: flex; gap: 8px; flex-wrap: wrap; }
+footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 28px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
 <div class="app">
   <div class="top">
-    <div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 11c2-6 4-6 6 0s4 6 6 0" fill="none" stroke="var(--on-coral)" stroke-width="2.2" stroke-linecap="round"/></svg></span>Whimway</div>
-    <span id="brain" class="brain" title="Who is choosing the venues"><i></i><span id="brainText">Connecting to Claude…</span></span>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2c.8 5.6 3.6 8.6 9.2 10-5.600 1.400-8.400 4.400-9.200 10-.8-5.600-3.600-8.600-9.200-10C8.400 10.600 11.200 7.600 12 2z" fill="#fff"/></svg></span>whimway</div>
+    <span id="brain" class="brain" title="Who writes the plan"><i></i><span id="brainText">Connecting to Claude…</span></span>
   </div>
-
-  <!-- 1. Onboarding -->
-  <section id="s-onboard" class="screen">
-    <div class="hero">
-      <h1>From “what should we do?” to “we’re going” in under a minute.</h1>
-      <p class="muted">Tell Whimway who’s coming and what you’re in the mood for. It builds a real route with times, travel and cost, and you can change any part of it by just saying so.</p>
-    </div>
-    <div class="card" style="display:flex;flex-direction:column;gap:18px">
-      <div class="field"><span class="label" id="l-who">Who usually comes along?</span>
-        <div class="chips" role="group" aria-labelledby="l-who" data-pick="companions" data-single>
-          <button class="chip" data-v="partner" aria-pressed="true">A date</button>
-          <button class="chip" data-v="friends" aria-pressed="false">Friends</button>
-          <button class="chip" data-v="solo" aria-pressed="false">Just me</button>
-          <button class="chip" data-v="family" aria-pressed="false">Family</button>
-        </div></div>
-      <div class="field"><span class="label" id="l-vibe">What’s your usual vibe? Pick up to two.</span>
-        <div class="chips" role="group" aria-labelledby="l-vibe" data-pick="vibes" data-max="2">
-          <button class="chip" data-v="cozy" aria-pressed="true">Cozy</button>
-          <button class="chip" data-v="adventurous" aria-pressed="false">Adventurous</button>
-          <button class="chip" data-v="romantic" aria-pressed="false">Romantic</button>
-          <button class="chip" data-v="lively" aria-pressed="false">Lively</button>
-          <button class="chip" data-v="artsy" aria-pressed="false">Artsy</button>
-          <button class="chip" data-v="foodie" aria-pressed="true">Foodie</button>
-          <button class="chip" data-v="chill" aria-pressed="false">Chill</button>
-        </div></div>
-      <div class="field"><label class="label" for="area">Where do you usually start?</label>
-        <select id="area"></select></div>
-      <div class="field"><span class="label" id="l-mode">How do you get around?</span>
-        <div class="chips" role="group" aria-labelledby="l-mode" data-pick="mode" data-single>
-          <button class="chip" data-v="TRANSIT" aria-pressed="true">TTC / transit</button>
-          <button class="chip" data-v="WALK" aria-pressed="false">Walking</button>
-          <button class="chip" data-v="DRIVE" aria-pressed="false">Driving</button>
-        </div></div>
-    </div>
-    <button class="btn primary" id="toCompose">Start planning</button>
-    <p class="notice">This is a demo. Claude plays the planning AI live. Venues are a hand-picked set of real GTA places, and their hours and prices are estimates, so check before you go.</p>
-  </section>
-
-  <!-- 2. Composer -->
-  <section id="s-compose" class="screen" hidden>
-    <div class="hero">
-      <h2>What are you in the mood for?</h2>
-      <p class="muted">Say it the way you’d text a friend. Time, budget, area and who’s coming are all optional.</p>
-    </div>
-    <textarea id="prompt" aria-label="Describe your outing">Date night Saturday, something cozy with good food, under $60 each</textarea>
-    <div class="chips" id="ideas" aria-label="Try one of these">
-      <button class="chip soft">Rainy Sunday afternoon with the kids, indoors</button>
-      <button class="chip soft">Friends tonight in Kensington, cheap eats and games</button>
-      <button class="chip soft">Anniversary dinner in Yorkville then somewhere for a view</button>
-      <button class="chip soft">Solo afternoon in the Distillery, art and coffee</button>
-      <button class="chip soft">4 of us in Markham Friday night, $40 each</button>
-    </div>
-    <button class="btn primary" id="go">Plan it</button>
-    <button class="btn ghost" id="back1">Change my preferences</button>
-  </section>
-
-  <!-- 3. Generating -->
-  <section id="s-gen" class="screen" hidden>
-    <h2 id="genTitle">Planning your outing</h2>
-    <div class="card steps" id="steps">
-      <div class="step"><b></b>Reading what you asked for</div>
-      <div class="step"><b></b>Shortlisting places open at that time</div>
-      <div class="step"><b></b><span id="pickStep">Claude is choosing the stops</span></div>
-      <div class="step"><b></b>Checking hours, travel and cost</div>
-    </div>
-  </section>
-
-  <!-- 4. Plan -->
-  <section id="s-plan" class="screen" hidden>
-    <div class="hero">
-      <span class="label" id="planWhen"></span>
-      <h2 id="planTitle"></h2>
-      <p class="muted" id="planSummary"></p>
-      <div class="heard" id="heard"></div>
-    </div>
-    <div class="voice" id="voice" hidden><span class="who" id="voiceWho">Claude</span><span id="voiceText"></span></div>
-    <div class="stats" id="stats"></div>
-    <div class="timeline" id="timeline"></div>
-    <div id="issues"></div>
-    <div class="card edit">
-      <h3>Change anything</h3>
-      <p class="small muted">Magic Edit. Say what you’d change and the rest of the plan stays put.</p>
-      <div class="chips" id="editIdeas">
-        <button class="chip soft">Make it cheaper</button>
-        <button class="chip soft">Swap the second stop</button>
-        <button class="chip soft">Less walking</button>
-        <button class="chip soft">Add dessert at the end</button>
-        <button class="chip soft">Keep it indoors</button>
-      </div>
-      <form class="editrow" id="editForm">
-        <input type="text" id="editText" aria-label="Describe a change" placeholder="e.g. something livelier after dinner">
-        <button class="btn" id="editGo" type="submit">Apply</button>
-      </form>
-      <p class="small" id="editMsg" role="status"></p>
-    </div>
-    <div class="links">
-      <button class="btn ghost" id="again">Plan something else</button>
-      <button class="btn ghost" id="redo">Try another take</button>
-    </div>
-  </section>
-
-  <footer>Whimway beta · Toronto, Vaughan, Richmond Hill and Markham · Demo venue data</footer>
+  <main id="view"></main>
+  <footer>Demo. Real GTA places; hours, prices and travel times are estimates.</footer>
 </div>
 
 <script src="engine.js"></script>
 <script>
 (() => {
-  const $ = (id) => document.getElementById(id);
-  const W = window.Whimway;
-  const screens = ["s-onboard", "s-compose", "s-gen", "s-plan"];
-  const show = (id) => { screens.forEach((s) => ($(s).hidden = s !== id)); window.scrollTo({ top: 0 }); };
+  const W = window.Whimway, ART = __ART__;
+  const view = document.getElementById("view");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-
-  // Preferences (onboarding)
-  W.areaList.forEach((a) => $("area").insertAdjacentHTML("beforeend", `<option value="${a.key}">${esc(a.name)}</option>`));
-  const saved = store.get("whimway-prefs");
-  const prefs = saved || { companions: "partner", vibes: ["cozy", "foodie"], homeArea: "downtown", mode: "TRANSIT" };
-  $("area").value = prefs.homeArea;
-  document.querySelectorAll("[data-pick]").forEach((group) => {
-    const key = group.dataset.pick, single = group.hasAttribute("data-single"), max = +group.dataset.max || 9;
-    const sync = () => group.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(single ? prefs[key] === c.dataset.v : prefs[key].includes(c.dataset.v))));
-    sync();
-    group.addEventListener("click", (e) => {
-      const c = e.target.closest(".chip"); if (!c) return;
-      if (single) prefs[key] = c.dataset.v;
-      else {
-        const list = prefs[key];
-        if (list.includes(c.dataset.v)) prefs[key] = list.filter((v) => v !== c.dataset.v);
-        else prefs[key] = [...list, c.dataset.v].slice(-max);
-      }
-      sync();
-    });
-  });
-  $("area").addEventListener("change", () => (prefs.homeArea = $("area").value));
-  $("toCompose").onclick = () => { store.set("whimway-prefs", prefs); show("s-compose"); $("prompt").focus(); };
-  $("back1").onclick = () => show("s-onboard");
-  $("ideas").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { $("prompt").value = c.textContent; $("prompt").focus(); } });
-  if (saved) show("s-compose");
-
-  // Claude as the planning brain
-  let claudeReady = false;
-  const setBrain = (mode) => {
-    const b = $("brain");
-    b.classList.toggle("live", mode === "live");
-    $("brainText").textContent = mode === "live" ? "Claude is planning live" : mode === "off" ? "Built-in demo planner" : "Connecting to Claude…";
+  const ICON = {
+    back: "M19 12H5M12 19l-7-7 7-7", x: "M18 6 6 18M6 6l12 12", check: "M20 6 9 17l-5-5", arrow: "M5 12h14M12 5l7 7-7 7",
+    sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.400",
+    cup: "M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4zM6 1v3M10 1v3M14 1v3",
+    sunset: "M17 18a5 5 0 0 0-10 0M12 9V2M4.2 10.200l1.400 1.400M1 18h2M21 18h2M18.400 11.600l1.400-1.400M23 22H1M16 5l-4 4-4-4",
+    moon: "M21 12.800A9 9 0 1 1 11.200 3 7 7 0 0 0 21 12.800z", gift: "M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.500a2.500 2.500 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.500a2.500 2.500 0 0 0 0-5C13 2 12 7 12 7z",
+    slash: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.900 4.900l14.200 14.200", shuffle: "M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5",
+    zap: "M13 2 3 14h9l-1 8 10-12h-9l1-8z", walk: "M3 11l19-9-9 19-2-8-8-2z", transit: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM1 12h7M16 12h7", car: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5zM18.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z",
+    cal: "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18",
   };
-  const connect = async () => {
+  const icon = (n, c = "var(--ink)", s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[n]}"/></svg>`;
+  const tick = `<span class="tick">${icon("check", "#fff", 14)}</span>`;
+  const art = (name, bg) => { const a = ART[name] || ART.culture; return `<svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid meet" style="background:${bg || a.bg}" aria-hidden="true">${a.svg}</svg>`; };
+  const tints = ["var(--blue-tint)", "var(--accent-tint)", "var(--lav-tint)"];
+  const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const prefs = { companions: "partner", vibes: [], homeArea: "downtown", mode: "TRANSIT" };
+  const usual = store.get("whimway-usual") || {};
+
+  // Claude writes the plan's title, summary and reasons when available.
+  let claudeReady = false;
+  const setBrain = (mode) => { document.getElementById("brain").classList.toggle("live", mode === "live"); document.getElementById("brainText").textContent = mode === "live" ? "Claude is planning live" : mode === "off" ? "Built-in demo planner" : "Connecting to Claude…"; };
+  (async () => {
     try {
       const sample = window.claude && (await window.claude.use("sample"));
       if (!sample) return setBrain("off");
-      W.setBrain(async (prompt) => {
-        try { return await sample.json(prompt); }
-        catch (e) {
-          if (e && e.code === "not_granted") { W.setBrain(null); claudeReady = false; setBrain("off"); }
-          throw e;
-        }
-      });
+      W.setBrain(async (prompt) => { try { return await sample.json(prompt); } catch (e) { if (e && e.code === "not_granted") { W.setBrain(null); claudeReady = false; setBrain("off"); } throw e; } });
       claudeReady = true; setBrain("live");
     } catch { setBrain("off"); }
-  };
-  connect();
+  })();
   setTimeout(() => { if (!claudeReady) setBrain("off"); }, 11000);
 
-  // Generating screen
-  let tick;
-  const progress = (title) => {
-    $("genTitle").textContent = title;
-    $("pickStep").textContent = claudeReady ? "Claude is choosing the stops" : "Choosing the stops";
-    const steps = [...$("steps").children];
-    steps.forEach((s) => (s.className = "step"));
-    let i = 0;
-    const advance = () => { steps.forEach((s, j) => (s.className = "step" + (j < i ? " done" : j === i ? " on" : ""))); };
-    advance();
-    clearInterval(tick);
-    tick = setInterval(() => { if (i < 2) { i++; advance(); } }, 700);
-    return () => { clearInterval(tick); i = 3; advance(); };
+  const paint = (html, dir) => { view.innerHTML = `<section class="screen ${dir === -1 ? "back" : dir === 1 ? "fwd" : ""}">${html}</section>`; window.scrollTo({ top: 0 }); };
+  const on = (sel, fn) => view.querySelectorAll(sel).forEach((el) => el.addEventListener("click", () => fn(el)));
+
+  // ── Home ──
+  const home = (dir) => {
+    paint(`
+      <div class="q"><p class="small muted">${W.nowHour() < 12 ? "Good morning" : W.nowHour() < 17 ? "Good afternoon" : "Good evening"}</p><h1>What should we do?</h1></div>
+      <button class="cta" id="start"><span style="flex:1"><h2>Build it step by step</h2><span class="small" style="color:var(--ink-soft);display:block;margin-top:4px">Food, something to do, how you’re getting there. You pick the places.</span></span><span class="go">${icon("arrow", "#fff", 22)}</span></button>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <h3>Or just say it</h3>
+        <textarea id="prompt" aria-label="Describe your outing" placeholder="Date night Saturday, something cozy with good food, under $60 each"></textarea>
+        <button class="btn dark" id="say">Plan it</button>
+      </div>`, dir);
+    on("#start", () => { a = fresh(); step = "when"; guide(1); });
+    on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; run(() => W.plan(t, prefs), () => home(-1)); });
   };
 
-  // Render
-  const palette = ["var(--coral-tint)", "var(--mint)", "var(--lav-tint)", "var(--yellow-tint)", "var(--mint-tint)", "var(--lav)"];
-  const hhmm = (iso) => { const d = iso.slice(11, 16).split(":").map(Number); const h = d[0] % 12 || 12; return `${h}:${String(d[1]).padStart(2, "0")}`; };
-  const ampm = (iso) => (+iso.slice(11, 13) < 12 ? "am" : "pm");
+  // ── Guided flow ──
+  const late = W.nowHour() >= 20;
+  const fresh = () => ({ day: late ? 1 : 0, time: late || W.nowHour() < 17 ? "18:30" : "20:30", mode: "TRANSIT" });
+  let a = fresh(), step = "when", picked = {}, opts = null, optsKey = "";
+  const flow = () => { const f = ["when", "food"]; if (a.food === "meal") f.push("cuisine", "foodPlace"); if (a.food === "light") f.push("foodPlace"); f.push("fun"); if (a.fun === "yes") f.push("kind", "funPlace"); f.push("travel", "review"); return f; };
+  const times = [["12:00", "Lunchtime", "From noon", "sun"], ["14:30", "Afternoon", "From 2:30", "cup"], ["18:30", "Evening", "From 6:30", "sunset"], ["20:30", "Late", "From 8:30", "moon"]];
+  const modes = { WALK: ["On foot", "Stops within a short walk", "walk"], TRANSIT: ["TTC or transit", "Stops a short ride apart", "transit"], DRIVE: ["By car", "Stops can be farther apart", "car"] };
+  const label = (key) => [...W.guideGroups.cuisines, ...W.guideGroups.activities].find((g) => g.key === key)?.label || "";
+  const fmt = (t) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+  const km = (m) => (m < 950 ? `${Math.round(m / 50) * 50} m` : `${(m / 1000).toFixed(1)} km`);
+  const cap = (s) => s[0].toUpperCase() + s.slice(1);
   const money = (n) => `$${Math.round(n)}`;
-  const modeWord = { WALK: "walk", TRANSIT: "transit", DRIVE: "drive" };
-  let current = null, lastPrompt = "", changed = new Set();
+  const opt = (id, ic, title, hint, sel) => `<button class="opt ${sel ? "on" : ""}" data-v="${id}" aria-pressed="${!!sel}"><span class="ic">${icon(ic)}</span><span><b>${esc(title)}</b><span class="small muted">${esc(hint)}</span></span>${tick}</button>`;
+  const tiles = (groups, sel, kind) => {
+    const sorted = [...groups].sort((x, y) => (usual[y.key] || 0) - (usual[x.key] || 0));
+    return `<div class="grid">${sorted.map((g, i) => `<button class="tile ${sel === g.key ? "on" : ""}" data-v="${g.key}" style="animation-delay:${60 + i * 45}ms" aria-pressed="${sel === g.key}">${art(g.key)}${usual[g.key] ? '<span class="tag" style="position:absolute;top:8px;left:8px;font-size:11px">Your usual</span>' : ""}${tick}<span class="txt"><b>${esc(g.label)}</b><span class="small muted">${esc(g.hint)}</span></span></button>`).join("")}</div>`;
+  };
+  const move = (to, dir = 1) => { step = to; guide(dir); };
+  const next = () => { const f = flow(); move(f[f.indexOf(step) + 1] || "review"); };
+  const choose = (el, patch) => { view.querySelectorAll(".on").forEach((n) => !n.classList.contains("day") && n.classList.remove("on")); el.classList.add("on"); Object.assign(a, patch); setTimeout(next, 260); };
 
-  const render = (res, heard) => {
-    const p = res.itinerary || res.plan;
-    current = p;
-    const start = p.stops[0], end = p.stops[p.stops.length - 1];
-    $("planWhen").textContent = start ? `${new Date(start.arrival.slice(0, 10) + "T12:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} · ${hhmm(start.arrival)}${ampm(start.arrival)} to ${hhmm(end.departure)}${ampm(end.departure)}` : "";
-    $("planTitle").textContent = p.title;
-    $("planSummary").textContent = p.summary;
-    if (heard) $("heard").innerHTML = Object.values(heard).filter(Boolean).map((h) => `<span>${esc(h)}</span>`).join("");
+  const guide = (dir) => {
+    const f = flow(), i = Math.max(0, f.indexOf(step));
+    const groupKey = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : null;
+    const T = {
+      when: ["When are you heading out?", "Places are checked against their opening hours for this time."],
+      food: ["Are you eating?", "If you’ve already eaten, the plan skips restaurants."],
+      cuisine: ["What are you hungry for?", Object.keys(usual).length ? "Your usual picks come first." : "Pick the one that sounds best right now."],
+      foodPlace: [a.food === "light" ? "Somewhere for coffee or dessert" : `${label(a.cuisine)} near you`, "Open at your time, closest first. Pick one."],
+      fun: ["Want something to do as well?", a.food === "none" ? "Since you’re not eating, pick what the outing is about." : "Before or after you eat."],
+      kind: ["What sounds fun?", "Pick one. You can change it later."],
+      funPlace: [`${label(a.kind)} near you`, "Open at your time, closest first. Pick one."],
+      travel: ["How are you getting around?", "This sets how far apart the stops can be."],
+      review: ["Here’s what you picked", "Whimway fits it into a timetable with travel between stops."],
+    }[step];
+    let body = "";
+    if (step === "when") body = `<div class="days">${[0, 1, 2, 3].filter((d) => d > 0 || !late).map((d) => `<button class="day ${a.day === d ? "on" : ""}" data-d="${d}">${W.dayName(d)}</button>`).join("")}</div><div class="list">${times.filter((t) => a.day > 0 || +t[0].slice(0, 2) > W.nowHour()).map((t) => opt(t[0], t[3], t[1], t[2], a.time === t[0])).join("")}</div>`;
+    if (step === "food") body = `<div class="list">${opt("meal", "cup", "Yes, a proper meal", "Choose what you’re hungry for", a.food === "meal")}${opt("light", "gift", "Just something light", "Coffee, dessert or a snack", a.food === "light")}${opt("none", "slash", "No, we’ve eaten", "Leave restaurants out", a.food === "none")}${opt("any", "shuffle", "Not sure, you decide", "Whimway adds food if it suits the time", a.food === "any")}</div>`;
+    if (step === "cuisine") body = tiles(W.guideGroups.cuisines, a.cuisine);
+    if (step === "kind") body = tiles(W.guideGroups.activities, a.kind);
+    if (step === "fun") body = `<div class="list">${opt("yes", "zap", "Yes, let me choose", "Games, a show, art, a walk", a.fun === "yes")}${a.food === "none" ? "" : opt("none", "slash", "No, just the food", "Keep it short", a.fun === "none")}${opt("any", "shuffle", "Surprise me", "Whimway picks something that fits", a.fun === "any")}</div>`;
+    if (step === "travel") body = `<div class="list">${Object.entries(modes).map(([k, m]) => opt(k, m[2], m[0], m[1], a.mode === k)).join("")}</div>`;
+    if (groupKey) body = `<div class="list" id="places"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`;
+    if (step === "review") body = `<div class="card sum">
+        <button data-to="when">${icon("cal", "var(--muted)", 18)}<span><span class="small muted">When</span><br><b>${W.dayName(a.day)}, from ${fmt(a.time)}</b></span><em>Change</em></button>
+        <button data-to="${a.food === "meal" || a.food === "light" ? "foodPlace" : "food"}">${icon("cup", "var(--muted)", 18)}<span><span class="small muted">Food</span><br><b>${esc(a.food === "none" ? "Not eating" : picked.food ? picked.food.name : "Whimway decides")}</b></span><em>Change</em></button>
+        <button data-to="${a.fun === "yes" ? "funPlace" : "fun"}">${icon("zap", "var(--muted)", 18)}<span><span class="small muted">Something to do</span><br><b>${esc(a.fun === "none" ? "Just the food" : picked.fun ? picked.fun.name : "Whimway picks")}</b></span><em>Change</em></button>
+        <button data-to="travel">${icon(modes[a.mode][2], "var(--muted)", 18)}<span><span class="small muted">Getting around</span><br><b>${modes[a.mode][0]}</b></span><em>Change</em></button>
+      </div><button class="btn primary" id="build">Build my timetable</button>`;
+    paint(`<div class="bar"><button class="round" id="bk" aria-label="Back">${icon("back")}</button><div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="${f.length}" aria-valuenow="${i + 1}"><div class="fill" id="fill" style="width:${(i / f.length) * 100}%"></div></div><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
+      <div class="q"><h1 style="font-size:31px">${esc(T[0])}</h1><p class="muted">${esc(T[1])}</p></div>${body}`, dir);
+    requestAnimationFrame(() => (document.getElementById("fill").style.width = `${((i + 1) / f.length) * 100}%`));
+    on("#bk", () => (i === 0 ? home(-1) : move(f[i - 1], -1)));
+    on("#cl", () => home(-1));
+    if (step === "when") { on(".day", (el) => { a.day = +el.dataset.d; guide(0); }); on(".opt", (el) => choose(el, { time: el.dataset.v })); }
+    if (step === "food") on(".opt", (el) => { const v = el.dataset.v; if (v !== "meal") { a.cuisine = undefined; } if (v !== a.food) { a.foodPlaceId = undefined; picked.food = null; } if (v === "none" && a.fun === "none") a.fun = undefined; choose(el, { food: v }); });
+    if (step === "cuisine") on(".tile", (el) => { if (a.cuisine !== el.dataset.v) { a.foodPlaceId = undefined; picked.food = null; } choose(el, { cuisine: el.dataset.v }); });
+    if (step === "kind") on(".tile", (el) => { if (a.kind !== el.dataset.v) { a.funPlaceId = undefined; picked.fun = null; } choose(el, { kind: el.dataset.v }); });
+    if (step === "fun") on(".opt", (el) => { const v = el.dataset.v; if (v !== "yes") { a.kind = undefined; a.funPlaceId = undefined; picked.fun = null; } choose(el, { fun: v }); });
+    if (step === "travel") on(".opt", (el) => choose(el, { mode: el.dataset.v }));
+    if (step === "review") { on(".sum button", (el) => move(el.dataset.to, -1)); on("#build", () => { [a.cuisine, a.kind].filter(Boolean).forEach((k) => (usual[k] = (usual[k] || 0) + 1)); store.set("whimway-usual", usual); run(() => W.planGuided(a, prefs), () => move("review", -1)); }); }
+    if (groupKey) places(groupKey, step === "foodPlace" ? "food" : "fun");
+  };
+
+  const places = async (groupKey, slot) => {
+    const key = `${groupKey}|${a.day}|${a.time}|${a.mode}`, at = step;
+    try { if (optsKey !== key) { opts = await W.options(a, prefs, groupKey); optsKey = key; } } catch { opts = { places: [], widened: false }; }
+    const box = document.getElementById("places");
+    if (!box || step !== at) return;
+    const idKey = slot === "food" ? "foodPlaceId" : "funPlaceId";
+    if (!opts.places.length) { box.innerHTML = `<p class="notice">Nothing of this kind is open at that time. Whimway can pick something else that fits.</p><button class="btn dark" id="any">Pick for me</button>`; on("#any", () => { a[idKey] = undefined; picked[slot] = null; next(); }); return; }
+    box.innerHTML = (opts.widened && opts.places[0].meters > 4000 ? `<p class="notice">Nothing close by, so these are a little farther out.</p>` : "") + opts.places.map((p, i) => `<button class="place ${a[idKey] === p.id ? "on" : ""}" data-i="${i}" style="animation-delay:${i * 60}ms" aria-pressed="${a[idKey] === p.id}">${art(groupKey, tints[i % 3])}<span><b>${esc(p.name)}</b><span class="small muted">${esc(cap(p.category))}</span><span class="facts">${km(p.meters)}<i></i>${p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low || 0)}–${money(p.price.high)}`}${p.rating ? `<i></i>★ ${p.rating.toFixed(1)}` : ""}</span></span>${tick}</button>`).join("") + `<button class="link" id="any">I don’t mind, pick for me</button>`;
+    const take = (p, el) => { picked[slot] = p; if (el) choose(el, { [idKey]: p.id }); else { a[idKey] = p.id; next(); } };
+    on(".place", (el) => take(opts.places[+el.dataset.i], el));
+    on("#any", () => take(opts.places[0]));
+  };
+
+  // ── Generating ──
+  const run = async (make, onFail) => {
+    paint(`<h2>Building your timetable</h2><div class="card steps">${["Reading what you picked", "Checking what’s open at that time", claudeReady ? "Claude is writing it up" : "Putting it in order", "Working out travel and cost"].map((t) => `<div class="step"><i></i>${t}</div>`).join("")}</div>`, 1);
+    const steps = [...view.querySelectorAll(".step")]; let n = 0;
+    const show = () => steps.forEach((s, j) => (s.className = "step" + (j < n ? " done" : j === n ? " now" : "")));
+    show(); const t = setInterval(() => { if (n < 2) { n++; show(); } }, 650);
+    try {
+      const [res] = await Promise.all([make(), new Promise((r) => setTimeout(r, 1900))]);
+      clearInterval(t); n = 4; show(); await new Promise((r) => setTimeout(r, 300));
+      changed = new Set(); plan(res, 1);
+    } catch (e) { clearInterval(t); console.error(e); onFail(); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">${esc(e && e.message ? e.message : "That didn’t work.")} Change one of your choices and try again.</p>`); }
+  };
+
+  // ── Plan ──
+  let current = null, changed = new Set(), editMsg = "";
+  const clock = (iso) => { const [h, m] = iso.slice(11, 16).split(":").map(Number); return [`${h % 12 || 12}:${String(m).padStart(2, "0")}`, h < 12 ? "AM" : "PM"]; };
+  const doing = (s) => { const t = `${s.place.category} ${s.place.types.join(" ")}`.toLowerCase(), h = +s.arrival.slice(11, 13);
+    if (/game|arcade|bowling|amusement_center|karaoke|escape/.test(t)) return "Games";
+    if (/restaurant|brunch|food_court|diner/.test(`${s.place.category} ${s.place.types[0] || ""}`)) return h < 11 ? "Breakfast" : h < 16 ? "Lunch" : "Dinner";
+    if (/ice_cream|dessert|patisserie|bakery/.test(t)) return "Dessert";
+    if (/cafe|café|coffee/.test(t)) return "Coffee";
+    if (/\bbar\b|brewery|wine|cocktail|pub/.test(t)) return "Drinks";
+    if (/park|garden|hiking|beach/.test(t)) return "A walk";
+    if (/market|mall|shop/.test(t)) return "Browse";
+    return cap(s.place.category); };
+  const plan = (res, dir) => {
+    const p = res.itinerary || res.plan; current = p;
+    const first = p.stops[0], last = p.stops[p.stops.length - 1], people = Math.max(1, p.request.participants);
+    const by = p.request.mode === "WALK" ? "walk" : p.request.mode === "TRANSIT" ? "by transit" : "drive";
     const live = res.source === "claude";
-    $("voice").hidden = !(res.note || live);
-    $("voiceWho").textContent = live ? "Claude" : "Note";
-    $("voiceText").textContent = res.note || (live ? "Picked these stops and wrote the reasons; Whimway checked the hours, travel and cost." : "");
-    const per = p.cost.high / Math.max(1, p.request.participants);
-    $("stats").innerHTML = [
-      [`${Math.floor(p.totalMinutes / 60)}h ${String(p.totalMinutes % 60).padStart(2, "0")}m`, "door to door"],
-      [p.cost.high ? `${money(p.cost.low / Math.max(1, p.request.participants))}–${money(per)}` : "Free", "per person, est."],
-      [`${(p.totalMeters / 1000).toFixed(1)} km`, `by ${modeWord[p.request.mode]}`],
-    ].map(([a, b]) => `<div class="stat"><strong>${a}</strong><span>${b}</span></div>`).join("");
-    $("timeline").innerHTML = p.stops.map((s, i) => {
-      const leg = i ? p.legs[i - 1] : null;
-      const price = s.place.price.high == null ? "Price unknown" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low ?? 0)}–${money(s.place.price.high)} pp`;
-      const warn = /closed|uncertain|unknown/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : "";
-      return (leg ? `<div class="leg"><div></div><div>${leg.minutes} min ${modeWord[p.request.mode]} · ${(leg.meters / 1000).toFixed(1)} km</div></div>` : "") +
-        `<div class="stop"><div class="when">${hhmm(s.arrival)}<br><span class="small muted">${ampm(s.arrival)}</span></div>
-        <div class="stopcard"><div class="row"><div class="art" style="background:${palette[i % palette.length]}">${esc(s.place.name[0])}</div>
-        <div style="min-width:0"><h3>${esc(s.place.name)}</h3><div class="meta"><span>${esc(s.place.category)}</span><span>${Math.round((Date.parse(s.departure) - Date.parse(s.arrival)) / 60000)} min</span><span>${price}</span>${s.place.rating ? `<span>★ ${s.place.rating.toFixed(1)}</span>` : ""}</div></div></div>
-        <p class="small">${esc(s.reason)}</p>
-        <div class="meta">${changed.has(s.placeId) ? '<span class="tag new">Just changed</span>' : ""}${warn}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--coral-text)">Open in Maps</a></div></div></div>`;
-    }).join("");
-    $("issues").innerHTML = p.issues.filter((x) => x.severity === "error" || x.code === "OVER_BUDGET").map((x) => `<p class="notice">${esc(x.message)}</p>`).join("");
+    paint(`
+      <div class="hero"><span class="when">${new Date(first.arrival.slice(0, 10) + "T12:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} in ${esc(p.request.location.name)}</span><h1>${esc(p.title)}</h1><p class="sub">${esc(p.summary)}</p>
+        <div class="stats"><div><strong>${clock(first.arrival).join(" ")}</strong><span>until ${clock(last.departure).join(" ")}</span></div><div><strong>${p.cost.high ? `${money(p.cost.low / people)}–${money(p.cost.high / people)}` : "Free"}</strong><span>each, estimated</span></div><div><strong>${p.stops.length} stops</strong><span>${(p.totalMeters / 1000).toFixed(1)} km ${by}</span></div></div></div>
+      ${res.note || live ? `<div class="voice"><b>${live ? "Claude" : "Note"}</b><span>${esc(res.note || "Wrote this plan up; Whimway checked the hours, travel and cost.")}</span></div>` : ""}
+      <div class="card tt">${p.stops.map((s, i) => { const nx = p.stops[i + 1], leg = nx ? p.legs[i] : null; return `<div class="row ${i === 0 ? "first" : ""}" style="animation-delay:${120 + i * 90}ms"><div><div class="clock">${clock(s.arrival)[0]}</div><div class="small muted">to ${clock(s.departure).join(" ")}</div></div><div class="rail"><span class="node"></span>${nx ? '<span class="solid"></span>' : ""}</div><div class="what"><span class="small muted">${esc(doing(s))}</span><b>${esc(s.place.name)}</b></div></div>${nx ? `<div class="row" style="animation-delay:${160 + i * 90}ms"><div></div><div class="rail"><span class="dash"></span></div><div class="leg">${leg ? leg.minutes : nx.travel} min ${by}</div></div>` : ""}`; }).join("")}</div>
+      <div><h3 style="margin-bottom:12px">About each stop</h3><div class="card">${p.stops.map((s) => `<div class="stop"><h3>${esc(s.place.name)}</h3><p>${esc(s.reason)}</p><div class="meta">${changed.has(s.placeId) ? '<span class="tag">Just changed</span>' : ""}<span>${esc(cap(s.place.category))}</span><span>${s.place.price.high == null ? "Price varies" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low || 0)}–${money(s.place.price.high)} each`}</span>${/closed/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : ""}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener">Open in Maps</a></div></div>`).join("")}</div></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px"><h3>Change anything</h3><p class="small muted">Say what you’d change. The rest of the plan stays put.</p>
+        <div class="chips">${["Make it cheaper", "Swap the last stop", "Add dessert at the end", "Less walking"].map((c) => `<button class="chip">${c}</button>`).join("")}</div>
+        <form class="editrow" id="ef"><input type="text" id="et" aria-label="Describe a change" placeholder="e.g. something livelier after dinner"><button class="btn" id="eg" type="submit">Apply</button></form>
+        <p class="small" id="em" role="status">${esc(editMsg)}</p></div>
+      <div class="row2"><button class="btn ghost" id="again">Plan something else</button></div>`, dir);
+    editMsg = "";
+    on("#again", () => home(-1));
+    const edit = async (text) => { if (!text.trim()) return; const b = document.getElementById("eg"); b.disabled = true; b.textContent = "Changing…"; document.getElementById("em").textContent = "Reworking that part…";
+      try { const before = new Set(current.stops.map((s) => s.placeId)); const r = await W.edit(current, text); changed = new Set(r.plan.stops.map((s) => s.placeId).filter((id) => !before.has(id))); editMsg = r.op && r.op.summary ? `Done. ${r.op.summary}` : "Done."; plan(r, 0); }
+      catch (e) { b.disabled = false; b.textContent = "Apply"; document.getElementById("em").textContent = e && e.message ? e.message : "That change didn’t work. Try saying it another way."; } };
+    document.getElementById("ef").addEventListener("submit", (e) => { e.preventDefault(); edit(document.getElementById("et").value); });
+    on(".chip", (el) => edit(el.textContent));
   };
 
-  const fail = (where, e) => { console.error(e); return `<p class="notice error">${esc(e && e.message ? e.message : "Something went wrong.")} Try rewording it, or pick one of the ideas.</p>`; };
-
-  const plan = async (text) => {
-    lastPrompt = text; changed = new Set();
-    show("s-gen");
-    const finish = progress("Planning your outing");
-    try {
-      const res = await W.plan(text, prefs);
-      finish();
-      await new Promise((r) => setTimeout(r, 350));
-      $("editMsg").textContent = "";
-      render(res, res.heard);
-      show("s-plan");
-    } catch (e) {
-      finish(); show("s-compose");
-      $("ideas").insertAdjacentHTML("beforebegin", `<div id="planErr">${fail("plan", e)}</div>`);
-    }
-  };
-  $("go").onclick = () => { $("planErr")?.remove(); const t = $("prompt").value.trim(); if (t) plan(t); };
-  $("again").onclick = () => show("s-compose");
-  $("redo").onclick = () => plan(lastPrompt + " (a different take)");
-
-  const edit = async (instruction) => {
-    if (!current || !instruction.trim()) return;
-    const btn = $("editGo"); btn.disabled = true; btn.textContent = "Changing…";
-    $("editMsg").textContent = claudeReady ? "Claude is reworking that part…" : "Reworking that part…";
-    try {
-      const before = new Set(current.stops.map((s) => s.placeId));
-      const res = await W.edit(current, instruction);
-      changed = new Set(res.plan.stops.map((s) => s.placeId).filter((id) => !before.has(id)));
-      render(res);
-      $("editMsg").textContent = res.op && res.op.summary ? `Done. ${res.op.summary}` : "Done.";
-      $("editText").value = "";
-    } catch (e) {
-      $("editMsg").textContent = e && e.message ? e.message : "That change didn’t work. Try saying it another way.";
-    } finally { btn.disabled = false; btn.textContent = "Apply"; }
-  };
-  $("editForm").addEventListener("submit", (e) => { e.preventDefault(); edit($("editText").value); });
-  $("editIdeas").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) edit(c.textContent); });
+  home(0);
 })();
 </script>

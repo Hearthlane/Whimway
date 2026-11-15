@@ -90,11 +90,30 @@ export function openDuring(place: CandidatePlace, request: PlanRequest) {
   }
   return false;
 }
+/** Open for the whole first `minutes` of the outing, whatever order the stops end up in. */
+export function openThroughout(
+  place: CandidatePlace,
+  request: PlanRequest,
+  minutes: number,
+) {
+  try {
+    const start = localStart(
+      request.date,
+      request.startTime,
+      request.location.timezone,
+    );
+    return !hoursCheck(place, start, start.plus({ minutes })).closed;
+  } catch {
+    return true;
+  }
+}
 export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
   return dedupe(places).filter(
     (p) =>
       !request.excludedPlaceIds.includes(p.id) &&
+      // A place the person chose themselves stays, even if it is outside the usual radius.
       (!request.area.locked ||
+        request.anchorPlaceIds.includes(p.id) ||
         inside(p.point, request.area.center, request.area.radius)) &&
       (!request.hardBudget ||
         (p.price.high !== null && p.price.high <= request.budget)) &&
@@ -365,7 +384,7 @@ export class Planner {
           placeId,
           minutes: 60,
           locked: true,
-          reason: "Your favourite — the plan is built around it.",
+          reason: "Your pick. The rest of the plan is built around it.",
         }));
     const focus: PlanRequest["interests"][number] | undefined =
       action?.includes("More food")
@@ -409,7 +428,8 @@ export class Planner {
     const wanted = asked.length
       ? candidates
           .filter((p) => {
-            const t = `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
+            const t =
+              `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
             return asked.some((w) => t.includes(w));
           })
           .slice(0, 3)
@@ -513,22 +533,36 @@ export class Planner {
             ...spec.stops.filter((s) => anchors.includes(s.placeId)),
             ...spec.stops.filter((s) => !anchors.includes(s.placeId)),
           ];
-          try {
-            return await schedule(
-              { ...spec, stops: first },
-              candidates,
-              this.routes,
-              true,
-            );
-          } catch {
-            const name =
-              candidates.find((p) => p.id === anchors[0])?.name ?? "That place";
-            throw new AppError(
-              "ANCHOR_CLOSED",
-              `${name} isn’t open at that time. Try an earlier start or another day.`,
-              422,
-            );
-          }
+          // Chosen places can be far apart or open at different hours: try each order, and
+          // allow extra time for the journey between them, before giving up.
+          const orders = [first, [...first].reverse()];
+          for (const extra of [0, 90, 180])
+            for (const stops of orders) {
+              try {
+                return await schedule(
+                  {
+                    ...spec,
+                    stops,
+                    request: {
+                      ...spec.request,
+                      duration: Math.min(720, spec.request.duration + extra),
+                    },
+                  },
+                  candidates,
+                  this.routes,
+                  true,
+                );
+              } catch {}
+            }
+          const name =
+            candidates.find((p) => p.id === anchors[0])?.name ?? "That place";
+          throw new AppError(
+            "ANCHOR_CLOSED",
+            anchors.length > 1
+              ? "Those places don’t fit into one outing at that time. Try an earlier start, or swap one of them."
+              : `${name} isn’t open at that time. Try an earlier start or another day.`,
+            422,
+          );
         }
         if (
           !(e instanceof AppError) ||
@@ -673,40 +707,55 @@ export class Planner {
       ];
       return candidatesFor(req, found).filter((p) => inGroup(p, group));
     };
-    let pool = await collect(open);
+    const rank = async (pool: CandidatePlace[]) => {
+      pool.sort(
+        (a, b) =>
+          score(b, request, this.crowd) -
+          distance(b.point, request.area.center) / 4000 -
+          (score(a, request, this.crowd) -
+            distance(a.point, request.area.center) / 4000),
+      );
+      const detailed = await Promise.all(
+        pool
+          .slice(0, limit * 3)
+          .map((p) => this.details(p.id, request.location.currency)),
+      );
+      // The person may put this stop first or second, so it has to be open for both slots.
+      return detailed
+        .filter((p) =>
+          // Far-away places also need to stay open through the journey to reach them.
+          openThroughout(
+            p,
+            request,
+            180 + Math.min(180, distance(p.point, request.area.center) / 250),
+          ),
+        )
+        .slice(0, limit);
+    };
+    let places = await rank(await collect(open));
     let widened = false;
-    if (pool.length < 2) {
-      widened = true;
-      pool = await collect({
-        ...open,
-        area: {
-          ...open.area,
-          radius: Math.max(open.area.radius, 30000),
-          locked: false,
-        },
-      });
+    if (places.length < 2) {
+      const wider = await rank(
+        await collect({
+          ...open,
+          area: {
+            ...open.area,
+            radius: Math.max(open.area.radius, 30000),
+            locked: false,
+          },
+        }),
+      );
+      if (wider.length > places.length) {
+        widened = true;
+        places = wider;
+      }
     }
-    pool.sort(
-      (a, b) =>
-        score(b, request, this.crowd) -
-        distance(b.point, request.area.center) / 4000 -
-        (score(a, request, this.crowd) -
-          distance(a.point, request.area.center) / 4000),
-    );
-    const detailed = await Promise.all(
-      pool
-        .slice(0, limit * 2)
-        .map((p) => this.details(p.id, request.location.currency)),
-    );
     return {
       widened,
-      places: detailed
-        .filter((p) => openDuring(p, request))
-        .slice(0, limit)
-        .map((p) => ({
-          ...p,
-          meters: Math.round(distance(p.point, request.area.center)),
-        })),
+      places: places.map((p) => ({
+        ...p,
+        meters: Math.round(distance(p.point, request.area.center)),
+      })),
     };
   }
   async hydrate(spec: PlanSpec): Promise<Itinerary> {

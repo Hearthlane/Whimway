@@ -152,3 +152,81 @@ export async function edit(itinerary: Itinerary, instruction: string) {
 }
 
 export const areaList = areas.map((a) => ({ key: a.key, name: a.name }));
+
+// ── Guided planning (the step-by-step flow) ──────────────────────────────────────────────
+import { activities, cuisines, groupByKey } from "../lib/guide";
+import { defaultRadius } from "../lib/areas";
+
+export type Answers = {
+  day: number;
+  time: string;
+  food?: "meal" | "light" | "none" | "any";
+  cuisine?: string;
+  foodPlaceId?: string;
+  fun?: "yes" | "none" | "any";
+  kind?: string;
+  funPlaceId?: string;
+  mode: PlanRequest["mode"];
+};
+const interestFor: Record<string, PlanRequest["interests"][number]> = {
+  games: "Interactive fun",
+  shows: "Arts & culture",
+  culture: "Arts & culture",
+  outdoors: "Outdoors",
+  shopping: "Shopping",
+  drinks: "Nightlife",
+};
+export const guideGroups = {
+  cuisines: cuisines.map(({ key, label, hint }) => ({ key, label, hint })),
+  activities: activities.map(({ key, label, hint }) => ({ key, label, hint })),
+};
+
+export function guidedRequest(a: Answers, prefs: Prefs): PlanRequest {
+  const now = DateTime.now().setZone("America/Toronto");
+  const base = buildRequest("", interpret("", now), { ...emptyProfile(), ...prefs }, now);
+  const chosen = [a.foodPlaceId, a.funPlaceId].filter(Boolean) as string[];
+  const interests = [
+    ...(a.food && a.food !== "none" ? (["Food & drinks"] as const) : []),
+    ...(a.kind && interestFor[a.kind] ? [interestFor[a.kind]] : []),
+  ];
+  const decided = Boolean((a.food === "none" || a.foodPlaceId) && (a.fun === "none" || a.funPlaceId));
+  const cuisine = a.cuisine ? groupByKey(a.cuisine)?.label.toLowerCase() : undefined;
+  const kind = a.kind ? groupByKey(a.kind)?.label.toLowerCase() : undefined;
+  return {
+    ...base,
+    date: now.plus({ days: a.day }).toISODate()!,
+    startTime: a.time,
+    mode: a.mode,
+    area: { ...base.area, radius: defaultRadius(a.mode) },
+    interests: interests.length ? [...new Set(interests)] : base.interests,
+    skipFood: a.food === "none",
+    anchorPlaceIds: chosen,
+    pace: decided ? "relaxed" : "balanced",
+    duration: chosen.length === 2 ? 210 : decided ? 150 : 240,
+    prompt: [
+      a.food === "none" ? "no food" : cuisine ? `${cuisine} food` : a.food === "light" ? "coffee or dessert" : "",
+      a.fun === "none" ? "" : (kind ?? ""),
+    ]
+      .filter(Boolean)
+      .join(", "),
+  };
+}
+
+export async function options(a: Answers, prefs: Prefs, groupKey: string) {
+  const group = groupByKey(groupKey);
+  if (!group) return { places: [], widened: false };
+  const req = { ...guidedRequest(a, prefs), anchorPlaceIds: [] };
+  return plannerFor(req).options(req, group);
+}
+
+export async function planGuided(a: Answers, prefs: Prefs) {
+  const req = guidedRequest(a, prefs);
+  const itinerary = await guarded(() => plannerFor(req).generate(req), (p) => p);
+  return { itinerary, heard: null, source: lastSource, note: lastNote };
+}
+export function nowHour() {
+  return DateTime.now().setZone("America/Toronto").hour;
+}
+export function dayName(d: number) {
+  return d === 0 ? "Today" : d === 1 ? "Tomorrow" : DateTime.now().setZone("America/Toronto").plus({ days: d }).toFormat("cccc");
+}
