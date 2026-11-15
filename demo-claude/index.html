@@ -214,17 +214,18 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
       <div class="card" style="display:flex;flex-direction:column;gap:12px">
         <h3>Or just say it</h3>
         <textarea id="prompt" aria-label="Describe your outing" placeholder="Date night Saturday, something cozy with good food, under $60 each"></textarea>
-        <button class="btn dark" id="say">Plan it</button>
+        <button class="btn dark" id="say">Next</button>
       </div>`, dir);
-    on("#start", () => { a = fresh(); picked = {}; step = "who"; guide(1); });
-    on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; run(() => W.plan(t, prefs), () => home(-1)); });
+    on("#start", () => { a = fresh(); picked = {}; skip = []; heard = []; step = "who"; guide(1); });
+    // Typed ideas are clarified first: only the questions the words left open are asked.
+    on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; const r = W.readText(t, prefs); a = { ...fresh(), ...r.answers }; picked = {}; skip = r.skip; heard = r.heard; step = flow()[0]; guide(1); });
   };
 
   // ── Guided flow ──
   const late = W.nowHour() >= 20;
   const fresh = () => ({ who: "partner", day: late ? 1 : 0, time: late || W.nowHour() < 17 ? "18:30" : "20:30", mode: "TRANSIT", mood: [], note: "" });
-  let a = fresh(), step = "when", picked = {}, opts = null, optsKey = "";
-  const flow = () => { const f = ["who", "when", "food"]; if (a.food === "meal") f.push("cuisine", "foodPlace"); if (a.food === "light") f.push("foodPlace"); f.push("fun"); if (a.fun === "yes") f.push("kind", "funPlace"); f.push("travel", "extras", "review"); return f; };
+  let a = fresh(), step = "when", picked = {}, opts = null, optsKey = "", skip = [], heard = [];
+  const flow = () => { const f = ["who", "when", "food"]; if (a.food === "meal") f.push("cuisine", "foodPlace"); if (a.food === "light") f.push("foodPlace"); f.push("fun"); if (a.fun === "yes") f.push("kind", "funPlace"); f.push("travel", "extras", "review"); return f.filter((x) => !skip.includes(x)); };
   const times = [["12:00", "Lunchtime", "From noon", "sun"], ["14:30", "Afternoon", "From 2:30", "cup"], ["18:30", "Evening", "From 6:30", "sunset"], ["20:30", "Late", "From 8:30", "moon"]];
   const modes = { WALK: ["On foot", "Stops within a short walk", "walk"], TRANSIT: ["TTC or transit", "Stops a short ride apart", "transit"], DRIVE: ["By car", "Stops can be farther apart", "car"] };
   const whos = { partner: ["A date", "Dates and nights for two", "heart"], friends: ["Friends", "Hangouts with the crew", "users"], solo: ["Just me", "Solo adventures", "user"], family: ["Family", "Something for everyone", "home"] };
@@ -244,11 +245,11 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     return `<div class="grid">${sorted.map((g, i) => `<button class="tile ${sel === g.key ? "on" : ""}" data-v="${g.key}" style="animation-delay:${60 + i * 40}ms" aria-pressed="${sel === g.key}"><img src="photos/${g.key}.jpg" alt="" loading="lazy">${usual[g.key] ? '<span class="tag" style="position:absolute;top:8px;left:8px;font-size:11px">Your usual</span>' : ""}${tick}<span class="txt"><b>${esc(g.label)}</b><span class="small muted">${esc(g.hint)}</span></span></button>`).join("")}</div>`;
   };
   const move = (to, dir = 1) => { step = to; guide(dir); };
-  const next = () => { const f = flow(); move(f[f.indexOf(step) + 1] || "review"); };
+  const next = () => { const f = flow(); move(f.includes(step) ? f[f.indexOf(step) + 1] || "review" : "review"); };
   const choose = (el, patch) => { view.querySelectorAll(".on").forEach((n) => !n.classList.contains("day") && n.classList.remove("on")); el.classList.add("on"); Object.assign(a, patch); setTimeout(next, 260); };
 
   const guide = (dir) => {
-    const f = flow(), i = Math.max(0, f.indexOf(step));
+    const f = flow(), inFlow = f.includes(step), i = inFlow ? f.indexOf(step) : f.length - 1;
     const groupKey = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : null;
     const T = {
       who: ["Who’s coming?", "This shapes the kind of places and how they’re described."],
@@ -282,9 +283,9 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <button data-to="extras">${icon("pen", "var(--muted)", 18)}<span><span class="small muted">Anything else</span><br><b>${esc(extras() || "Nothing added")}</b></span><em>Change</em></button>
       </div><button class="btn primary" id="build">Build my timetable</button>`;
     paint(`<div class="bar"><button class="round" id="bk" aria-label="Back">${icon("back")}</button><div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="${f.length}" aria-valuenow="${i + 1}"><div class="fill" id="fill" style="width:${(i / f.length) * 100}%"></div></div><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
-      <div class="q"><h1 style="font-size:31px">${esc(T[0])}</h1><p class="muted">${esc(T[1])}</p></div>${body}`, dir);
+      <div class="q"><h1 style="font-size:31px">${esc(T[0])}</h1><p class="muted">${esc(T[1])}</p></div>${heard.length && i === 0 && inFlow && step !== "review" ? `<p class="notice" style="background:var(--blue-tint);color:var(--ink)">Got it: ${esc(heard.join(", "))}. ${f.length > 2 ? "A few quick questions" : "One quick question"} so the plan isn’t guesswork.</p>` : ""}${body}`, dir);
     requestAnimationFrame(() => (document.getElementById("fill").style.width = `${((i + 1) / f.length) * 100}%`));
-    on("#bk", () => (i === 0 ? home(-1) : move(f[i - 1], -1)));
+    on("#bk", () => (!inFlow ? move("review", -1) : i === 0 ? home(-1) : move(f[i - 1], -1)));
     on("#cl", () => home(-1));
     if (step === "who") on(".opt", (el) => choose(el, { who: el.dataset.v }));
     if (step === "extras") {

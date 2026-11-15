@@ -6,12 +6,13 @@ import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import Animated, { Easing, FadeIn, FadeInDown, FadeInLeft, FadeInRight, FadeOutLeft, FadeOutRight, ZoomIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { defaultRadius } from "@shared/areas";
-import { activities, cuisines, groupByKey, orderByTaste, type GuideGroup } from "@shared/guide";
+import { activities, cuisines, groupByKey, orderByTaste, readStated, type GuideGroup } from "@shared/guide";
 import { buildRequest, interpret } from "@shared/intent";
 import { plansLeft } from "@shared/plus";
 import { vibes as vibeKeys, type CandidatePlace, type PlanRequest, type Vibe } from "@shared/schema";
 import { api } from "@/lib/api";
 import { API_URL } from "@/lib/config";
+import { guideSeed } from "@/lib/guideSeed";
 import { companionCopy, modeCopy, money, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { guidePhotos, kindOf } from "@/plan/guidePhotos";
@@ -72,14 +73,15 @@ const interestFor: Record<string, PlanRequest["interests"][number]> = {
 };
 const km = (m: number) => (m < 950 ? `${Math.round(m / 50) * 50} m` : `${(m / 1000).toFixed(1)} km`);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-const flowFor = (a: Pick<Answers, "food" | "fun">): Step[] => {
+const flowFor = (a: Pick<Answers, "food" | "fun">, skip: ReadonlySet<Step> = new Set()): Step[] => {
   const f: Step[] = ["who", "when", "food"];
   if (a.food === "meal") f.push("cuisine", "foodPlace");
   if (a.food === "light") f.push("foodPlace");
   f.push("fun");
   if (a.fun === "yes") f.push("kind", "funPlace");
   f.push("travel", "extras", "review");
-  return f;
+  // Questions the person's own words (or the home screen) already answered are not asked again.
+  return f.filter((step) => !skip.has(step));
 };
 
 export default function Guide() {
@@ -87,12 +89,29 @@ export default function Guide() {
   const { profile } = store;
   const now = useMemo(() => DateTime.now().setZone(ZONE), []);
   const lateToday = now.hour >= 20;
-  const [a, setA] = useState<Answers>({ who: profile.companions, day: lateToday ? 1 : 0, time: lateToday || now.hour < 17 ? "18:30" : "20:30", mode: profile.mode, mood: [], note: "" });
-  const [step, setStep] = useState<Step>("who");
+  // Arriving from "just say it": start from what was understood and what the words state.
+  const [seed] = useState(guideSeed);
+  const [skip] = useState<ReadonlySet<Step>>(() => {
+    if (!seed) return new Set<Step>();
+    const stated = readStated(seed.text);
+    const known: Step[] = ["who", "when", "travel", "extras"];
+    if (stated.food) known.push("food");
+    if (stated.cuisine) known.push("cuisine");
+    if (stated.kind) known.push("fun", "kind");
+    return new Set(known);
+  });
+  const [a, setA] = useState<Answers>(() => {
+    const blank: Answers = { who: profile.companions, day: lateToday ? 1 : 0, time: lateToday || now.hour < 17 ? "18:30" : "20:30", mode: profile.mode, mood: [], note: "" };
+    if (!seed) return blank;
+    const r = seed.request;
+    const day = Math.max(0, Math.round(DateTime.fromISO(r.date, { zone: ZONE }).startOf("day").diff(now.startOf("day"), "days").days));
+    return { ...blank, who: r.companions ?? profile.companions, day, time: r.startTime, mode: r.mode, mood: r.vibes, note: seed.text, ...readStated(seed.text) };
+  });
+  const [step, setStep] = useState<Step>(() => flowFor(a, skip)[0]);
   const [dir, setDir] = useState<1 | -1>(1);
   const [typed, setTyped] = useState("");
 
-  const flow = useMemo(() => flowFor(a), [a]);
+  const flow = useMemo(() => flowFor(a, skip), [a, skip]);
   const index = Math.max(0, flow.indexOf(step));
 
   const progress = useSharedValue(0);
@@ -113,17 +132,18 @@ export default function Guide() {
     tap("select");
     const merged = { ...a, ...patch };
     setA(merged);
-    const f = flowFor(merged);
+    const f = flowFor(merged, skip);
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => go(f[f.indexOf(from) + 1] ?? "review"), 240);
+    timer.current = setTimeout(() => go(f.includes(from) ? (f[f.indexOf(from) + 1] ?? "review") : "review"), 240);
   };
   const forward = () => go(flow[index + 1] ?? "review");
-  const back = () => (index === 0 ? (router.canGoBack() ? router.back() : router.replace("/")) : go(flow[index - 1], -1));
+  // A question reached from the summary's "Change" may not be in the shortened flow: return there.
+  const back = () => (!flow.includes(step) ? go("review", -1) : index === 0 ? (router.canGoBack() ? router.back() : router.replace("/")) : go(flow[index - 1], -1));
 
   // The request these answers describe. Also used to look up places for each choice.
   const request = useMemo<PlanRequest>(() => {
     // Anything typed in "tell us more" is read for hints too (a budget, "indoors", a mood).
-    const base = buildRequest(a.note, interpret(a.note, now), profile, now);
+    const base = seed ? seed.request : buildRequest(a.note, interpret(a.note, now), profile, now);
     const chosen = [a.foodPlace, a.funPlace].filter(Boolean) as Option[];
     const interests = [
       ...(a.food && a.food !== "none" ? (["Food & drinks"] as const) : []),
@@ -136,11 +156,11 @@ export default function Guide() {
     return {
       ...base,
       companions: a.who,
-      participants: people[a.who],
+      participants: seed && a.who === base.companions ? base.participants : people[a.who],
       date: now.plus({ days: a.day }).toISODate()!,
       startTime: a.time,
       mode: a.mode,
-      area: { ...base.area, radius: defaultRadius(a.mode) },
+      area: seed && a.mode === base.mode ? base.area : { ...base.area, radius: defaultRadius(a.mode) },
       interests: interests.length ? [...new Set(interests)] : base.interests,
       vibes: a.mood.length ? a.mood : base.vibes,
       budget: a.budget ?? base.budget,
@@ -151,7 +171,7 @@ export default function Guide() {
       duration: chosen.length === 2 ? 210 : decided ? 150 : 240,
       prompt: [picks, a.note.trim()].filter(Boolean).join(". ").slice(0, 1500),
     };
-  }, [a, now, profile]);
+  }, [a, now, profile, seed]);
 
   // Places for the current "pick one" step.
   const group = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : undefined;
@@ -266,6 +286,11 @@ export default function Guide() {
               {sub}
             </T>
           </View>
+          {seed && index === 0 && step !== "review" ? (
+            <Notice tone="mint" icon="check-circle">
+              Got the who, when and budget from what you wrote. {flow.length > 2 ? "A few quick questions" : "One quick question"} so the plan isn’t guesswork.
+            </Notice>
+          ) : null}
 
           {step === "who" ? (
             <View style={{ gap: space.md }}>

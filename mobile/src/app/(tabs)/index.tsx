@@ -8,6 +8,7 @@ import * as Location from "expo-location";
 import { areaByKey, areas, defaultRadius, nearestArea, type Area } from "@shared/areas";
 import { buildRequest, describe, interpret } from "@shared/intent";
 import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
+import { setGuideSeed } from "@/lib/guideSeed";
 import { useStore } from "@/lib/store";
 import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
@@ -81,11 +82,18 @@ export default function PlanHome() {
 
   const ready = Boolean(status && ((status.places && status.ai) || status.demo));
   const left = plansLeft(profile);
+  // "Surprise me" is the one path that plans without asking anything.
   const plan = (prompt = text) => {
     if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
     store.setPending({ ...request, prompt: prompt.slice(0, 1500) });
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
     router.push("/plan/new");
+  };
+  // Typed ideas go through the guided questions first, minus whatever the words already answer,
+  // so the plan is built from choices and not from guesses.
+  const clarify = () => {
+    setGuideSeed({ request: { ...request, prompt: text.slice(0, 1500) }, text: text.slice(0, 400) });
+    router.push("/guide");
   };
   const recent = Object.entries(plans)
     .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
@@ -125,7 +133,7 @@ export default function PlanHome() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(40).duration(380)}>
-          <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" scaleTo={0.98} onPress={() => router.push("/guide")} style={s.guide}>
+          <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" scaleTo={0.98} onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.guide}>
             <View style={{ flex: 1, gap: 4 }}>
               <T v="title" tone={color.ink}>
                 Build it step by step
@@ -178,7 +186,7 @@ export default function PlanHome() {
             />
           </ScrollView>
           <View style={s.actions}>
-            <Button testID="plan-it" kind="dark" size="lg" label="Plan it" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
+            <Button testID="plan-it" kind="dark" size="lg" label="Next" icon="arrow-right" onPress={clarify} disabled={!ready} style={{ flex: 1 }} />
             <IconButton
               icon="shuffle"
               label="Surprise me"

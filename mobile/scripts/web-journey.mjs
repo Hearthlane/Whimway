@@ -67,6 +67,13 @@ let page;
   await shot(p, '06-home-heard');
   const g0 = Date.now();
   await p.getByTestId('plan-it').click();
+  // Typed ideas are clarified first: only the questions the words left open are asked.
+  await p.getByTestId('guide-food-any').waitFor({ timeout: 15000 });
+  const askedWho = await p.getByTestId('guide-who-partner').isVisible().catch(() => false);
+  await shot(p, '06b-clarify');
+  await p.getByTestId('guide-food-any').click();
+  await p.getByTestId('guide-fun-any').click();
+  await p.getByTestId('guide-build').click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   const genMs = Date.now() - g0;
   await p.waitForTimeout(600);
@@ -158,6 +165,7 @@ let page;
   const summarize = a => a.map(s => s.split('\n').filter(Boolean).slice(0, 4).join(' | '));
   // Assertions: the core journey must hold end to end.
   assert.deepEqual(errors, [], "browser errors");
+  assert.equal(askedWho, false, "does not re-ask what the words already said");
   assert.ok(chips.some((c) => c.includes("$100 total · $50/person")), "budget understood");
   assert.ok(chips.some((c) => c.includes("With your partner")), "companion understood");
   assert.ok(stopsBefore.length >= 2 && stopsBefore.length <= 4, "2–4 stops");

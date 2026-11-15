@@ -12,6 +12,7 @@ import {
   activities,
   cuisines,
   customGroup,
+  readStated,
   groupByKey,
   inGroup,
   isEatery,
@@ -134,6 +135,29 @@ describe("guided planning", () => {
     expect((await planner(r).options(r, customGroup("zzzz"))).places).toEqual(
       [],
     );
+  });
+  it("reads only what the person clearly stated, and leaves the rest to ask", () => {
+    expect(readStated("date night saturday, something cozy")).toEqual({});
+    expect(readStated("tacos then bowling with friends")).toEqual({
+      food: "meal",
+      cuisine: "mexican",
+      fun: "yes",
+      kind: "games",
+    });
+    expect(readStated("we've eaten, want to see a movie")).toEqual({
+      food: "none",
+      fun: "yes",
+      kind: "shows",
+    });
+    expect(readStated("dinner somewhere nice for our anniversary")).toEqual({
+      food: "meal",
+    });
+    expect(readStated("coffee and a walk in the park")).toEqual({
+      food: "light",
+      cuisine: "sweet",
+      fun: "yes",
+      kind: "outdoors",
+    });
   });
   it("skips restaurants and cafés when the group has eaten", async () => {
     const r = { ...base(), skipFood: true };

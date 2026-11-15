@@ -239,3 +239,64 @@ export function orderByTaste(groups: GuideGroup[], liked: string[]) {
   scored.sort((a, b) => b.n - a.n || a.i - b.i);
   return scored.map((s) => ({ ...s.g, usual: s.n > 0 }));
 }
+
+// What someone's own words already settle, so the guided questions can skip it.
+const said: Record<string, RegExp> = {
+  japanese: /japanese|sushi|ramen|izakaya|udon/,
+  chinese: /chinese|dumpling|dim sum|congee|wonton/,
+  thai: /\bthai\b|korean|\bpho\b|vietnamese|bibimbap/,
+  mexican: /mexican|tacos?\b|burrito/,
+  italian: /italian|pizza|pasta/,
+  western: /burgers?\b|steak|wings|diner|bbq|barbecue/,
+  indian: /indian|curry|shawarma|middle eastern|kebab|falafel/,
+  brunch: /brunch|breakfast|pancakes?/,
+  sweet:
+    /dessert|coffee|ice cream|caf[eé]\b|bubble tea|boba|pastry|something sweet/,
+  games: /arcade|bowling|board games?|karaoke|laser tag|escape room|mini golf/,
+  shows: /movie|cinema|film\b|comedy|theatre|theater|improv|a show\b/,
+  culture: /museum|gallery|exhibit/,
+  sights: /\bviews?\b|sightseeing|landmark|skyline|lookout/,
+  attractions: /aquarium|\bzoo\b|theme park|wonderland/,
+  outdoors: /\bparks?\b|\bwalk\b|hike|picnic|beach|outdoors?\b|waterfront/,
+  shopping: /shopping|\bmall\b|thrift|vintage|market/,
+  drinks:
+    /\bdrinks?\b|cocktails?|\bbars?\b|\bbeers?\b|\bwine\b|brewery|\bpub\b/,
+};
+export type Stated = {
+  food?: "meal" | "light" | "none";
+  cuisine?: string;
+  fun?: "yes";
+  kind?: string;
+};
+/**
+ * Read food and activity choices out of free text. Only what is clearly stated counts:
+ * anything else stays unanswered so the app asks instead of guessing.
+ */
+export function readStated(input: string): Stated {
+  const t = input.toLowerCase();
+  const out: Stated = {};
+  if (
+    /already ate|already eaten|we(?:'|’)ve eaten|i(?:'|’)ve eaten|no food|not hungry|after dinner|skip (?:the )?food|without food/.test(
+      t,
+    )
+  )
+    out.food = "none";
+  else {
+    const cuisine = cuisines.find((g) => said[g.key]?.test(t));
+    if (cuisine) {
+      out.cuisine = cuisine.key;
+      out.food = cuisine.key === "sweet" ? "light" : "meal";
+    } else if (
+      /dinner|lunch|\beat\b|eating|hungry|restaurant|\bmeal\b|good food|\bfood\b|bite to eat/.test(
+        t,
+      )
+    )
+      out.food = "meal";
+  }
+  const kind = activities.find((g) => said[g.key]?.test(t));
+  if (kind) {
+    out.fun = "yes";
+    out.kind = kind.key;
+  }
+  return out;
+}

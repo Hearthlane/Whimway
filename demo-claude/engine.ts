@@ -212,6 +212,7 @@ import {
   customGroup,
   groupByKey,
   inGroup,
+  readStated,
 } from "../lib/guide";
 import { defaultRadius } from "../lib/areas";
 
@@ -364,4 +365,45 @@ export function photoKind(
     ? current.key
     : ([...cuisines, ...activities].find((g) => inGroup(p, g))?.key ??
         "sights");
+}
+
+/**
+ * "Just say it": what the person's words already settle (who, when, budget, any food or
+ * activity they named) and which guided questions that makes unnecessary.
+ */
+export function readText(text: string, prefs: Prefs) {
+  const now = DateTime.now().setZone("America/Toronto");
+  const req = buildRequest(
+    text,
+    interpret(text, now),
+    { ...emptyProfile(), ...prefs },
+    now,
+  );
+  const stated = readStated(text);
+  const day = Math.max(
+    0,
+    Math.round(
+      DateTime.fromISO(req.date, { zone: "America/Toronto" })
+        .startOf("day")
+        .diff(now.startOf("day"), "days").days,
+    ),
+  );
+  const skip = ["who", "when", "travel", "extras"];
+  if (stated.food) skip.push("food");
+  if (stated.cuisine) skip.push("cuisine");
+  if (stated.kind) skip.push("fun", "kind");
+  const heard = describe(req, now);
+  return {
+    answers: {
+      who: req.companions ?? prefs.companions,
+      day,
+      time: req.startTime,
+      mode: req.mode,
+      mood: req.vibes,
+      note: text.slice(0, 400),
+      ...stated,
+    },
+    skip,
+    heard: [heard.who, heard.when, heard.budget, heard.area].filter(Boolean),
+  };
 }
