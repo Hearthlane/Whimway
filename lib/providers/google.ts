@@ -387,8 +387,14 @@ export async function autocomplete(input: string, sessionToken: string) {
   );
 }
 export async function resolvePoint(point: Point): Promise<Location> {
+  // The key goes in the header, like the other Google calls, so a network secret that
+  // injects X-Goog-Api-Key works here too. A real key in the environment is also sent as
+  // the query parameter for older Geocoding setups.
+  const key = requireEnv("GOOGLE_MAPS_SERVER_KEY");
+  const query = key === "proxy-injected" ? "" : `&key=${encodeURIComponent(key)}`;
   const r = await providerFetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}&key=${encodeURIComponent(requireEnv("GOOGLE_MAPS_SERVER_KEY"))}`,
+    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}${query}`,
+    { headers: { "X-Goog-Api-Key": key } },
   );
   const data = await r.json();
   if (data.status !== "OK" && data.status !== "ZERO_RESULTS")
