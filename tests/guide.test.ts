@@ -11,6 +11,7 @@ import { emptyProfile } from "../lib/profile";
 import {
   activities,
   cuisines,
+  customGroup,
   groupByKey,
   inGroup,
   isEatery,
@@ -45,7 +46,7 @@ describe("guided planning", () => {
   });
   it("lists the closest matches first-ish and reports distance", async () => {
     const r = base();
-    const { places } = await planner(r).options(r, groupByKey("asian")!);
+    const { places } = await planner(r).options(r, groupByKey("japanese")!);
     expect(places[0].meters).toBeLessThan(3000);
     expect(places.every((p) => typeof p.meters === "number")).toBe(true);
   });
@@ -59,7 +60,8 @@ describe("guided planning", () => {
   });
   it("builds the plan around the places the person picked", async () => {
     const r = base();
-    const food = (await planner(r).options(r, groupByKey("asian")!)).places[0];
+    const food = (await planner(r).options(r, groupByKey("japanese")!))
+      .places[0];
     const fun = (await planner(r).options(r, groupByKey("games")!)).places[0];
     const request = {
       ...r,
@@ -114,6 +116,25 @@ describe("guided planning", () => {
           }
       }
   }, 180000);
+  it("finds places for something typed instead of picked", async () => {
+    const r = base();
+    for (const [said, expected] of [
+      ["tacos", /mexican/],
+      ["somewhere with a view", /observation|beach|island|observatory/],
+      ["board games", /game/],
+      ["Kinka", /japanese/],
+    ] as const) {
+      const { places } = await planner(r).options(r, customGroup(said));
+      expect(places.length, said).toBeGreaterThanOrEqual(1);
+      expect(
+        `${places[0].category} ${places[0].types.join(" ")}`,
+        said,
+      ).toMatch(expected);
+    }
+    expect((await planner(r).options(r, customGroup("zzzz"))).places).toEqual(
+      [],
+    );
+  });
   it("skips restaurants and cafés when the group has eaten", async () => {
     const r = { ...base(), skipFood: true };
     const plan = await planner(r).generate(r);

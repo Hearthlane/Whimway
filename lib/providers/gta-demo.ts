@@ -1125,3 +1125,14 @@ function summarise(places: CandidatePlace[], req: PlanRequest, who: string) {
     350,
   );
 }
+
+/** The demo voice's pitch for a place the person picked themselves, if it has one. */
+export function demoReason(
+  placeId: string,
+  req: Pick<PlanRequest, "companions">,
+) {
+  const note = voice[placeId.replace(/^gta-/, "")];
+  if (!note) return undefined;
+  const group = req.companions === "friends" || req.companions === "family";
+  return (group ? note.crew : note.date).slice(0, 240);
+}

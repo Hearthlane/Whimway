@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out="${1:-demo-claude/dist/engine.js}"
+# The page (index.html) loads engine.js and photos/*.jpg from beside it; copy mobile/assets/guide to photos/ when publishing.
 mkdir -p "$(dirname "$out")"
 npx --yes esbuild@0.25.0 demo-claude/engine.ts --bundle --format=iife --global-name=Whimway \
   --platform=browser --target=es2020 --minify \

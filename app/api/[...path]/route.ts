@@ -33,7 +33,7 @@ import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { summarize } from "@/lib/metrics";
 import { FREE } from "@/lib/plus";
-import { groupByKey } from "@/lib/guide";
+import { customGroup, groupByKey } from "@/lib/guide";
 import {
   countPlanMade,
   entitlementFor,
@@ -551,10 +551,15 @@ async function handlePOST(request: Request, ctx: Context) {
         .object({
           request: PlanRequest,
           group: z.string().max(40),
+          /** Free text when the person typed what they want instead of picking a tile. */
+          text: z.string().max(80).optional(),
           demo: z.boolean().default(false),
         })
         .parse(input);
-      const group = groupByKey(data.group);
+      const group =
+        data.group === "custom" && data.text?.trim()
+          ? customGroup(data.text)
+          : groupByKey(data.group);
       if (!group)
         throw new AppError(
           "UNKNOWN_GROUP",

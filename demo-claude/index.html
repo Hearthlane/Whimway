@@ -73,12 +73,12 @@ textarea { min-height: 84px; resize: vertical; }
 .day.on { background: var(--ink); color: var(--paper); box-shadow: none; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8px; }
 .tile { text-align: left; padding: 0; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--line); overflow: hidden; position: relative; animation: up .32s ease-out both; transition: transform .12s, border-color .15s; }
-.tile svg { display: block; width: 100%; height: 92px; }
+.tile img { display: block; width: 100%; height: 108px; object-fit: cover; background: var(--line); }
 .tile .txt { display: block; padding: 12px; }
 .tile b { font-size: 15px; }
 .tile .tick { position: absolute; top: 8px; right: 8px; }
 .place { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; padding: 8px 16px 8px 8px; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--line); animation: up .32s ease-out both; transition: transform .12s, border-color .15s; }
-.place svg { width: 84px; height: 84px; border-radius: 16px; flex: none; display: block; }
+.place img { width: 84px; height: 84px; border-radius: 16px; flex: none; display: block; object-fit: cover; background: var(--line); }
 .place b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .facts { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .facts i { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
@@ -129,7 +129,22 @@ textarea { min-height: 84px; resize: vertical; }
 .tag { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--accent); color: var(--ink); font-weight: 500; }
 .tag.warn { background: var(--warn-tint); color: var(--warn); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font: 500 14px/1 var(--body); background: var(--canvas); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; }
+.chip { font: 500 14px/1 var(--body); background: var(--paper); border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 14px; }
+.chip.on { background: var(--ink); color: var(--paper); box-shadow: none; }
+.sec { display: flex; flex-direction: column; gap: 12px; }
+.other { display: flex; gap: 8px; align-items: center; }
+.other input { flex: 1; min-width: 0; min-height: 52px; }
+.other button { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); border: 0; display: grid; place-items: center; flex: none; }
+.other button[disabled] { opacity: .35; }
+.tb .r { display: grid; grid-template-columns: 58px 1fr; gap: 12px; animation: up .36s ease-out both; }
+.tb .times { display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
+.tb .clock { font: 700 22px/24px var(--display); letter-spacing: -.6px; }
+.tb .blk { display: flex; gap: 12px; border-radius: 22px; padding: 12px; }
+.tb .blk > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tb .doing { font: 700 21px/24px var(--display); letter-spacing: -.5px; }
+.tb .blk b { font-weight: 600; color: var(--ink-soft); }
+.tb .blk img { width: 76px; border-radius: 16px; object-fit: cover; background: var(--line); }
+.tb .leg { height: 36px; display: flex; align-items: center; padding-left: 12px; font-size: 13px; color: var(--muted); }
 .editrow { display: flex; gap: 8px; }
 .editrow input { flex: 1; min-width: 0; }
 .editrow .btn { padding: 11px 18px; font-size: 14px; background: var(--ink); color: var(--paper); }
@@ -150,7 +165,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
 <script src="engine.js"></script>
 <script>
 (() => {
-  const W = window.Whimway, ART = __ART__;
+  const W = window.Whimway;
   const view = document.getElementById("view");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ICON = {
@@ -162,11 +177,15 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     slash: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.900 4.900l14.200 14.200", shuffle: "M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5",
     zap: "M13 2 3 14h9l-1 8 10-12h-9l1-8z", walk: "M3 11l19-9-9 19-2-8-8-2z", transit: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM1 12h7M16 12h7", car: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5zM18.500 21a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z",
     cal: "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18",
+    heart: "M20.800 4.600a5.500 5.500 0 0 0-7.800 0L12 5.700l-1-1.100a5.500 5.500 0 0 0-7.800 7.800l1 1L12 21.200l7.800-7.800 1-1a5.500 5.500 0 0 0 0-7.800z",
+    users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.900M16 3.100a4 4 0 0 1 0 7.800",
+    user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+    home: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",
+    pen: "M12 20h9M16.500 3.500a2.100 2.100 0 0 1 3 3L7 19l-4 1 1-4z",
   };
   const icon = (n, c = "var(--ink)", s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[n]}"/></svg>`;
   const tick = `<span class="tick">${icon("check", "#fff", 14)}</span>`;
-  const art = (name, bg) => { const a = ART[name] || ART.culture; return `<svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid meet" style="background:${bg || a.bg}" aria-hidden="true">${a.svg}</svg>`; };
-  const tints = ["var(--blue-tint)", "var(--accent-tint)", "var(--lav-tint)"];
+  const tints = ["var(--accent-tint)", "var(--blue-tint)", "var(--lav-tint)"];
   const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
   const prefs = { companions: "partner", vibes: [], homeArea: "downtown", mode: "TRANSIT" };
   const usual = store.get("whimway-usual") || {};
@@ -197,17 +216,23 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <textarea id="prompt" aria-label="Describe your outing" placeholder="Date night Saturday, something cozy with good food, under $60 each"></textarea>
         <button class="btn dark" id="say">Plan it</button>
       </div>`, dir);
-    on("#start", () => { a = fresh(); step = "when"; guide(1); });
+    on("#start", () => { a = fresh(); picked = {}; step = "who"; guide(1); });
     on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; run(() => W.plan(t, prefs), () => home(-1)); });
   };
 
   // ── Guided flow ──
   const late = W.nowHour() >= 20;
-  const fresh = () => ({ day: late ? 1 : 0, time: late || W.nowHour() < 17 ? "18:30" : "20:30", mode: "TRANSIT" });
+  const fresh = () => ({ who: "partner", day: late ? 1 : 0, time: late || W.nowHour() < 17 ? "18:30" : "20:30", mode: "TRANSIT", mood: [], note: "" });
   let a = fresh(), step = "when", picked = {}, opts = null, optsKey = "";
-  const flow = () => { const f = ["when", "food"]; if (a.food === "meal") f.push("cuisine", "foodPlace"); if (a.food === "light") f.push("foodPlace"); f.push("fun"); if (a.fun === "yes") f.push("kind", "funPlace"); f.push("travel", "review"); return f; };
+  const flow = () => { const f = ["who", "when", "food"]; if (a.food === "meal") f.push("cuisine", "foodPlace"); if (a.food === "light") f.push("foodPlace"); f.push("fun"); if (a.fun === "yes") f.push("kind", "funPlace"); f.push("travel", "extras", "review"); return f; };
   const times = [["12:00", "Lunchtime", "From noon", "sun"], ["14:30", "Afternoon", "From 2:30", "cup"], ["18:30", "Evening", "From 6:30", "sunset"], ["20:30", "Late", "From 8:30", "moon"]];
   const modes = { WALK: ["On foot", "Stops within a short walk", "walk"], TRANSIT: ["TTC or transit", "Stops a short ride apart", "transit"], DRIVE: ["By car", "Stops can be farther apart", "car"] };
+  const whos = { partner: ["A date", "Dates and nights for two", "heart"], friends: ["Friends", "Hangouts with the crew", "users"], solo: ["Just me", "Solo adventures", "user"], family: ["Family", "Something for everyone", "home"] };
+  const moods = ["romantic", "adventurous", "cozy", "cinematic", "chill", "lively", "artsy", "foodie", "outdoorsy", "playful"];
+  const budgets = [[25, "Under $25"], [50, "Up to $50"], [100, "Up to $100"], [250, "No limit"]];
+  const named = (key, text) => (key === "custom" ? `“${text}”` : label(key));
+  const other = (ph) => `<div class="sec"><h3>Something else?</h3><form class="other" id="other"><input type="text" id="otherText" maxlength="60" placeholder="${ph}" aria-label="Type what you want"><button type="submit" aria-label="Find places">${icon("arrow", "#fff", 20)}</button></form></div>`;
+  const extras = () => [a.mood.map(cap).join(", "), a.budget ? budgets.find((b) => b[0] === a.budget)[1] : "", a.note.trim() ? `“${a.note.trim().slice(0, 40)}${a.note.trim().length > 40 ? "…" : ""}”` : ""].filter(Boolean).join(" · ");
   const label = (key) => [...W.guideGroups.cuisines, ...W.guideGroups.activities].find((g) => g.key === key)?.label || "";
   const fmt = (t) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
   const km = (m) => (m < 950 ? `${Math.round(m / 50) * 50} m` : `${(m / 1000).toFixed(1)} km`);
@@ -216,7 +241,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
   const opt = (id, ic, title, hint, sel) => `<button class="opt ${sel ? "on" : ""}" data-v="${id}" aria-pressed="${!!sel}"><span class="ic">${icon(ic)}</span><span><b>${esc(title)}</b><span class="small muted">${esc(hint)}</span></span>${tick}</button>`;
   const tiles = (groups, sel, kind) => {
     const sorted = [...groups].sort((x, y) => (usual[y.key] || 0) - (usual[x.key] || 0));
-    return `<div class="grid">${sorted.map((g, i) => `<button class="tile ${sel === g.key ? "on" : ""}" data-v="${g.key}" style="animation-delay:${60 + i * 45}ms" aria-pressed="${sel === g.key}">${art(g.key)}${usual[g.key] ? '<span class="tag" style="position:absolute;top:8px;left:8px;font-size:11px">Your usual</span>' : ""}${tick}<span class="txt"><b>${esc(g.label)}</b><span class="small muted">${esc(g.hint)}</span></span></button>`).join("")}</div>`;
+    return `<div class="grid">${sorted.map((g, i) => `<button class="tile ${sel === g.key ? "on" : ""}" data-v="${g.key}" style="animation-delay:${60 + i * 40}ms" aria-pressed="${sel === g.key}"><img src="photos/${g.key}.jpg" alt="" loading="lazy">${usual[g.key] ? '<span class="tag" style="position:absolute;top:8px;left:8px;font-size:11px">Your usual</span>' : ""}${tick}<span class="txt"><b>${esc(g.label)}</b><span class="small muted">${esc(g.hint)}</span></span></button>`).join("")}</div>`;
   };
   const move = (to, dir = 1) => { step = to; guide(dir); };
   const next = () => { const f = flow(); move(f[f.indexOf(step) + 1] || "review"); };
@@ -226,35 +251,50 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     const f = flow(), i = Math.max(0, f.indexOf(step));
     const groupKey = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : null;
     const T = {
+      who: ["Who’s coming?", "This shapes the kind of places and how they’re described."],
+      extras: ["Anything else?", "All optional. Skip it if you’re happy."],
       when: ["When are you heading out?", "Places are checked against their opening hours for this time."],
       food: ["Are you eating?", "If you’ve already eaten, the plan skips restaurants."],
-      cuisine: ["What are you hungry for?", Object.keys(usual).length ? "Your usual picks come first." : "Pick the one that sounds best right now."],
-      foodPlace: [a.food === "light" ? "Somewhere for coffee or dessert" : `${label(a.cuisine)} near you`, "Open at your time, closest first. Pick one."],
+      cuisine: ["What are you hungry for?", Object.keys(usual).length ? "Your usual picks come first." : "Pick one, or type what you’re craving."],
+      foodPlace: [a.food === "light" ? "Somewhere for coffee or dessert" : `${named(a.cuisine, a.cuisineText)} near you`, "Open at your time, closest first. Pick one."],
       fun: ["Want something to do as well?", a.food === "none" ? "Since you’re not eating, pick what the outing is about." : "Before or after you eat."],
-      kind: ["What sounds fun?", "Pick one. You can change it later."],
-      funPlace: [`${label(a.kind)} near you`, "Open at your time, closest first. Pick one."],
+      kind: ["What sounds fun?", "Pick one, or type what you have in mind."],
+      funPlace: [`${named(a.kind, a.kindText)} near you`, "Open at your time, closest first. Pick one."],
       travel: ["How are you getting around?", "This sets how far apart the stops can be."],
       review: ["Here’s what you picked", "Whimway fits it into a timetable with travel between stops."],
     }[step];
     let body = "";
-    if (step === "when") body = `<div class="days">${[0, 1, 2, 3].filter((d) => d > 0 || !late).map((d) => `<button class="day ${a.day === d ? "on" : ""}" data-d="${d}">${W.dayName(d)}</button>`).join("")}</div><div class="list">${times.filter((t) => a.day > 0 || +t[0].slice(0, 2) > W.nowHour()).map((t) => opt(t[0], t[3], t[1], t[2], a.time === t[0])).join("")}</div>`;
+    if (step === "who") body = `<div class="list">${Object.entries(whos).map(([k, w]) => opt(k, w[2], w[0], w[1], a.who === k)).join("")}</div>`;
+    if (step === "extras") body = `<div class="sec"><h3>What’s the mood?</h3><div class="chips" id="moods">${moods.map((m) => `<button class="chip ${a.mood.includes(m) ? "on" : ""}" data-v="${m}" aria-pressed="${a.mood.includes(m)}">${cap(m)}</button>`).join("")}</div></div><div class="sec"><h3>Budget for each person</h3><div class="chips" id="budgets">${budgets.map((b) => `<button class="chip ${a.budget === b[0] ? "on" : ""}" data-v="${b[0]}" aria-pressed="${a.budget === b[0]}">${b[1]}</button>`).join("")}</div></div><div class="sec"><h3>Tell us more</h3><textarea id="note" maxlength="400" aria-label="Anything else we should know" placeholder="It’s her birthday. Somewhere quiet, nothing with stairs, and we need to be home by 10.">${esc(a.note)}</textarea></div><button class="btn dark" id="next">${extras() ? "Continue" : "Skip"}</button>`;
+    if (step === "when") body = `<div class="days">${[0, 1, 2, 3, 4, 5, 6].filter((d) => d > 0 || !late).map((d) => `<button class="day ${a.day === d ? "on" : ""}" data-d="${d}">${W.dayName(d)}</button>`).join("")}</div><div class="list">${times.filter((t) => a.day > 0 || +t[0].slice(0, 2) > W.nowHour()).map((t) => opt(t[0], t[3], t[1], t[2], a.time === t[0])).join("")}</div>`;
     if (step === "food") body = `<div class="list">${opt("meal", "cup", "Yes, a proper meal", "Choose what you’re hungry for", a.food === "meal")}${opt("light", "gift", "Just something light", "Coffee, dessert or a snack", a.food === "light")}${opt("none", "slash", "No, we’ve eaten", "Leave restaurants out", a.food === "none")}${opt("any", "shuffle", "Not sure, you decide", "Whimway adds food if it suits the time", a.food === "any")}</div>`;
-    if (step === "cuisine") body = tiles(W.guideGroups.cuisines, a.cuisine);
-    if (step === "kind") body = tiles(W.guideGroups.activities, a.kind);
+    if (step === "cuisine") body = tiles(W.guideGroups.cuisines, a.cuisine) + other("Sushi, wings, bubble tea…");
+    if (step === "kind") body = tiles(W.guideGroups.activities, a.kind) + other("Bowling, a view, live comedy…");
     if (step === "fun") body = `<div class="list">${opt("yes", "zap", "Yes, let me choose", "Games, a show, art, a walk", a.fun === "yes")}${a.food === "none" ? "" : opt("none", "slash", "No, just the food", "Keep it short", a.fun === "none")}${opt("any", "shuffle", "Surprise me", "Whimway picks something that fits", a.fun === "any")}</div>`;
     if (step === "travel") body = `<div class="list">${Object.entries(modes).map(([k, m]) => opt(k, m[2], m[0], m[1], a.mode === k)).join("")}</div>`;
     if (groupKey) body = `<div class="list" id="places"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`;
     if (step === "review") body = `<div class="card sum">
+        <button data-to="who">${icon(whos[a.who][2], "var(--muted)", 18)}<span><span class="small muted">Who</span><br><b>${whos[a.who][0]}</b></span><em>Change</em></button>
         <button data-to="when">${icon("cal", "var(--muted)", 18)}<span><span class="small muted">When</span><br><b>${W.dayName(a.day)}, from ${fmt(a.time)}</b></span><em>Change</em></button>
         <button data-to="${a.food === "meal" || a.food === "light" ? "foodPlace" : "food"}">${icon("cup", "var(--muted)", 18)}<span><span class="small muted">Food</span><br><b>${esc(a.food === "none" ? "Not eating" : picked.food ? picked.food.name : "Whimway decides")}</b></span><em>Change</em></button>
         <button data-to="${a.fun === "yes" ? "funPlace" : "fun"}">${icon("zap", "var(--muted)", 18)}<span><span class="small muted">Something to do</span><br><b>${esc(a.fun === "none" ? "Just the food" : picked.fun ? picked.fun.name : "Whimway picks")}</b></span><em>Change</em></button>
         <button data-to="travel">${icon(modes[a.mode][2], "var(--muted)", 18)}<span><span class="small muted">Getting around</span><br><b>${modes[a.mode][0]}</b></span><em>Change</em></button>
+        <button data-to="extras">${icon("pen", "var(--muted)", 18)}<span><span class="small muted">Anything else</span><br><b>${esc(extras() || "Nothing added")}</b></span><em>Change</em></button>
       </div><button class="btn primary" id="build">Build my timetable</button>`;
     paint(`<div class="bar"><button class="round" id="bk" aria-label="Back">${icon("back")}</button><div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="${f.length}" aria-valuenow="${i + 1}"><div class="fill" id="fill" style="width:${(i / f.length) * 100}%"></div></div><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
       <div class="q"><h1 style="font-size:31px">${esc(T[0])}</h1><p class="muted">${esc(T[1])}</p></div>${body}`, dir);
     requestAnimationFrame(() => (document.getElementById("fill").style.width = `${((i + 1) / f.length) * 100}%`));
     on("#bk", () => (i === 0 ? home(-1) : move(f[i - 1], -1)));
     on("#cl", () => home(-1));
+    if (step === "who") on(".opt", (el) => choose(el, { who: el.dataset.v }));
+    if (step === "extras") {
+      on("#moods .chip", (el) => { const v = el.dataset.v; a.mood = a.mood.includes(v) ? a.mood.filter((m) => m !== v) : [...a.mood, v].slice(-3); view.querySelectorAll("#moods .chip").forEach((c) => c.classList.toggle("on", a.mood.includes(c.dataset.v))); document.getElementById("next").textContent = extras() ? "Continue" : "Skip"; });
+      on("#budgets .chip", (el) => { const v = +el.dataset.v; a.budget = a.budget === v ? undefined : v; view.querySelectorAll("#budgets .chip").forEach((c) => c.classList.toggle("on", a.budget === +c.dataset.v)); document.getElementById("next").textContent = extras() ? "Continue" : "Skip"; });
+      document.getElementById("note").addEventListener("input", (e) => { a.note = e.target.value; document.getElementById("next").textContent = extras() ? "Continue" : "Skip"; });
+      on("#next", next);
+    }
+    const typed = document.getElementById("other");
+    if (typed) typed.addEventListener("submit", (e) => { e.preventDefault(); const t = document.getElementById("otherText").value.trim(); if (t.length < 2) return; if (step === "cuisine") { a.cuisine = "custom"; a.cuisineText = t; a.foodPlaceId = undefined; picked.food = null; } else { a.kind = "custom"; a.kindText = t; a.funPlaceId = undefined; picked.fun = null; } next(); });
     if (step === "when") { on(".day", (el) => { a.day = +el.dataset.d; guide(0); }); on(".opt", (el) => choose(el, { time: el.dataset.v })); }
     if (step === "food") on(".opt", (el) => { const v = el.dataset.v; if (v !== "meal") { a.cuisine = undefined; } if (v !== a.food) { a.foodPlaceId = undefined; picked.food = null; } if (v === "none" && a.fun === "none") a.fun = undefined; choose(el, { food: v }); });
     if (step === "cuisine") on(".tile", (el) => { if (a.cuisine !== el.dataset.v) { a.foodPlaceId = undefined; picked.food = null; } choose(el, { cuisine: el.dataset.v }); });
@@ -265,16 +305,20 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     if (groupKey) places(groupKey, step === "foodPlace" ? "food" : "fun");
   };
 
+  let showAll = "";
   const places = async (groupKey, slot) => {
-    const key = `${groupKey}|${a.day}|${a.time}|${a.mode}`, at = step;
-    try { if (optsKey !== key) { opts = await W.options(a, prefs, groupKey); optsKey = key; } } catch { opts = { places: [], widened: false }; }
+    const text = slot === "food" ? a.cuisineText : a.kindText;
+    const key = `${groupKey}|${groupKey === "custom" ? text : ""}|${a.day}|${a.time}|${a.mode}`, at = step;
+    try { if (optsKey !== key) { opts = await W.options(a, prefs, groupKey, text); optsKey = key; } } catch { opts = { places: [], widened: false }; }
     const box = document.getElementById("places");
     if (!box || step !== at) return;
     const idKey = slot === "food" ? "foodPlaceId" : "funPlaceId";
-    if (!opts.places.length) { box.innerHTML = `<p class="notice">Nothing of this kind is open at that time. Whimway can pick something else that fits.</p><button class="btn dark" id="any">Pick for me</button>`; on("#any", () => { a[idKey] = undefined; picked[slot] = null; next(); }); return; }
-    box.innerHTML = (opts.widened && opts.places[0].meters > 4000 ? `<p class="notice">Nothing close by, so these are a little farther out.</p>` : "") + opts.places.map((p, i) => `<button class="place ${a[idKey] === p.id ? "on" : ""}" data-i="${i}" style="animation-delay:${i * 60}ms" aria-pressed="${a[idKey] === p.id}">${art(groupKey, tints[i % 3])}<span><b>${esc(p.name)}</b><span class="small muted">${esc(cap(p.category))}</span><span class="facts">${km(p.meters)}<i></i>${p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low || 0)}–${money(p.price.high)}`}${p.rating ? `<i></i>★ ${p.rating.toFixed(1)}` : ""}</span></span>${tick}</button>`).join("") + `<button class="link" id="any">I don’t mind, pick for me</button>`;
+    if (!opts.places.length) { box.innerHTML = `<p class="notice">Nothing like that is open at that time. Go back to pick something else, or let Whimway choose.</p><button class="btn dark" id="else">Choose something else</button><button class="btn ghost" id="any">Let Whimway choose</button>`; on("#else", () => { const f = flow(); move(f[f.indexOf(step) - 1], -1); }); on("#any", () => { a[idKey] = undefined; picked[slot] = null; next(); }); return; }
+    const shown = showAll === key ? opts.places : opts.places.slice(0, 4);
+    box.innerHTML = (opts.widened && opts.places[0].meters > 4000 ? `<p class="notice">Nothing close by, so these are a little farther out.</p>` : "") + shown.map((p, i) => `<button class="place ${a[idKey] === p.id ? "on" : ""}" data-i="${i}" style="animation-delay:${(i % 4) * 60}ms" aria-pressed="${a[idKey] === p.id}"><img src="photos/${p.kind}.jpg" alt=""><span><b>${esc(p.name)}</b><span class="small muted">${esc(cap(p.category))}</span><span class="facts">${km(p.meters)}<i></i>${p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low || 0)}–${money(p.price.high)}`}${p.rating ? `<i></i>★ ${p.rating.toFixed(1)}` : ""}</span></span>${tick}</button>`).join("") + (shown.length < opts.places.length ? `<button class="btn ghost" id="more">Show ${opts.places.length - shown.length} more</button>` : "") + `<button class="link" id="any">I don’t mind, pick for me</button><p class="small" style="color:var(--faint);text-align:center">Photos show the kind of place, not the venue itself.</p>`;
     const take = (p, el) => { picked[slot] = p; if (el) choose(el, { [idKey]: p.id }); else { a[idKey] = p.id; next(); } };
     on(".place", (el) => take(opts.places[+el.dataset.i], el));
+    on("#more", () => { showAll = key; places(groupKey, slot); });
     on("#any", () => take(opts.places[0]));
   };
 
@@ -310,9 +354,9 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     const live = res.source === "claude";
     paint(`
       <div class="hero"><span class="when">${new Date(first.arrival.slice(0, 10) + "T12:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} in ${esc(p.request.location.name)}</span><h1>${esc(p.title)}</h1><p class="sub">${esc(p.summary)}</p>
-        <div class="stats"><div><strong>${clock(first.arrival).join(" ")}</strong><span>until ${clock(last.departure).join(" ")}</span></div><div><strong>${p.cost.high ? `${money(p.cost.low / people)}–${money(p.cost.high / people)}` : "Free"}</strong><span>each, estimated</span></div><div><strong>${p.stops.length} stops</strong><span>${(p.totalMeters / 1000).toFixed(1)} km ${by}</span></div></div></div>
+        <div class="stats"><div><strong>${clock(first.arrival).join(" ")}</strong><span>until ${clock(last.departure).join(" ")}</span></div><div><strong>${p.cost.high ? `${money(p.cost.low)}–${money(p.cost.high)}` : "Free"}</strong><span>each, estimated</span></div><div><strong>${p.stops.length} stops</strong><span>${(p.totalMeters / 1000).toFixed(1)} km ${by}</span></div></div></div>
       ${res.note || live ? `<div class="voice"><b>${live ? "Claude" : "Note"}</b><span>${esc(res.note || "Wrote this plan up; Whimway checked the hours, travel and cost.")}</span></div>` : ""}
-      <div class="card tt">${p.stops.map((s, i) => { const nx = p.stops[i + 1], leg = nx ? p.legs[i] : null; return `<div class="row ${i === 0 ? "first" : ""}" style="animation-delay:${120 + i * 90}ms"><div><div class="clock">${clock(s.arrival)[0]}</div><div class="small muted">to ${clock(s.departure).join(" ")}</div></div><div class="rail"><span class="node"></span>${nx ? '<span class="solid"></span>' : ""}</div><div class="what"><span class="small muted">${esc(doing(s))}</span><b>${esc(s.place.name)}</b></div></div>${nx ? `<div class="row" style="animation-delay:${160 + i * 90}ms"><div></div><div class="rail"><span class="dash"></span></div><div class="leg">${leg ? leg.minutes : nx.travel} min ${by}</div></div>` : ""}`; }).join("")}</div>
+      <div class="tb">${p.stops.map((s, i) => { const nx = p.stops[i + 1], leg = nx ? p.legs[i] : null, mins = Math.max(15, Math.round((Date.parse(s.departure) - Date.parse(s.arrival)) / 60000)); return `<div class="r" style="animation-delay:${120 + i * 90}ms"><div class="times"><div><div class="clock">${clock(s.arrival)[0]}</div><div class="small muted" style="font-size:12px;line-height:14px">${clock(s.arrival)[1]}</div></div><div class="small muted">${clock(s.departure)[0]}</div></div><div class="blk" style="background:${tints[i % 3]};min-height:${Math.min(190, 84 + mins * 0.45)}px"><span><span class="doing">${esc(doing(s))}</span><b>${esc(s.place.name)}</b><span class="small muted" style="margin-top:auto">${mins < 60 ? `${mins} min` : mins % 60 ? `${Math.floor(mins / 60)} hr ${mins % 60} min` : `${mins / 60} hr`}</span></span><img src="photos/${W.photoKind(s.place)}.jpg" alt=""></div></div>${nx ? `<div class="r"><div></div><div class="leg">${leg ? leg.minutes : nx.travel} min ${by}</div></div>` : ""}`; }).join("")}</div>
       <div><h3 style="margin-bottom:12px">About each stop</h3><div class="card">${p.stops.map((s) => `<div class="stop"><h3>${esc(s.place.name)}</h3><p>${esc(s.reason)}</p><div class="meta">${changed.has(s.placeId) ? '<span class="tag">Just changed</span>' : ""}<span>${esc(cap(s.place.category))}</span><span>${s.place.price.high == null ? "Price varies" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low || 0)}–${money(s.place.price.high)} each`}</span>${/closed/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : ""}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener">Open in Maps</a></div></div>`).join("")}</div></div>
       <div class="card" style="display:flex;flex-direction:column;gap:12px"><h3>Change anything</h3><p class="small muted">Say what you’d change. The rest of the plan stays put.</p>
         <div class="chips">${["Make it cheaper", "Swap the last stop", "Add dessert at the end", "Less walking"].map((c) => `<button class="chip">${c}</button>`).join("")}</div>

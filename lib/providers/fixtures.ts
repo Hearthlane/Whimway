@@ -129,13 +129,14 @@ export class FixturePlaces implements PlacesProvider {
   constructor(private req: PlanRequest) {}
   async search(req: PlanRequest, query?: string) {
     const all = fixturePlaces(req);
-    return query
-      ? all.filter(
-          (p) =>
-            p.name.toLowerCase().includes(query.toLowerCase()) ||
-            p.category.includes(query.toLowerCase()),
-        )
-      : all;
+    if (!query) return all;
+    // Like a text search: the whole phrase, or any meaningful word of it.
+    const q = query.toLowerCase();
+    const words = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3);
+    return all.filter((p) => {
+      const t = `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
+      return t.includes(q) || words.some((w) => t.includes(w));
+    });
   }
   async details(id: string) {
     const place = [...fixturePlaces(this.req), ...gtaCatalog].find(

@@ -8,6 +8,7 @@ import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
 import { interpretEdit, type EditOp } from "./magic-edit";
 import { inGroup, isEatery, type GuideGroup } from "./guide";
+import { demoReason } from "./providers/gta-demo";
 import type {
   CandidatePlace,
   Itinerary,
@@ -384,7 +385,9 @@ export class Planner {
           placeId,
           minutes: 60,
           locked: true,
-          reason: "Your pick. The rest of the plan is built around it.",
+          reason:
+            (this.demo ? demoReason(placeId, request) : undefined) ??
+            "Your pick. The rest of the plan is built around it.",
         }));
     const focus: PlanRequest["interests"][number] | undefined =
       action?.includes("More food")
@@ -694,7 +697,7 @@ export class Planner {
    * Guided planning: a few open, well-liked places of one kind (a cuisine, a type of fun),
    * nearest first within the chosen area. Widens to the whole region if the area has none.
    */
-  async options(request: PlanRequest, group: GuideGroup, limit = 5) {
+  async options(request: PlanRequest, group: GuideGroup, limit = 8) {
     const open: PlanRequest = {
       ...request,
       hardBudget: false,
