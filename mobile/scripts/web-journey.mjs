@@ -42,12 +42,9 @@ let page;
   const personaName = await p.getByTestId('persona').innerText();
   await shot(p, '03b-reveal');
   await p.getByTestId('onboarding-next').click();
-  // Plus offer after onboarding: continue free.
-  await p.getByTestId('plus-skip').waitFor();
-  await p.waitForTimeout(700);
-  await shot(p, '03c-paywall');
-  await p.getByTestId('plus-skip').click();
+  // The app is free by default: onboarding goes straight home, no paywall.
   await p.getByTestId('prompt-input').waitFor();
+  const sawPaywall = await p.getByTestId('plus-skip').isVisible().catch(() => false);
   const onboardMs = Date.now() - t0;
   // Poll
   await p.getByTestId('poll-card').scrollIntoViewIfNeeded();
@@ -135,9 +132,7 @@ let page;
   // Favourites → plan around it
   const favListed = (await p.getByTestId('favourite').allInnerTexts()).join(' ');
   const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
-  // Plan-around is a Plus feature: free users see the paywall, then start the (demo) trial.
-  await p.getByRole('button', { name: 'Plan around it' }).first().click();
-  await p.getByTestId('plus-start').click();
+  // Plan around a favourite: open to everyone in the free app.
   await p.getByRole('button', { name: 'Plan around it' }).first().click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   await p.waitForTimeout(400);
@@ -166,6 +161,7 @@ let page;
   const summarize = a => a.map(s => s.split('\n').filter(Boolean).slice(0, 4).join(' | '));
   // Assertions: the core journey must hold end to end.
   assert.deepEqual(errors, [], "browser errors");
+  assert.equal(sawPaywall, false, "free app shows no paywall after onboarding");
   assert.equal(askedWho, false, "does not re-ask what the words already said");
   assert.ok(chips.some((c) => c.includes("$100 total · $50/person")), "budget understood");
   assert.ok(chips.some((c) => c.includes("With your partner")), "companion understood");

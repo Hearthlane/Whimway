@@ -53,7 +53,7 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Deterministic validation (hours, DST, budgets, locks, travel buffers, area) | **Working**; the AI can only choose provider place IDs |
 | Magic Edit (structured: keep/replace/remove/add specific stops) | **Working**; preview shown before applying; undo |
 | Polls, Plan Pulse, stop 👍/👎, post-outing feedback → personal taste + community ranking | **Working**; in-memory in dev, durable with Supabase |
-| Accounts (email code), cloud save, short revocable share links, taste sync | **Implemented, awaiting Supabase project**; SQL + RLS verified on real PostgreSQL (47 assertions) |
+| Accounts (email code), cloud save, short revocable share links, taste sync | **Implemented, awaiting Supabase project**; SQL + RLS verified on real PostgreSQL (80 assertions across all migrations, including sponsored campaigns) |
 | Account-free share links (`/p#…`), recipient can copy the plan | **Working**; E2E-tested; private details never in the link |
 | Analytics events + metrics queries (`docs/metrics.sql`) | **Working** (stored once Supabase is configured; console logs otherwise) |
 | Native maps | iOS Apple Maps (no key). Android needs a Maps SDK key in a dev build. Web shows a route sketch |
@@ -62,13 +62,20 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Near me (device location, rounded to ~100 m, GTA-only) | **Working** in the browser preview; native permission prompts untested on devices |
 | Crash screen + scrubbed crash reports (`/api/errors` → server logs) | **Working** |
 | Brand icon, adaptive icon, splash, favicon; `app.config.ts`; `eas.json` | **Done**; store builds need your Expo/Apple/Google accounts |
-| Whimway Plus: free limits, paywall, Plus-only features | **Working**; the monthly plan limit and the entitlement are enforced on the server. Purchases are a demo (no payment) until the stores are connected |
+| Guided planning: who, when, food (with cuisine photos and nearby picks), something to do, travel, mood/budget/notes; typed ideas ask only what is missing | **Working**; tested on demo data and live Google data |
+| Plan options: up to three timetables per request, "None of these?" refine by tap or description | **Working** |
+| Itinerary editing: reorder, 15 min more/less, remove, add a stop, Magic Edit, undo | **Working**; the server reschedules hours, travel and cost |
+| Discover: search and browse real places by category, area and time; sort; plan around any place | **Working**; tested on live Google data |
+| Home: Upcoming and Recently created plans | **Working** |
+| Sponsored placements (the business model): campaigns, labelled slots, view/tap counts, admin API, dashboard | **Working**; nothing is shown until you create a campaign. See `docs/sponsored.md`. No self-serve portal or billing yet |
+| Whimway Plus (optional): limits, paywall, Plus-only features | **Off by default** (`WHIMWAY_PLUS_ENABLED`). The app is free. When on, limits and the entitlement are enforced on the server; purchases are a demo until the stores are connected |
+| Google cost control | Bounded server cache for Places and Routes; per-person and daily budgets for place lists |
 | Billing webhook (`/api/webhooks/billing`, RevenueCat format) | **Implemented and tested with simulated events**; needs your store and RevenueCat accounts (see `docs/monetization.md`) |
 | Booking options per stop (table search, tickets, website, directions, ride) | **Working** as tracked hand-off links; no partner agreements, nothing is reserved |
 | Community ratings on stops | **Working**; shown only once 5+ people have reacted to a venue |
 | Your history ("Your nights"), pace and alcohol-free preferences | **Working** |
 | Metrics dashboard at `/admin` with recorded daily history | **Working** on a single server (file-backed event log); set `ADMIN_KEY` in production. On serverless hosts use Supabase + `docs/metrics.sql` |
-| Real payments, in-app reservations, social feed | **Not built** (see `docs/monetization.md` and roadmap) |
+| Real payments, in-app reservations, social feed, push notifications | **Not built** (see `docs/monetization.md` and roadmap) |
 
 ## What is implemented
 
@@ -114,12 +121,18 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`               | Optional public Supabase key, protected by database RLS                                                                     |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Production distributed usage protection                                                                                     |
 | `APP_ORIGIN`                                         | Recommended canonical deployed origin for mutation checks                                                                   |
+| `SUPABASE_SECRET_KEY`                                | Server-only secret (service-role) key; used only for sponsored campaigns. Never in the app                                 |
+| `ADMIN_KEY`                                          | Long random secret for `/admin` and the campaign API (sent in the `x-admin-key` header)                                    |
+| `WHIMWAY_PLUS_ENABLED`                               | `true` turns on Plus limits and the paywall. Default off: the app is free and ad-supported                                 |
+| `WHIMWAY_PROVIDER_CACHE`                             | `off` disables the Google response cache (default on)                                                                       |
+| `HOURLY_BROWSE_LIMIT`, `GLOBAL_DAILY_BROWSE_LIMIT`   | Place-list budgets per person per hour (120) and site-wide per day (2000)                                                   |
+| `WHIMWAY_DEMO_MODE`                                  | `true` allows demo data outside production (`npm run preview` sets it)                                                      |
 
-There is no service-role key in the application. Public keys and map ID are build-time Next.js variables: rebuild after changing them. Provider secrets and the model are runtime server variables. Inspect names/presence only; do not dump credentials.
+The only service-role key is `SUPABASE_SECRET_KEY`, read by the server for sponsored campaigns; it is never sent to the app. Public keys and map ID are build-time Next.js variables: rebuild after changing them. Provider secrets and the model are runtime server variables. Inspect names/presence only; do not dump credentials.
 
 ## Supabase
 
-Apply **all six** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
+Apply **all eight** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
 2. `202611110001_experience.sql` — analytics events (`track_event`), feedback, larger profile size
@@ -127,6 +140,8 @@ Apply **all six** migrations in order in a **new** Supabase project (SQL Editor,
 4. `202611130001_plus_events.sql` — paywall funnel events
 5. `202611140001_entitlements.sql` — Plus entitlements, monthly plan usage, billing webhook secret
 6. `202611150001_edit_usage.sql` — Magic Edit counters per plan
+7. `202611160001_option_events.sql` — plan-option analytics events
+8. `202611170001_sponsored.sql` — sponsored campaigns and view/tap counts (service role only; see `docs/sponsored.md`)
 
 For the app’s email sign-in, edit Authentication → Email Templates → Magic Link to include `{{ .Token }}` (users type a 6-digit code). It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
 
@@ -139,10 +154,15 @@ Share links require signing in and cloud-saving a live plan. They do not expose 
 ```sh
 npm run typecheck
 npm run lint
-npm test            # 141 unit/integration tests
-(cd mobile && npx tsc --noEmit)
-npm run test:e2e
-npm run test:db # Optional: Docker; disposable PostgreSQL authorization checks
+npm test            # 164 unit/integration tests
+(cd mobile && npx tsc --noEmit && npx expo lint)
+npm run test:e2e    # Playwright journeys on the web app
+npm run test:db     # 80 PostgreSQL authorization checks in a disposable Docker container
+TEST_DATABASE_ADMIN_URL=postgres://postgres@localhost/postgres npm run test:db   # same, on any Postgres you have
+# App click-throughs against a running `npm run preview`:
+(cd mobile && node scripts/web-journey.mjs)              # onboarding → plan → Magic Edit → share → profile
+(cd mobile && node scripts/guide-journey.cjs shots)       # guided planner → options → timetable → edits
+(cd mobile && node scripts/discover-journey.cjs shots)    # Discover → search → place → plan around it
 npm run build
 npm start
 ```

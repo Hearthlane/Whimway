@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
   require("node:fs").mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" }).catch(() => chromium.launch());
   const p = await b.newPage({ viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
-  const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && errs.push(m.text().slice(0, 200)));
+  const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && !/status of 422/.test(m.text()) && errs.push(m.text().slice(0, 200))); // a 422 is an edit the server explains it cannot fit
   await p.addInitScript(() => { try { if (!sessionStorage.getItem("c")) { localStorage.clear(); sessionStorage.setItem("c", "1"); } } catch {} });
   await p.goto("http://localhost:8090", { waitUntil: "networkidle", timeout: 90000 });
   await p.waitForTimeout(2500);
@@ -76,9 +76,16 @@ const { chromium } = require("playwright");
   const after = await names();
   console.log("reorder:", JSON.stringify(before), "->", JSON.stringify(after), after[0] === before[1] && after[1] === before[0] ? "OK" : "FAILED");
   await p.screenshot({ path: `${out}/16-reordered.png` });
+  // Adding a stop either adds one, or (late in the evening, when nothing else is open)
+  // says so on screen. A silent no-op is a failure.
   await p.getByTestId("add-stop").click();
-  await p.waitForFunction((n) => document.querySelectorAll('[data-testid^="timetable-row-"]').length > n, before.length, { timeout: 30000 });
-  console.log("add stop:", before.length, "->", (await names()).length);
+  const added = await Promise.race([
+    p.waitForFunction((n) => document.querySelectorAll('[data-testid^="timetable-row-"]').length > n, before.length, { timeout: 30000 }).then(() => "added"),
+    p.getByText(/so your plan is unchanged/).first().waitFor({ timeout: 30000 }).then(() => "explained"),
+  ]).catch(() => "silent");
+  await p.screenshot({ path: `${out}/17-add-stop.png` });
+  console.log("add stop:", added, before.length, "->", (await names()).length);
+  if (added === "silent") throw new Error("Add a stop did nothing and said nothing");
   await p.goto("http://localhost:8090/", { waitUntil: "networkidle" });
   await p.waitForTimeout(1500);
   await p.getByText("Upcoming", { exact: true }).scrollIntoViewIfNeeded().catch(() => {});

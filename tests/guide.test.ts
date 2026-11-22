@@ -238,6 +238,15 @@ describe("guided planning", () => {
       .catch((e) => (e as { code?: string }).code);
     expect([plan.stops.length, "NOTHING_TO_CHANGE"]).toContain(result);
   });
+  it("adding a stop either adds one or says why it couldn't", async () => {
+    const r = { ...base(), startTime: "21:30", budget: 40 };
+    const plan = (await planner(r).alternatives(r))[0].plan;
+    const result = await planner(r)
+      .magicEdit(plan, "Add one more stop at the end")
+      .then((x) => x.plan.stops.length)
+      .catch((e) => (e as { code?: string }).code);
+    expect([plan.stops.length + 1, "NOTHING_TO_CHANGE"]).toContain(result);
+  });
   it("direct edits reorder, retime and remove stops, and reschedule the rest", async () => {
     const r = { ...base(), startTime: "14:00" };
     const plan = (await planner(r).alternatives(r))

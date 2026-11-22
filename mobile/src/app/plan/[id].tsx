@@ -174,7 +174,12 @@ export default function PlanScreen() {
       if (e instanceof ApiError && e.code === "EDIT_LIMIT") {
         setEditOpen(false);
         router.push({ pathname: "/plus", params: { reason: "edits" } });
-      } else setEditError(e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.");
+      } else {
+        const message = e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.";
+        setEditError(message);
+        // Quick actions ("Add a stop", "Swap it") run without the sheet open: say it on screen.
+        if (!editOpen) setToast({ text: message });
+      }
     } finally {
       setEditBusy(false);
     }

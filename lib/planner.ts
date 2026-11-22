@@ -668,10 +668,12 @@ export class Planner {
     // Asking to change a stop must never quietly remove it. If nothing else fits at that
     // time (closed, over budget), keep the plan as it was and say why.
     if (
-      op.kind === "replace" &&
-      // "Make it indoors" may rightly drop an outdoor stop that has no indoor stand-in.
-      !op.patch?.indoorOnly &&
-      plan.stops.length < spec.stops.length
+      (op.kind === "replace" &&
+        // "Make it indoors" may rightly drop an outdoor stop that has no indoor stand-in.
+        !op.patch?.indoorOnly &&
+        plan.stops.length < spec.stops.length) ||
+      // Asking to add a stop and getting none back is a failure to report, not success.
+      (op.kind === "add" && plan.stops.length <= spec.stops.length)
     )
       throw new AppError(
         "NOTHING_TO_CHANGE",
