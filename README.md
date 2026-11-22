@@ -138,6 +138,10 @@ The only service-role key is `SUPABASE_SECRET_KEY`, read by the server for spons
 
 ## Supabase
 
+**Whimway's project:** `Whimway` (`studvwvuoqdsevlhwofw`, Canada Central), created with all nine migrations applied. URL `https://studvwvuoqdsevlhwofw.supabase.co`; the publishable key is set for store builds in `mobile/eas.json` and for cloud sessions on the `whimway` environment (`NEXT_PUBLIC_SUPABASE_*`, `EXPO_PUBLIC_SUPABASE_*`). Publishable keys are designed to be public; row-level security protects the data. `SUPABASE_SECRET_KEY` (only needed for sponsored campaigns) is not set.
+
+To set up another project from scratch:
+
 Apply **all nine** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
