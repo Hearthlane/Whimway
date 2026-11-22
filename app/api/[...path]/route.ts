@@ -19,6 +19,7 @@ import {
   photoUrl,
   staticMap,
   staticMapKey,
+  mapTile,
 } from "@/lib/providers/google";
 import { fixtureLocations } from "@/lib/providers/fixtures";
 import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
@@ -136,6 +137,8 @@ async function handleGET(request: Request, ctx: Context) {
         maps: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
         /** Real map images for the browser build (Maps Static API, key kept on the server). */
         staticMap: Boolean(staticMapKey()),
+        /** Real map tiles for the browser build (Map Tiles API, works with the header key). */
+        tiles: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
         ai: aiConfigured(),
         cloud: Boolean(
           process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -164,6 +167,26 @@ async function handleGET(request: Request, ctx: Context) {
           stats: stats[c.id] ?? { impressions: 0, clicks: 0 },
         })),
       );
+    }
+    if (path.startsWith("tiles/")) {
+      // A map needs a dozen tiles at once: its own allowance, separate from other reads.
+      await rateLimit(request, "tile");
+      const [zoom, tx, ty] = z
+        .tuple([
+          z.coerce.number().int().min(3).max(20),
+          z.coerce.number().int().min(0),
+          z.coerce.number().int().min(0),
+        ])
+        .parse(path.split("/").slice(1));
+      if (tx >= 2 ** zoom || ty >= 2 ** zoom)
+        throw new AppError("INVALID_INPUT", "Tile out of range.", 400);
+      const tile = await mapTile(zoom, tx, ty);
+      return new NextResponse(tile.body, {
+        headers: {
+          "Content-Type": tile.type,
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
     }
     await rateLimit(request, "read", (await currentUser())?.id);
     if (path === "sponsored") {

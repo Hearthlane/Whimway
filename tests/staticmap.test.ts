@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/[...path]/route";
-import { providerCache, staticMapKey, staticMapUrl } from "@/lib/providers/google";
+import {
+  providerCache,
+  resetTileSession,
+  staticMapKey,
+  staticMapUrl,
+} from "@/lib/providers/google";
 
 vi.mock("@/lib/server/supabase", () => ({
   currentUser: async () => null,
@@ -10,14 +15,20 @@ vi.mock("@/lib/server/supabase", () => ({
   supabase: async () => ({}),
 }));
 const get = (path: string) =>
-  GET(new Request(`http://localhost:3000/api/${path}`, { headers: { "X-Whimway-Client": "app" } }), {
-    params: Promise.resolve({ path: [path.split("?")[0]] }),
-  });
+  GET(
+    new Request(`http://localhost:3000/api/${path}`, {
+      headers: { "X-Whimway-Client": "app" },
+    }),
+    {
+      params: Promise.resolve({ path: [path.split("?")[0]] }),
+    },
+  );
 
 beforeEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   providerCache.clear();
+  resetTileSession();
 });
 
 describe("Real map images", () => {
@@ -29,10 +40,24 @@ describe("Real map images", () => {
   });
   it("draws numbered stops and the real route where there is one", () => {
     const url = new URL(
-      staticMapUrl({ stops: [{ lat: 43.65, lng: -79.38 }, { lat: 43.66, lng: -79.39 }, { lat: 43.67, lng: -79.4 }], paths: ["abc", ""], width: 600, height: 260 }, "k"),
+      staticMapUrl(
+        {
+          stops: [
+            { lat: 43.65, lng: -79.38 },
+            { lat: 43.66, lng: -79.39 },
+            { lat: 43.67, lng: -79.4 },
+          ],
+          paths: ["abc", ""],
+          width: 600,
+          height: 260,
+        },
+        "k",
+      ),
     );
     expect(url.hostname).toBe("maps.googleapis.com");
-    expect(url.searchParams.getAll("markers").map((m) => m.split("|")[1])).toEqual(["label:1", "label:2", "label:3"]);
+    expect(
+      url.searchParams.getAll("markers").map((m) => m.split("|")[1]),
+    ).toEqual(["label:1", "label:2", "label:3"]);
     const paths = url.searchParams.getAll("path");
     expect(paths[0]).toContain("enc:abc");
     expect(paths[1]).toContain("43.660000,-79.390000|43.670000,-79.400000");
@@ -42,15 +67,62 @@ describe("Real map images", () => {
     expect((await (await get("status")).json()).staticMap).toBe(false);
     expect((await get("staticmap?stops=43.65,-79.38")).status).toBe(503);
     vi.stubEnv("GOOGLE_MAPS_STATIC_KEY", "secret-static");
-    const fetcher = vi.fn().mockResolvedValue(new Response(new Uint8Array([137, 80, 78, 71]), { headers: { "content-type": "image/png" } }));
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(new Uint8Array([137, 80, 78, 71]), {
+          headers: { "content-type": "image/png" },
+        }),
+      );
     vi.stubGlobal("fetch", fetcher);
     expect((await (await get("status")).json()).staticMap).toBe(true);
-    const r = await get("staticmap?stops=43.65,-79.38;43.66,-79.39&w=600&h=260");
+    const r = await get(
+      "staticmap?stops=43.65,-79.38;43.66,-79.39&w=600&h=260",
+    );
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("image/png");
     expect(fetcher.mock.calls[0][0]).toContain("key=secret-static");
     expect(await r.text()).not.toContain("secret-static");
     expect((await get("staticmap?stops=999,0")).status).toBe(400);
-    expect((await get("staticmap?stops=43.65,-79.38&paths=%3Cscript%3E")).status).toBe(400);
+    expect(
+      (await get("staticmap?stops=43.65,-79.38&paths=%3Cscript%3E")).status,
+    ).toBe(400);
+  });
+  it("serves map tiles through the server with one reused session, never exposing the key", async () => {
+    vi.stubEnv("GOOGLE_MAPS_SERVER_KEY", "real-key");
+    const fetcher = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          url.includes("createSession")
+            ? new Response(
+                JSON.stringify({
+                  session: "tok",
+                  expiry: String(Math.floor(Date.now() / 1000) + 14 * 86400),
+                }),
+              )
+            : new Response(new Uint8Array([137, 80, 78, 71]), {
+                headers: { "content-type": "image/png" },
+              }),
+        ),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    expect((await (await get("status")).json()).tiles).toBe(true);
+    const tile = (p: string) =>
+      GET(
+        new Request(`http://localhost:3000/api/${p}`, {
+          headers: { "X-Whimway-Client": "app" },
+        }),
+        { params: Promise.resolve({ path: p.split("/") }) },
+      );
+    expect((await tile("tiles/13/2289/2990")).status).toBe(200);
+    expect((await tile("tiles/13/2290/2990")).status).toBe(200);
+    expect(
+      fetcher.mock.calls.filter(([u]) => String(u).includes("createSession")),
+    ).toHaveLength(1);
+    expect(String(fetcher.mock.calls[1][0])).toContain("session=tok");
+    expect(String(fetcher.mock.calls[1][0])).not.toContain("real-key");
+    expect((await tile("tiles/13/99999/2990")).status).toBe(400);
+    expect((await tile("tiles/2/0/0")).status).toBe(400);
   });
 });

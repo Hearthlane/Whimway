@@ -655,3 +655,93 @@ export async function staticMap(input: StaticMapInput) {
     return { type, body: new Uint8Array(await r.arrayBuffer()) };
   });
 }
+
+/**
+ * Real map tiles (Map Tiles API) for the browser build. Unlike Static Maps this reads the
+ * key from the X-Goog-Api-Key header, so it works with a proxy-injected key too. A
+ * session token (valid about two weeks) is created once and reused.
+ */
+let tileSession: { token: string; until: number } | null = null;
+const TILE_STYLES = [
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "transit",
+    elementType: "labels.icon",
+    stylers: [{ visibility: "off" }],
+  },
+  { elementType: "labels.text.fill", stylers: [{ color: "#4e5674" }] },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#f1f3f7" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#cfe0ff" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#dcefe3" }],
+  },
+];
+async function tileToken() {
+  if (tileSession && Date.now() < tileSession.until) return tileSession.token;
+  const r = await providerFetch(
+    "https://tile.googleapis.com/v1/createSession",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...googleKey() },
+      body: JSON.stringify({
+        mapType: "roadmap",
+        language: "en-US",
+        region: "CA",
+        scale: "scaleFactor2x",
+        highDpi: true,
+        styles: TILE_STYLES,
+      }),
+    },
+  );
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.session)
+    throw new AppError(
+      "MAP_UNAVAILABLE",
+      "Map tiles are not enabled for this Google key.",
+      503,
+    );
+  // Renew a day early.
+  const expiry = Number(data.expiry) * 1000;
+  tileSession = {
+    token: data.session,
+    until: (Number.isFinite(expiry) ? expiry : Date.now() + 7 * 864e5) - 864e5,
+  };
+  return tileSession.token;
+}
+export async function mapTile(z: number, x: number, y: number) {
+  return cached(`tile|${z}|${x}|${y}`, 60 * 60_000, async () => {
+    const token = await tileToken();
+    const r = await providerFetch(
+      `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${encodeURIComponent(token)}`,
+      { headers: googleKey() },
+    );
+    const type = r.headers.get("content-type") ?? "";
+    if (r.status === 401 || r.status === 403) tileSession = null;
+    if (!r.ok || !type.startsWith("image/"))
+      throw new AppError(
+        "MAP_UNAVAILABLE",
+        "Google did not return a map tile.",
+        502,
+      );
+    return { type, body: new Uint8Array(await r.arrayBuffer()) };
+  });
+}
+/** Test hook. */
+export function resetTileSession() {
+  tileSession = null;
+}

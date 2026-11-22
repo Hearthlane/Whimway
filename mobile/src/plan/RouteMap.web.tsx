@@ -18,8 +18,105 @@ export function RouteMap({ plan, selected, onSelect }: { plan: Itinerary; select
   const { status } = useStore();
   const [failed, setFailed] = useState(false);
   const model = useMemo(() => mapModel(plan), [plan]);
+  const [tilesFailed, setTilesFailed] = useState(false);
+  if (status?.tiles && !tilesFailed && !plan.demo) return <TileMap plan={plan} selected={selected} onSelect={onSelect} onError={() => setTilesFailed(true)} />;
   if (status?.staticMap && !failed && !plan.demo) return <GoogleMapImage plan={plan} onSelect={onSelect} onError={() => setFailed(true)} />;
   return <Sketch plan={plan} model={model} selected={selected} onSelect={onSelect} />;
+}
+
+// Web Mercator: world pixel coordinates at a zoom level, 256 px tiles.
+const TILE = 256;
+const worldX = (lng: number, z: number) => ((lng + 180) / 360) * TILE * 2 ** z;
+const worldY = (lat: number, z: number) => {
+  const s = Math.sin((lat * Math.PI) / 180);
+  return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TILE * 2 ** z;
+};
+
+/**
+ * A real Google map: tiles fetched through the server (key never in the browser), with
+ * the route and numbered stops drawn on top, zoomed to fit the whole plan.
+ */
+function TileMap({ plan, selected, onSelect, onError }: { plan: Itinerary; selected?: string; onSelect: (id: string) => void; onError: () => void }) {
+  const model = useMemo(() => mapModel(plan), [plan]);
+  const [width, setWidth] = useState(600);
+  const H = 260;
+  const legendSpace = 40;
+  const view = useMemo(() => {
+    const pts = model.paths.flatMap((p) => p.points).concat(model.stops.map((s) => s.point));
+    const b = bounds(pts.length ? pts : [plan.request.area.center]);
+    // Largest zoom at which every stop and route fits, with room for pins and the legend.
+    let z = 17;
+    while (z > 3) {
+      const w = worldX(b.maxLng, z) - worldX(b.minLng, z);
+      const h = worldY(b.minLat, z) - worldY(b.maxLat, z);
+      if (w <= width - 80 && h <= H - legendSpace - 70) break;
+      z--;
+    }
+    const cx = (worldX(b.minLng, z) + worldX(b.maxLng, z)) / 2;
+    const cy = (worldY(b.maxLat, z) + worldY(b.minLat, z)) / 2 + legendSpace / 2;
+    const left = cx - width / 2;
+    const top = cy - H / 2;
+    const tiles: { x: number; y: number; px: number; py: number }[] = [];
+    const n = 2 ** z;
+    for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + H) / TILE); ty++)
+      for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + width) / TILE); tx++)
+        if (ty >= 0 && ty < n) tiles.push({ x: ((tx % n) + n) % n, y: ty, px: tx * TILE - left, py: ty * TILE - top });
+    const at = (p: Point) => ({ x: worldX(p.lng, z) - left, y: worldY(p.lat, z) - top });
+    return { z, tiles, at };
+  }, [model, plan.request.area.center, width]);
+  return (
+    <View style={s.wrap} onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width) || 600)} accessibilityLabel={`Map of ${model.stops.length} stops`}>
+      {view.tiles.map((t) => (
+        <Image
+          key={`${view.z}/${t.x}/${t.y}/${t.px}`}
+          source={{ uri: `${API_URL}/api/tiles/${view.z}/${t.x}/${t.y}` }}
+          onError={onError}
+          style={{ position: "absolute", left: t.px, top: t.py, width: TILE, height: TILE }}
+          accessibilityIgnoresInvertColors
+        />
+      ))}
+      <Svg width={width} height={H} style={StyleSheet.absoluteFill}>
+        {model.paths.map((p, i) => (
+          <Polyline
+            key={i}
+            points={p.points.map((pt) => { const q = view.at(pt); return `${q.x},${q.y}`; }).join(" ")}
+            fill="none"
+            stroke={color.ink}
+            strokeWidth={4}
+            strokeOpacity={0.85}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={p.verified ? undefined : "8 8"}
+          />
+        ))}
+        {model.stops.map((st) => {
+          const q = view.at(st.point);
+          return (
+            <G key={st.id} onPress={() => onSelect(st.id)}>
+              <Circle cx={q.x} cy={q.y} r={14} fill={selected === st.id ? color.ink : color.coral} stroke={color.paper} strokeWidth={3} />
+              <SvgText x={q.x} y={q.y + 5} fontSize={13} fontFamily={font.bodyBold} fontWeight="700" fill={selected === st.id ? color.paper : color.ink} textAnchor="middle">
+                {String(st.n)}
+              </SvgText>
+            </G>
+          );
+        })}
+      </Svg>
+      <View style={s.legend}>
+        {model.stops.map((st) => (
+          <Pressable key={st.id} onPress={() => onSelect(st.id)} accessibilityRole="button" accessibilityLabel={`Stop ${st.n}: ${st.name}`} style={s.legendItem}>
+            <T v="smallStrong" style={{ fontSize: 11 }} numberOfLines={1}>
+              {st.n}. {st.name}
+            </T>
+          </Pressable>
+        ))}
+      </View>
+      <View style={s.credit} pointerEvents="none">
+        <T v="small" style={{ fontSize: 10 }} tone={color.muted}>
+          Map data ©{new Date().getFullYear()} Google
+        </T>
+      </View>
+    </View>
+  );
 }
 
 function GoogleMapImage({ plan, onSelect, onError }: { plan: Itinerary; onSelect: (id: string) => void; onError: () => void }) {
@@ -127,5 +224,6 @@ const s = StyleSheet.create({
   wrap: { height: 240, borderRadius: radius.lg, overflow: "hidden", borderWidth: 1, borderColor: color.line, backgroundColor: color.mintTint },
   note: { position: "absolute", right: 10, top: 10, backgroundColor: color.paper, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   legend: { position: "absolute", left: 10, bottom: 10, right: 10, flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  credit: { position: "absolute", right: 8, top: 8, backgroundColor: "rgba(255,255,255,0.85)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   legendItem: { backgroundColor: color.paper, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, maxWidth: 180 },
 });

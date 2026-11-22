@@ -8,7 +8,15 @@ const limit = (name: string, fallback: number) => {
 };
 export async function rateLimit(
   request: Request,
-  kind: "generate" | "remix" | "read" | "write" | "signal" | "browse" | "ad",
+  kind:
+    | "generate"
+    | "remix"
+    | "read"
+    | "write"
+    | "signal"
+    | "browse"
+    | "ad"
+    | "tile",
   userId?: string,
 ) {
   // On Vercel, the platform overwrites x-vercel-forwarded-for. Self-hosting must strip incoming forwarded headers.
@@ -43,7 +51,9 @@ export async function rateLimit(
               ? limit("HOURLY_BROWSE_LIMIT", 120) // place lists: paid lookups, but cached
               : kind === "ad"
                 ? 120 // sponsored views and taps
-                : 50;
+                : kind === "tile"
+                  ? 2400 // map tiles: a dozen per map, cached
+                  : 50;
   if (
     (await counter(
       `${kind}:${identity}:${costly ? today : Math.floor(Date.now() / 3600000)}`,
