@@ -210,6 +210,16 @@ describe("guided planning", () => {
       ),
     ).toBe(true);
   });
+  it("changing a stop never silently drops it when nothing else fits", async () => {
+    // Late Saturday on a tight budget: little is open and affordable for the last slot.
+    const r = { ...base(), startTime: "21:00", budget: 40 };
+    const plan = (await planner(r).alternatives(r))[0].plan;
+    const result = await planner(r)
+      .magicEdit(plan, "Keep the first stop, but change the last one")
+      .then((x) => x.plan.stops.length)
+      .catch((e) => (e as { code?: string }).code);
+    expect([plan.stops.length, "NOTHING_TO_CHANGE"]).toContain(result);
+  });
   it("skips restaurants and cafés when the group has eaten", async () => {
     const r = { ...base(), skipFood: true };
     const plan = await planner(r).generate(r);

@@ -247,7 +247,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, profile: emptyProfile(), plans: {} }));
   }, []);
 
-  const demo = Boolean(state.status && (!state.status.places || !state.status.ai) && state.status.demo);
+  // Real Google places whenever a key is set; the AI key only changes who writes the plan.
+  const demo = Boolean(state.status && !state.status.places && state.status.demo);
   const value = useMemo<Store>(
     () => ({ ...state, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, demo }),
     [state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, demo],

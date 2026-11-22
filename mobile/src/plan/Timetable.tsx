@@ -1,11 +1,9 @@
-import { Image } from "expo-image";
 import { DateTime } from "luxon";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import type { Itinerary } from "@shared/schema";
-import { API_URL } from "@/lib/config";
 import { modeCopy } from "@/lib/copy";
-import { guidePhotos, kindOf } from "@/plan/guidePhotos";
+import { PlaceImage } from "@/plan/PlaceImage";
 import { artKind } from "@/plan/StopArt";
 import { Icon, Press, T } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
@@ -44,7 +42,6 @@ export function Timetable({ plan, selected, onSelect }: { plan: Itinerary; selec
         const minutes = Math.max(15, Math.round(to.diff(from, "minutes").minutes));
         const next = plan.stops[i + 1];
         const on = selected === stop.placeId;
-        const photo = stop.place.photos[0];
         return (
           <Animated.View key={stop.placeId} entering={FadeInDown.delay(120 + i * 90).duration(360)}>
             <View style={s.row}>
@@ -77,13 +74,7 @@ export function Timetable({ plan, selected, onSelect }: { plan: Itinerary; selec
                     {length(minutes)}
                   </T>
                 </View>
-                <Image
-                  source={photo ? { uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}` } : guidePhotos[kindOf(stop.place)]}
-                  style={s.photo}
-                  contentFit="cover"
-                  transition={200}
-                  accessibilityIgnoresInvertColors
-                />
+                <PlaceImage place={stop.place} style={s.photo} />
               </Press>
             </View>
             {next ? (

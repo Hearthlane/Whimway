@@ -48,7 +48,7 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | --- | --- |
 | Natural-language understanding (who, when, budget total vs per person, transport, area, vibe, indoors) | **Working**, deterministic, on device and server; 20+ unit tests |
 | Onboarding → prompt → plan → Magic Edit → save → share → feedback (app) | **Working in demo mode**; verified end to end in mobile Chromium via the Expo web build with zero errors. **Not yet run on physical iOS/Android devices** |
-| Real venues, hours, photos, routes (Google Places API (New) + Routes API) | **Implemented, awaiting credentials** (`GOOGLE_MAPS_SERVER_KEY`). Adapter predates this work and is unit-tested with mocked HTTP |
+| Real venues, hours, photos, routes (Google Places API (New) + Routes API) | **Working with a live key** (checked against Google on 2026-11-22). Key is a network secret sending `X-Goog-Api-Key`; set `GOOGLE_MAPS_SERVER_KEY=proxy-injected`. Without an OpenAI key the built-in planner picks stops from the live places |
 | AI selection + Magic Edit wording (OpenAI Structured Outputs) | **Implemented, awaiting credentials** (`WHIMWAY_OPENAI_KEY` + model). Demo uses a transparent heuristic stand-in |
 | Deterministic validation (hours, DST, budgets, locks, travel buffers, area) | **Working**; the AI can only choose provider place IDs |
 | Magic Edit (structured: keep/replace/remove/add specific stops) | **Working**; preview shown before applying; undo |

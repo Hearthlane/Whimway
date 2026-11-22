@@ -1138,7 +1138,10 @@ export function demoSelect(
   let spent = lockedPlaces.reduce((n, p) => n + (p.price.high ?? 0), 0);
   // Free-to-browse places (optional spend) cost their minimum; unknown prices cost the whole budget.
   const cost = (p: CandidatePlace) =>
-    p.price.optional ? (p.price.low ?? 0) : (p.price.high ?? req.budget);
+    p.price.optional
+      ? (p.price.low ?? 0)
+      : // Live data often has no price for activities; assume a typical ticket, capped by budget.
+        (p.price.high ?? Math.min(req.budget, 25));
   // Evening outings of 3h+ reserve budget for one proper meal before anything else.
   const wantsMeal =
     req.duration >= 180 &&
@@ -1166,7 +1169,8 @@ export function demoSelect(
     )
       continue;
     if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
-    if (chosen.some((c) => c.category === p.category)) continue;
+    if ([...chosen, ...lockedPlaces].some((c) => c.category === p.category))
+      continue; // no second escape room next to the one they picked
     if (isMeal(p)) meals++;
     spent += cost(p);
     chosen.push(p);

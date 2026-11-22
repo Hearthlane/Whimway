@@ -80,7 +80,7 @@ export default function PlanHome() {
   const chips = describe(request, now);
   const totalBudget = Math.round(request.budgetBasis === "total" ? request.budget * request.participants : request.budget);
 
-  const ready = Boolean(status && ((status.places && status.ai) || status.demo));
+  const ready = Boolean(status && (status.places || status.demo));
   const left = plansLeft(profile);
   // "Surprise me" is the one path that plans without asking anything.
   const plan = (prompt = text) => {

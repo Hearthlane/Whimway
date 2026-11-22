@@ -11,11 +11,11 @@ import { buildRequest, interpret } from "@shared/intent";
 import { plansLeft } from "@shared/plus";
 import { vibes as vibeKeys, type CandidatePlace, type PlanRequest, type Vibe } from "@shared/schema";
 import { api } from "@/lib/api";
-import { API_URL } from "@/lib/config";
 import { guideSeed } from "@/lib/guideSeed";
 import { companionCopy, modeCopy, money, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
-import { guidePhotos, kindOf } from "@/plan/guidePhotos";
+import { guidePhotos } from "@/plan/guidePhotos";
+import { PlaceImage } from "@/plan/PlaceImage";
 import { Button, Chip, Icon, IconButton, Notice, Press, T, tap, type IconName } from "@/ui/kit";
 import { color, font, motion, radius, shadow, space } from "@/ui/theme";
 
@@ -593,13 +593,7 @@ function Places({
         return (
           <Animated.View key={p.id} entering={FadeInDown.delay((i % 4) * 60).duration(320)}>
             <Press testID={`${prefix}-${i}`} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${p.name}, ${p.category}, ${km(p.meters)} away`} scaleTo={0.98} onPress={() => onPick(p)} style={[s.place, on && s.rowOn]}>
-              <Image
-                source={p.photos[0] ? { uri: `${API_URL}/api/photo?name=${encodeURIComponent(p.photos[0].name)}` } : guidePhotos[kindOf(p, group)]}
-                style={s.placePhoto}
-                contentFit="cover"
-                transition={200}
-                accessibilityIgnoresInvertColors
-              />
+              <PlaceImage place={p} chosen={group} style={s.placePhoto} />
               <View style={{ flex: 1, gap: 3 }}>
                 <T v="bodyStrong" numberOfLines={1} style={{ fontSize: 16 }}>
                   {p.name}

@@ -1,4 +1,3 @@
-import { Image } from "expo-image";
 import { router } from "expo-router";
 import { DateTime } from "luxon";
 import { useEffect, useRef, useState } from "react";
@@ -8,11 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { countPlan } from "@shared/plus";
 import type { Itinerary } from "@shared/schema";
 import { api } from "@/lib/api";
-import { API_URL } from "@/lib/config";
 import { modeCopy, money } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { Generating, stages } from "@/plan/Generating";
-import { guidePhotos, kindOf } from "@/plan/guidePhotos";
+import { PlaceImage } from "@/plan/PlaceImage";
 import { Button, Chip, Icon, IconButton, Notice, Press, T, tap } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
 
@@ -148,14 +146,7 @@ function OptionCard({ option, chosen, onPick, testID }: { option: Option; chosen
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={`${option.label}: ${p.stops.map((s) => s.place.name).join(", ")}`} scaleTo={0.985} onPress={onPick} style={[s.card, chosen && s.cardOn]}>
       <View style={s.photos}>
         {p.stops.slice(0, 4).map((stop) => (
-          <Image
-            key={stop.placeId}
-            source={stop.place.photos[0] ? { uri: `${API_URL}/api/photo?name=${encodeURIComponent(stop.place.photos[0].name)}` } : guidePhotos[kindOf(stop.place)]}
-            style={s.photo}
-            contentFit="cover"
-            transition={200}
-            accessibilityIgnoresInvertColors
-          />
+          <PlaceImage key={stop.placeId} place={stop.place} style={s.photo} />
         ))}
         {chosen ? (
           <Animated.View entering={ZoomIn.duration(180)} style={s.check}>

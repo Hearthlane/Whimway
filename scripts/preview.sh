@@ -23,7 +23,7 @@ if ! curl -fs -o /dev/null "http://127.0.0.1:${API}/api/status"; then
   echo "Starting the API in demo mode on :${API} (logs: /tmp/whimway-api.log)"
   nohup env NEXT_TELEMETRY_DISABLED=1 WHIMWAY_DEMO_MODE=true NEXT_PUBLIC_WHIMWAY_DEMO_MODE=true \
     DAILY_GUEST_GENERATIONS=500 DAILY_REMIX_LIMIT=500 \
-    npx next dev --hostname 0.0.0.0 -p "${API}" >/tmp/whimway-api.log 2>&1 </dev/null &
+    NODE_USE_ENV_PROXY=1 npx next dev --hostname 0.0.0.0 -p "${API}" >/tmp/whimway-api.log 2>&1 </dev/null &
 fi
 
 if [[ "${1:-}" == "--rebuild" || ! -f mobile/dist/index.html || -n "$(find mobile/src lib -newer mobile/dist/index.html -name '*.ts*' -print -quit)" ]]; then

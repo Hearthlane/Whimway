@@ -60,7 +60,7 @@ let page;
   await p.waitForTimeout(300);
   const nextPollText = await p.getByTestId('poll-card').innerText();
   await p.evaluate(() => window.scrollTo(0, 0));
-  const prompt = "Plan a spontaneous Saturday night with my girlfriend. We have $100 total, we're near Toronto, we want something romantic but adventurous, and we don't want to drive too far.";
+  const prompt = "Plan a spontaneous night out tomorrow at 6pm with my girlfriend. We have $100 total, we're near Toronto, we want something romantic but adventurous, and we don't want to drive too far.";
   await p.getByTestId('prompt-input').fill(prompt);
   await p.waitForTimeout(300);
   const chips = (await p.locator('[data-testid^="chip-"]').allInnerTexts()).map(s => s.trim());

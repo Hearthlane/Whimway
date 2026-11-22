@@ -10,7 +10,7 @@ import {
   interests,
   travelModes,
 } from "@/lib/schema";
-import { planner, demoAllowed } from "@/lib/server/providers";
+import { planner, demoAllowed, aiConfigured } from "@/lib/server/providers";
 import {
   GooglePlaces,
   autocomplete,
@@ -60,6 +60,9 @@ type Context = { params: Promise<{ path: string[] }> };
 const ok = (data: unknown) =>
   NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
 function failure(e: unknown) {
+  // In development, say which field failed so provider data problems are easy to trace.
+  if (e instanceof z.ZodError && process.env.NODE_ENV !== "production")
+    console.error(JSON.stringify({ event: "invalid_input", issues: e.issues.slice(0, 5) }));
   if (e instanceof z.ZodError)
     return NextResponse.json(
       {
@@ -95,10 +98,7 @@ async function handleGET(request: Request, ctx: Context) {
       return ok({
         places: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
         maps: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
-        ai: Boolean(
-          (process.env.WHIMWAY_OPENAI_KEY || process.env.OPENAI_API_KEY) &&
-          (process.env.WHIMWAY_OPENAI_MODEL || process.env.OPENAI_MODEL),
-        ),
+        ai: aiConfigured(),
         cloud: Boolean(
           process.env.NEXT_PUBLIC_SUPABASE_URL &&
           process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,

@@ -54,7 +54,9 @@ await check(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": env.GOOGLE_MAPS_SERVER_KEY,
+          ...(env.GOOGLE_MAPS_SERVER_KEY === "proxy-injected"
+            ? {}
+            : { "X-Goog-Api-Key": env.GOOGLE_MAPS_SERVER_KEY }),
           "X-Goog-FieldMask": "places.id",
         },
         body: JSON.stringify({ textQuery: "cafe in Toronto", pageSize: 1 }),
@@ -73,7 +75,9 @@ await check(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": env.GOOGLE_MAPS_SERVER_KEY,
+          ...(env.GOOGLE_MAPS_SERVER_KEY === "proxy-injected"
+            ? {}
+            : { "X-Goog-Api-Key": env.GOOGLE_MAPS_SERVER_KEY }),
           "X-Goog-FieldMask": "routes.duration",
         },
         body: JSON.stringify({

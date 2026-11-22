@@ -10,6 +10,7 @@ import {
 } from "../schema";
 import { safeUrl } from "../geo";
 import { AppError, providerFetch, requireEnv } from "../errors";
+import { nearestArea } from "../areas";
 import type { PlacesProvider, RouteProvider } from "./types";
 import { z } from "zod";
 const Money = z.object({
@@ -73,7 +74,8 @@ const RawPlace = z.object({
     .array(
       z.object({
         shortText: z.string().optional(),
-        types: z.array(z.string()),
+        // Google occasionally omits types on a component; treat it as untyped.
+        types: z.array(z.string()).default([]),
       }),
     )
     .optional(),
@@ -81,6 +83,16 @@ const RawPlace = z.object({
     .object({ wheelchairAccessibleEntrance: z.boolean().optional() })
     .optional(),
 });
+/**
+ * With GOOGLE_MAPS_SERVER_KEY=proxy-injected the key lives in a network secret and the
+ * egress proxy adds the X-Goog-Api-Key header, but only when the request carries none.
+ * So the placeholder is never sent; a real key is sent as usual.
+ */
+const INJECTED = "proxy-injected";
+function googleKey(): Record<string, string> {
+  const key = requireEnv("GOOGLE_MAPS_SERVER_KEY");
+  return key === INJECTED ? {} : { "X-Goog-Api-Key": key };
+}
 const fields =
   "id,displayName,location,formattedAddress,primaryType,types,googleMapsUri,businessStatus,rating,userRatingCount";
 const detailFields = `${fields},websiteUri,photos,priceRange,currentOpeningHours,regularOpeningHours,addressComponents,accessibilityOptions`;
@@ -241,7 +253,7 @@ async function call(path: string, body?: unknown, mask = fields) {
     method: body ? "POST" : "GET",
     headers: {
       "Content-Type": "application/json",
-      "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY"),
+      ...googleKey(),
       "X-Goog-FieldMask": mask,
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -327,9 +339,14 @@ export class GooglePlaces implements PlacesProvider {
     const results = await Promise.all(jobs);
     return results
       .flatMap((r) =>
-        (r.places ?? []).map((p: unknown) =>
-          normalize(p, req.location.currency),
-        ),
+        // One malformed result is dropped instead of failing the whole search.
+        (r.places ?? []).flatMap((p: unknown) => {
+          try {
+            return [normalize(p, req.location.currency)];
+          } catch {
+            return [];
+          }
+        }),
       )
       .slice(0, 36);
   }
@@ -391,18 +408,29 @@ export async function resolvePoint(point: Point): Promise<Location> {
   // injects X-Goog-Api-Key works here too. A real key in the environment is also sent as
   // the query parameter for older Geocoding setups.
   const key = requireEnv("GOOGLE_MAPS_SERVER_KEY");
-  const query = key === "proxy-injected" ? "" : `&key=${encodeURIComponent(key)}`;
+  const query = key === INJECTED ? "" : `&key=${encodeURIComponent(key)}`;
   const r = await providerFetch(
     `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}${query}`,
-    { headers: { "X-Goog-Api-Key": key } },
+    { headers: googleKey() },
   );
   const data = await r.json();
-  if (data.status !== "OK" && data.status !== "ZERO_RESULTS")
+  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+    // Geocoding reads the key only from the query string, so with a proxy-injected key it
+    // refuses. Inside the beta region the nearest neighbourhood is a good enough name.
+    const near = nearestArea(point);
+    if (near)
+      return {
+        center: point,
+        name: near.name,
+        timezone: near.timezone,
+        currency: near.currency,
+      };
     throw new AppError(
       "LOCATION_FAILED",
       "Could not look up this area. Check Geocoding API configuration.",
       502,
     );
+  }
   const result = data.results?.[0];
   const country = result?.address_components?.find((x: { types: string[] }) =>
     x.types.includes("country"),
@@ -428,7 +456,7 @@ export class GoogleRoutes implements RouteProvider {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY"),
+          ...googleKey(),
           "X-Goog-FieldMask":
             "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
         },
@@ -482,7 +510,7 @@ export async function photoUrl(name: string) {
   const data = await (
     await providerFetch(
       `https://places.googleapis.com/v1/${name}/media?maxWidthPx=1000&skipHttpRedirect=true`,
-      { headers: { "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY") } },
+      { headers: googleKey() },
     )
   ).json();
   const url = safeUrl(data.photoUri);

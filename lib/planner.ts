@@ -659,6 +659,19 @@ export class Planner {
         })),
       };
     }
+    // Asking to change a stop must never quietly remove it. If nothing else fits at that
+    // time (closed, over budget), keep the plan as it was and say why.
+    if (
+      op.kind === "replace" &&
+      // "Make it indoors" may rightly drop an outdoor stop that has no indoor stand-in.
+      !op.patch?.indoorOnly &&
+      plan.stops.length < spec.stops.length
+    )
+      throw new AppError(
+        "NOTHING_TO_CHANGE",
+        "Nothing else that fits is open at that time, so your plan is unchanged. Try an earlier start, or a bigger budget.",
+        422,
+      );
     return {
       plan,
       op,
@@ -835,8 +848,15 @@ export class Planner {
         0,
         stopsIn[shape.pace] - request.anchorPlaceIds.length,
       );
+      // Around the person's picks, look for different kinds of places (a café, a park, a
+      // bar), not more of what they already chose. Each option leans a different way.
+      const around: PlanRequest["interests"] =
+        shape.key === "full"
+          ? ["Nightlife", "Outdoors", "Food & drinks"]
+          : ["Relaxation", "Arts & culture", "Outdoors"];
       const variant: PlanRequest = {
         ...base,
+        interests: picked && added > 0 ? around : base.interests,
         budget: picked
           ? Math.max(base.budget, pickedCost + added * 20)
           : base.budget,
