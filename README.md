@@ -49,7 +49,7 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Natural-language understanding (who, when, budget total vs per person, transport, area, vibe, indoors) | **Working**, deterministic, on device and server; 20+ unit tests |
 | Onboarding → prompt → plan → Magic Edit → save → share → feedback (app) | **Working in demo mode**; verified end to end in mobile Chromium via the Expo web build with zero errors. **Not yet run on physical iOS/Android devices** |
 | Real venues, hours, photos, routes (Google Places API (New) + Routes API) | **Working with a live key** (checked against Google on 2026-11-22). Key is a network secret sending `X-Goog-Api-Key`; set `GOOGLE_MAPS_SERVER_KEY=proxy-injected`. Without an OpenAI key the built-in planner picks stops from the live places |
-| AI selection + Magic Edit wording (OpenAI Structured Outputs) | **Implemented, awaiting credentials** (`WHIMWAY_OPENAI_KEY` + model). Demo uses a transparent heuristic stand-in |
+| AI planner (picks stops from the real places found, writes titles and reasons; hours, travel and cost still checked by code) | **Claude** (`ANTHROPIC_API_KEY`, default Haiku 5.5) or **OpenAI** (`WHIMWAY_OPENAI_KEY` + model): implemented and tested with simulated API responses, awaiting a key. Without one, the built-in planner picks stops |
 | Deterministic validation (hours, DST, budgets, locks, travel buffers, area) | **Working**; the AI can only choose provider place IDs |
 | Magic Edit (structured: keep/replace/remove/add specific stops) | **Working**; preview shown before applying; undo |
 | Polls, Plan Pulse, stop 👍/👎, post-outing feedback → personal taste + community ranking | **Working**; in-memory in dev, durable with Supabase |
@@ -115,6 +115,8 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_GOOGLE_MAP_ID`                          | Optional own cloud map ID; documented Google development map ID is the fallback                                             |
 | `GOOGLE_MAPS_SERVER_KEY`                             | Server key for Places API (New), Routes API and Geocoding API                                                               |
 | `GOOGLE_MAPS_STATIC_KEY`                             | Optional server key for real map images in the browser build (Maps Static API reads the key only from the URL, so a proxy-injected header cannot be used) |
+| `ANTHROPIC_API_KEY`                                  | Claude API key for the AI planner (used first when set). `proxy-injected` when the key is a network secret on `api.anthropic.com` (header `x-api-key`) |
+| `WHIMWAY_CLAUDE_MODEL`                               | Claude model for planning; default `claude-haiku-5-5` (cheapest). E.g. `claude-sonnet-5-5` or `claude-opus-5-5` for richer copy |
 | `WHIMWAY_OPENAI_KEY`                                 | OpenAI credential with a cloud-compatible variable name                                                                     |
 | `OPENAI_API_KEY`                                     | Alternative for conventional local/Vercel configuration; `OPENAI_` target names are reserved in Codex cloud secret bindings |
 | `WHIMWAY_OPENAI_MODEL` / `OPENAI_MODEL`              | Structured Outputs capable model available to your account; deliberately not hardcoded                                      |

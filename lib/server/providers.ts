@@ -1,6 +1,7 @@
 import { Planner } from "../planner";
 import { GooglePlaces, GoogleRoutes } from "../providers/google";
 import { OpenAIRecommender } from "../providers/ai";
+import { ClaudeRecommender, claudeConfigured } from "../providers/claude";
 import { FixturePlaces, FixtureRoutes, FixtureAI } from "../providers/fixtures";
 import { AppError } from "../errors";
 import { demoSelect } from "../providers/gta-demo";
@@ -29,10 +30,19 @@ export function planner(request: PlanRequest, demo = false) {
     : new Planner(
         new GooglePlaces(),
         new GoogleRoutes(),
-        aiConfigured() ? new OpenAIRecommender() : new BuiltInRecommender(),
+        // Claude when its key is set, else OpenAI, else the built-in planner.
+        claudeConfigured()
+          ? new ClaudeRecommender()
+          : openAIConfigured()
+            ? new OpenAIRecommender()
+            : new BuiltInRecommender(),
       );
 }
+/** Some AI planner is configured (Claude or OpenAI). */
 export function aiConfigured() {
+  return claudeConfigured() || openAIConfigured();
+}
+export function openAIConfigured() {
   return Boolean(
     (process.env.WHIMWAY_OPENAI_KEY || process.env.OPENAI_API_KEY) &&
     (process.env.WHIMWAY_OPENAI_MODEL || process.env.OPENAI_MODEL),

@@ -16,6 +16,7 @@
     "check-setup": "node scripts/check-setup.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",
     "@radix-ui/react-dialog": "^1.1.15",
