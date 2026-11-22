@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
@@ -91,8 +91,11 @@ export default function Guide() {
   const lateToday = now.hour >= 20;
   // Arriving from "just say it": start from what was understood and what the words state.
   const [seed] = useState(guideSeed);
+  // Arriving from a person on the home screen: plan with them, their favourites first.
+  const { person: personId } = useLocalSearchParams<{ person?: string }>();
+  const person = profile.people.find((p) => p.id === personId);
   const [skip] = useState<ReadonlySet<Step>>(() => {
-    if (!seed) return new Set<Step>();
+    if (!seed) return new Set<Step>(person ? ["who"] : []);
     const stated = readStated(seed.text);
     const known: Step[] = ["who", "when", "travel", "extras"];
     if (stated.food) known.push("food");
@@ -102,7 +105,7 @@ export default function Guide() {
   });
   const [a, setA] = useState<Answers>(() => {
     const blank: Answers = { who: profile.companions, day: lateToday ? 1 : 0, time: lateToday || now.hour < 17 ? "18:30" : "20:30", mode: profile.mode, mood: [], note: "" };
-    if (!seed) return blank;
+    if (!seed) return person ? { ...blank, who: person.relation === "partner" ? "partner" : person.relation === "family" ? "family" : "friends", note: person.note } : blank;
     const r = seed.request;
     const day = Math.max(0, Math.round(DateTime.fromISO(r.date, { zone: ZONE }).startOf("day").diff(now.startOf("day"), "days").days));
     return { ...blank, who: r.companions ?? profile.companions, day, time: r.startTime, mode: r.mode, mood: r.vibes, note: seed.text, ...readStated(seed.text) };
@@ -156,7 +159,7 @@ export default function Guide() {
     return {
       ...base,
       companions: a.who,
-      participants: seed && a.who === base.companions ? base.participants : people[a.who],
+      participants: seed && a.who === base.companions ? base.participants : person?.relation === "friend" ? 2 : people[a.who],
       date: now.plus({ days: a.day }).toISODate()!,
       startTime: a.time,
       mode: a.mode,
@@ -171,7 +174,7 @@ export default function Guide() {
       duration: chosen.length === 2 ? 210 : decided ? 150 : 240,
       prompt: [picks, a.note.trim()].filter(Boolean).join(". ").slice(0, 1500),
     };
-  }, [a, now, profile, seed]);
+  }, [a, now, profile, seed, person?.relation]);
 
   // Places for the current "pick one" step.
   const group = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : undefined;
@@ -201,11 +204,16 @@ export default function Guide() {
   const places = options?.key === lookup ? options.places : null;
 
   const liked = useMemo(
-    () => [...profile.favourites.map((f) => f.category ?? ""), ...Object.entries(profile.affinity).filter(([, v]) => v > 0).map(([k]) => k)],
+    () => [ ...profile.favourites.map((f) => f.category ?? ""), ...Object.entries(profile.affinity).filter(([, v]) => v > 0).map(([k]) => k)],
     [profile],
   );
-  const cuisineTiles = useMemo(() => orderByTaste(cuisines, liked), [liked]);
-  const kindTiles = useMemo(() => orderByTaste(activities, liked), [liked]);
+  // Their person's favourites lead, then the groups this user keeps choosing.
+  const theirsFirst = (tiles: ReturnType<typeof orderByTaste>) => {
+    const likes = person?.likes ?? [];
+    return [...tiles.filter((t) => likes.includes(t.key)).map((t) => ({ ...t, usual: true })), ...tiles.filter((t) => !likes.includes(t.key))];
+  };
+  const cuisineTiles = useMemo(() => theirsFirst(orderByTaste(cuisines, liked)), [liked, person]); // eslint-disable-line react-hooks/exhaustive-deps
+  const kindTiles = useMemo(() => theirsFirst(orderByTaste(activities, liked)), [liked, person]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const build = () => {
     if (store.limits && plansLeft(profile) <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
@@ -220,7 +228,7 @@ export default function Guide() {
     who: ["Who’s coming?", "This shapes the kind of places and how they’re described."],
     when: ["When are you heading out?", "Places are checked against their opening hours for this time."],
     food: ["Are you eating?", "If you’ve already eaten, the plan skips restaurants."],
-    cuisine: ["What are you hungry for?", liked.length ? "Your usual picks come first." : "Pick one, or type what you’re craving."],
+    cuisine: ["What are you hungry for?", person?.likes.length ? `${person.name}’s favourites come first.` : liked.length ? "Your usual picks come first." : "Pick one, or type what you’re craving."],
     foodPlace: [a.food === "light" ? "Somewhere for coffee or dessert" : `${named(a.cuisine, a.cuisineText)} near you`, "Open at your time, closest first. Pick one."],
     fun: ["Want something to do as well?", a.food === "none" ? "Since you’re not eating, pick what the outing is about." : "Before or after you eat."],
     kind: ["What sounds fun?", "Pick one, or type what you have in mind."],

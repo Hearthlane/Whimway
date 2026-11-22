@@ -8,6 +8,7 @@ import type { EventName } from "@shared/analytics";
 import type { SignalBatch } from "@shared/polls";
 import { api, setClientContext, type Status } from "./api";
 import { isPlus } from "@shared/plus";
+import { kindOf } from "@/plan/guidePhotos";
 import { supabase } from "./auth";
 
 /**
@@ -19,8 +20,19 @@ export type PlanEntry = {
   saved: boolean;
   createdAt: string;
   feedback?: Feedback;
-  /** Display-only snapshot for lists (title/area/time/stop count), no provider content. */
-  meta: { title: string; area: string; date: string; startTime: string; stops: number; demo: boolean };
+  /**
+   * Display snapshot for the home screen and lists: title, time, and per stop its name, kind
+   * of place and times (for "happening now" and photo cards) without re-loading the plan.
+   */
+  meta: {
+    title: string;
+    area: string;
+    date: string;
+    startTime: string;
+    stops: number;
+    demo: boolean;
+    brief?: { placeId: string; name: string; kind: string; at: string; until: string; mapsUrl: string }[];
+  };
 };
 type State = {
   ready: boolean;
@@ -64,7 +76,19 @@ const randomId = () =>
   });
 
 function metaOf(plan: Itinerary | PlanSpec): PlanEntry["meta"] {
+  const stops = plan.stops as Partial<Itinerary["stops"][number]>[];
+  const brief = stops.every((s) => s.place && s.arrival && s.departure)
+    ? (plan as Itinerary).stops.map((s) => ({
+        placeId: s.placeId,
+        name: s.place.name.slice(0, 120),
+        kind: kindOf(s.place),
+        at: s.arrival,
+        until: s.departure,
+        mapsUrl: s.place.mapsUrl,
+      }))
+    : undefined;
   return {
+    brief,
     title: plan.title,
     area: plan.request.location.name,
     date: plan.request.date,

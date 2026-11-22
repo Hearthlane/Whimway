@@ -38,6 +38,24 @@ export const TasteProfile = z.object({
     )
     .max(100)
     .default([]),
+  /**
+   * The people this person goes out with: a private list on their device (synced with their
+   * profile when signed in). Not a social network: nobody is notified or contacted.
+   */
+  people: z
+    .array(
+      z.object({
+        id: z.string().max(40),
+        name: z.string().min(1).max(40),
+        relation: z.enum(["partner", "friend", "family"]),
+        /** Guided-planning category keys they enjoy (e.g. "mexican", "games"). */
+        likes: z.array(z.string().max(40)).max(8).default([]),
+        /** Anything to keep in mind ("vegetarian", "no stairs"). */
+        note: z.string().max(120).default(""),
+      }),
+    )
+    .max(50)
+    .default([]),
   /** Poll answers by poll id (one-tap "this or that" questions). */
   polls: z
     .record(z.string().max(40), z.enum(["a", "b"]))

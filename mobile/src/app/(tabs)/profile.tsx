@@ -1,338 +1,281 @@
-import Constants from "expo-constants";
-import { router } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { useState } from "react";
-import { ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { areaByKey } from "@shared/areas";
-import { buildRequest, interpret } from "@shared/intent";
+import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
-import { TasteProfile } from "@shared/profile";
-import { api } from "@/lib/api";
-import { supabase } from "@/lib/auth";
-import { cloudConfigured, SHARE_ORIGIN } from "@/lib/config";
-import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
+import { useState } from "react";
+import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { areaByKey, areas } from "@shared/areas";
+import { groupByKey } from "@shared/guide";
+import { buildRequest, interpret } from "@shared/intent";
+import { vibes as vibeKeys } from "@shared/schema";
+import { companionCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
-import { FREE, isPlus, plansLeft } from "@shared/plus";
-import { Button, Card, Chip, IconButton, Notice, T } from "@/ui/kit";
+import { Avatar, PersonSheet, planWith, type Person } from "@/home/People";
+import { PlanTile, startOf } from "@/home/Plans";
+import { persona } from "@/app/onboarding";
+import { Button, Chip, Icon, IconButton, Press, Sheet, T, tap, type IconName } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
+
+type Tab = "plans" | "places" | "people";
+const tabs: { key: Tab; icon: IconName; label: string }[] = [
+  { key: "plans", icon: "grid", label: "Plans" },
+  { key: "places", icon: "heart", label: "Places" },
+  { key: "people", icon: "users", label: "People" },
+];
 
 export default function Profile() {
   const store = useStore();
-  const { profile, session, setProfile } = store;
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"email" | "code">("email");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [confirm, setConfirm] = useState<"device" | "account" | null>(null);
-  const plus = isPlus(profile);
-  // Fine-tuning and favourites are open to everyone unless Plus limits are switched on.
-  const open = store.unlocked;
-  const rated = Object.values(store.plans).filter((p) => p.feedback).length;
-  const nightsOut = Object.values(store.plans).filter((p) => p.feedback && p.feedback.went !== "no").length;
-  const loved = Object.entries(profile.affinity).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const { profile, plans, setProfile } = store;
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>("plans");
+  // "See all" on home opens a specific tab.
+  const [asked, setAsked] = useState(params.tab);
+  if (params.tab !== asked) {
+    setAsked(params.tab);
+    if (params.tab === "people" || params.tab === "places" || params.tab === "plans") setTab(params.tab);
+  }
+  const [editing, setEditing] = useState(false);
+  const [person, setPerson] = useState<Person | "new" | null>(null);
 
-  const sendCode = async () => {
-    if (!supabase) return;
-    setBusy(true);
-    setMessage("");
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
-    setBusy(false);
-    if (error) setMessage("We couldn’t send a code to that address. Check it and try again.");
-    else setStage("code");
-  };
-  const verify = async () => {
-    if (!supabase) return;
-    setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
-    setBusy(false);
-    if (error) {
-      setMessage("That code didn’t work. Codes expire after a few minutes — request a new one if needed.");
-      return;
-    }
-    setMessage("");
-    // Merge: pull the account's taste profile if this device has none yet, otherwise push ours.
-    try {
-      const remote = await api<TasteProfile | null>("taste");
-      if (remote && !profile.vibes.length && !Object.keys(profile.affinity).length) setProfile({ ...remote, onboarded: true });
-      else await api("taste", profile);
-    } catch {
-      // Sync is best effort; the device copy is authoritative.
-    }
+  const nightsOut = Object.values(plans).filter((p) => p.feedback && p.feedback.went !== "no").length;
+  const grid = Object.entries(plans).sort((a, b) => startOf(b[1]).toMillis() - startOf(a[1]).toMillis());
+  const area = areaByKey(profile.homeArea)?.name ?? "GTA";
+  const name = profile.name || "You";
+  const stats = [
+    { value: profile.stats.plans, label: profile.stats.plans === 1 ? "plan made" : "plans made", tab: "plans" as Tab },
+    { value: nightsOut, label: nightsOut === 1 ? "night out" : "nights out", tab: "plans" as Tab },
+    { value: profile.favourites.length, label: profile.favourites.length === 1 ? "saved place" : "saved places", tab: "places" as Tab },
+    { value: profile.people.length, label: profile.people.length === 1 ? "person" : "people", tab: "people" as Tab },
+  ];
+
+  const planAround = (f: (typeof profile.favourites)[number]) => {
+    if (!store.unlocked) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
+    const now = DateTime.now().setZone("America/Toronto");
+    const prompt = `Plan something around ${f.name}`;
+    const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });
+    // Late in the day, plan it for tomorrow evening so the place is open.
+    const late = base.date === now.toISODate() && base.startTime >= "19:30";
+    store.setPending({
+      ...base,
+      ...(late ? { date: now.plus({ days: 1 }).toISODate()!, startTime: "18:30" } : {}),
+      anchorPlaceIds: [f.id],
+      excludedPlaceIds: profile.disliked.filter((id) => id !== f.id),
+    });
+    router.push("/plan/new");
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
       <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
-        <T v="hero" accessibilityRole="header">
-          {profile.name ? `Hi, ${profile.name}` : "You"}
-        </T>
-
-        <Card style={{ gap: space.md }} >
-          <T v="heading">Your nights</T>
-          <View style={s.statsRow} testID="your-nights">
-            <StatTile value={profile.stats.plans} label={profile.stats.plans === 1 ? "plan made" : "plans made"} />
-            <StatTile value={nightsOut} label={nightsOut === 1 ? "night out" : "nights out"} />
-            <StatTile value={profile.favourites.length} label={profile.favourites.length === 1 ? "saved place" : "saved places"} />
-            <StatTile value={profile.stats.shares} label={profile.stats.shares === 1 ? "plan shared" : "plans shared"} />
-          </View>
-          <T v="small" tone={color.muted}>
-            {nightsOut ? `You went on ${Math.round((nightsOut / Math.max(1, rated)) * 100)}% of the plans you rated.` : "Rate a plan after you go and your history builds here."}
+        <View style={s.top}>
+          <T v="title" numberOfLines={1} style={{ flex: 1 }} accessibilityRole="header">
+            {name}
           </T>
-        </Card>
+          <IconButton icon="settings" label="Settings" onPress={() => router.push("/settings")} />
+        </View>
 
-        {store.limits ? (
-        <Card style={[{ gap: space.md }, plus && { borderColor: color.ink }]}>
-          <View style={s.rowBetween}>
-            <T v="heading">{plus ? "Whimway Plus" : "Free plan"}</T>
-            <Button testID="plus-open" kind={plus ? "ghost" : "primary"} label={plus ? "Manage" : "See Plus"} onPress={() => router.push("/plus")} />
-          </View>
-          <T v="small" tone={color.muted}>
-            {plus
-              ? "Unlimited plans and edits, favourites, fine-tuning and surprise mode. Demo purchase, no payment taken."
-              : `${Math.min(FREE.plansPerMonth, plansLeft(profile))} of ${FREE.plansPerMonth} free plans left this month, ${FREE.magicEditsPerPlan} Magic Edits per plan.`}
-          </T>
-        </Card>
-        ) : null}
-
-        <Card style={{ gap: space.md }}>
-          <View style={s.rowBetween}>
-            <T v="heading">Fine-tune</T>
-            {open ? null : <Chip label="Plus" tone="lavender" />}
-          </View>
-          <T v="smallStrong">Pace</T>
-          <View style={s.chips}>
-            {(["relaxed", "balanced", "packed"] as const).map((pace) => (
-              <Chip
-                key={pace}
-                testID={`pace-${pace}`}
-                label={{ relaxed: "Relaxed, 2 stops", balanced: "Balanced, 3 stops", packed: "Packed, 4 stops" }[pace]}
-                selected={profile.pace === pace}
-                onPress={() => (open ? setProfile({ ...profile, pace }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
-              />
+        <View style={s.head}>
+          <Avatar name={name} size={84} ring />
+          <View style={s.stats} testID="your-nights">
+            {stats.map((st) => (
+              <Press key={st.label} accessibilityRole="button" accessibilityLabel={`${st.value} ${st.label}`} onPress={() => setTab(st.tab)} style={s.stat}>
+                <T style={s.statValue}>{st.value}</T>
+                <T v="small" tone={color.muted} style={{ fontSize: 12, textAlign: "center" }}>
+                  {st.label}
+                </T>
+              </Press>
             ))}
           </View>
-          <View style={s.rowBetween}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <T v="bodyStrong">Alcohol-free nights</T>
-              <T v="small" tone={color.muted}>
-                Leave out bars and breweries.
-              </T>
-            </View>
-            <Switch
-              value={profile.alcoholFree}
-              onValueChange={(alcoholFree) => (open ? setProfile({ ...profile, alcoholFree }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
-              trackColor={{ true: color.ink, false: color.line }}
-              thumbColor={color.paper}
-              accessibilityLabel="Alcohol-free nights"
-            />
-          </View>
-        </Card>
+        </View>
 
-        <Card style={{ gap: space.md }}>
-          <View style={s.rowBetween}>
-            <T v="heading">Your taste</T>
-            <Button kind="ghost" label="Retune" icon="sliders" onPress={() => { setProfile({ ...profile, onboarded: false }); router.replace("/onboarding"); }} />
-          </View>
-          <View style={s.chips}>
-            <Chip icon={companionCopy[profile.companions].icon} label={companionCopy[profile.companions].label} tone="mint" />
-            <Chip icon={modeCopy[profile.mode].icon} label={modeCopy[profile.mode].label} tone="mint" />
-            <Chip icon="credit-card" label={`~$${profile.budget} pp`} tone="yellow" />
-            <Chip icon="map-pin" label={areaByKey(profile.homeArea)?.name ?? "GTA"} tone="mint" />
-            {profile.vibes.map((v) => (
-              <Chip key={v} icon={vibeCopy[v].icon} label={vibeCopy[v].label} tone="lavender" />
-            ))}
-          </View>
+        <View style={{ gap: 4 }}>
+          <T v="bodyStrong">{persona(profile.vibes)}</T>
           <T v="small" tone={color.muted}>
-            {Object.keys(profile.polls).length
-              ? `${Object.keys(profile.polls).length} quick poll${Object.keys(profile.polls).length === 1 ? "" : "s"} answered — each one sharpens your plans.`
-              : "Answer the quick polls on Plan — each one sharpens your recommendations."}
+            {[companionCopy[profile.companions].label, area, `~$${profile.budget} pp`].join(" · ")}
           </T>
-          {loved.length ? (
-            <T v="small" tone={color.muted}>
-              Learned from your feedback: you love {loved.map(([k]) => k).join(", ")}.
-            </T>
-          ) : (
-            <T v="small" tone={color.muted}>
-              Rate plans after you go and we’ll learn what you love.
-            </T>
-          )}
-          {profile.disliked.length ? (
-            <View style={s.rowBetween}>
-              <T v="small" tone={color.muted} style={{ flex: 1 }}>
-                Skipping {profile.disliked.length} place{profile.disliked.length > 1 ? "s" : ""} you didn’t enjoy.
-              </T>
-              <Button kind="ghost" label="Reset" onPress={() => setProfile({ ...profile, disliked: [], affinity: {} })} />
+          {profile.vibes.length ? (
+            <View style={[s.chips, { marginTop: space.sm }]}>
+              {profile.vibes.map((v) => (
+                <Chip key={v} icon={vibeCopy[v].icon} label={vibeCopy[v].label} tone="lavender" />
+              ))}
             </View>
           ) : null}
-        </Card>
+        </View>
 
-        <Card style={{ gap: space.md }}>
-          <T v="heading">Favourite places</T>
-          {profile.favourites.length ? (
-            profile.favourites.slice(0, 20).map((f) => (
-              <View key={f.id} style={s.favRow} testID="favourite">
-                <View style={{ flex: 1 }}>
-                  <T v="bodyStrong" numberOfLines={1}>
-                    {f.name}
-                  </T>
-                  <T v="small" tone={color.muted} numberOfLines={1}>
-                    {[f.category, areaByKey(f.area)?.name].filter(Boolean).join(" · ")}
-                  </T>
-                </View>
-                <Button
-                  kind="soft"
-                  label="Plan around it"
-                  icon="star"
-                  onPress={() => {
-                    if (!open) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
-                    const now = DateTime.now().setZone("America/Toronto");
-                    const prompt = `Plan something around ${f.name}`;
-                    const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });
-                    // Late in the day, plan it for tomorrow evening so the place is open.
-                    const late = base.date === now.toISODate() && base.startTime >= "19:30";
-                    store.setPending({
-                      ...base,
-                      ...(late ? { date: now.plus({ days: 1 }).toISODate()!, startTime: "18:30" } : {}),
-                      anchorPlaceIds: [f.id],
-                      excludedPlaceIds: profile.disliked.filter((id) => id !== f.id),
-                    });
-                    router.push("/plan/new");
-                  }}
-                />
-                <IconButton icon="x" label={`Remove ${f.name}`} onPress={() => setProfile({ ...profile, favourites: profile.favourites.filter((x) => x.id !== f.id) })} />
-              </View>
-            ))
-          ) : (
-            <T v="small" tone={color.muted}>
-              Tap the heart on any stop to save it. Then plan a whole night around it in one tap.
-            </T>
-          )}
-        </Card>
+        <View style={s.buttons}>
+          <Button kind="soft" label="Edit profile" onPress={() => setEditing(true)} style={{ flex: 1 }} testID="edit-profile" />
+          <Button kind="soft" label="Add person" icon="user-plus" onPress={() => setPerson("new")} style={{ flex: 1 }} />
+        </View>
 
-        <Card style={{ gap: space.md }}>
-          <T v="heading">Account</T>
-          {!cloudConfigured ? (
-            <Notice icon="cloud-off">Accounts aren’t configured on this build. Everything is saved on this device.</Notice>
-          ) : session ? (
-            <>
-              <T v="body">Signed in as {session.user.email}</T>
-              <T v="small" tone={color.muted}>
-                Your taste profile syncs, and shared links are short and revocable.
+        <View style={s.tabs} accessibilityRole="tablist">
+          {tabs.map((t) => (
+            <Press key={t.key} testID={`profile-tab-${t.key}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t.key }} accessibilityLabel={t.label} onPress={() => (tap("select"), setTab(t.key))} style={[s.tab, tab === t.key && s.tabOn]}>
+              <Icon name={t.icon} size={18} tint={tab === t.key ? color.ink : color.faint} />
+              <T v="smallStrong" tone={tab === t.key ? color.ink : color.faint}>
+                {t.label}
               </T>
-              <Button kind="ghost" label="Sign out" icon="log-out" onPress={() => supabase?.auth.signOut()} />
-            </>
-          ) : (
-            <>
-              <T v="small" tone={color.muted}>
-                Optional. Sign in to sync your taste across devices. No password — we email you a 6-digit code.
-              </T>
-              {stage === "email" ? (
-                <>
-                  <T v="smallStrong" nativeID="email-label">
-                    Email
-                  </T>
-                  <TextInput accessibilityLabelledBy="email-label" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@example.com" placeholderTextColor={color.faint} style={s.input} />
-                  <Button label="Email me a code" busy={busy} disabled={!/.+@.+\..+/.test(email)} onPress={sendCode} />
-                </>
-              ) : (
-                <>
-                  <T v="smallStrong" nativeID="code-label">
-                    Code sent to {email}
-                  </T>
-                  <TextInput accessibilityLabelledBy="code-label" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" placeholder="123456" placeholderTextColor={color.faint} style={s.input} maxLength={10} />
-                  <Button label="Sign in" busy={busy} disabled={code.trim().length < 6} onPress={verify} />
-                  <Button kind="ghost" label="Use a different email" onPress={() => setStage("email")} />
-                </>
-              )}
-              {message ? <Notice tone="coral">{message}</Notice> : null}
-            </>
-          )}
-        </Card>
+            </Press>
+          ))}
+        </View>
 
-        <Card style={{ gap: space.md }}>
-          <T v="heading">Privacy</T>
-          <View style={s.rowBetween}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <T v="bodyStrong">Anonymous usage stats</T>
-              <T v="small" tone={color.muted}>
-                Events like “plan saved”. Never prompts, places or location.
-              </T>
-            </View>
-            <Switch value={profile.analytics} onValueChange={(analytics) => setProfile(TasteProfile.parse({ ...profile, analytics }))} trackColor={{ true: color.ink, false: color.line }} thumbColor={color.paper} accessibilityLabel="Anonymous usage stats" />
-          </View>
-          <T v="small" tone={color.muted}>
-            Plans are stored on this device as place IDs and your choices. Your prompts go to our server and AI provider only to build the plan.
-          </T>
-          {confirm === "device" ? (
-            <View style={s.confirm}>
-              <T v="small" style={{ flex: 1 }}>
-                Delete all plans and your taste profile from this device?
-              </T>
-              <Button kind="ghost" label="Cancel" onPress={() => setConfirm(null)} />
-              <Button kind="dark" label="Delete device data" onPress={async () => { await store.resetDevice(); setConfirm(null); router.replace("/onboarding"); }} />
-            </View>
-          ) : (
-            <Button kind="ghost" label="Delete data on this device" icon="trash-2" onPress={() => setConfirm("device")} />
-          )}
-          {session ? (
-            confirm === "account" ? (
-              <View style={s.confirm}>
-                <T v="small" style={{ flex: 1 }}>
-                  Permanently delete your account, cloud plans, shares and feedback?
-                </T>
-                <Button kind="ghost" label="Cancel" onPress={() => setConfirm(null)} />
-                <Button
-                  kind="dark"
-                  label="Delete account"
-                  onPress={async () => {
-                    try {
-                      await api("account", undefined, { method: "DELETE" });
-                      await supabase?.auth.signOut();
-                      setConfirm(null);
-                    } catch (e) {
-                      setMessage((e as Error).message);
-                    }
-                  }}
-                />
+        <Animated.View key={tab} entering={FadeIn.duration(200)}>
+          {tab === "plans" ? (
+            grid.length ? (
+              <View style={s.grid}>
+                {grid.map(([id, e]) => (
+                  <View key={id} style={s.cell}>
+                    <PlanTile id={id} entry={e} />
+                  </View>
+                ))}
               </View>
             ) : (
-              <Button kind="ghost" label="Delete my account" icon="user-x" onPress={() => setConfirm("account")} />
+              <Empty icon="calendar" text="Plans you make show up here, newest first." action="Plan something" onPress={() => router.push("/")} />
             )
           ) : null}
-        </Card>
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: space.lg }}>
-          <Button kind="ghost" label="Privacy" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/privacy`)} />
-          <Button kind="ghost" label="Terms" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/terms`)} />
-          <Button kind="ghost" label="Replay intro" onPress={() => { setProfile({ ...profile, onboarded: false }); router.replace("/onboarding"); }} />
-        </View>
-        <T v="small" tone={color.faint} style={{ textAlign: "center" }}>
-          Whimway beta {Constants.expoConfig?.version ?? ""} · Greater Toronto
-        </T>
+
+          {tab === "places" ? (
+            profile.favourites.length ? (
+              <View style={{ gap: space.sm }}>
+                {profile.favourites.slice(0, 50).map((f) => (
+                  <View key={f.id} style={s.row} testID="favourite">
+                    <View style={s.rowIcon}>
+                      <Icon name="heart" size={16} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <T v="bodyStrong" numberOfLines={1}>
+                        {f.name}
+                      </T>
+                      <T v="small" tone={color.muted} numberOfLines={1}>
+                        {[f.category, areaByKey(f.area)?.name].filter(Boolean).join(" · ")}
+                      </T>
+                    </View>
+                    <Button kind="soft" label="Plan around it" onPress={() => planAround(f)} />
+                    <IconButton icon="x" label={`Remove ${f.name}`} onPress={() => setProfile({ ...profile, favourites: profile.favourites.filter((x) => x.id !== f.id) })} />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Empty icon="heart" text="Tap the heart on any stop to save it, then plan a whole outing around it in one tap." action="Find places" onPress={() => router.push("/discover")} />
+            )
+          ) : null}
+
+          {tab === "people" ? (
+            profile.people.length ? (
+              <View style={{ gap: space.sm }}>
+                {profile.people.map((p) => (
+                  <Press key={p.id} testID={`people-row-${p.id}`} accessibilityRole="button" accessibilityLabel={`Edit ${p.name}`} onPress={() => setPerson(p)} style={s.row}>
+                    <Avatar name={p.name} size={44} />
+                    <View style={{ flex: 1 }}>
+                      <T v="bodyStrong" numberOfLines={1}>
+                        {p.name}
+                      </T>
+                      <T v="small" tone={color.muted} numberOfLines={1}>
+                        {[{ partner: "Partner", friend: "Friend", family: "Family" }[p.relation], ...p.likes.slice(0, 3).map((k) => groupByKey(k)?.label ?? k)].join(" · ")}
+                      </T>
+                    </View>
+                    <Button kind="soft" label="Plan" onPress={() => planWith(p)} />
+                  </Press>
+                ))}
+              </View>
+            ) : (
+              <Empty icon="users" text="Add the people you go out with and what they enjoy. Planning with them puts their favourites first." action="Add someone" onPress={() => setPerson("new")} />
+            )
+          ) : null}
+        </Animated.View>
       </ScrollView>
+
+      <EditProfile open={editing} onClose={() => setEditing(false)} />
+      <PersonSheet person={person} onClose={() => setPerson(null)} />
     </SafeAreaView>
   );
 }
 
-function StatTile({ value, label }: { value: number; label: string }) {
+function Empty({ icon, text, action, onPress }: { icon: IconName; text: string; action: string; onPress: () => void }) {
   return (
-    <View style={s.statTile}>
-      <T v="title">{value}</T>
-      <T v="small" tone={color.muted}>
-        {label}
+    <View style={s.empty}>
+      <View style={s.emptyIcon}>
+        <Icon name={icon} size={22} />
+      </View>
+      <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+        {text}
       </T>
+      <Button kind="dark" label={action} onPress={onPress} />
     </View>
   );
 }
 
+/** Name, home area and vibes. Everything else lives in Settings. */
+function EditProfile({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { profile, setProfile } = useStore();
+  const [name, setName] = useState(profile.name);
+  const [home, setHome] = useState(profile.homeArea);
+  const [vibes, setVibes] = useState(profile.vibes);
+  // Start from the saved profile each time the sheet opens.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setName(profile.name);
+      setHome(profile.homeArea);
+      setVibes(profile.vibes);
+    }
+  }
+  const save = () => {
+    setProfile({ ...profile, name: name.trim().slice(0, 40), homeArea: home, vibes });
+    tap("success");
+    onClose();
+  };
+  return (
+    <Sheet open={open} onClose={onClose} title="Edit profile" footer={<Button testID="edit-profile-save" label="Save" kind="dark" onPress={save} />}>
+      <View style={{ gap: space.lg }}>
+        <View style={{ alignItems: "center" }}>
+          <Avatar name={name || "You"} size={72} />
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Name</T>
+          <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor={color.faint} maxLength={40} accessibilityLabel="Name" style={s.input} testID="edit-name" />
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Home area</T>
+          <View style={s.chips}>
+            {areas.map((a) => (
+              <Chip key={a.key} label={a.name} selected={home === a.key} onPress={() => setHome(a.key)} />
+            ))}
+          </View>
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Your vibe</T>
+          <View style={s.chips}>
+            {vibeKeys.map((v) => (
+              <Chip key={v} icon={vibeCopy[v].icon} label={vibeCopy[v].label} selected={vibes.includes(v)} onPress={() => setVibes(vibes.includes(v) ? vibes.filter((x) => x !== v) : [...vibes, v].slice(-4))} />
+            ))}
+          </View>
+          <T v="small" tone={color.muted}>
+            {persona(vibes)}
+          </T>
+        </View>
+      </View>
+    </Sheet>
+  );
+}
+
 const s = StyleSheet.create({
-  statsRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  statTile: { flexGrow: 1, flexBasis: "45%", backgroundColor: color.canvas, borderRadius: radius.md, padding: space.md },
   page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.lg, maxWidth: 680, width: "100%", alignSelf: "center" },
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
+  top: { flexDirection: "row", alignItems: "center", gap: space.md },
+  head: { flexDirection: "row", alignItems: "center", gap: space.lg },
+  stats: { flex: 1, flexDirection: "row", justifyContent: "space-between" },
+  stat: { alignItems: "center", flex: 1, gap: 2 },
+  statValue: { fontFamily: font.displayBold, fontSize: 22, lineHeight: 26, color: color.ink },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1, borderColor: color.line, backgroundColor: color.canvas, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
-  favRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  confirm: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: color.coralTint },
+  buttons: { flexDirection: "row", gap: space.sm },
+  tabs: { flexDirection: "row", borderBottomWidth: 1, borderColor: color.line, marginHorizontal: -space.xl },
+  tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: space.md, borderBottomWidth: 2, borderColor: "transparent" },
+  tabOn: { borderColor: color.ink },
+  grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -2 },
+  cell: { width: "33.333%", padding: 2 },
+  row: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  rowIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
+  empty: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
+  emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
+  input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1.5, borderColor: color.line, backgroundColor: color.paper, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
 });

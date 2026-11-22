@@ -13,6 +13,8 @@ import { useStore } from "@/lib/store";
 import { FREE, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
 import { Sponsored } from "@/plan/Sponsored";
+import { Avatar, PeopleRow } from "@/home/People";
+import { PlanCards, TodayCard, endOf, startOf } from "@/home/Plans";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Card, Chip, Icon, IconButton, Notice, Press, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
@@ -96,22 +98,15 @@ export default function PlanHome() {
     setGuideSeed({ request: { ...request, prompt: text.slice(0, 1500) }, text: text.slice(0, 400) });
     router.push("/guide");
   };
-  // Upcoming: plans whose start is still ahead, soonest first. Recent: newest made first.
-  const startOf = (e: (typeof plans)[string]) => DateTime.fromISO(`${e.meta.date}T${e.meta.startTime}`, { zone: ZONE });
+  // Upcoming: plans not yet over, soonest first. Recent: newest made first.
   const upcoming = Object.entries(plans)
-    .filter(([, e]) => startOf(e).plus({ hours: 3 }) > now)
+    .filter(([, e]) => endOf(e) > now)
     .sort((a, b) => startOf(a[1]).toMillis() - startOf(b[1]).toMillis())
-    .slice(0, 3);
+    .slice(0, 6);
   const recent = Object.entries(plans)
     .filter(([id]) => !upcoming.some(([u]) => u === id))
     .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
-    .slice(0, 4);
-  const when = (e: (typeof plans)[string]) => {
-    const t = startOf(e);
-    const days = Math.round(t.startOf("day").diff(now.startOf("day"), "days").days);
-    return `${days === 0 ? "Today" : days === 1 ? "Tomorrow" : t.toFormat(days < 7 && days > 0 ? "cccc" : "ccc d LLL")}, ${t.toFormat("h:mm a")}`;
-  };
-
+    .slice(0, 8);
   const chipRow: { key: Field; icon: IconName; label: string }[] = [
     { key: "who", icon: companionCopy[request.companions ?? "partner"].icon, label: chips.who },
     { key: "when", icon: "calendar", label: chips.when },
@@ -127,13 +122,18 @@ export default function PlanHome() {
       <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
           <Wordmark size={22} />
-          {demo ? (
-            <View style={s.demoPill} accessibilityLabel="Demo mode">
-              <T v="smallStrong" tone={color.warning} style={{ fontSize: 12 }}>
-                Demo data
-              </T>
-            </View>
-          ) : null}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            {demo ? (
+              <View style={s.demoPill} accessibilityLabel="Demo mode">
+                <T v="smallStrong" tone={color.warning} style={{ fontSize: 12 }}>
+                  Demo data
+                </T>
+              </View>
+            ) : null}
+            <Press testID="home-avatar" accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.push("/profile")} hitSlop={6}>
+              <Avatar name={profile.name || "You"} size={36} />
+            </Press>
+          </View>
         </View>
 
         <Animated.View entering={FadeInDown.duration(380)}>
@@ -144,6 +144,8 @@ export default function PlanHome() {
             What should we do?
           </T>
         </Animated.View>
+
+        <TodayCard plans={plans} />
 
         <Animated.View entering={FadeInDown.delay(40).duration(380)}>
           <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" scaleTo={0.98} onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.guide}>
@@ -159,6 +161,10 @@ export default function PlanHome() {
               <Icon name="arrow-right" size={22} tint={color.paper} />
             </View>
           </Press>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(70).duration(380)}>
+          <PeopleRow />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(380)} style={s.composer}>
@@ -228,7 +234,7 @@ export default function PlanHome() {
         ) : null}
 
         {upcoming.length ? (
-          <>
+          <View style={{ gap: space.md }}>
             <View style={s.sectionRow}>
               <T v="heading">Upcoming</T>
               <Pressable accessibilityRole="button" onPress={() => router.push("/saved")} hitSlop={8}>
@@ -237,29 +243,12 @@ export default function PlanHome() {
                 </T>
               </Pressable>
             </View>
-            <View style={{ gap: space.sm }}>
-              {upcoming.map(([id, e]) => (
-                <Pressable key={id} testID={`upcoming-${id}`} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
-                  <View style={s.recentIcon}>
-                    <Icon name={e.saved ? "bookmark" : "calendar"} size={16} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <T v="bodyStrong" numberOfLines={1}>
-                      {e.meta.title}
-                    </T>
-                    <T v="small" tone={color.muted} numberOfLines={1}>
-                      {when(e)} · {e.meta.stops} stops
-                    </T>
-                  </View>
-                  <Icon name="chevron-right" tint={color.faint} />
-                </Pressable>
-              ))}
-            </View>
-          </>
+            <PlanCards entries={upcoming} prefix="upcoming" />
+          </View>
         ) : null}
 
         {recent.length ? (
-          <>
+          <View style={{ gap: space.md }}>
             <View style={s.sectionRow}>
               <T v="heading">Recently created</T>
               <Pressable accessibilityRole="button" onPress={() => router.push("/saved")} hitSlop={8}>
@@ -268,26 +257,22 @@ export default function PlanHome() {
                 </T>
               </Pressable>
             </View>
-            <View style={{ gap: space.sm }}>
-              {recent.map(([id, e]) => (
-                <Pressable key={id} testID={`recent-${id}`} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
-                  <View style={s.recentIcon}>
-                    <Icon name={e.saved ? "bookmark" : "clock"} size={16} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <T v="bodyStrong" numberOfLines={1}>
-                      {e.meta.title}
-                    </T>
-                    <T v="small" tone={color.muted} numberOfLines={1}>
-                      {when(e)} · {e.meta.stops} stops
-                    </T>
-                  </View>
-                  <Icon name="chevron-right" tint={color.faint} />
-                </Pressable>
-              ))}
-            </View>
-          </>
+            <PlanCards entries={recent} prefix="recent" />
+          </View>
         ) : null}
+
+        <Press testID="home-discover" accessibilityRole="button" accessibilityLabel="See what's open near you" onPress={() => router.push("/discover")} style={s.nearby} scaleTo={0.98}>
+          <View style={s.nearbyIcon}>
+            <Icon name="compass" size={20} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <T v="bodyStrong">Open near you right now</T>
+            <T v="small" tone={color.muted}>
+              Food, games, shows and more around {request.location.name}.
+            </T>
+          </View>
+          <Icon name="chevron-right" tint={color.faint} />
+        </Press>
 
         <Sponsored surface="home" point={request.area.center} />
 
@@ -475,6 +460,8 @@ function Stepper({ label, value, onChange, min, max, step = 1, prefix = "" }: { 
 }
 
 const s = StyleSheet.create({
+  nearby: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  nearbyIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
   sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: space.xl },
   guide: { flexDirection: "row", alignItems: "center", gap: space.lg, backgroundColor: color.coral, borderRadius: radius.xl, padding: space.xl, ...shadow.lift },
   guideGo: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.ink, alignItems: "center", justifyContent: "center" },
