@@ -54,10 +54,7 @@ export class ClaudeRecommender implements RecommendationProvider {
         apiKey: process.env.ANTHROPIC_API_KEY,
         timeout: 25000,
         maxRetries: 1,
-        fetch:
-          process.env.ANTHROPIC_API_KEY === INJECTED
-            ? withoutKey
-            : meteredFetch,
+        fetch: meteredFetch,
       })
     );
   }
