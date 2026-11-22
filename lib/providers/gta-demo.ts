@@ -14,6 +14,11 @@ import { distance } from "../geo";
 import { hoursCheck } from "../hours";
 import { localStart } from "../time";
 import { voice } from "./demo-voice";
+import { activities, inGroup } from "../guide";
+
+/** Two places are the same kind of outing (both games, both shows) even if named differently. */
+const sameActivity = (a: CandidatePlace, b: CandidatePlace) =>
+  activities.some((g) => g.key !== "drinks" && inGroup(a, g) && inGroup(b, g));
 
 type Row = [
   key: string,
@@ -1131,6 +1136,18 @@ export function demoSelect(
           ? 4
           : 3;
   const chosen: CandidatePlace[] = [];
+  // Words from what the person asked for ("we want games"), to honour over a soft budget.
+  const askedFor = (
+    (action ?? "").match(/"(.+?)"/)?.[1] ??
+    (action ?? "").match(/matching: (.+?)\./)?.[1] ??
+    ""
+  )
+    .toLowerCase()
+    .split(/\W+/)
+    .filter((w) => w.length > 3)
+    .map((w) => w.replace(/s$/, ""));
+  const asked = (p: CandidatePlace) =>
+    askedFor.some((w) => text(p).includes(w));
   const lockedPlaces = candidates.filter((p) => lockedIds.has(p.id));
   let meals = lockedPlaces.filter(isMeal).length;
   // Stay within the per-person budget across the whole outing (published upper range).
@@ -1164,13 +1181,19 @@ export function demoSelect(
       cost(p) > 0 &&
       spent + cost(p) > req.budget * 1.1 &&
       chosen.length + locked.length >= 1 &&
-      // An explicit "add dessert" is the person choosing to spend a little more.
-      !action?.startsWith("Add")
+      // An explicit "add dessert", or a place matching what they asked for, is the
+      // person choosing to spend a little more; the plan shows the higher cost.
+      !action?.startsWith("Add") &&
+      !asked(p)
     )
       continue;
     if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
-    if ([...chosen, ...lockedPlaces].some((c) => c.category === p.category))
-      continue; // no second escape room next to the one they picked
+    if (
+      [...chosen, ...lockedPlaces].some(
+        (c) => c.category === p.category || sameActivity(c, p),
+      )
+    )
+      continue; // no second escape room, or an arcade, next to the one they picked
     if (isMeal(p)) meals++;
     spent += cost(p);
     chosen.push(p);

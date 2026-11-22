@@ -300,3 +300,15 @@ export function readStated(input: string): Stated {
   }
   return out;
 }
+
+/** The planner interest each guided category feeds, so a stated "games" steers retrieval. */
+export const interestOf: Record<string, string> = {
+  games: "Interactive fun",
+  shows: "Arts & culture",
+  culture: "Arts & culture",
+  sights: "Hidden gems",
+  attractions: "Family",
+  outdoors: "Outdoors",
+  shopping: "Shopping",
+  drinks: "Nightlife",
+};

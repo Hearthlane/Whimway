@@ -34,6 +34,8 @@ export function StopCard({
   onSelect,
   onToggleLock,
   onSwap,
+  onArrange,
+  count,
   onReact,
   favourite,
   onFavourite,
@@ -49,6 +51,9 @@ export function StopCard({
   onSelect: () => void;
   onToggleLock: () => void;
   onSwap: () => void;
+  /** Reorder, remove or retime this stop; the server re-checks hours and travel. */
+  onArrange?: (action: "earlier" | "later" | "remove" | "longer" | "shorter") => void;
+  count?: number;
   onOpenLink: (kind: "navigation" | "booking") => void;
   onReact: (value: 1 | -1) => void;
   favourite: boolean;
@@ -175,6 +180,15 @@ export function StopCard({
                 <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
                 {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
               </View>
+              {onArrange ? (
+                <View style={s.actions}>
+                  {index > 0 ? <Action icon="arrow-up" label="Earlier" onPress={() => onArrange("earlier")} /> : null}
+                  {count && index < count - 1 ? <Action icon="arrow-down" label="Later" onPress={() => onArrange("later")} /> : null}
+                  {stop.minutes < 180 ? <Action icon="plus" label="15 min more" onPress={() => onArrange("longer")} /> : null}
+                  {stop.minutes > 30 ? <Action icon="minus" label="15 min less" onPress={() => onArrange("shorter")} /> : null}
+                  {count && count > 1 ? <Action icon="trash-2" label="Remove" onPress={() => onArrange("remove")} /> : null}
+                </View>
+              ) : null}
               <View style={s.reactRow}>
                 <T v="small" tone={color.muted} style={{ flex: 1 }}>
                   {reaction === 1 ? "You’re into it. Noted." : reaction === -1 ? "Not for you. We’ll skip it." : "Into this one?"}

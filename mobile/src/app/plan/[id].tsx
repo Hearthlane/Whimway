@@ -142,9 +142,11 @@ export default function PlanScreen() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Every change is kept on the device; a saved plan also syncs to the account.
   const update = (next: Itinerary) => {
     setPlan(next);
     store.remember(next);
+    if (store.plans[next.id]?.saved && store.session && !next.demo) void api("plans", toSpec(next)).catch(() => undefined);
   };
 
   const magicEdit = async (instruction: string) => {
@@ -183,6 +185,47 @@ export default function PlanScreen() {
     const stops = plan.stops.map((s, i) => (i === index ? { ...s, locked: !s.locked } : s));
     update({ ...plan, stops });
     store.track("stop_locked", { locked: stops[index].locked });
+  };
+
+  // Direct edits: reorder, remove or retime a stop. The server reschedules the whole plan
+  // (hours, travel, cost) and rejects changes to stops the person locked.
+  const [arranging, setArranging] = useState(false);
+  const arrange = async (index: number, action: "earlier" | "later" | "remove" | "longer" | "shorter") => {
+    if (!plan || arranging) return;
+    const refs = plan.stops.map((s) => ({ placeId: s.placeId, minutes: s.minutes, locked: s.locked, reason: s.reason }));
+    const target = refs[index];
+    if (action === "remove") refs.splice(index, 1);
+    else if (action === "earlier" || action === "later") {
+      const to = action === "earlier" ? index - 1 : index + 1;
+      [refs[index], refs[to]] = [refs[to], refs[index]];
+    } else target.minutes = Math.max(15, Math.min(180, target.minutes + (action === "longer" ? 15 : -15)));
+    setArranging(true);
+    try {
+      const before = plan;
+      // Changing the time of, or removing, a stop the person kept is their explicit choice:
+      // unlock it for this edit. Reordering never needs to.
+      const unlock = action === "remove" || action === "longer" || action === "shorter";
+      const spec = toSpec(unlock ? { ...plan, stops: plan.stops.map((s, i) => (i === index ? { ...s, locked: false } : s)) } : plan);
+      if (unlock) target.locked = false;
+      const next = await api<Itinerary>("edit", { spec, stops: refs });
+      update(next);
+      setChanged([]);
+      tap("select");
+      setToast({
+        text:
+          action === "remove"
+            ? `Removed ${before.stops[index].place.name}. Times updated.`
+            : action === "longer" || action === "shorter"
+              ? `${before.stops[index].place.name} is now ${target.minutes} min. Times updated.`
+              : "Order changed. Times and travel updated.",
+        undo: before,
+      });
+      store.track("magic_edit_applied", { kind: `direct_${action}`, changed: 0 });
+    } catch (e) {
+      setToast({ text: e instanceof Error ? e.message : "That change didn’t fit. Try another." });
+    } finally {
+      setArranging(false);
+    }
   };
 
   const swap = (index: number) => {
@@ -312,6 +355,9 @@ export default function PlanScreen() {
 
         <View style={s.content}>
           <Timetable plan={plan} selected={selected} onSelect={setSelected} />
+          {plan.stops.length < 6 ? (
+            <Button testID="add-stop" kind="soft" icon="plus" label="Add a stop" busy={editBusy} onPress={() => void magicEdit("Add one more stop at the end")} />
+          ) : null}
 
           <RouteMap plan={plan} selected={selected} onSelect={setSelected} />
 
@@ -342,6 +388,8 @@ export default function PlanScreen() {
                     onSelect={() => setSelected(stop.placeId)}
                     onToggleLock={() => toggleLock(i)}
                     onSwap={() => swap(i)}
+                    onArrange={(action) => void arrange(i, action)}
+                    count={plan.stops.length}
                     onBook={() => setBooking(i)}
                     crowd={crowd[stop.placeId]}
                     favourite={store.profile.favourites.some((f) => f.id === stop.placeId)}

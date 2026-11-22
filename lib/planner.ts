@@ -7,7 +7,13 @@ export { hoursCheck } from "./hours";
 import { AppError } from "./errors";
 import { Selection as SelectionSchema } from "./schema";
 import { interpretEdit, type EditOp } from "./magic-edit";
-import { inGroup, isEatery, readStated, type GuideGroup } from "./guide";
+import {
+  inGroup,
+  interestOf,
+  isEatery,
+  readStated,
+  type GuideGroup,
+} from "./guide";
 import { interpret } from "./intent";
 import { demoReason } from "./providers/gta-demo";
 import type {
@@ -803,6 +809,16 @@ export class Planner {
     const base: PlanRequest = {
       ...request,
       vibes: hints?.vibes.length ? hints.vibes.slice(0, 4) : request.vibes,
+      // "We want games" or "somewhere for tacos" in feedback steers what is searched for.
+      interests: [
+        ...new Set([
+          ...(stated.kind && interestOf[stated.kind]
+            ? [interestOf[stated.kind] as PlanRequest["interests"][number]]
+            : []),
+          ...(stated.cuisine ? (["Food & drinks"] as const) : []),
+          ...request.interests,
+        ]),
+      ].slice(0, 10),
       indoorOnly: hints?.indoorOnly ?? request.indoorOnly,
       skipFood: stated.food === "none" ? true : request.skipFood,
       prompt: [request.prompt, said].filter(Boolean).join(". ").slice(0, 1500),
@@ -878,7 +894,16 @@ export class Planner {
         ].slice(0, 100),
       };
       try {
-        const plan = await this.generate(variant, undefined, action);
+        let plan = await this.generate(variant, undefined, action);
+        // Excluding earlier options' places can starve a bigger plan. If it came out
+        // thin, rebuild it from the full pool; the duplicate check below still applies.
+        const wanted = stopsIn[shape.pace];
+        if (plan.stops.length < wanted - 1 && used.size)
+          plan = await this.generate(
+            { ...variant, excludedPlaceIds: base.excludedPlaceIds },
+            undefined,
+            action,
+          ).catch(() => plan);
         const ids = plan.stops
           .map((s) => s.placeId)
           .sort()
@@ -899,8 +924,12 @@ export class Planner {
           blurb: shape.blurb,
           plan,
         });
-        for (const s of plan.stops)
-          if (!request.anchorPlaceIds.includes(s.placeId)) used.add(s.placeId);
+        // Later options should open differently, not avoid every place shown: excluding
+        // only each option's first added stop keeps the pool big enough to fill them.
+        const lead = plan.stops.find(
+          (s) => !request.anchorPlaceIds.includes(s.placeId),
+        );
+        if (lead) used.add(lead.placeId);
       } catch (e) {
         // One shape not fitting (too late, too far) should not hide the others.
         if (!out.length && shape === shapes[shapes.length - 1]) throw e;

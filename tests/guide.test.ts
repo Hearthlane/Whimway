@@ -185,20 +185,38 @@ describe("guided planning", () => {
     );
     expect(added[1].some((id) => added[2].includes(id))).toBe(false);
   });
-  it("without picks, the three plans share no stops, and feedback steers a new set", async () => {
+  it("without picks, the three plans differ and open differently, and feedback steers a new set", async () => {
     const r = { ...base(), companions: "friends" as const, participants: 4 };
     const first = await planner(r).alternatives(r);
     expect(first.length).toBe(3);
+    const sets = first.map((o) =>
+      o.plan.stops
+        .map((s) => s.placeId)
+        .sort()
+        .join(),
+    );
+    expect(new Set(sets).size).toBe(3);
+    expect(first.every((o) => o.plan.stops.length >= 2)).toBe(true);
     const all = first.flatMap((o) => o.plan.stops.map((s) => s.placeId));
-    expect(new Set(all).size).toBe(all.length);
     const next = await planner(r).alternatives(
       r,
       "none of these are fun, we want games and something lively",
       all,
     );
     expect(next.length).toBeGreaterThanOrEqual(2);
-    const fresh = next.flatMap((o) => o.plan.stops.map((s) => s.placeId));
-    expect(fresh.some((id) => all.includes(id))).toBe(false);
+    // A new set after feedback is a different set of plans, not a repeat of any shown.
+    const shown = new Set(sets);
+    expect(
+      next.some(
+        (o) =>
+          !shown.has(
+            o.plan.stops
+              .map((s) => s.placeId)
+              .sort()
+              .join(),
+          ),
+      ),
+    ).toBe(true);
     expect(next[0].plan.request.vibes).toEqual(
       expect.arrayContaining(["playful"]),
     );
@@ -219,6 +237,40 @@ describe("guided planning", () => {
       .then((x) => x.plan.stops.length)
       .catch((e) => (e as { code?: string }).code);
     expect([plan.stops.length, "NOTHING_TO_CHANGE"]).toContain(result);
+  });
+  it("direct edits reorder, retime and remove stops, and reschedule the rest", async () => {
+    const r = { ...base(), startTime: "14:00" };
+    const plan = (await planner(r).alternatives(r))
+      .map((o) => o.plan)
+      .sort((a, b) => b.stops.length - a.stops.length)[0];
+    expect(plan.stops.length).toBeGreaterThanOrEqual(2);
+    const refs = plan.stops.map((s) => ({
+      placeId: s.placeId,
+      minutes: s.minutes,
+      locked: false,
+      reason: s.reason,
+    }));
+    // Swap the first two and give the new first stop 15 more minutes.
+    const swapped = [
+      { ...refs[1], minutes: refs[1].minutes + 15 },
+      refs[0],
+      ...refs.slice(2),
+    ];
+    const edited = await planner(r).edit({ ...plan, stops: swapped });
+    expect(edited.stops.map((s) => s.placeId)).toEqual(
+      swapped.map((s) => s.placeId),
+    );
+    expect(edited.stops[0].minutes).toBe(refs[1].minutes + 15);
+    expect(edited.stops[0].arrival.slice(11, 16)).toBe("14:00");
+    expect(Date.parse(edited.stops[1].arrival)).toBeGreaterThanOrEqual(
+      Date.parse(edited.stops[0].departure),
+    );
+    expect(edited.revision).toBe(plan.revision + 1);
+    const removed = await planner(r).edit({ ...plan, stops: refs.slice(1) });
+    expect(removed.stops.map((s) => s.placeId)).toEqual(
+      refs.slice(1).map((s) => s.placeId),
+    );
+    expect(removed.totalMinutes).toBeLessThan(plan.totalMinutes);
   });
   it("skips restaurants and cafés when the group has eaten", async () => {
     const r = { ...base(), skipFood: true };

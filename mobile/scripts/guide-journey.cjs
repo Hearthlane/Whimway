@@ -67,6 +67,18 @@ const { chromium } = require("playwright");
   await p.screenshot({ path: `${out}/13-plan.png`, fullPage: false });
   await p.mouse.wheel(0, 330); await p.waitForTimeout(600);
   await p.screenshot({ path: `${out}/14-timetable.png`, fullPage: false });
+  // Direct edits: move the second stop earlier, then give it 15 more minutes.
+  const names = async () => (await p.locator('[data-testid^="timetable-row-"]').allInnerTexts()).map((t) => t.split("\n").slice(-2)[0]);
+  const before = await names();
+  await p.getByTestId("stop-2").click();
+  await p.getByText("Earlier", { exact: true }).click();
+  await p.getByText("Order changed. Times and travel updated.").waitFor({ timeout: 20000 });
+  const after = await names();
+  console.log("reorder:", JSON.stringify(before), "->", JSON.stringify(after), after[0] === before[1] && after[1] === before[0] ? "OK" : "FAILED");
+  await p.screenshot({ path: `${out}/16-reordered.png` });
+  await p.getByTestId("add-stop").click();
+  await p.waitForFunction((n) => document.querySelectorAll('[data-testid^="timetable-row-"]').length > n, before.length, { timeout: 30000 });
+  console.log("add stop:", before.length, "->", (await names()).length);
   await p.goto("http://localhost:8090/", { waitUntil: "networkidle" });
   await p.waitForTimeout(1500);
   await p.getByText("Upcoming", { exact: true }).scrollIntoViewIfNeeded().catch(() => {});
