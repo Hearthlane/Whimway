@@ -462,7 +462,7 @@ export async function resolvePoint(point: Point): Promise<Location> {
   if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
     // Geocoding reads the key only from the query string, so with a proxy-injected key it
     // refuses. Inside the beta region the nearest neighbourhood is a good enough name.
-    const near = nearestArea(point);
+    const near = key === INJECTED ? nearestArea(point) : undefined;
     if (near)
       return {
         center: point,

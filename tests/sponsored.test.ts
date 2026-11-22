@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE, GET, POST } from "@/app/api/[...path]/route";
 import { choose, type Campaign } from "@/lib/sponsored";
-import { memorySponsored } from "@/lib/server/sponsored";
+import { invalidateServable, memorySponsored } from "@/lib/server/sponsored";
 
 vi.mock("@/lib/server/supabase", () => ({
   currentUser: async () => null,
@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.stubEnv("WHIMWAY_DEMO_MODE", "true");
   memorySponsored.campaigns.clear();
   memorySponsored.events.clear();
+  invalidateServable();
 });
 
 describe("Choosing a sponsored placement", () => {
@@ -68,6 +69,8 @@ describe("Sponsored API", () => {
   });
   it("needs the admin key to manage campaigns once one is set", async () => {
     vi.stubEnv("ADMIN_KEY", "secret-admin");
+    // The key is accepted only in the header, never in the URL.
+    expect((await get("admin/campaigns?key=secret-admin")).status).toBe(403);
     expect((await post("admin/campaigns", campaign())).status).toBe(403);
     expect((await get("admin/campaigns")).status).toBe(403);
     const created = await post("admin/campaigns", campaign(), { "x-admin-key": "secret-admin" });
@@ -83,18 +86,26 @@ describe("Sponsored API", () => {
     expect(served).toHaveLength(1);
     expect(served[0]).toMatchObject({ label: "Sponsored", campaignId: created.id, headline: "Two-for-one tacos on Tuesdays" });
     expect(served[0]).not.toHaveProperty("area");
-    const event = (kind: string, installId: string) => post("sponsored/event", { placementId: served[0].id, campaignId: created.id, kind, installId });
-    expect((await event("impression", "install-aaaa1111")).status).toBe(200);
-    await event("impression", "install-aaaa1111");
-    await event("impression", "install-bbbb2222");
-    await event("click", "install-aaaa1111");
-    expect((await event("view", "install-aaaa1111")).status).toBe(400);
+    // Counted once per network per day: a client cannot inflate counts by rotating its
+    // install id.
+    const event = (kind: string, installId: string, ip: string) =>
+      post("sponsored/event", { placementId: served[0].id, campaignId: created.id, kind, installId }, { "x-forwarded-for": ip });
+    expect((await event("impression", "install-aaaa1111", "203.0.113.1")).status).toBe(200);
+    await event("impression", "install-aaaa1111", "203.0.113.1");
+    await event("impression", "install-cccc3333", "203.0.113.1");
+    await event("impression", "install-bbbb2222", "203.0.113.2");
+    await event("click", "install-aaaa1111", "203.0.113.1");
+    expect((await event("view", "install-aaaa1111", "203.0.113.1")).status).toBe(400);
     const list = await (await get("admin/campaigns")).json();
     expect(list[0].stats).toEqual({ impressions: 2, clicks: 1 });
   });
-  it("can pause and delete a campaign", async () => {
-    const created = await (await post("admin/campaigns", campaign())).json();
-    await post("admin/campaigns", { id: created.id, active: false });
+  it("can pause and delete a campaign; an update changes only the fields sent", async () => {
+    const created = await (await post("admin/campaigns", campaign({ impressionCap: 500, categories: ["mexican", "games"] }))).json();
+    const paused = await (await post("admin/campaigns", { id: created.id, active: false })).json();
+    expect(paused).toMatchObject({ active: false, impressionCap: 500, categories: ["mexican", "games"], cta: "See the menu" });
+    // A paused campaign is still listed for the admin, and can be resumed.
+    expect((await (await get("admin/campaigns")).json())[0].active).toBe(false);
+    expect((await post("admin/campaigns", { id: "00000000-0000-4000-8000-00000000dead", active: true })).status).toBe(404);
     expect(await (await get(`sponsored?surface=home&lat=${downtown.lat}&lng=${downtown.lng}`)).json()).toEqual([]);
     const del = await DELETE(new Request(`http://localhost:3000/api/admin/campaigns/${created.id}`, { method: "DELETE", headers: app }), ctx(`admin/campaigns/${created.id}`));
     expect(del.status).toBe(200);

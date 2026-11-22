@@ -64,3 +64,21 @@ export async function requireUser() {
     );
   return { db, user: data.user };
 }
+
+/**
+ * Server-only client with the secret (service role) key, for data no person owns, such as
+ * sponsored campaigns. Never sent to the app. Requires SUPABASE_SECRET_KEY.
+ */
+export function serviceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
+    key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key)
+    throw new AppError(
+      "SERVICE_DISABLED",
+      "Sponsored placements need SUPABASE_SECRET_KEY on the server.",
+      503,
+    );
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}

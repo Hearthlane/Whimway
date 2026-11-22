@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -21,6 +22,7 @@ import { fixtureLocations } from "@/lib/providers/fixtures";
 import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
 import {
   body,
+  networkId,
   rateLimit,
   telemetry,
   sameOrigin,
@@ -41,7 +43,11 @@ import {
   surfaces,
   toPlacement,
 } from "@/lib/sponsored";
-import { sponsoredStore } from "@/lib/server/sponsored";
+import {
+  invalidateServable,
+  servable,
+  sponsoredStore,
+} from "@/lib/server/sponsored";
 import {
   countPlanMade,
   entitlementFor,
@@ -98,11 +104,15 @@ function failure(e: unknown) {
   );
 }
 /** Founder/admin endpoints need ADMIN_KEY; without one they work only in non-production demo mode. */
-function requireAdmin(request: Request, url: URL) {
+function requireAdmin(request: Request) {
+  // Header only (a query string ends up in logs and history); compared in constant time.
   const key = process.env.ADMIN_KEY;
-  const given =
-    request.headers.get("x-admin-key") ?? url.searchParams.get("key");
-  if (key ? given !== key : !demoAllowed())
+  const given = request.headers.get("x-admin-key") ?? "";
+  const matches =
+    Boolean(key) &&
+    given.length === key!.length &&
+    timingSafeEqual(Buffer.from(given), Buffer.from(key!));
+  if (key ? !matches : !demoAllowed())
     throw new AppError(
       "FORBIDDEN",
       "Set ADMIN_KEY and pass it to manage this.",
@@ -137,10 +147,11 @@ async function handleGET(request: Request, ctx: Context) {
       throw new AppError("METHOD", "Use the sign-out button.", 405);
     }
     if (path === "admin/campaigns") {
-      requireAdmin(request, url);
+      await rateLimit(request, "write");
+      requireAdmin(request);
       const store = sponsoredStore();
       const [campaigns, stats] = await Promise.all([
-        store.list(),
+        store.listAll(),
         store.stats(),
       ]);
       return ok(
@@ -161,15 +172,11 @@ async function handleGET(request: Request, ctx: Context) {
           category: z.string().max(40).optional(),
         })
         .parse(Object.fromEntries(url.searchParams));
-      const store = sponsoredStore();
-      const campaigns = await store.list().catch(() => []);
+      const { campaigns, impressions } = await servable().catch(() => ({
+        campaigns: [],
+        impressions: {} as Record<string, number>,
+      }));
       if (!campaigns.length) return ok([]);
-      const stats = await store
-        .stats()
-        .catch(() => ({}) as Record<string, { impressions: number }>);
-      const impressions = Object.fromEntries(
-        Object.entries(stats).map(([id, s]) => [id, s.impressions]),
-      );
       const pick = choose(
         campaigns,
         {
@@ -265,25 +272,38 @@ async function handleGET(request: Request, ctx: Context) {
       });
     }
     if (path === "admin/metrics") {
-      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.
-      const key = process.env.ADMIN_KEY;
-      const given =
-        request.headers.get("x-admin-key") ?? url.searchParams.get("key");
-      if (key ? given !== key : !demoAllowed())
-        throw new AppError(
-          "FORBIDDEN",
-          "Set ADMIN_KEY and pass it to view metrics.",
-          403,
-        );
+      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.      await rateLimit(request, "write");
+      requireAdmin(request);
       const store = signalStore();
       const [tallies, pollTallies] = await Promise.all([
         store.tallies().catch(() => ({})),
         store.polls().catch(() => ({})),
       ]);
+      const sponsored = sponsoredStore();
+      const [campaigns, adStats] = await Promise.all([
+        sponsored.listAll().catch(() => []),
+        sponsored
+          .stats()
+          .catch(
+            () =>
+              ({}) as Record<string, { impressions: number; clicks: number }>,
+          ),
+      ]);
       return ok({
         summary: summarize(await allEvents()),
         tallies,
         polls: pollTallies,
+        campaigns: campaigns.map((c) => ({
+          id: c.id,
+          business: c.business.name,
+          headline: c.headline,
+          running:
+            c.active &&
+            Date.parse(c.startsAt) <= Date.now() &&
+            Date.now() < Date.parse(c.endsAt),
+          endsAt: c.endsAt,
+          ...(adStats[c.id] ?? { impressions: 0, clicks: 0 }),
+        })),
       });
     }
     if (path === "crowd/places") {
@@ -367,18 +387,22 @@ async function handlePOST(request: Request, ctx: Context) {
       request,
       path === "generate" || path === "guide/plans"
         ? "generate"
-        : path === "remix" || path === "edit" || path === "magic-edit"
-          ? "remix"
-          : [
-                "events",
-                "signals",
-                "sponsored/event",
-                "polls/answer",
-                "errors",
-                "feedback",
-              ].includes(path)
-            ? "signal"
-            : "write",
+        : path === "guide/options"
+          ? "browse"
+          : path === "sponsored/event"
+            ? "ad"
+            : path === "remix" || path === "edit" || path === "magic-edit"
+              ? "remix"
+              : [
+                    "events",
+                    "signals",
+
+                    "polls/answer",
+                    "errors",
+                    "feedback",
+                  ].includes(path)
+                ? "signal"
+                : "write",
       user?.id,
     );
     if (path === "point") return ok(await resolvePoint(Point.parse(input)));
@@ -405,18 +429,31 @@ async function handlePOST(request: Request, ctx: Context) {
       return ok(result);
     }
     if (path === "sponsored/event") {
-      await sponsoredStore().record(AdEvent.parse(input));
+      const event = AdEvent.parse(input);
+      await sponsoredStore().record({
+        campaignId: event.campaignId,
+        kind: event.kind,
+        network: networkId(request),
+      });
       return ok({ recorded: true });
     }
     if (path === "admin/campaigns") {
-      requireAdmin(request, new URL(request.url));
+      requireAdmin(request);
       const store = sponsoredStore();
       const id = z.string().uuid().optional().parse(input.id);
-      return ok(
-        id
-          ? await store.update(id, NewCampaign.partial().parse(input))
-          : await store.create(NewCampaign.parse(input)),
-      );
+      // An update merges only the fields sent, then validates the whole campaign, so
+      // unsent fields keep their values instead of falling back to defaults.
+      const patch = { ...z.record(z.string(), z.unknown()).parse(input) };
+      delete patch.id;
+      const saved = id
+        ? await store.update(id, patch).catch((e) => {
+            if ((e as Error).message === "not_found")
+              throw new AppError("NOT_FOUND", "No campaign with that id.", 404);
+            throw e;
+          })
+        : await store.create(NewCampaign.parse(input));
+      invalidateServable();
+      return ok(saved);
     }
     if (path === "guide/plans") {
       const data = z
@@ -434,8 +471,8 @@ async function handlePOST(request: Request, ctx: Context) {
       const options = await planner(data.request, data.demo)
         .withCrowd(await crowdSignals())
         .alternatives(data.request, data.feedback, data.avoid);
-      // A set of options counts as one plan against the monthly allowance, and only the first set.
-      if (!data.feedback)
+      // A set of options counts as one plan against the monthly allowance, and only the first set.      // A first set counts as one plan; asking for different options (avoid set) does not.
+      if (!data.avoid.length)
         await countPlanMade(installOf(request), user?.id).catch(
           () => undefined,
         );
@@ -846,8 +883,10 @@ export async function DELETE(request: Request, ctx: Context) {
     sameOrigin(request);
     const path = (await ctx.params).path.join("/");
     if (path.startsWith("admin/campaigns/")) {
-      requireAdmin(request, new URL(request.url));
+      await rateLimit(request, "write");
+      requireAdmin(request);
       await sponsoredStore().remove(z.string().uuid().parse(path.slice(16)));
+      invalidateServable();
       return ok({ deleted: true });
     }
     const { db, user } = await requireUser();

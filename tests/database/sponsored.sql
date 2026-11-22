@@ -2,17 +2,27 @@
 -- impressions/clicks counted once per person per day.
 begin;
 create schema if not exists test;
-grant usage on schema test to anon,authenticated;
+grant usage on schema test to anon,authenticated,service_role;
 create or replace function test.check(condition boolean,label text) returns void language plpgsql as $$
 begin
  if condition is not true then raise exception 'FAILED: %',label; end if;
  raise notice 'PASS: %',label;
 end;
 $$;
-grant execute on function test.check(boolean,text) to anon,authenticated;
+grant execute on function test.check(boolean,text) to anon,authenticated,service_role;
 insert into public.app_secrets(name, hash) values ('admin', encode(sha256(convert_to('admin-test','utf8')),'hex'));
 
 set role anon;
+do $$begin
+ begin perform public.active_campaigns(); raise exception 'anon read campaigns';
+ exception when insufficient_privilege then perform test.check(true,'the public key cannot read campaign details'); end;
+ begin perform public.record_ad_event('11111111-1111-4111-8111-111111111111','install-0001','click'); raise exception 'anon recorded event';
+ exception when insufficient_privilege then perform test.check(true,'the public key cannot record views or taps'); end;
+ begin perform public.admin_list_campaigns('admin-test'); raise exception 'anon listed campaigns';
+ exception when insufficient_privilege then perform test.check(true,'the public key cannot list campaigns even with the secret'); end;
+end$$;
+reset role;
+set role service_role;
 do $$begin
  begin perform 1 from public.campaigns; raise exception 'campaigns readable';
  exception when insufficient_privilege then perform test.check(true,'clients cannot read the campaigns table'); end;
@@ -39,6 +49,7 @@ select public.admin_save_campaign('admin-test', jsonb_build_object(
   'startsAt', to_char(now() - interval '1 day','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
   'endsAt', to_char(now() + interval '1 day','YYYY-MM-DD"T"HH24:MI:SS"Z"')));
 select test.check(jsonb_array_length(public.active_campaigns()) = 1,'a running campaign is served');
+select test.check(jsonb_array_length(public.admin_list_campaigns('admin-test')) = 1,'the admin can list campaigns');
 select test.check(public.active_campaigns()->0->>'headline' = 'Two-for-one tacos','served campaigns keep their content');
 
 do $$begin
@@ -69,8 +80,9 @@ select public.admin_save_campaign('admin-test', (public.active_campaigns()->0) |
 select test.check(jsonb_array_length(public.active_campaigns()) = 0,'a campaign stops serving at its impression cap');
 reset role;
 update public.campaigns set impression_cap = 0, active = false;
-set role anon;
+set role service_role;
 select test.check(jsonb_array_length(public.active_campaigns()) = 0,'a paused campaign is not served');
+select test.check(jsonb_array_length(public.admin_list_campaigns('admin-test')) = 1,'a paused campaign is still visible to the admin');
 select public.admin_delete_campaign('admin-test','11111111-1111-4111-8111-111111111111');
 reset role;
 select test.check((select count(*) = 0 from public.ad_events),'deleting a campaign removes its events');

@@ -8,7 +8,7 @@ const limit = (name: string, fallback: number) => {
 };
 export async function rateLimit(
   request: Request,
-  kind: "generate" | "remix" | "read" | "write" | "signal",
+  kind: "generate" | "remix" | "read" | "write" | "signal" | "browse" | "ad",
   userId?: string,
 ) {
   // On Vercel, the platform overwrites x-vercel-forwarded-for. Self-hosting must strip incoming forwarded headers.
@@ -39,7 +39,11 @@ export async function rateLimit(
           ? 180
           : kind === "signal"
             ? 400 // cheap telemetry and reactions; kept apart so they never block saves or edits
-            : 50;
+            : kind === "browse"
+              ? limit("HOURLY_BROWSE_LIMIT", 120) // place lists: paid lookups, but cached
+              : kind === "ad"
+                ? 120 // sponsored views and taps
+                : 50;
   if (
     (await counter(
       `${kind}:${identity}:${costly ? today : Math.floor(Date.now() / 3600000)}`,
@@ -64,6 +68,17 @@ export async function rateLimit(
     throw new AppError(
       "RATE_LIMIT",
       "Too many requests from this network. Try again later.",
+      429,
+    );
+  // Browsing calls paid place lookups: give it its own site-wide daily budget.
+  if (
+    kind === "browse" &&
+    (await counter(`global:browse:${today}`, 86400)) >
+      limit("GLOBAL_DAILY_BROWSE_LIMIT", 2000)
+  )
+    throw new AppError(
+      "GLOBAL_LIMIT",
+      "Whimway has reached its daily service limit. Please try tomorrow.",
       429,
     );
   if (
@@ -164,4 +179,17 @@ export function requestOrigin(request: Request) {
     } catch {}
   }
   return `${request.headers.get("x-forwarded-proto") === "https" ? "https:" : url.protocol}//${host}`;
+}
+
+/**
+ * A stable, anonymous id for the network a request came from. Sponsored views and taps
+ * are counted once per network per day, because an install id is chosen by the client
+ * and could be rotated to inflate counts. (People sharing a network count once.)
+ */
+export function networkId(request: Request) {
+  const ip =
+    request.headers.get("x-vercel-forwarded-for") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0] ??
+    "local";
+  return `n-${createHash("sha256").update(`ad|${ip}`).digest("hex").slice(0, 32)}`;
 }

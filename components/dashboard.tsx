@@ -7,6 +7,15 @@ type Data = {
   summary: MetricsSummary;
   tallies: Record<string, { up: number; down: number }>;
   polls: Record<string, { a: number; b: number }>;
+  campaigns?: {
+    id: string;
+    business: string;
+    headline: string;
+    running: boolean;
+    endsAt: string;
+    impressions: number;
+    clicks: number;
+  }[];
 };
 const pct = (n: number | null) =>
   n === null ? "—" : `${Math.round(n * 100)}%`;
@@ -364,6 +373,74 @@ export function Dashboard() {
           />
         </section>
       </div>
+      <section style={{ ...card, marginTop: 16 }}>
+        <h2 style={{ fontSize: 18 }}>Sponsored campaigns</h2>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>
+          People who saw or tapped each campaign, counted once per person per
+          day. Create and pause campaigns with the admin campaigns API (see
+          docs/sponsored.md).
+        </p>
+        {data.campaigns?.length ? (
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                fontSize: 14,
+                borderCollapse: "collapse",
+              }}
+            >
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--muted)" }}>
+                  <th>Business</th>
+                  <th>Headline</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Seen by</th>
+                  <th style={{ textAlign: "right" }}>Tapped by</th>
+                  <th style={{ textAlign: "right" }}>Tap rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.campaigns.map((c) => (
+                  <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td>{c.business}</td>
+                    <td>{c.headline}</td>
+                    <td>{c.running ? "Running" : "Not running"}</td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {c.impressions}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {c.clicks}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {pct(c.impressions ? c.clicks / c.impressions : null)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: "var(--muted)", fontSize: 13 }}>
+            No campaigns yet. Nothing sponsored is shown in the app until one is
+            created.
+          </p>
+        )}
+      </section>
     </main>
   );
 }

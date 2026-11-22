@@ -1,7 +1,9 @@
 -- Sponsored placements: local businesses pay to be shown, clearly labelled, beside
--- organic recommendations. Campaign tables are closed to clients; the API reads running
--- campaigns and records impressions/clicks only through the functions below. Managing
--- campaigns needs the admin secret, stored hashed in app_secrets:
+-- organic recommendations. Campaign tables are closed to clients, and every function
+-- below runs only for the service role, so the app's public key cannot read campaign
+-- details or record views directly: all access goes through the API server, which counts
+-- views and taps once per network per day. Managing campaigns also needs the admin
+-- secret, stored hashed in app_secrets:
 --   insert into public.app_secrets(name, hash)
 --   values ('admin', encode(sha256(convert_to('<your ADMIN_KEY>', 'utf8')), 'hex'));
 begin;
@@ -33,6 +35,7 @@ create table public.ad_events (
   day date not null default current_date,
   primary key (campaign_id, install, kind, day)
 );
+create index ad_events_counts on public.ad_events (campaign_id, kind);
 alter table public.ad_events enable row level security;
 revoke all on public.ad_events from anon, authenticated;
 
@@ -99,6 +102,16 @@ begin
 end;
 $$;
 
+-- Every campaign, including paused, scheduled and ended ones, for the admin.
+create function public.admin_list_campaigns(admin_secret text) returns jsonb
+language plpgsql stable security definer set search_path='' as $$
+begin
+  if not public.is_admin(admin_secret) then raise exception 'Forbidden'; end if;
+  return coalesce((select jsonb_agg(public.campaign_json(c) order by c.updated_at desc)
+    from public.campaigns c), '[]'::jsonb);
+end;
+$$;
+
 create function public.admin_delete_campaign(admin_secret text, campaign_id uuid) returns void
 language plpgsql security definer set search_path='' as $$
 begin
@@ -118,15 +131,18 @@ begin
 end;
 $$;
 
-revoke all on function public.active_campaigns() from public;
-revoke all on function public.record_ad_event(uuid, text, text) from public;
-revoke all on function public.admin_save_campaign(text, jsonb) from public;
-revoke all on function public.admin_delete_campaign(text, uuid) from public;
-revoke all on function public.campaign_stats(text) from public;
-revoke all on function public.is_admin(text) from public;
-grant execute on function public.active_campaigns() to anon, authenticated;
-grant execute on function public.record_ad_event(uuid, text, text) to anon, authenticated;
-grant execute on function public.admin_save_campaign(text, jsonb) to anon, authenticated;
-grant execute on function public.admin_delete_campaign(text, uuid) to anon, authenticated;
-grant execute on function public.campaign_stats(text) to anon, authenticated;
+revoke all on function public.active_campaigns() from public, anon, authenticated;
+revoke all on function public.record_ad_event(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.admin_save_campaign(text, jsonb) from public, anon, authenticated;
+revoke all on function public.admin_list_campaigns(text) from public, anon, authenticated;
+revoke all on function public.admin_delete_campaign(text, uuid) from public, anon, authenticated;
+revoke all on function public.campaign_stats(text) from public, anon, authenticated;
+revoke all on function public.is_admin(text) from public, anon, authenticated;
+revoke all on function public.campaign_json(public.campaigns) from public, anon, authenticated;
+grant execute on function public.active_campaigns() to service_role;
+grant execute on function public.record_ad_event(uuid, text, text) to service_role;
+grant execute on function public.admin_save_campaign(text, jsonb) to service_role;
+grant execute on function public.admin_list_campaigns(text) to service_role;
+grant execute on function public.admin_delete_campaign(text, uuid) to service_role;
+grant execute on function public.campaign_stats(text) to service_role;
 commit;
