@@ -13,6 +13,11 @@ function activity(stop: Itinerary["stops"][number], hour: number) {
   const kind = artKind(stop.place);
   // A games bar is where you go to play, even though it also pours drinks.
   if (/game|arcade|bowling|amusement_center|karaoke|escape/.test(stop.place.types.join(" "))) return "Games";
+  const types = `${stop.place.category} ${stop.place.types.join(" ")}`;
+  if (/movie|cinema/.test(types)) return "A movie";
+  if (/comedy/.test(types)) return "Comedy";
+  if (/performing_arts|theat/.test(types)) return "A show";
+  if (/museum|gallery/.test(types)) return "Art & exhibits";
   if (kind === "meal") return hour < 11 ? "Breakfast" : hour < 16 ? "Lunch" : "Dinner";
   if (kind === "drinks") return "Drinks";
   if (kind === "cafe") return "Coffee";
