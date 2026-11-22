@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areaByKey } from "@shared/areas";
 import { TasteProfile } from "@shared/profile";
@@ -11,6 +11,7 @@ import { supabase } from "@/lib/auth";
 import { cloudConfigured, SHARE_ORIGIN } from "@/lib/config";
 import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
+import { SignIn } from "@/account/SignIn";
 import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { Button, Card, Chip, IconButton, Notice, T } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
@@ -19,45 +20,12 @@ import { color, font, radius, space } from "@/ui/theme";
 export default function Settings() {
   const store = useStore();
   const { profile, session, setProfile } = store;
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"email" | "code">("email");
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState<"device" | "account" | null>(null);
   const plus = isPlus(profile);
   // Fine-tuning and favourites are open to everyone unless Plus limits are switched on.
   const open = store.unlocked;
   const loved = Object.entries(profile.affinity).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-  const sendCode = async () => {
-    if (!supabase) return;
-    setBusy(true);
-    setMessage("");
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
-    setBusy(false);
-    if (error) setMessage("We couldn’t send a code to that address. Check it and try again.");
-    else setStage("code");
-  };
-  const verify = async () => {
-    if (!supabase) return;
-    setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
-    setBusy(false);
-    if (error) {
-      setMessage("That code didn’t work. Codes expire after a few minutes — request a new one if needed.");
-      return;
-    }
-    setMessage("");
-    // Merge: pull the account's taste profile if this device has none yet, otherwise push ours.
-    try {
-      const remote = await api<TasteProfile | null>("taste");
-      if (remote && !profile.vibes.length && !Object.keys(profile.affinity).length) setProfile({ ...remote, onboarded: true });
-      else await api("taste", profile);
-    } catch {
-      // Sync is best effort; the device copy is authoritative.
-    }
-  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
@@ -165,32 +133,22 @@ export default function Settings() {
               <T v="small" tone={color.muted}>
                 Your taste profile syncs, and shared links are short and revocable.
               </T>
-              <Button kind="ghost" label="Sign out" icon="log-out" onPress={() => supabase?.auth.signOut()} />
+              {message ? <Notice icon="check-circle">{message}</Notice> : null}
+              <Button kind="ghost" label="Sign out" icon="log-out" onPress={() => (setMessage(""), void supabase?.auth.signOut())} />
+              <T v="small" tone={color.faint}>
+                Signing out keeps everything on this device.
+              </T>
             </>
           ) : (
             <>
               <T v="small" tone={color.muted}>
-                Optional. Sign in to sync your taste across devices. No password — we email you a 6-digit code.
+                Optional. Sign in to keep your taste, people and saved plans on every device. No password — we email you a 6-digit code.
               </T>
-              {stage === "email" ? (
-                <>
-                  <T v="smallStrong" nativeID="email-label">
-                    Email
-                  </T>
-                  <TextInput accessibilityLabelledBy="email-label" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@example.com" placeholderTextColor={color.faint} style={s.input} />
-                  <Button label="Email me a code" busy={busy} disabled={!/.+@.+\..+/.test(email)} onPress={sendCode} />
-                </>
-              ) : (
-                <>
-                  <T v="smallStrong" nativeID="code-label">
-                    Code sent to {email}
-                  </T>
-                  <TextInput accessibilityLabelledBy="code-label" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" placeholder="123456" placeholderTextColor={color.faint} style={s.input} maxLength={10} />
-                  <Button label="Sign in" busy={busy} disabled={code.trim().length < 6} onPress={verify} />
-                  <Button kind="ghost" label="Use a different email" onPress={() => setStage("email")} />
-                </>
-              )}
-              {message ? <Notice tone="coral">{message}</Notice> : null}
+              <SignIn
+                onSignedIn={(r) =>
+                  setMessage(r.plans ? `Signed in. ${r.plans} saved plan${r.plans === 1 ? "" : "s"} added from your account.` : "Signed in. Your profile is synced.")
+                }
+              />
             </>
           )}
         </Card>

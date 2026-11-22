@@ -7,7 +7,7 @@ import path from "node:path";
 
 const port = Number(process.argv[2] ?? 8090);
 const api = new URL(process.argv[3] ?? "http://localhost:3000");
-const root = path.resolve(import.meta.dirname, "..", "dist");
+const root = path.resolve(import.meta.dirname, "..", process.env.WHIMWAY_WEB_DIST ?? "dist");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".ico": "image/x-icon", ".ttf": "font/ttf", ".svg": "image/svg+xml" };
 
 http

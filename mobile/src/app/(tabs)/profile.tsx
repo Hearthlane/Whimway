@@ -13,6 +13,7 @@ import { useStore } from "@/lib/store";
 import { Avatar, PersonSheet, planWith, type Person } from "@/home/People";
 import { PlanTile, startOf } from "@/home/Plans";
 import { persona } from "@/app/onboarding";
+import { cloudConfigured } from "@/lib/config";
 import { Button, Chip, Icon, IconButton, Press, Sheet, T, tap, type IconName } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
@@ -106,6 +107,26 @@ export default function Profile() {
           <Button kind="soft" label="Edit profile" onPress={() => setEditing(true)} style={{ flex: 1 }} testID="edit-profile" />
           <Button kind="soft" label="Add person" icon="user-plus" onPress={() => setPerson("new")} style={{ flex: 1 }} />
         </View>
+
+        {cloudConfigured && !store.session ? (
+          <Press testID="profile-save-account" accessibilityRole="button" onPress={() => router.push("/settings")} style={s.save}>
+            <Icon name="cloud" size={18} />
+            <View style={{ flex: 1 }}>
+              <T v="bodyStrong">Save your profile</T>
+              <T v="small" tone={color.muted}>
+                Sign in with your email to keep it on every device.
+              </T>
+            </View>
+            <Icon name="chevron-right" tint={color.faint} />
+          </Press>
+        ) : store.session ? (
+          <View style={s.synced} testID="profile-synced">
+            <Icon name="check-circle" size={14} tint={color.muted} />
+            <T v="small" tone={color.muted} numberOfLines={1}>
+              Synced to {store.session.user.email}
+            </T>
+          </View>
+        ) : null}
 
         <View style={s.tabs} accessibilityRole="tablist">
           {tabs.map((t) => (
@@ -268,6 +289,8 @@ const s = StyleSheet.create({
   statValue: { fontFamily: font.displayBold, fontSize: 22, lineHeight: 26, color: color.ink },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   buttons: { flexDirection: "row", gap: space.sm },
+  save: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.coralTint },
+  synced: { flexDirection: "row", alignItems: "center", gap: 6 },
   tabs: { flexDirection: "row", borderBottomWidth: 1, borderColor: color.line, marginHorizontal: -space.xl },
   tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: space.md, borderBottomWidth: 2, borderColor: "transparent" },
   tabOn: { borderColor: color.ink },

@@ -53,6 +53,7 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Deterministic validation (hours, DST, budgets, locks, travel buffers, area) | **Working**; the AI can only choose provider place IDs |
 | Magic Edit (structured: keep/replace/remove/add specific stops) | **Working**; preview shown before applying; undo |
 | Polls, Plan Pulse, stop 👍/👎, post-outing feedback → personal taste + community ranking | **Working**; in-memory in dev, durable with Supabase |
+| Sign-in in onboarding ("I already have an account", "Save your profile?") and Settings; restore profile, people and saved plans on a new device | **Implemented, awaiting Supabase project**; all four sign-in paths tested end to end against a simulated Supabase |
 | Accounts (email code), cloud save, short revocable share links, taste sync | **Implemented, awaiting Supabase project**; SQL + RLS verified on real PostgreSQL (80 assertions across all migrations, including sponsored campaigns) |
 | Account-free share links (`/p#…`), recipient can copy the plan | **Working**; E2E-tested; private details never in the link |
 | Analytics events + metrics queries (`docs/metrics.sql`) | **Working** (stored once Supabase is configured; console logs otherwise) |
@@ -137,7 +138,7 @@ The only service-role key is `SUPABASE_SECRET_KEY`, read by the server for spons
 
 ## Supabase
 
-Apply **all eight** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
+Apply **all nine** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
 2. `202611110001_experience.sql` — analytics events (`track_event`), feedback, larger profile size
@@ -147,8 +148,15 @@ Apply **all eight** migrations in order in a **new** Supabase project (SQL Edito
 6. `202611150001_edit_usage.sql` — Magic Edit counters per plan
 7. `202611160001_option_events.sql` — plan-option analytics events
 8. `202611170001_sponsored.sql` — sponsored campaigns and view/tap counts (service role only; see `docs/sponsored.md`)
+9. `202611220001_auth_events.sql` — sign-in analytics events
 
-For the app’s email sign-in, edit Authentication → Email Templates → Magic Link to include `{{ .Token }}` (users type a 6-digit code). It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
+**App sign-in (email code).** Accounts are optional. The app offers them in three places: "I already have an account" on the first onboarding screen (restores the profile, people and saved plans, then skips the questions), "Save your profile?" after the onboarding reveal, and Settings. Signing in combines the device and account (`mergeProfiles` in `lib/profile.ts`: a fresh device takes the account's profile; otherwise the device's choices win and favourites, people, skipped places and poll answers are combined), downloads saved plans the device lacks and uploads saved plans the account lacks. Signing out keeps everything on the device. To switch it on:
+
+- Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the app build (and the matching server variables for the API).
+- In Authentication → Email Templates, edit **Magic Link** (and **Confirm signup**) so the email shows the code: `Your Whimway code is {{ .Token }}`. Without this, people get a link instead of the 6-digit code the app asks for.
+- Configure SMTP; Supabase's built-in mailer is heavily rate-limited.
+
+Without the two app variables, the app hides every sign-in option and keeps everything on the device. It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
 
 Enable email OTP/magic-link auth, configure your site URL, add your `/auth/callback` redirect URL, and configure SMTP for real users. Private table access uses the authenticated cookie session and database RLS. Anonymous users cannot write database rows or list public shares. Anyone possessing a share token can read that snapshot until revoked.
 
@@ -168,6 +176,8 @@ TEST_DATABASE_ADMIN_URL=postgres://postgres@localhost/postgres npm run test:db  
 (cd mobile && node scripts/web-journey.mjs)              # onboarding → plan → Magic Edit → share → profile
 (cd mobile && node scripts/guide-journey.cjs shots)       # guided planner → options → timetable → edits
 (cd mobile && node scripts/discover-journey.cjs shots)    # Discover → search → place → plan around it
+# Sign-in journeys need an accounts-on build; see the header of mobile/scripts/auth-journey.cjs
+(cd mobile && node scripts/auth-journey.cjs)              # new account, wrong code, sync, sign out, restore on a new device
 npm run build
 npm start
 ```

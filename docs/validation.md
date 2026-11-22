@@ -1,5 +1,12 @@
 # Validation record
 
+## Onboarding and sign-in phase (Nov 2026)
+
+| Check | Outcome |
+| --- | --- |
+| Sign-in journeys (accounts-on web build, simulated Supabase auth and account endpoints) | New person: onboarding → "Save your profile?" → typo flagged → code sent with resend cooldown → wrong code explained → signed in, profile and people uploaded. Sign out keeps everything on the device. Returning on a new device: "I already have an account" → welcome back with profile, people and a saved plan restored, questions skipped. Account without a profile: signs in, then answers the questions without being asked to sign in again. Zero browser errors |
+| Not tested | A live Supabase project: real emails, real codes, rate limits and RLS through the hosted API |
+
 ## Home, people and profile phase (Nov 2026)
 
 | Check | Outcome |

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { applyFeedback, emptyProfile, TasteProfile, type Feedback } from "@shared/profile";
+import { applyFeedback, emptyProfile, mergeProfiles, TasteProfile, type Feedback } from "@shared/profile";
 import { PlanSpec, type Itinerary, type PlanRequest } from "@shared/schema";
 import { persistSpec } from "@shared/storage";
 import type { EventName } from "@shared/analytics";
@@ -64,6 +64,11 @@ type Store = State & {
   /** Ask the server what this account is entitled to (store purchases). Returns true if Plus is active. */
   syncEntitlement: () => Promise<boolean>;
   resetDevice: () => Promise<void>;
+  /**
+   * Right after signing in: combine this device's profile and plans with the account's.
+   * `restored` is true when the account brought a finished profile to a device that had none.
+   */
+  syncAccount: () => Promise<{ restored: boolean; plans: number }>;
   demo: boolean;
 };
 
@@ -275,13 +280,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, profile: emptyProfile(), plans: {} }));
   }, []);
 
+  const syncAccount = useCallback<Store["syncAccount"]>(async () => {
+    const local = stateRef.current.profile;
+    const remote = await api<TasteProfile | null>("taste").catch(() => null);
+    const account = remote ? TasteProfile.safeParse(remote) : null;
+    const merged = mergeProfiles(local, account?.success ? account.data : null);
+    const restored = !local.onboarded && merged.onboarded;
+    stateRef.current = { ...stateRef.current, profile: merged };
+    setState((st) => ({ ...st, profile: merged }));
+    void AsyncStorage.setItem(KEYS.profile, JSON.stringify(merged)).catch(() => undefined);
+    await api("taste", merged).catch(() => undefined);
+
+    // Plans: bring down saved plans this device doesn't have; send up saved ones the account lacks.
+    const cloud = await api<{ id: string; spec: unknown }[]>("plans").catch(() => []);
+    const added: Record<string, PlanEntry> = {};
+    for (const row of cloud) {
+      const spec = PlanSpec.safeParse(row.spec);
+      if (!spec.success || stateRef.current.plans[row.id]) continue;
+      added[row.id] = { spec: spec.data, saved: true, createdAt: new Date().toISOString(), meta: metaOf(spec.data) };
+    }
+    const remoteIds = new Set(cloud.map((r) => r.id));
+    const toUpload = Object.entries(stateRef.current.plans).filter(([id, e]) => e.saved && !e.meta.demo && !remoteIds.has(id));
+    await Promise.all(toUpload.map(([, e]) => api("plans", e.spec).catch(() => undefined)));
+    if (Object.keys(added).length)
+      setState((st) => {
+        const plans = { ...added, ...st.plans };
+        persistPlans(plans);
+        return { ...st, plans };
+      });
+    return { restored, plans: Object.keys(added).length };
+  }, []);
+
   // Real Google places whenever a key is set; the AI key only changes who writes the plan.
   const demo = Boolean(state.status && !state.status.places && state.status.demo);
   const limits = Boolean(state.status?.plus);
   const unlocked = !limits || isPlus(state.profile);
   const value = useMemo<Store>(
-    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, demo }),
-    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, demo],
+    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo }),
+    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

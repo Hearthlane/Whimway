@@ -46,7 +46,8 @@ export default function PlanHome() {
   const store = useStore();
   const { profile, status, demo, plans } = store;
   // Arriving from onboarding, the composer starts with a suggestion built from the new taste profile.
-  const { starter } = useLocalSearchParams<{ starter?: string }>();
+  const { starter, welcome, restoredPlans } = useLocalSearchParams<{ starter?: string; welcome?: string; restoredPlans?: string }>();
+  const [welcomed, setWelcomed] = useState(false);
   const [text, setText] = useState(typeof starter === "string" ? starter : "");
   const [o, setO] = useState<Overrides>({});
   const [field, setField] = useState<Field | null>(null);
@@ -144,6 +145,14 @@ export default function PlanHome() {
             What should we do?
           </T>
         </Animated.View>
+
+        {welcome === "back" && !welcomed ? (
+          <Press testID="welcome-back" accessibilityRole="button" accessibilityHint="Dismiss" onPress={() => setWelcomed(true)}>
+            <Notice icon="check-circle">
+              {`Welcome back${profile.name ? `, ${profile.name}` : ""}. Your taste profile${Number(restoredPlans) > 0 ? ` and ${restoredPlans} saved plan${restoredPlans === "1" ? "" : "s"} are` : " is"} back on this device.`}
+            </Notice>
+          </Press>
+        ) : null}
 
         <TodayCard plans={plans} />
 

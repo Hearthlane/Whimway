@@ -45,3 +45,5 @@ example
 # screenshots written by the journey scripts
 /journey-shots
 /shots
+/dist-auth
+/auth-shots

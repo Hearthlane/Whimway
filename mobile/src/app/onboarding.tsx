@@ -8,6 +8,8 @@ import { areas } from "@shared/areas";
 import type { TasteProfile } from "@shared/profile";
 import { companions as companionKeys, interests as interestKeys, vibes as vibeKeys } from "@shared/schema";
 import { useStore } from "@/lib/store";
+import { cloudConfigured } from "@/lib/config";
+import { SignIn, type SignedIn } from "@/account/SignIn";
 import { companionCopy, interestCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Chip, Icon, Press, Spark, T, tap, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, motion, radius, shadow, space } from "@/ui/theme";
@@ -18,7 +20,8 @@ const budgets = [
   { value: 80, label: "$60–100", hint: "Treat yourselves" },
   { value: 150, label: "$100+", hint: "Go big sometimes" },
 ];
-const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "building", "reveal"] as const;
+const baseSteps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "building", "reveal"] as const;
+type Step = (typeof baseSteps)[number] | "account";
 
 // Personality reveal: first vibe gives the adjective, second the noun.
 const adjective: Record<string, string> = { romantic: "Romantic", adventurous: "Bold", cozy: "Cozy", cinematic: "Cinematic", chill: "Easygoing", lively: "Lively", artsy: "Artsy", foodie: "Hungry", outdoorsy: "Fresh-Air", playful: "Playful" };
@@ -119,8 +122,15 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
 }
 
 export default function Onboarding() {
-  const { profile, setProfile, track, limits } = useStore();
+  const { profile, setProfile, track, limits, session } = useStore();
   const [step, setStep] = useState(0);
+  // Accounts are optional: offered after the reveal when this build has them and nobody is signed in.
+  // "I already have an account" on the welcome screen.
+  const [signingIn, setSigningIn] = useState(false);
+  const [signedInAs, setSignedInAs] = useState("");
+  const [signedInAtStart] = useState(() => Boolean(session));
+  const offerAccount = cloudConfigured && !signedInAtStart && !signedInAs;
+  const steps: readonly Step[] = offerAccount ? [...baseSteps, "account"] : baseSteps;
   const [draft, setDraft] = useState<TasteProfile>({ ...profile, analytics: true });
   const set = (patch: Partial<TasteProfile>) => setDraft((d) => ({ ...d, ...patch }));
   const toggle = <K extends "vibes" | "interests">(key: K, value: TasteProfile[K][number], max: number) =>
@@ -133,14 +143,38 @@ export default function Onboarding() {
     track("onboarding_started");
   }, [track]);
 
+  const save = () => setProfile({ ...draft, onboarded: true });
+  // After the reveal (and the optional account step), offer Plus once if limits are on, then
+  // land on the composer with a first prompt ready.
+  const leave = (skipped: boolean) =>
+    router.replace(skipped ? "/" : limits ? { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } } : { pathname: "/", params: { starter: starterPrompt(draft) } });
   const finish = (skipped = false) => {
-    setProfile({ ...draft, onboarded: true });
+    if (steps[step] !== "account") save();
     track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: steps[step] });
     tap("success");
-    // After the reveal, offer Plus once (skippable), then land on the composer with a first prompt ready.
-    router.replace(skipped ? "/" : limits ? { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } } : { pathname: "/", params: { starter: starterPrompt(draft) } });
+    leave(skipped);
   };
-  const next = () => (step === steps.length - 1 ? finish() : setStep(step + 1));
+  const next = () => {
+    if (step === steps.length - 1) return finish();
+    // Save the finished profile before asking about an account, so signing in merges it.
+    if (steps[step + 1] === "account") save();
+    setStep(step + 1);
+  };
+  const accountDone = () => {
+    track("onboarding_completed", { step: "account" });
+    leave(false);
+  };
+  const returning = (r: SignedIn) => {
+    setSigningIn(false);
+    if (r.restored) {
+      track("onboarding_skipped", { step: "signin" });
+      router.replace({ pathname: "/", params: { welcome: "back", restoredPlans: String(r.plans) } });
+      return;
+    }
+    // Signed in, but the account has no taste profile yet: carry on with the questions.
+    setSignedInAs(r.email);
+    setStep(1);
+  };
   const isReveal = steps[step] === "reveal";
   const isBuilding = steps[step] === "building";
   // "Building your taste profile": a short beat that makes the reveal feel earned.
@@ -156,7 +190,11 @@ export default function Onboarding() {
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
       <View style={s.top}>
-        {step > 0 ? (
+        {signingIn ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setSigningIn(false)} hitSlop={10} style={s.topButton}>
+            <Icon name="arrow-left" />
+          </Pressable>
+        ) : step > 0 && current !== "account" ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setStep(step - 1)} hitSlop={10} style={s.topButton}>
             <Icon name="arrow-left" />
           </Pressable>
@@ -164,7 +202,7 @@ export default function Onboarding() {
           <View style={s.topButton} />
         )}
         <ProgressBar value={step / (steps.length - 1)} />
-        {isReveal ? (
+        {isReveal || current === "account" || signingIn ? (
           <View style={[s.topButton, { width: 56 }]} />
         ) : (
           <Pressable accessibilityRole="button" onPress={() => finish(true)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip">
@@ -176,7 +214,50 @@ export default function Onboarding() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+        {signingIn ? (
+          <Animated.View key="signin" entering={FadeInDown.duration(320)} style={{ gap: space.lg }}>
+            <T v="title" accessibilityRole="header">
+              Welcome back
+            </T>
+            <T v="body" tone={color.muted}>
+              Sign in to bring back your taste profile, people and saved plans.
+            </T>
+            <SignIn onSignedIn={returning} cta="Send my code" />
+          </Animated.View>
+        ) : (
         <Animated.View key={current} entering={FadeInDown.duration(320)}>
+          {signedInAs && current !== "account" ? (
+            <View style={s.signedIn} testID="onboarding-signed-in">
+              <Icon name="check-circle" size={16} />
+              <T v="small" style={{ flex: 1 }}>
+                Signed in as {signedInAs}. A few questions to set up your taste.
+              </T>
+            </View>
+          ) : null}
+          {current === "account" ? (
+            <View style={{ gap: space.lg }} testID="onboarding-account">
+              <T v="title" accessibilityRole="header">
+                Save your profile?
+              </T>
+              <View style={{ gap: space.md }}>
+                {[
+                  { icon: "smartphone" as const, text: "Your taste, people and saved plans on every device" },
+                  { icon: "link" as const, text: "Short share links you can switch off later" },
+                  { icon: "shield" as const, text: "No password, no spam. Delete it anytime in Settings" },
+                ].map((b) => (
+                  <View key={b.text} style={s.benefit}>
+                    <View style={s.benefitIcon}>
+                      <Icon name={b.icon} size={16} />
+                    </View>
+                    <T v="body" style={{ flex: 1 }}>
+                      {b.text}
+                    </T>
+                  </View>
+                ))}
+              </View>
+              <SignIn onSignedIn={accountDone} />
+            </View>
+          ) : null}
           {current === "welcome" ? (
             <View style={{ gap: space.xl }}>
               <Wordmark size={24} />
@@ -361,16 +442,24 @@ export default function Onboarding() {
             </>
           ) : null}
         </Animated.View>
+        )}
       </ScrollView>
-      <View style={[s.footer, isBuilding && { opacity: 0 }]} pointerEvents={isBuilding ? "none" : "auto"}>
-        <Button
-          testID="onboarding-next"
-          size="lg"
-          label={current === "welcome" ? "Get started" : isReveal ? "Continue" : "Continue"}
-          icon="arrow-right"
-          onPress={next}
-        />
-      </View>
+      {signingIn ? null : (
+        <View style={[s.footer, isBuilding && { opacity: 0 }]} pointerEvents={isBuilding ? "none" : "auto"}>
+          {current === "account" ? (
+            <Button testID="onboarding-not-now" size="lg" kind="ghost" label="Not now, keep it on this device" onPress={next} />
+          ) : (
+            <Button testID="onboarding-next" size="lg" label={current === "welcome" ? "Get started" : "Continue"} icon="arrow-right" onPress={next} />
+          )}
+          {current === "welcome" && cloudConfigured && !session ? (
+            <Pressable testID="onboarding-signin" accessibilityRole="button" onPress={() => setSigningIn(true)} hitSlop={8} style={{ alignSelf: "center", paddingTop: space.md }}>
+              <T v="smallStrong" tone={color.coralText}>
+                I already have an account
+              </T>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -414,5 +503,8 @@ const s = StyleSheet.create({
   label: { marginTop: space.lg, marginBottom: 6 },
   input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1, borderColor: color.line, backgroundColor: color.paper, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
   consent: { flexDirection: "row", gap: space.lg, alignItems: "center", marginTop: space.xl, padding: space.lg, backgroundColor: color.paper, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line },
+  signedIn: { flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, marginBottom: space.lg, borderRadius: radius.md, backgroundColor: color.mintTint },
+  benefit: { flexDirection: "row", alignItems: "center", gap: space.md },
+  benefitIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
   footer: { padding: space.lg, backgroundColor: color.canvas, borderTopWidth: 1, borderTopColor: color.line },
 });

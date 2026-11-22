@@ -26,5 +26,7 @@ export const eventNames = [
   "paywall_viewed",
   "plus_started",
   "plus_cancelled",
+  "auth_code_sent",
+  "auth_signed_in",
 ] as const;
 export type EventName = (typeof eventNames)[number];

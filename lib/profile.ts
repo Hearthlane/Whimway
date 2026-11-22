@@ -150,3 +150,52 @@ export function applyFeedback(
   ].slice(-100);
   return { ...profile, affinity: trimmed, disliked };
 }
+
+const uniqueBy = <T>(items: T[], key: (item: T) => string, max: number) => {
+  const seen = new Set<string>();
+  return items.filter((i) => !seen.has(key(i)) && seen.add(key(i))).slice(0, max);
+};
+
+/**
+ * Combine the profile on this device with the one saved to the account, when someone signs in.
+ * - A device that hasn't been set up yet takes the account's profile as it is ("welcome back").
+ * - Otherwise the device's choices win (they are the most recent), and lists are combined:
+ *   favourites, people, skipped places and poll answers from both are kept.
+ * Learned affinities are averaged where both have them. Plus stays whichever is active.
+ */
+export function mergeProfiles(
+  device: TasteProfile,
+  account: TasteProfile | null,
+): TasteProfile {
+  if (!account) return device;
+  if (!device.onboarded && account.onboarded) return { ...account, onboarded: true };
+  const affinity: Record<string, number> = { ...account.affinity };
+  for (const [k, v] of Object.entries(device.affinity))
+    affinity[k] = k in affinity ? Math.round(((affinity[k] + v) / 2) * 100) / 100 : v;
+  const keptAffinity = Object.fromEntries(
+    Object.entries(affinity)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+      .slice(0, 40),
+  );
+  const plusActive = (p: TasteProfile) => Boolean(p.plus?.active);
+  return TasteProfile.parse({
+    ...device,
+    onboarded: device.onboarded || account.onboarded,
+    name: device.name || account.name,
+    dietary: device.dietary || account.dietary,
+    accessibility: device.accessibility || account.accessibility,
+    affinity: keptAffinity,
+    disliked: [...new Set([...device.disliked, ...account.disliked])].slice(0, 100),
+    favourites: uniqueBy([...device.favourites, ...account.favourites], (f) => f.id, 100),
+    people: uniqueBy([...device.people, ...account.people], (p) => p.id, 30),
+    polls: Object.fromEntries(
+      Object.entries({ ...account.polls, ...device.polls }).slice(-60),
+    ),
+    stats: {
+      plans: Math.max(device.stats.plans, account.stats.plans),
+      edits: Math.max(device.stats.edits, account.stats.edits),
+      shares: Math.max(device.stats.shares, account.stats.shares),
+    },
+    plus: plusActive(device) ? device.plus : (account.plus ?? device.plus),
+  });
+}
