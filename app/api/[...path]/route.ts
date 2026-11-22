@@ -668,6 +668,9 @@ async function handlePOST(request: Request, ctx: Context) {
           group: z.string().max(40),
           /** Free text when the person typed what they want instead of picking a tile. */
           text: z.string().max(80).optional(),
+          /** Minutes a place must stay open from the start time (browsing needs less). */
+          openFor: z.number().int().min(30).max(240).default(180),
+          limit: z.number().int().min(1).max(12).default(8),
           demo: z.boolean().default(false),
         })
         .parse(input);
@@ -684,7 +687,7 @@ async function handlePOST(request: Request, ctx: Context) {
       return ok(
         await planner(data.request, data.demo)
           .withCrowd(await crowdSignals())
-          .options(data.request, group),
+          .options(data.request, group, data.limit, data.openFor),
       );
     }
     if (path === "place") {

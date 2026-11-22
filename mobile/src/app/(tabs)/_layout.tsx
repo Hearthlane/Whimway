@@ -19,6 +19,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Plan", tabBarIcon: ({ color: c }) => <Icon name="star" tint={c as string} size={20} /> }} />
+      <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color: c }) => <Icon name="compass" tint={c as string} size={20} /> }} />
       <Tabs.Screen name="saved" options={{ title: "Saved", tabBarIcon: ({ color: c }) => <Icon name="bookmark" tint={c as string} size={20} /> }} />
       <Tabs.Screen name="profile" options={{ title: "You", tabBarIcon: ({ color: c }) => <Icon name="user" tint={c as string} size={20} /> }} />
     </Tabs>

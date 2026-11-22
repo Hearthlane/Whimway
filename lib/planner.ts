@@ -711,7 +711,16 @@ export class Planner {
    * Guided planning: a few open, well-liked places of one kind (a cuisine, a type of fun),
    * nearest first within the chosen area. Widens to the whole region if the area has none.
    */
-  async options(request: PlanRequest, group: GuideGroup, limit = 8) {
+  /**
+   * `openFor` is how long a place must stay open from the start time: long enough to be
+   * either stop of a plan (default), or just an hour when someone is only browsing.
+   */
+  async options(
+    request: PlanRequest,
+    group: GuideGroup,
+    limit = 8,
+    openFor = 180,
+  ) {
     const open: PlanRequest = {
       ...request,
       hardBudget: false,
@@ -734,7 +743,8 @@ export class Planner {
       );
       const detailed = await Promise.all(
         pool
-          .slice(0, limit * 3)
+          // Detailed lookups are the costly Google calls: fetch a bounded number.
+          .slice(0, Math.min(limit * 2, 18))
           .map((p) => this.details(p.id, request.location.currency)),
       );
       // The person may put this stop first or second, so it has to be open for both slots.
@@ -744,7 +754,8 @@ export class Planner {
           openThroughout(
             p,
             request,
-            180 + Math.min(180, distance(p.point, request.area.center) / 250),
+            openFor +
+              Math.min(180, distance(p.point, request.area.center) / 250),
           ),
         )
         .slice(0, limit);
