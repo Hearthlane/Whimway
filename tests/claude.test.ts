@@ -229,36 +229,4 @@ describe("Claude as the planner", () => {
     );
     expect(fetch).toHaveBeenCalled();
   });
-  it("with a proxy-injected key, never sends the placeholder", async () => {
-    vi.stubEnv("ANTHROPIC_API_KEY", "proxy-injected");
-    const seen: Headers[] = [];
-    vi.stubGlobal("fetch", async (_u: unknown, init?: RequestInit) => {
-      seen.push(new Headers(init?.headers));
-      return new Response(
-        JSON.stringify({
-          id: "m",
-          type: "message",
-          role: "assistant",
-          model: "claude-haiku-5-5",
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                title: "T",
-                summary: "S",
-                stops: [{ placeId: "gta-captive", minutes: 60, reason: "R" }],
-              }),
-            },
-          ],
-          stop_reason: "end_turn",
-          stop_sequence: null,
-          usage: { input_tokens: 1, output_tokens: 1 },
-        }),
-        { headers: { "content-type": "application/json" } },
-      );
-    });
-    await new ClaudeRecommender().select(request(), candidates, []);
-    expect(seen[0].has("x-api-key")).toBe(false);
-    vi.unstubAllGlobals();
-  });
 });

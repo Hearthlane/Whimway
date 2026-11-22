@@ -17,18 +17,6 @@ import type { RecommendationProvider } from "./types";
  * and locks are checked afterwards by deterministic code, and an unknown place ID is
  * rejected. The key and model are server settings and never reach the app.
  */
-/**
- * With ANTHROPIC_API_KEY=proxy-injected the key is a network secret: the egress proxy adds
- * the x-api-key header, but only when the request carries none, so the placeholder is
- * removed before sending. (The server must then route api.anthropic.com through the proxy;
- * see scripts/preview.sh.)
- */
-const INJECTED = "proxy-injected";
-const withoutKey: typeof fetch = (input, init) => {
-  const headers = new Headers(init?.headers);
-  headers.delete("x-api-key");
-  return meteredFetch(input, { ...init, headers });
-};
 export function claudeConfigured() {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }

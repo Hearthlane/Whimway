@@ -115,7 +115,7 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_GOOGLE_MAP_ID`                          | Optional own cloud map ID; documented Google development map ID is the fallback                                             |
 | `GOOGLE_MAPS_SERVER_KEY`                             | Server key for Places API (New), Routes API and Geocoding API                                                               |
 | `GOOGLE_MAPS_STATIC_KEY`                             | Optional server key for real map images in the browser build (Maps Static API reads the key only from the URL, so a proxy-injected header cannot be used) |
-| `ANTHROPIC_API_KEY`                                  | Claude API key for the AI planner (used first when set). `proxy-injected` when the key is a network secret on `api.anthropic.com` (header `x-api-key`) |
+| `ANTHROPIC_API_KEY`                                  | Claude API key for the AI planner (used first when set). In a Claude cloud environment it must be an environment variable: network secrets are never added to requests to Anthropic |
 | `WHIMWAY_CLAUDE_MODEL`                               | Claude model for planning; default `claude-haiku-5-5` (cheapest). E.g. `claude-sonnet-5-5` or `claude-opus-5-5` for richer copy |
 | `WHIMWAY_OPENAI_KEY`                                 | OpenAI credential with a cloud-compatible variable name                                                                     |
 | `OPENAI_API_KEY`                                     | Alternative for conventional local/Vercel configuration; `OPENAI_` target names are reserved in Codex cloud secret bindings |
