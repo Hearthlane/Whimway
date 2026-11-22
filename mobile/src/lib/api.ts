@@ -14,6 +14,8 @@ export class ApiError extends Error {
   }
 }
 export type Status = {
+  /** The server can draw real Google map images (Maps Static API). */
+  staticMap?: boolean;
   /** Plus limits and paywall are on. Off by default: the app is free. */
   plus?: boolean;
   places: boolean;

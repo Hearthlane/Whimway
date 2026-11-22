@@ -17,6 +17,8 @@ import {
   autocomplete,
   resolvePoint,
   photoUrl,
+  staticMap,
+  staticMapKey,
 } from "@/lib/providers/google";
 import { fixtureLocations } from "@/lib/providers/fixtures";
 import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
@@ -132,6 +134,8 @@ async function handleGET(request: Request, ctx: Context) {
       return ok({
         places: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
         maps: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
+        /** Real map images for the browser build (Maps Static API, key kept on the server). */
+        staticMap: Boolean(staticMapKey()),
         ai: aiConfigured(),
         cloud: Boolean(
           process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -210,6 +214,48 @@ async function handleGET(request: Request, ctx: Context) {
       const session = url.searchParams.get("session");
       if (session) z.string().uuid().parse(session);
       return ok(await new GooglePlaces().location(id, session ?? undefined));
+    }
+    if (path === "staticmap") {
+      // ?stops=lat,lng;lat,lng&paths=<enc>;<enc>&w=600&h=240 (paths may be empty per leg)
+      const q = z
+        .object({
+          stops: z
+            .string()
+            .max(400)
+            .transform((v) => v.split(";").map((p) => p.split(",").map(Number)))
+            .pipe(
+              z
+                .array(
+                  z.tuple([
+                    z.number().min(-90).max(90),
+                    z.number().min(-180).max(180),
+                  ]),
+                )
+                .min(1)
+                .max(8),
+            ),
+          // Encoded polylines use ASCII 63-126; legs are separated by spaces.
+          paths: z
+            .string()
+            .max(12000)
+            .regex(/^[\x3F-\x7E ]*$/)
+            .default(""),
+          w: z.coerce.number().int().min(100).max(640).default(600),
+          h: z.coerce.number().int().min(100).max(640).default(260),
+        })
+        .parse(Object.fromEntries(url.searchParams));
+      const image = await staticMap({
+        stops: q.stops.map(([lat, lng]) => ({ lat, lng })),
+        paths: q.paths ? q.paths.split(" ") : [],
+        width: q.w,
+        height: q.h,
+      });
+      return new NextResponse(image.body, {
+        headers: {
+          "Content-Type": image.type,
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
     }
     if (path === "photo")
       return NextResponse.redirect(

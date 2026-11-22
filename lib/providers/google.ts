@@ -579,3 +579,79 @@ export async function photoUrl(name: string) {
   return url;
 }
 export { PlacePhoto };
+
+/**
+ * Real map images (Maps Static API) for the browser build. Static Maps reads the key only
+ * from the URL, so this needs a real key on the server: GOOGLE_MAPS_STATIC_KEY, or
+ * GOOGLE_MAPS_SERVER_KEY when it holds the key itself rather than "proxy-injected".
+ */
+export function staticMapKey() {
+  const own = process.env.GOOGLE_MAPS_STATIC_KEY;
+  const server = process.env.GOOGLE_MAPS_SERVER_KEY;
+  return own || (server && server !== INJECTED ? server : "");
+}
+export type StaticMapInput = {
+  stops: Point[];
+  /** Encoded route geometry per leg, or empty for a straight line. */
+  paths: string[];
+  width: number;
+  height: number;
+};
+// Quiet basemap so the route and numbered stops stand out, in the app's ink colour.
+const MAP_STYLE = [
+  "feature:poi|visibility:off",
+  "feature:transit|element:labels.icon|visibility:off",
+  "element:labels.text.fill|color:0x4e5674",
+  "feature:road|element:geometry|color:0xffffff",
+  "feature:landscape|element:geometry|color:0xf1f3f7",
+  "feature:water|element:geometry|color:0xcfe0ff",
+  "feature:park|element:geometry|color:0xdcefe3",
+];
+export function staticMapUrl(input: StaticMapInput, key: string) {
+  const q = new URLSearchParams({
+    size: `${input.width}x${input.height}`,
+    scale: "2",
+    maptype: "roadmap",
+    language: "en",
+    key,
+  });
+  for (const style of MAP_STYLE) q.append("style", style);
+  input.stops.forEach((s, i) =>
+    q.append(
+      "markers",
+      `color:0x10173A|label:${(i + 1) % 10}|${s.lat.toFixed(6)},${s.lng.toFixed(6)}`,
+    ),
+  );
+  input.stops.slice(1).forEach((to, i) => {
+    const from = input.stops[i];
+    const enc = input.paths[i];
+    q.append(
+      "path",
+      enc
+        ? `color:0x10173ACC|weight:5|enc:${enc}`
+        : `color:0x10173A88|weight:4|${from.lat.toFixed(6)},${from.lng.toFixed(6)}|${to.lat.toFixed(6)},${to.lng.toFixed(6)}`,
+    );
+  });
+  return `https://maps.googleapis.com/maps/api/staticmap?${q}`;
+}
+export async function staticMap(input: StaticMapInput) {
+  const key = staticMapKey();
+  if (!key)
+    throw new AppError(
+      "MAP_UNAVAILABLE",
+      "Map images need a Google key on the server.",
+      503,
+    );
+  const url = staticMapUrl(input, key);
+  return cached(`staticmap|${url}`, 60 * 60_000, async () => {
+    const r = await providerFetch(url);
+    const type = r.headers.get("content-type") ?? "";
+    if (!r.ok || !type.startsWith("image/"))
+      throw new AppError(
+        "MAP_UNAVAILABLE",
+        "Google did not return a map image.",
+        502,
+      );
+    return { type, body: new Uint8Array(await r.arrayBuffer()) };
+  });
+}
