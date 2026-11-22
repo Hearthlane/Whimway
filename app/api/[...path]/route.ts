@@ -49,6 +49,7 @@ import {
   installOf,
   plansThisMonth,
   requireEditAllowance,
+  plusEnabled,
   requirePlanAllowance,
 } from "@/lib/server/entitlements";
 import { allEvents, logEvent } from "@/lib/server/event-log";
@@ -127,6 +128,8 @@ async function handleGET(request: Request, ctx: Context) {
           process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
         ),
         demo: demoAllowed(),
+        /** Plus limits and paywall; off by default (free, ad-supported). */
+        plus: plusEnabled(),
         user: user ? { id: user.id, email: user.email } : null,
       });
     }

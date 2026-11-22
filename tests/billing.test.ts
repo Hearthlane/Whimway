@@ -79,11 +79,25 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   vi.stubEnv("WHIMWAY_EVENT_LOG", "off");
   vi.stubEnv("WHIMWAY_DEMO_MODE", "true");
+  // These tests cover the optional Plus mode; the app is free by default.
+  vi.stubEnv("WHIMWAY_PLUS_ENABLED", "true");
   vi.stubEnv("DAILY_GUEST_GENERATIONS", "1000");
   vi.stubEnv("DAILY_MEMBER_GENERATIONS", "1000");
   vi.stubEnv("BILLING_WEBHOOK_SECRET", "whsec-test");
   state.user = null;
   resetEntitlements();
+});
+
+describe("Free by default", () => {
+  it("never caps plans or asks for payment unless Plus is switched on", async () => {
+    vi.stubEnv("WHIMWAY_PLUS_ENABLED", "");
+    const status = await (await get("status")).json();
+    expect(status.plus).toBe(false);
+    for (let i = 0; i < FREE.plansPerMonth + 2; i++)
+      expect(
+        (await plan({ "X-Whimway-Install": "free-install-0001" })).status,
+      ).toBe(200);
+  });
 });
 
 describe("Free allowance is enforced on the server", () => {

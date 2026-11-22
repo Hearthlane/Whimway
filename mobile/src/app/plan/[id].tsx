@@ -149,7 +149,7 @@ export default function PlanScreen() {
 
   const magicEdit = async (instruction: string) => {
     if (!plan) return;
-    if (editsLeft(store.profile, editsUsed) <= 0) {
+    if (store.limits && editsLeft(store.profile, editsUsed) <= 0) {
       setEditOpen(false);
       router.push({ pathname: "/plus", params: { reason: "edits" } });
       return;

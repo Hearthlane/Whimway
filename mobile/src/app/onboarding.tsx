@@ -119,7 +119,7 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
 }
 
 export default function Onboarding() {
-  const { profile, setProfile, track } = useStore();
+  const { profile, setProfile, track, limits } = useStore();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<TasteProfile>({ ...profile, analytics: true });
   const set = (patch: Partial<TasteProfile>) => setDraft((d) => ({ ...d, ...patch }));
@@ -138,7 +138,7 @@ export default function Onboarding() {
     track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: steps[step] });
     tap("success");
     // After the reveal, offer Plus once (skippable), then land on the composer with a first prompt ready.
-    router.replace(skipped ? "/" : { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } });
+    router.replace(skipped ? "/" : limits ? { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } } : { pathname: "/", params: { starter: starterPrompt(draft) } });
   };
   const next = () => (step === steps.length - 1 ? finish() : setStep(step + 1));
   const isReveal = steps[step] === "reveal";

@@ -14,6 +14,8 @@ export class ApiError extends Error {
   }
 }
 export type Status = {
+  /** Plus limits and paywall are on. Off by default: the app is free. */
+  plus?: boolean;
   places: boolean;
   maps: boolean;
   ai: boolean;

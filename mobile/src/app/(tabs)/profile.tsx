@@ -27,6 +27,8 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState<"device" | "account" | null>(null);
   const plus = isPlus(profile);
+  // Fine-tuning and favourites are open to everyone unless Plus limits are switched on.
+  const open = store.unlocked;
   const rated = Object.values(store.plans).filter((p) => p.feedback).length;
   const nightsOut = Object.values(store.plans).filter((p) => p.feedback && p.feedback.went !== "no").length;
   const loved = Object.entries(profile.affinity).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -80,6 +82,7 @@ export default function Profile() {
           </T>
         </Card>
 
+        {store.limits ? (
         <Card style={[{ gap: space.md }, plus && { borderColor: color.ink }]}>
           <View style={s.rowBetween}>
             <T v="heading">{plus ? "Whimway Plus" : "Free plan"}</T>
@@ -91,11 +94,12 @@ export default function Profile() {
               : `${Math.min(FREE.plansPerMonth, plansLeft(profile))} of ${FREE.plansPerMonth} free plans left this month, ${FREE.magicEditsPerPlan} Magic Edits per plan.`}
           </T>
         </Card>
+        ) : null}
 
         <Card style={{ gap: space.md }}>
           <View style={s.rowBetween}>
             <T v="heading">Fine-tune</T>
-            {plus ? null : <Chip label="Plus" tone="lavender" />}
+            {open ? null : <Chip label="Plus" tone="lavender" />}
           </View>
           <T v="smallStrong">Pace</T>
           <View style={s.chips}>
@@ -105,7 +109,7 @@ export default function Profile() {
                 testID={`pace-${pace}`}
                 label={{ relaxed: "Relaxed, 2 stops", balanced: "Balanced, 3 stops", packed: "Packed, 4 stops" }[pace]}
                 selected={profile.pace === pace}
-                onPress={() => (plus ? setProfile({ ...profile, pace }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
+                onPress={() => (open ? setProfile({ ...profile, pace }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
               />
             ))}
           </View>
@@ -118,7 +122,7 @@ export default function Profile() {
             </View>
             <Switch
               value={profile.alcoholFree}
-              onValueChange={(alcoholFree) => (plus ? setProfile({ ...profile, alcoholFree }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
+              onValueChange={(alcoholFree) => (open ? setProfile({ ...profile, alcoholFree }) : router.push({ pathname: "/plus", params: { reason: "tune" } }))}
               trackColor={{ true: color.ink, false: color.line }}
               thumbColor={color.paper}
               accessibilityLabel="Alcohol-free nights"
@@ -182,7 +186,7 @@ export default function Profile() {
                   label="Plan around it"
                   icon="star"
                   onPress={() => {
-                    if (!plus) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
+                    if (!open) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
                     const now = DateTime.now().setZone("America/Toronto");
                     const prompt = `Plan something around ${f.name}`;
                     const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });

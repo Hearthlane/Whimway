@@ -208,7 +208,7 @@ export default function Guide() {
   const kindTiles = useMemo(() => orderByTaste(activities, liked), [liked]);
 
   const build = () => {
-    if (plansLeft(profile) <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
+    if (store.limits && plansLeft(profile) <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
     store.setPending(request);
     store.track("plan_requested", { words: a.note.trim().split(/\s+/).filter(Boolean).length, edited: 0, guided: true });
     router.push("/options");

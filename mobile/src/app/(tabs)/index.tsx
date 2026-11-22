@@ -10,7 +10,7 @@ import { buildRequest, describe, interpret } from "@shared/intent";
 import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
 import { setGuideSeed } from "@/lib/guideSeed";
 import { useStore } from "@/lib/store";
-import { FREE, isPlus, plansLeft } from "@shared/plus";
+import { FREE, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
 import { Sponsored } from "@/plan/Sponsored";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
@@ -82,7 +82,7 @@ export default function PlanHome() {
   const totalBudget = Math.round(request.budgetBasis === "total" ? request.budget * request.participants : request.budget);
 
   const ready = Boolean(status && (status.places || status.demo));
-  const left = plansLeft(profile);
+  const left = store.limits ? plansLeft(profile) : Infinity;
   // "Surprise me" is the one path that plans without asking anything.
   const plan = (prompt = text) => {
     if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
@@ -203,10 +203,10 @@ export default function PlanHome() {
             <IconButton
               icon="shuffle"
               label="Surprise me"
-              onPress={() => (isPlus(profile) ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
+              onPress={() => (store.unlocked ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
             />
           </View>
-          {isPlus(profile) ? null : (
+          {store.unlocked ? null : (
             <Pressable accessibilityRole="button" onPress={() => router.push("/plus")} hitSlop={6} testID="allowance">
               <T v="small" tone={left <= 1 ? color.coralText : color.muted} style={{ textAlign: "center" }}>
                 {left > 0 ? `${left} of ${FREE.plansPerMonth} free plans left this month.` : "No free plans left this month."} Get unlimited with Plus
