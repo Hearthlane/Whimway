@@ -12,6 +12,7 @@ import { setGuideSeed } from "@/lib/guideSeed";
 import { useStore } from "@/lib/store";
 import { FREE, isPlus, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
+import { Sponsored } from "@/plan/Sponsored";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Card, Chip, Icon, IconButton, Notice, Press, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
@@ -287,6 +288,8 @@ export default function PlanHome() {
             </View>
           </>
         ) : null}
+
+        <Sponsored surface="home" point={request.area.center} />
 
         <PollCard />
 

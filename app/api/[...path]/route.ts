@@ -35,6 +35,14 @@ import { summarize } from "@/lib/metrics";
 import { FREE } from "@/lib/plus";
 import { customGroup, groupByKey } from "@/lib/guide";
 import {
+  AdEvent,
+  NewCampaign,
+  choose,
+  surfaces,
+  toPlacement,
+} from "@/lib/sponsored";
+import { sponsoredStore } from "@/lib/server/sponsored";
+import {
   countPlanMade,
   entitlementFor,
   handleBillingWebhook,
@@ -62,7 +70,9 @@ const ok = (data: unknown) =>
 function failure(e: unknown) {
   // In development, say which field failed so provider data problems are easy to trace.
   if (e instanceof z.ZodError && process.env.NODE_ENV !== "production")
-    console.error(JSON.stringify({ event: "invalid_input", issues: e.issues.slice(0, 5) }));
+    console.error(
+      JSON.stringify({ event: "invalid_input", issues: e.issues.slice(0, 5) }),
+    );
   if (e instanceof z.ZodError)
     return NextResponse.json(
       {
@@ -86,6 +96,19 @@ function failure(e: unknown) {
     { status: 500 },
   );
 }
+/** Founder/admin endpoints need ADMIN_KEY; without one they work only in non-production demo mode. */
+function requireAdmin(request: Request, url: URL) {
+  const key = process.env.ADMIN_KEY;
+  const given =
+    request.headers.get("x-admin-key") ?? url.searchParams.get("key");
+  if (key ? given !== key : !demoAllowed())
+    throw new AppError(
+      "FORBIDDEN",
+      "Set ADMIN_KEY and pass it to manage this.",
+      403,
+    );
+}
+
 export async function GET(request: Request, ctx: Context) {
   return withProviderContext(request.signal, () => handleGET(request, ctx));
 }
@@ -110,7 +133,51 @@ async function handleGET(request: Request, ctx: Context) {
     if (path === "auth/signout") {
       throw new AppError("METHOD", "Use the sign-out button.", 405);
     }
+    if (path === "admin/campaigns") {
+      requireAdmin(request, url);
+      const store = sponsoredStore();
+      const [campaigns, stats] = await Promise.all([
+        store.list(),
+        store.stats(),
+      ]);
+      return ok(
+        campaigns.map((c) => ({
+          ...c,
+          stats: stats[c.id] ?? { impressions: 0, clicks: 0 },
+        })),
+      );
+    }
     await rateLimit(request, "read", (await currentUser())?.id);
+    if (path === "sponsored") {
+      // At most one clearly labelled placement for a surface; none when no campaign fits.
+      const q = z
+        .object({
+          surface: z.enum(surfaces),
+          lat: z.coerce.number().min(-90).max(90),
+          lng: z.coerce.number().min(-180).max(180),
+          category: z.string().max(40).optional(),
+        })
+        .parse(Object.fromEntries(url.searchParams));
+      const store = sponsoredStore();
+      const campaigns = await store.list().catch(() => []);
+      if (!campaigns.length) return ok([]);
+      const stats = await store
+        .stats()
+        .catch(() => ({}) as Record<string, { impressions: number }>);
+      const impressions = Object.fromEntries(
+        Object.entries(stats).map(([id, s]) => [id, s.impressions]),
+      );
+      const pick = choose(
+        campaigns,
+        {
+          surface: q.surface,
+          point: { lat: q.lat, lng: q.lng },
+          category: q.category,
+        },
+        impressions,
+      );
+      return ok(pick ? [toPlacement(pick, q.surface)] : []);
+    }
     if (path === "autocomplete") {
       const input = z.string().min(2).max(150).parse(url.searchParams.get("q"));
       const session = z.string().uuid().parse(url.searchParams.get("session"));
@@ -302,6 +369,7 @@ async function handlePOST(request: Request, ctx: Context) {
           : [
                 "events",
                 "signals",
+                "sponsored/event",
                 "polls/answer",
                 "errors",
                 "feedback",
@@ -332,6 +400,20 @@ async function handlePOST(request: Request, ctx: Context) {
         outputTokens: stats?.outputTokens,
       });
       return ok(result);
+    }
+    if (path === "sponsored/event") {
+      await sponsoredStore().record(AdEvent.parse(input));
+      return ok({ recorded: true });
+    }
+    if (path === "admin/campaigns") {
+      requireAdmin(request, new URL(request.url));
+      const store = sponsoredStore();
+      const id = z.string().uuid().optional().parse(input.id);
+      return ok(
+        id
+          ? await store.update(id, NewCampaign.partial().parse(input))
+          : await store.create(NewCampaign.parse(input)),
+      );
     }
     if (path === "guide/plans") {
       const data = z
@@ -757,6 +839,11 @@ export async function DELETE(request: Request, ctx: Context) {
   try {
     sameOrigin(request);
     const path = (await ctx.params).path.join("/");
+    if (path.startsWith("admin/campaigns/")) {
+      requireAdmin(request, new URL(request.url));
+      await sponsoredStore().remove(z.string().uuid().parse(path.slice(16)));
+      return ok({ deleted: true });
+    }
     const { db, user } = await requireUser();
     await rateLimit(request, "write", user.id);
     if (path.startsWith("plans/")) {

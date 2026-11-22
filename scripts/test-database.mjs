@@ -61,7 +61,7 @@ try {
     .sort()
     .map((f) => readFileSync(new URL(f, dir), "utf8"))
     .join("\n");
-  const cases = ["access.sql", "community.sql", "billing.sql"]
+  const cases = ["access.sql", "community.sql", "billing.sql", "sponsored.sql"]
     .map((f) =>
       readFileSync(new URL(`../tests/database/${f}`, import.meta.url), "utf8"),
     )
