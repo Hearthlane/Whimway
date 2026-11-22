@@ -54,7 +54,8 @@ export const TasteProfile = z.object({
         note: z.string().max(120).default(""),
       }),
     )
-    .max(50)
+    // Kept small so a signed-in profile stays well within the account's preferences size limit.
+    .max(30)
     .default([]),
   /** Poll answers by poll id (one-tap "this or that" questions). */
   polls: z

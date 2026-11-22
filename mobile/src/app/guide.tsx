@@ -287,6 +287,14 @@ export default function Guide() {
       <Animated.View key={step} entering={Enter.duration(motion.standard).easing(Easing.out(Easing.cubic))} exiting={Exit.duration(motion.quick)} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={[s.body, hasFooter && { paddingBottom: 140 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={{ gap: space.sm }}>
+            {person ? (
+              <View style={s.withPill} testID="planning-with">
+                <Icon name="users" size={13} />
+                <T v="smallStrong" style={{ fontSize: 12 }}>
+                  Planning with {person.name}
+                </T>
+              </View>
+            ) : null}
             <T v="hero" accessibilityRole="header" style={{ fontSize: 32, lineHeight: 35 }}>
               {title}
             </T>
@@ -666,6 +674,7 @@ function Line({ icon, label, value, onPress, last }: { icon: IconName; label: st
 }
 
 const s = StyleSheet.create({
+  withPill: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: color.coralTint },
   page: { flex: 1, backgroundColor: color.canvas },
   top: { flexDirection: "row", alignItems: "center", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
   track: { flex: 1, height: 6, borderRadius: 3, backgroundColor: color.line, overflow: "hidden" },

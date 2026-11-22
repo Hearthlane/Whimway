@@ -94,7 +94,7 @@ export function PersonSheet({ person, onClose }: { person: Person | "new" | null
     if (!name) return;
     const id = draft.id || `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
     const next = { ...draft, id, name, note: draft.note.trim().slice(0, 120) };
-    store.setProfile({ ...profile, people: [next, ...profile.people.filter((p) => p.id !== id)].slice(0, 50) });
+    store.setProfile({ ...profile, people: [next, ...profile.people.filter((p) => p.id !== id)].slice(0, 30) });
     tap("success");
     onClose();
   };

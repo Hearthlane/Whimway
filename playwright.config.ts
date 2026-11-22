@@ -13,7 +13,9 @@ export default defineConfig({
     launchOptions: {
       executablePath:
         process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
-        (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined),
+        ["/usr/bin/chromium", "/opt/pw-browsers/chromium"].find((path) =>
+          existsSync(path),
+        ),
     },
   },
   projects: [{ name: "desktop", use: { ...devices["Desktop Chrome"] } }],

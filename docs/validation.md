@@ -1,5 +1,17 @@
 # Validation record
 
+## Home, people and profile phase (Nov 2026)
+
+| Check | Outcome |
+| --- | --- |
+| Root + app typechecks, ESLint | Passed |
+| Vitest | 183 passed across 16 files (adds today's-plan timing, people validation and the synced-profile size limit) |
+| Playwright (web) | 15 journeys passed |
+| App journeys (Expo web build, mobile Chromium) | Main journey now also adds a person, sees them on the profile, plans with them from home (the guide shows "Planning with Sam" and skips "who"), and uses the Plans / Places tabs; guided-planner and Discover journeys passed; zero browser errors |
+| Database | All migrations + 80 authorization assertions passed on local PostgreSQL 16 |
+| Production build | `next build` passed |
+| Claude as the planner | Unit-tested with a simulated API; not yet run live (needs `ANTHROPIC_API_KEY`) |
+
 ## Design, monetisation and billing phase (Nov 2026)
 
 | Check                                         | Outcome                                                                                                                                                                                                                                                                                                                              |

@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { DateTime } from "luxon";
+import { startOf, today, whenLabel } from "@shared/today";
 import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import type { PlanEntry } from "@/lib/store";
@@ -8,19 +8,7 @@ import { guidePhotos } from "@/plan/guidePhotos";
 import { Button, Icon, Press, T } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
 
-const ZONE = "America/Toronto";
-const at = (iso: string) => DateTime.fromISO(iso).setZone(ZONE);
-export const startOf = (e: PlanEntry) => (e.meta.brief?.[0] ? at(e.meta.brief[0].at) : DateTime.fromISO(`${e.meta.date}T${e.meta.startTime}`, { zone: ZONE }));
-export const endOf = (e: PlanEntry) => {
-  const last = e.meta.brief?.[e.meta.brief.length - 1];
-  return last ? at(last.until) : startOf(e).plus({ hours: 4 });
-};
-export function whenLabel(e: PlanEntry, now = DateTime.now().setZone(ZONE)) {
-  const t = startOf(e);
-  const days = Math.round(t.startOf("day").diff(now.startOf("day"), "days").days);
-  const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : days === -1 ? "Yesterday" : days > 1 && days < 7 ? t.toFormat("cccc") : t.toFormat("ccc d LLL");
-  return `${day}, ${t.toFormat("h:mm a")}`;
-}
+export { endOf, startOf, whenLabel } from "@shared/today";
 const photosOf = (e: PlanEntry) => (e.meta.brief?.length ? e.meta.brief.map((b) => guidePhotos[b.kind] ?? guidePhotos.sights) : [guidePhotos.sights]);
 
 /** Horizontal photo cards for upcoming or recent plans. */
@@ -79,69 +67,41 @@ export function PlanTile({ id, entry }: { id: string; entry: PlanEntry }) {
  * plan within a week, if any.
  */
 export function TodayCard({ plans }: { plans: Record<string, PlanEntry> }) {
-  const now = DateTime.now().setZone(ZONE);
-  const ahead = Object.entries(plans)
-    .filter(([, e]) => endOf(e) > now && startOf(e).diff(now, "days").days < 7)
-    .sort((a, b) => startOf(a[1]).toMillis() - startOf(b[1]).toMillis());
-  if (!ahead.length) return null;
-  const [id, e] = ahead[0];
-  const start = startOf(e);
-  const live = start.diff(now, "hours").hours <= 2;
-  const brief = e.meta.brief ?? [];
-  const current = brief.find((b) => at(b.at) <= now && now < at(b.until));
-  const next = brief.find((b) => at(b.at) > now);
-  const until = (t: DateTime) => {
-    const m = Math.max(0, Math.round(t.diff(now, "minutes").minutes));
-    return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60 ? `${m % 60} min` : ""}`.trim();
-  };
-  const headline = !live
-    ? `Next up: ${whenLabel(e, now)}`
-    : current
-      ? `Now: ${current.name}`
-      : next && at(next.at) > now && brief[0] && at(brief[0].at) > now
-        ? `Starts in ${until(start)}`
-        : "Your plan today";
-  const sub = !live
-    ? brief.length
-      ? brief.map((b) => b.name).join(" → ")
-      : `${e.meta.stops} stops`
-    : current && next
-      ? `Then ${next.name} at ${at(next.at).toFormat("h:mm a")}`
-      : current
-        ? `Last stop, until ${at(current.until).toFormat("h:mm a")}`
-        : next
-          ? `${next.name} at ${at(next.at).toFormat("h:mm a")}`
-          : e.meta.title;
-  const target = current ? (next ?? current) : next;
+  const t = today(plans);
+  if (!t) return null;
+  const { live } = t;
+  const title = plans[t.id].meta.title;
   return (
     <Animated.View entering={FadeInDown.duration(380)} style={[s.today, live && s.todayLive]} testID="today-card">
       <View style={s.todayTop}>
         <View style={[s.pill, live && { backgroundColor: color.coral }]}>
           {live ? <View style={s.dot} /> : <Icon name="calendar" size={12} tint={color.ink} />}
           <T v="smallStrong" style={{ fontSize: 12 }}>
-            {live ? (current ? "Happening now" : "Today") : "Coming up"}
+            {t.label}
           </T>
         </View>
-        <T v="small" tone={live ? "#C7CCE4" : color.muted} numberOfLines={1} style={{ flex: 1, textAlign: "right" }}>
-          {e.meta.title}
-        </T>
+        {live ? (
+          <T v="small" tone="#C7CCE4" numberOfLines={1} style={{ flex: 1, textAlign: "right" }}>
+            {title}
+          </T>
+        ) : null}
       </View>
       <T style={[s.todayHead, { color: live ? color.paper : color.ink }]} numberOfLines={2}>
-        {headline}
+        {t.headline}
       </T>
       <T v="body" tone={live ? "#C7CCE4" : color.muted} numberOfLines={2}>
-        {sub}
+        {t.sub}
       </T>
-      {live && brief.length ? (
-        <View style={s.progress} accessibilityLabel={`${brief.filter((b) => at(b.until) <= now).length} of ${brief.length} stops done`}>
-          {brief.map((b) => (
-            <View key={b.placeId} style={[s.seg, at(b.until) <= now ? s.segDone : at(b.at) <= now ? s.segNow : null]} />
+      {live && t.total ? (
+        <View style={s.progress} accessibilityLabel={`${t.done} of ${t.total} stops done`}>
+          {Array.from({ length: t.total }, (_, i) => (
+            <View key={i} style={[s.seg, i < t.done ? s.segDone : i === t.done && t.label === "Happening now" ? s.segNow : null]} />
           ))}
         </View>
       ) : null}
       <View style={s.todayActions}>
-        <Button kind={live ? "primary" : "dark"} label="Open plan" onPress={() => router.push(`/plan/${id}`)} style={{ flex: 1 }} testID="today-open" />
-        {live && target ? <Button kind="soft" label="Directions" icon="navigation" onPress={() => void Linking.openURL(target.mapsUrl)} style={{ flex: 1 }} /> : null}
+        <Button kind={live ? "primary" : "dark"} label="Open plan" onPress={() => router.push(`/plan/${t.id}`)} style={{ flex: 1 }} testID="today-open" />
+        {t.directions ? <Button kind="soft" label="Directions" icon="navigation" onPress={() => void Linking.openURL(t.directions!)} style={{ flex: 1 }} /> : null}
       </View>
     </Animated.View>
   );
