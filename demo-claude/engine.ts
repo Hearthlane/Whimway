@@ -70,10 +70,26 @@ class ClaudeAI {
     };
     if (!brain) return fall();
     const ids = new Set(candidates.map((c) => c.id));
+    // How many stops this option should have (the planner asks for a short, a middle and a
+    // long option); for edits, one more than before when adding, else the same as before.
+    const want = action?.startsWith("Add")
+      ? locked.length + 1
+      : previousStops?.length
+        ? Math.max(previousStops.length, locked.length + 1)
+        : req.pace === "relaxed"
+          ? 2
+          : req.pace === "packed"
+            ? 4
+            : 3;
     const start = DateTime.fromISO(`${req.date}T${req.startTime}`);
     const prompt = [
       "You are the planning brain inside Whimway, an app that turns a vague idea into a concrete outing in the Greater Toronto Area.",
-      "Pick 2 to 4 venues ONLY from the candidate list, in the order they should be visited, and write the plan's copy.",
+      `Pick exactly ${want} venues (counting any locked stops) ONLY from the candidate list, in the order they should be visited, and write the plan's copy.`,
+      want === 2
+        ? "This is the short, easy option: just two stops, no rush."
+        : want === 3
+          ? "This is the in-between option: three stops with one extra thing to do."
+          : "This is the long option: four stops for a full night or day out.",
       "Rules: use exact candidate ids; keep the total visit time near the requested duration; respect the budget; a meal around dinner time if the outing spans it; stops should be reasonably close together; vary categories; keep any locked stops (include them with their id).",
       "Voice: warm, specific, plain. Reasons say why THIS place suits THIS group, 1-2 short sentences, no hype words, no emoji.",
       `Request: ${describe(req)}. Group: ${req.companions}, ${req.participants} people. Starts ${start.toFormat("cccc h:mm a")}, about ${Math.round(req.duration / 60)} hours. Budget: ${req.budget ? `$${req.budget} per person` : "flexible"}. Travel: ${req.mode}. Vibes: ${req.vibes.join(", ") || "any"}. Interests: ${req.interests.join(", ") || "any"}.`,
@@ -108,13 +124,27 @@ class ClaudeAI {
             !seen.has(s.placeId) &&
             seen.add(s.placeId),
         )
-        .slice(0, 6)
+        .slice(0, 8)
         .map((s) => ({
           placeId: s.placeId!,
           minutes: Math.max(30, Math.min(150, Math.round(s.minutes ?? 75))),
           reason: String(s.reason ?? "").slice(0, 230),
         }));
+      // Stops the person picked (or kept) are fixed: keep Claude's order, but never its
+      // rewrite of their time or description, which the planner would reject.
+      for (let i = 0; i < stops.length; i++) {
+        const l = locked.find((x) => x.placeId === stops[i].placeId);
+        if (l) stops[i] = l;
+      }
       for (const l of locked) if (!seen.has(l.placeId)) stops.unshift(l);
+      // Keep to the intended size: drop extra unlocked stops from the end.
+      while (stops.length > Math.max(want, locked.length)) {
+        const i = [...stops]
+          .reverse()
+          .findIndex((x) => !locked.some((l) => l.placeId === x.placeId));
+        if (i < 0) break;
+        stops.splice(stops.length - 1 - i, 1);
+      }
       if (stops.length < 2 || !raw.title) return fall();
       lastSource = "claude";
       lastNote = String(raw.note ?? "").slice(0, 240);
@@ -416,8 +446,128 @@ export async function planOptions(
   avoid: string[] = [],
 ) {
   const req = guidedRequest(a, prefs);
+  return withFallback(() => plannerFor(req).alternatives(req, feedback, avoid));
+}
+
+// ── Discover and direct edits (match the full app) ─────────────────────────────────────
+/** Real demo places of one kind, or matching what was typed, open at the chosen time. */
+export async function discover(
+  prefs: Prefs,
+  opts: {
+    areaKey: string;
+    when: "now" | "tonight" | "tomorrow";
+    group?: string;
+    text?: string;
+  },
+) {
+  const now = DateTime.now().setZone("America/Toronto");
+  const area = areas.find((a) => a.key === opts.areaKey) ?? areas[0];
+  const base = buildRequest(
+    "",
+    interpret("", now),
+    { ...emptyProfile(), ...prefs },
+    now,
+    { area },
+  );
+  const start =
+    opts.when === "now"
+      ? now.plus({ minutes: 30 - (now.minute % 30) })
+      : opts.when === "tonight"
+        ? now.set({ hour: Math.max(18, now.hour + 1), minute: 0 })
+        : now.plus({ days: 1 }).set({ hour: 18, minute: 30 });
+  const at =
+    opts.when !== "tomorrow" && (start.hour >= 23 || start.day !== now.day)
+      ? now.plus({ days: 1 }).set({ hour: 18, minute: 30 })
+      : start;
+  const req: PlanRequest = {
+    ...base,
+    date: at.toISODate()!,
+    startTime: at.toFormat("HH:mm"),
+    duration: 180,
+    anchorPlaceIds: [],
+  };
+  const group = opts.text
+    ? customGroup(opts.text)
+    : groupByKey(opts.group ?? "games");
+  if (!group) return { places: [], widened: false, request: req };
+  const res = await plannerFor(req).options(req, group, 12, 60);
+  return {
+    ...res,
+    request: req,
+    places: res.places.map((p) => ({ ...p, kind: photoKind(p, opts.group) })),
+  };
+}
+
+/** Plan options built around one place the person found in Discover. */
+export async function planAround(
+  request: PlanRequest,
+  placeId: string,
+  name: string,
+) {
+  const req: PlanRequest = {
+    ...request,
+    duration: 210,
+    anchorPlaceIds: [placeId],
+    prompt: `Plan something around ${name}`,
+  };
+  return withFallback(() => plannerFor(req).alternatives(req));
+}
+
+/** Move a stop earlier or later, give it 15 minutes more or less, or remove it. */
+export async function arrange(
+  itinerary: Itinerary,
+  index: number,
+  action: "earlier" | "later" | "remove" | "longer" | "shorter",
+) {
+  const refs = itinerary.stops.map((s) => ({
+    placeId: s.placeId,
+    minutes: s.minutes,
+    locked: false,
+    reason: s.reason,
+  }));
+  if (action === "remove") refs.splice(index, 1);
+  else if (action === "earlier" || action === "later") {
+    const to = action === "earlier" ? index - 1 : index + 1;
+    [refs[index], refs[to]] = [refs[to], refs[index]];
+  } else
+    refs[index].minutes = Math.max(
+      15,
+      Math.min(180, refs[index].minutes + (action === "longer" ? 15 : -15)),
+    );
+  return plannerFor(itinerary.request).edit({
+    ...(itinerary as unknown as PlanSpec),
+    stops: refs,
+  });
+}
+
+/**
+ * Run a set of plan options with Claude; if anything in that path fails, or Claude's
+ * picks leave no usable option, run it again with the built-in planner and say so.
+ */
+async function withFallback(
+  run: () => Promise<
+    { key: string; label: string; blurb: string; plan: Itinerary }[]
+  >,
+) {
   lastNote = "";
   lastSource = "fallback";
-  const options = await plannerFor(req).alternatives(req, feedback, avoid);
-  return { options, source: lastSource, note: lastNote };
+  try {
+    const options = await run();
+    if (options.length) return { options, source: lastSource, note: lastNote };
+  } catch (e) {
+    if (!usedClaude()) throw e;
+  }
+  if (!usedClaude()) return { options: [], source: lastSource, note: lastNote };
+  const saved = brain;
+  brain = null;
+  try {
+    const options = await run();
+    return {
+      options,
+      source: "fallback" as const,
+      note: "Claude’s picks didn’t fit the hours and travel checks, so these come from the built-in planner.",
+    };
+  } finally {
+    brain = saved;
+  }
 }

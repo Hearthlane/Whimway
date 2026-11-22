@@ -146,6 +146,25 @@ textarea { min-height: 84px; resize: vertical; }
 .option .oh h3 { flex: 1; }
 .option .ol { display: flex; gap: 12px; font-size: 15px; }
 .option .ol b { width: 44px; font-variant-numeric: tabular-nums; flex: none; }
+.seg { display: flex; gap: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 4px; align-self: flex-start; }
+.seg button { border: 0; background: none; padding: 8px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; color: var(--muted); }
+.seg button.on { background: var(--ink); color: var(--paper); }
+.hscroll { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; }
+.hscroll .chip { flex: none; white-space: nowrap; }
+.divider { width: 1px; background: var(--line); flex: none; margin: 4px 2px; }
+.dhead { display: flex; align-items: center; gap: 10px; }
+.dhead h3 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sorts { display: flex; gap: 2px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.sorts button { border: 0; background: none; font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 10px; border-radius: 999px; }
+.sorts button.on { background: var(--ink); color: var(--paper); }
+.sheetwrap { position: fixed; inset: 0; background: rgba(16,23,58,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20; animation: fade .2s ease-out; }
+@keyframes fade { from { opacity: 0; } }
+.sheet { background: var(--paper); width: 100%; max-width: 440px; border-radius: 26px 26px 0 0; padding: 18px 18px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; animation: up .28s cubic-bezier(.22,.8,.3,1); }
+.sheet img { width: 100%; height: 170px; object-fit: cover; border-radius: 18px; }
+.sheet .row2 .btn { flex: 1; text-decoration: none; color: var(--ink); }
+.arr { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.arr button { font: 500 12px/1 var(--body); background: var(--canvas); border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
+.arr button[disabled] { opacity: .5; }
 .refine { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 6px; }
 .tb .r { display: grid; grid-template-columns: 58px 1fr; gap: 12px; animation: up .36s ease-out both; }
 .tb .times { display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
@@ -222,6 +241,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
   const home = (dir) => {
     paint(`
       <div class="q"><p class="small muted">${W.nowHour() < 12 ? "Good morning" : W.nowHour() < 17 ? "Good afternoon" : "Good evening"}</p><h1>What should we do?</h1></div>
+      <div class="seg" role="tablist"><button class="on" aria-selected="true">Plan</button><button id="toDiscover" aria-selected="false">Discover</button></div>
       <button class="cta" id="start"><span style="flex:1"><h2>Build it step by step</h2><span class="small" style="color:var(--ink-soft);display:block;margin-top:4px">Food, something to do, how you’re getting there. You pick the places.</span></span><span class="go">${icon("arrow", "#fff", 22)}</span></button>
       ${(() => { const all = store.get("whimway-plans") || [], now = Date.now(); const up = all.filter((x) => Date.parse(x.start) + 3 * 3600e3 > now).sort((x, y) => Date.parse(x.start) - Date.parse(y.start)).slice(0, 3); const rec = all.filter((x) => !up.includes(x)).slice(0, 3);
         const row = (x) => `<button class="opt mine" data-id="${esc(x.id)}"><span class="ic">${icon(up.includes(x) ? "cal" : "clock")}</span><span><b>${esc(x.title)}</b><span class="small muted">${new Date(x.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${clock(x.start).join(" ")} · ${x.stops} stops</span></span></button>`;
@@ -232,6 +252,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <button class="btn dark" id="say">Next</button>
       </div>`, dir);
     on(".mine", (el) => { const x = (store.get("whimway-plans") || []).find((y) => y.id === el.dataset.id); if (x) { changed = new Set(); plan({ itinerary: x.itinerary, source: "saved" }, 1); } });
+    on("#toDiscover", () => discover(1));
     on("#start", () => { a = fresh(); picked = {}; skip = []; heard = []; step = "who"; guide(1); });
     // Typed ideas are clarified first: only the questions the words left open are asked.
     on("#say", () => { const t = document.getElementById("prompt").value.trim() || "Date night Saturday, something cozy with good food, under $60 each"; const r = W.readText(t, prefs); a = { ...fresh(), ...r.answers }; picked = {}; skip = r.skip; heard = r.heard; step = flow()[0]; guide(1); });
@@ -318,7 +339,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     if (step === "kind") on(".tile", (el) => { if (a.kind !== el.dataset.v) { a.funPlaceId = undefined; picked.fun = null; } choose(el, { kind: el.dataset.v }); });
     if (step === "fun") on(".opt", (el) => { const v = el.dataset.v; if (v !== "yes") { a.kind = undefined; a.funPlaceId = undefined; picked.fun = null; } choose(el, { fun: v }); });
     if (step === "travel") on(".opt", (el) => choose(el, { mode: el.dataset.v }));
-    if (step === "review") { on(".sum button", (el) => move(el.dataset.to, -1)); on("#build", () => { [a.cuisine, a.kind].filter(Boolean).forEach((k) => (usual[k] = (usual[k] || 0) + 1)); store.set("whimway-usual", usual); choices(""); }); }
+    if (step === "review") { on(".sum button", (el) => move(el.dataset.to, -1)); on("#build", () => { loader = (said, avoid) => W.planOptions(a, prefs, said, avoid); backTo = () => move("review", -1); shownIds = []; [a.cuisine, a.kind].filter(Boolean).forEach((k) => (usual[k] = (usual[k] || 0) + 1)); store.set("whimway-usual", usual); choices(""); }); }
     if (groupKey) places(groupKey, step === "foodPlace" ? "food" : "fun");
   };
 
@@ -339,6 +360,42 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
     on("#any", () => take(opts.places[0]));
   };
 
+  // ── Discover: browse and search real places, plan around any of them ──
+  const groupsAll = [...W.guideGroups.activities, ...W.guideGroups.cuisines];
+  let dz = { group: "games", text: "", areaKey: "downtown", when: "tonight", sort: "closest" }, dres = null;
+  const discover = async (dir) => {
+    paint(`<div class="seg" role="tablist"><button id="toPlan" aria-selected="false">Plan</button><button class="on" aria-selected="true">Discover</button></div>
+      <div class="q"><h1 style="font-size:31px">Discover</h1><p class="muted">Real places in ${esc(W.areaList.find((x) => x.key === dz.areaKey).name)}, open ${dz.when === "now" ? "right now" : dz.when === "tonight" ? "tonight" : "tomorrow evening"}.</p></div>
+      <form class="other" id="dsearch"><input type="text" id="dq" maxlength="60" value="${esc(dz.text)}" placeholder="Search ramen, bowling, a rooftop…" aria-label="Search places"><button type="submit" aria-label="Search">${icon("arrow", "#fff", 20)}</button></form>
+      <div class="hscroll">${groupsAll.map((g) => `<button class="chip ${!dz.text && dz.group === g.key ? "on" : ""}" data-g="${g.key}">${esc(g.label)}</button>`).join("")}</div>
+      <div class="hscroll">${[["now", "Now"], ["tonight", "Tonight"], ["tomorrow", "Tomorrow"]].map(([k, l]) => `<button class="chip ${dz.when === k ? "on" : ""}" data-w="${k}">${l}</button>`).join("")}<span class="divider"></span>${W.areaList.map((x) => `<button class="chip ${dz.areaKey === x.key ? "on" : ""}" data-a="${x.key}">${esc(x.name)}</button>`).join("")}</div>
+      <div class="dhead"><h3>${esc(dz.text ? `“${dz.text}”` : groupsAll.find((g) => g.key === dz.group).label)}</h3><div class="sorts">${[["closest", "Closest"], ["rated", "Top rated"], ["cheapest", "Cheapest"]].map(([k, l]) => `<button class="${dz.sort === k ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div></div>
+      <div class="list" id="dlist"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`, dir);
+    on("#toPlan", () => home(-1));
+    document.getElementById("dsearch").addEventListener("submit", (e) => { e.preventDefault(); const t = document.getElementById("dq").value.trim(); if (t.length > 1) { dz.text = t; discover(0); } });
+    on("[data-g]", (el) => { dz.group = el.dataset.g; dz.text = ""; discover(0); });
+    on("[data-w]", (el) => { dz.when = el.dataset.w; discover(0); });
+    on("[data-a]", (el) => { dz.areaKey = el.dataset.a; discover(0); });
+    on("[data-s]", (el) => { dz.sort = el.dataset.s; discover(0); });
+    try { dres = await W.discover(prefs, { areaKey: dz.areaKey, when: dz.when, group: dz.group, text: dz.text || undefined }); } catch { dres = { places: [] }; }
+    const box = document.getElementById("dlist"); if (!box) return;
+    const list = [...dres.places];
+    if (dz.sort === "rated") list.sort((x, y) => (y.rating || 0) - (x.rating || 0)); else if (dz.sort === "cheapest") list.sort((x, y) => (x.price.high ?? 999) - (y.price.high ?? 999)); else list.sort((x, y) => x.meters - y.meters);
+    if (!list.length) { box.innerHTML = `<p class="notice">Nothing like that is open then. Try another time, a nearby area, or a different word.</p>`; return; }
+    box.innerHTML = list.map((p, i) => `<button class="place" data-i="${i}" style="animation-delay:${Math.min(i, 6) * 50}ms"><img src="photos/${p.kind}.jpg" alt=""><span><b>${esc(p.name)}</b><span class="small muted">${esc(cap(p.category))}</span><span class="facts">${km(p.meters)}<i></i>${p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low || 0)}–${money(p.price.high)}`}${p.rating ? `<i></i>★ ${p.rating.toFixed(1)}` : ""}</span></span></button>`).join("") + `<p class="small" style="color:var(--faint);text-align:center">Photos show the kind of place, not the venue itself.</p>`;
+    on("#dlist .place", (el) => sheet(list[+el.dataset.i]));
+  };
+  const sheet = (p) => {
+    const wrap = document.createElement("div");
+    wrap.className = "sheetwrap";
+    wrap.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(p.name)}"><img src="photos/${p.kind}.jpg" alt=""><h2>${esc(p.name)}</h2><p class="muted">${esc(cap(p.category))} · ${km(p.meters)} away</p><p class="small muted">${[p.rating ? `★ ${p.rating.toFixed(1)}` : "", p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low || 0)}–${money(p.price.high)} per person`, (p.hours || [])[0] || ""].filter(Boolean).join(" · ")}</p><button class="btn primary" id="around">Plan around this place</button><div class="row2"><a class="btn ghost" href="${esc(p.mapsUrl)}" target="_blank" rel="noopener">Open in Maps</a><button class="btn ghost" id="sclose">Close</button></div></div>`;
+    document.body.appendChild(wrap);
+    const close = () => wrap.remove();
+    wrap.addEventListener("click", (e) => e.target === wrap && close());
+    wrap.querySelector("#sclose").addEventListener("click", close);
+    wrap.querySelector("#around").addEventListener("click", () => { close(); loader = (said, avoid) => W.planAround(dres.request, p.id, p.name).then((r) => r); backTo = () => discover(-1); shownIds = []; choices(""); });
+  };
+
   // ── Generating ──
   const run = async (make, onFail) => {
     paint(`<h2>Building your timetable</h2><div class="card steps">${["Reading what you picked", "Checking what’s open at that time", claudeReady ? "Claude is writing it up" : "Putting it in order", "Working out travel and cost"].map((t) => `<div class="step"><i></i>${t}</div>`).join("")}</div>`, 1);
@@ -354,16 +411,19 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
 
   // ── Options: choose between a few plans, or say what's missing ──
   let shownIds = [];
+  // Where options come from: the guided answers, or a place picked in Discover.
+  let loader = (said, avoid) => W.planOptions(a, prefs, said, avoid);
+  let backTo = () => move("review", -1);
   const choices = async (said) => {
     paint(`<h2>${said ? "Finding something different" : "Building your options"}</h2><div class="card steps">${["Reading what you picked", "Checking what’s open at that time", claudeReady ? "Claude is writing them up" : "Putting them in order", "Working out travel and cost"].map((t) => `<div class="step"><i></i>${t}</div>`).join("")}</div>`, 1);
     const steps = [...view.querySelectorAll(".step")]; let n = 0;
     const show = () => steps.forEach((s, j) => (s.className = "step" + (j < n ? " done" : j === n ? " now" : "")));
     show(); const t = setInterval(() => { if (n < 2) { n++; show(); } }, 600);
     let res;
-    try { [res] = await Promise.all([W.planOptions(a, prefs, said, shownIds), new Promise((r) => setTimeout(r, said ? 1200 : 1900))]); }
-    catch (e) { clearInterval(t); move("review", -1); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">${esc(e && e.message ? e.message : "That didn’t work.")} Change one of your choices and try again.</p>`); return; }
+    try { [res] = await Promise.all([loader(said, shownIds), new Promise((r) => setTimeout(r, said ? 1200 : 1900))]); }
+    catch (e) { clearInterval(t); backTo(); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">${esc(e && e.message ? e.message : "That didn’t work.")} Change one of your choices and try again.</p>`); return; }
     clearInterval(t);
-    if (!res.options.length) { move("review", -1); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">Nothing fits those answers at that time. Try another time, or change one of your picks.</p>`); return; }
+    if (!res.options.length) { backTo(); view.querySelector(".screen").insertAdjacentHTML("afterbegin", `<p class="notice">Nothing fits those answers at that time. Try another time, or change one of your picks.</p>`); return; }
     shownIds = [...new Set([...shownIds, ...res.options.flatMap((o) => o.plan.stops.map((s) => s.placeId))])].slice(-40);
     const by = (p) => (p.request.mode === "WALK" ? "walk" : p.request.mode === "TRANSIT" ? "transit" : "drive");
     paint(`<div class="bar"><button class="round" id="bk" aria-label="Back to your answers">${icon("back")}</button><span style="flex:1"></span><button class="round" id="cl" aria-label="Close">${icon("x")}</button></div>
@@ -373,7 +433,7 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <div class="chips">${["More fun", "More lively", "Something outdoors", "Cheaper", "Closer together", "Less food"].map((c) => `<button class="chip nudge">${c}</button>`).join("")}</div>
         <textarea id="fb" maxlength="300" aria-label="Describe what you want instead" placeholder="We haven’t seen each other in ages. Something we can do together, not just sit and eat."></textarea>
         <button class="btn dark" id="again2">Show me different options</button></div>`, 1);
-    on("#bk", () => move("review", -1));
+    on("#bk", () => backTo());
     on("#cl", () => home(-1));
     on(".option", (el) => { el.classList.add("on"); const o = res.options[+el.dataset.i]; setTimeout(() => { changed = new Set(); plan({ itinerary: o.plan, source: res.source, note: res.note }, 1); }, 260); });
     on(".nudge", (el) => choices(el.textContent));
@@ -404,17 +464,34 @@ footer { font-size: 12px; color: var(--faint); text-align: center; margin-top: 2
         <div class="stats"><div><strong>${clock(first.arrival).join(" ")}</strong><span>until ${clock(last.departure).join(" ")}</span></div><div><strong>${p.cost.high ? `${money(p.cost.low)}–${money(p.cost.high)}` : "Free"}</strong><span>each, estimated</span></div><div><strong>${p.stops.length} stops</strong><span>${(p.totalMeters / 1000).toFixed(1)} km ${by}</span></div></div></div>
       ${res.note || live ? `<div class="voice"><b>${live ? "Claude" : "Note"}</b><span>${esc(res.note || "Wrote this plan up; Whimway checked the hours, travel and cost.")}</span></div>` : ""}
       <div class="tb">${p.stops.map((s, i) => { const nx = p.stops[i + 1], leg = nx ? p.legs[i] : null, mins = Math.max(15, Math.round((Date.parse(s.departure) - Date.parse(s.arrival)) / 60000)); return `<div class="r" style="animation-delay:${120 + i * 90}ms"><div class="times"><div><div class="clock">${clock(s.arrival)[0]}</div><div class="small muted" style="font-size:12px;line-height:14px">${clock(s.arrival)[1]}</div></div><div class="small muted">${clock(s.departure)[0]}</div></div><div class="blk" style="background:${tints[i % 3]};min-height:${Math.min(190, 84 + mins * 0.45)}px"><span><span class="doing">${esc(doing(s))}</span><b>${esc(s.place.name)}</b><span class="small muted" style="margin-top:auto">${mins < 60 ? `${mins} min` : mins % 60 ? `${Math.floor(mins / 60)} hr ${mins % 60} min` : `${mins / 60} hr`}</span></span><img src="photos/${W.photoKind(s.place)}.jpg" alt=""></div></div>${nx ? `<div class="r"><div></div><div class="leg">${leg ? leg.minutes : nx.travel} min ${by}</div></div>` : ""}`; }).join("")}</div>
-      <div><h3 style="margin-bottom:12px">About each stop</h3><div class="card">${p.stops.map((s) => `<div class="stop"><h3>${esc(s.place.name)}</h3><p>${esc(s.reason)}</p><div class="meta">${changed.has(s.placeId) ? '<span class="tag">Just changed</span>' : ""}<span>${esc(cap(s.place.category))}</span><span>${s.place.price.high == null ? "Price varies" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low || 0)}–${money(s.place.price.high)} each`}</span>${/closed/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : ""}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener">Open in Maps</a></div></div>`).join("")}</div></div>
+      ${p.stops.length < 6 ? `<button class="btn ghost" id="addstop" style="width:100%">+ Add a stop</button>` : ""}
+      <div><h3 style="margin-bottom:12px">About each stop</h3><div class="card">${p.stops.map((s, i) => `<div class="stop"><h3>${esc(s.place.name)}</h3><p>${esc(s.reason)}</p><div class="meta">${changed.has(s.placeId) ? '<span class="tag">Just changed</span>' : ""}<span>${esc(cap(s.place.category))}</span><span>${s.place.price.high == null ? "Price varies" : s.place.price.high === 0 ? "Free" : `${money(s.place.price.low || 0)}–${money(s.place.price.high)} each`}</span>${/closed/i.test(s.hoursStatus) ? `<span class="tag warn">${esc(s.hoursStatus)}</span>` : ""}<a href="${esc(s.place.mapsUrl)}" target="_blank" rel="noopener">Open in Maps</a></div><div class="arr">${i > 0 ? `<button data-x="earlier" data-i="${i}">↑ Earlier</button>` : ""}${i < p.stops.length - 1 ? `<button data-x="later" data-i="${i}">↓ Later</button>` : ""}${s.minutes < 180 ? `<button data-x="longer" data-i="${i}">+15 min</button>` : ""}${s.minutes > 30 ? `<button data-x="shorter" data-i="${i}">−15 min</button>` : ""}${p.stops.length > 1 ? `<button data-x="remove" data-i="${i}">Remove</button>` : ""}</div></div>`).join("")}</div></div>
       <div class="card" style="display:flex;flex-direction:column;gap:12px"><h3>Change anything</h3><p class="small muted">Say what you’d change. The rest of the plan stays put.</p>
         <div class="chips">${["Make it cheaper", "Swap the last stop", "Add dessert at the end", "Less walking"].map((c) => `<button class="chip">${c}</button>`).join("")}</div>
         <form class="editrow" id="ef"><input type="text" id="et" aria-label="Describe a change" placeholder="e.g. something livelier after dinner"><button class="btn" id="eg" type="submit">Apply</button></form>
         <p class="small" id="em" role="status">${esc(editMsg)}</p></div>
       <div class="row2"><button class="btn ghost" id="again">Plan something else</button></div>`, dir);
+    if (editMsg) setTimeout(() => document.getElementById("em")?.scrollIntoView({ block: "center" }), 50);
     editMsg = "";
     on("#again", () => home(-1));
     const edit = async (text) => { if (!text.trim()) return; const b = document.getElementById("eg"); b.disabled = true; b.textContent = "Changing…"; document.getElementById("em").textContent = "Reworking that part…";
       try { const before = new Set(current.stops.map((s) => s.placeId)); const r = await W.edit(current, text); changed = new Set(r.plan.stops.map((s) => s.placeId).filter((id) => !before.has(id))); editMsg = r.op && r.op.summary ? `Done. ${r.op.summary}` : "Done."; plan(r, 0); }
-      catch (e) { b.disabled = false; b.textContent = "Apply"; document.getElementById("em").textContent = e && e.message ? e.message : "That change didn’t work. Try saying it another way."; } };
+      catch (e) { b.disabled = false; b.textContent = "Apply"; document.getElementById("em").textContent = e && e.message ? e.message : "That change didn’t work. Try saying it another way."; document.getElementById("em").scrollIntoView({ block: "center" }); } };
+    on("#addstop", () => edit("Add one more stop at the end"));
+    on(".arr button", async (el) => {
+      const i = +el.dataset.i, x = el.dataset.x, name = current.stops[i].place.name;
+      view.querySelectorAll(".arr button").forEach((b) => (b.disabled = true));
+      try {
+        const next = await W.arrange(current, i, x);
+        changed = new Set();
+        editMsg = x === "remove" ? `Removed ${name}. Times updated.` : x === "longer" || x === "shorter" ? `${name} is now ${next.stops.find((s) => s.placeId === current.stops[i].placeId)?.minutes ?? ""} min. Times updated.` : "Order changed. Times and travel updated.";
+        plan({ itinerary: next, source: "edited" }, 0);
+      } catch (e) {
+        view.querySelectorAll(".arr button").forEach((b) => (b.disabled = false));
+        document.getElementById("em").textContent = e && e.message ? e.message : "That change didn’t fit. Try another.";
+        document.getElementById("em").scrollIntoView({ block: "center" });
+      }
+    });
     document.getElementById("ef").addEventListener("submit", (e) => { e.preventDefault(); edit(document.getElementById("et").value); });
     on(".chip", (el) => edit(el.textContent));
   };
