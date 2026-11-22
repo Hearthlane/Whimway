@@ -114,6 +114,7 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`                    | Browser-restricted Maps JavaScript key                                                                                      |
 | `NEXT_PUBLIC_GOOGLE_MAP_ID`                          | Optional own cloud map ID; documented Google development map ID is the fallback                                             |
 | `GOOGLE_MAPS_SERVER_KEY`                             | Server key for Places API (New), Routes API and Geocoding API                                                               |
+| `GOOGLE_MAPS_STATIC_KEY`                             | Optional server key for real map images in the browser build (Maps Static API reads the key only from the URL, so a proxy-injected header cannot be used) |
 | `WHIMWAY_OPENAI_KEY`                                 | OpenAI credential with a cloud-compatible variable name                                                                     |
 | `OPENAI_API_KEY`                                     | Alternative for conventional local/Vercel configuration; `OPENAI_` target names are reserved in Codex cloud secret bindings |
 | `WHIMWAY_OPENAI_MODEL` / `OPENAI_MODEL`              | Structured Outputs capable model available to your account; deliberately not hardcoded                                      |
