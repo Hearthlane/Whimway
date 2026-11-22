@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { GooglePlaces, GoogleRoutes, normalize } from "@/lib/providers/google";
+import {
+  providerCache,
+  GooglePlaces,
+  GoogleRoutes,
+  normalize,
+} from "@/lib/providers/google";
 import { OpenAIRecommender } from "@/lib/providers/ai";
 import { request } from "./helpers";
 import { counter, requestOrigin } from "@/lib/server/security";
@@ -80,6 +85,37 @@ describe("Provider integrations", () => {
     const init = fetcher.mock.calls[0][1];
     expect(init.headers["X-Goog-FieldMask"]).not.toContain("*");
     expect(init.headers["X-Goog-FieldMask"]).not.toContain("photos");
+  });
+  it("asks Google once for repeated identical searches, and never caches failures", async () => {
+    vi.stubEnv("GOOGLE_MAPS_SERVER_KEY", "test-key");
+    providerCache.clear();
+    let fail = true;
+    const fetcher = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(
+          fail
+            ? new Response(JSON.stringify({ error: { message: "quota" } }), {
+                status: 429,
+              })
+            : new Response(JSON.stringify({ places: [raw] })),
+        ),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    const r = request();
+    r.interests = ["Food & drinks"];
+    await new GooglePlaces().search(r).catch(() => undefined);
+    const afterFailure = fetcher.mock.calls.length;
+    fail = false;
+    await new GooglePlaces().search(r);
+    expect(fetcher.mock.calls.length).toBeGreaterThan(afterFailure); // retried, not cached
+    const afterSuccess = fetcher.mock.calls.length;
+    await Promise.all([
+      new GooglePlaces().search(r),
+      new GooglePlaces().search(r),
+    ]);
+    expect(fetcher.mock.calls.length).toBe(afterSuccess); // served from cache
+    providerCache.clear();
   });
   it("normalizes real route duration and geometry", async () => {
     vi.stubEnv("GOOGLE_MAPS_SERVER_KEY", "test-key");

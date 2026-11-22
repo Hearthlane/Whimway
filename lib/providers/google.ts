@@ -248,17 +248,62 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
     wheelchairAccessible: p.accessibilityOptions?.wheelchairAccessibleEntrance,
   });
 }
+/**
+ * Short-lived, bounded cache of successful Google responses, shared by every request on
+ * this server. Guided planning asks for the same places several times while someone
+ * browses and picks options; this keeps that to one paid call. Entries live minutes,
+ * not days, in line with Google's limits on storing Places content. Concurrent identical
+ * calls share one request.
+ */
+const CACHE_MAX = 500;
+const cache = new Map<
+  string,
+  { at: number; ttl: number; value: Promise<unknown> }
+>();
+export function cached<T>(
+  key: string,
+  ttlMs: number,
+  load: () => Promise<T>,
+): Promise<T> {
+  if (process.env.WHIMWAY_PROVIDER_CACHE === "off") return load();
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < hit.ttl) {
+    cache.delete(key);
+    cache.set(key, hit); // most recently used last
+    return hit.value as Promise<T>;
+  }
+  const value = load();
+  cache.set(key, { at: Date.now(), ttl: ttlMs, value });
+  value.catch(() => cache.delete(key)); // never keep failures
+  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+  return value;
+}
+/** Test hook. */
+export const providerCache = cache;
+
 async function call(path: string, body?: unknown, mask = fields) {
-  const r = await providerFetch(`https://places.googleapis.com/v1/${path}`, {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...googleKey(),
-      "X-Goog-FieldMask": mask,
-    },
-    body: body ? JSON.stringify(body) : undefined,
+  const key = `places|${path}|${mask}|${body ? JSON.stringify(body) : ""}`;
+  // Details change rarely within an hour; searches are kept for 15 minutes.
+  const ttl = body ? 15 * 60_000 : 60 * 60_000;
+  return cached(key, ttl, async () => {
+    const r = await providerFetch(`https://places.googleapis.com/v1/${path}`, {
+      method: body ? "POST" : "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...googleKey(),
+        "X-Goog-FieldMask": mask,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json();
+    if (!r.ok || data?.error)
+      throw Object.assign(new Error("google"), { data });
+    return data;
+  }).catch((e: { data?: unknown }) => {
+    // Callers handle Google's error body themselves, as before.
+    if (e && typeof e === "object" && "data" in e) return e.data;
+    throw e;
   });
-  return r.json();
 }
 const searches: Record<string, string> = {
   "Food & drinks": "restaurants and cafes",
@@ -450,6 +495,18 @@ export class GoogleRoutes implements RouteProvider {
     fromId: string,
     toId: string,
   ): Promise<TravelLeg> {
+    // The same pair of stops is routed again for every option and edit; reuse it briefly.
+    const key = `route|${mode}|${from.lat.toFixed(5)},${from.lng.toFixed(5)}|${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+    const leg = await cached(key, 15 * 60_000, () =>
+      this.fetchLeg(from, to, mode),
+    );
+    return { ...leg, from: fromId, to: toId };
+  }
+  private async fetchLeg(
+    from: Point,
+    to: Point,
+    mode: PlanRequest["mode"],
+  ): Promise<Omit<TravelLeg, "from" | "to">> {
     const response = await providerFetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
@@ -495,8 +552,6 @@ export class GoogleRoutes implements RouteProvider {
       );
     const r = data.data.routes[0];
     return {
-      from: fromId,
-      to: toId,
       minutes: Math.ceil(parseFloat(r.duration) / 60),
       meters: r.distanceMeters,
       polyline: r.polyline.encodedPolyline,
