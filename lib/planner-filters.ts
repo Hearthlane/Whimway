@@ -64,3 +64,45 @@ export function isAlcoholLed(place: Pick<CandidatePlace, "types">) {
   if (/restaurant|cafe|bakery|amusement/.test(primary)) return false;
   return place.types.some((t) => ALCOHOL_TYPES.has(t));
 }
+
+const NOT_AN_OUTING = new Set([
+  "lodging",
+  "hotel",
+  "motel",
+  "extended_stay_hotel",
+  "hostel",
+  "bed_and_breakfast",
+  "guest_house",
+  "inn",
+  "resort_hotel",
+  "parking",
+  "parking_lot",
+  "parking_garage",
+  "travel_agency",
+  "tour_agency",
+  "neighborhood",
+  "locality",
+  "sublocality",
+  "political",
+  "real_estate_agency",
+  "apartment_building",
+  "apartment_complex",
+  "condominium_complex",
+  "housing_complex",
+  "association_or_organization",
+  "corporate_office",
+  "car_rental",
+  "gas_station",
+  "transit_station",
+  "subway_station",
+  "train_station",
+  "bus_station",
+]);
+/** Places that are never a stop on an outing (hotels, car parks, ticket agents, districts). */
+export function notAnOuting(place: Pick<CandidatePlace, "types">) {
+  const primary = place.types[0] ?? "";
+  if (NOT_AN_OUTING.has(primary)) return true;
+  if (/restaurant|cafe|bar|museum|gallery|attraction|amusement|bowling|cinema|theater|spa|^park$/.test(primary))
+    return false;
+  return (place.types.length > 0 && place.types.every((t) => NOT_AN_OUTING.has(t) || t === "point_of_interest" || t === "establishment"));
+}

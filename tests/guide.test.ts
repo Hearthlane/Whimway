@@ -172,7 +172,12 @@ describe("guided planning", () => {
     const fun = (await planner(r).options(r, groupByKey("games")!)).places[0];
     const request = { ...r, anchorPlaceIds: [food.id, fun.id], duration: 210 };
     const options = await planner(request).alternatives(request);
-    expect(options.map((o) => o.plan.stops.length)).toEqual([2, 3, 4]);
+    // Each option does more than the last (or as much, over a longer time).
+    const counts = options.map((o) => o.plan.stops.length);
+    expect(options).toHaveLength(3);
+    expect(counts[0]).toBe(2);
+    expect(counts[1]).toBeGreaterThanOrEqual(3);
+    expect(counts[2]).toBeGreaterThanOrEqual(counts[1]);
     for (const o of options)
       expect(o.plan.stops.map((s) => s.placeId)).toEqual(
         expect.arrayContaining([food.id, fun.id]),

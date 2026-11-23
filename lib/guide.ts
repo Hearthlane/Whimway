@@ -29,10 +29,17 @@ export const cuisines: GuideGroup[] = [
   },
   {
     key: "thai",
-    label: "Thai & Korean",
-    hint: "Curries, noodles, stone-pot stews",
+    label: "Thai & Vietnamese",
+    hint: "Curries, pho, noodles",
     query: "thai restaurant",
-    match: /thai|korean|vietnamese/,
+    match: /thai|vietnamese|pho\b/,
+  },
+  {
+    key: "korean",
+    label: "Korean",
+    hint: "BBQ, bibimbap, fried chicken",
+    query: "korean restaurant",
+    match: /korean|bibimbap|kbbq/,
   },
   {
     key: "mexican",
@@ -244,7 +251,8 @@ export function orderByTaste(groups: GuideGroup[], liked: string[]) {
 const said: Record<string, RegExp> = {
   japanese: /japanese|sushi|ramen|izakaya|udon/,
   chinese: /chinese|dumpling|dim sum|congee|wonton/,
-  thai: /\bthai\b|korean|\bpho\b|vietnamese|bibimbap/,
+  thai: /\bthai\b|\bpho\b|vietnamese/,
+  korean: /korean|bibimbap|\bkbbq\b|bulgogi|tteokbokki/,
   mexican: /mexican|tacos?\b|burrito/,
   italian: /italian|pizza|pasta/,
   western: /burgers?\b|steak|wings|diner|bbq|barbecue/,

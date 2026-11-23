@@ -520,7 +520,15 @@ function Tiles({ groups, value, onPick, prefix }: { groups: (GuideGroup & { usua
           <Animated.View key={g.key} entering={FadeInDown.delay(60 + i * 40).duration(320)} style={s.cell}>
             <Press testID={`${prefix}-${g.key}`} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${g.label}. ${g.hint}`} scaleTo={0.96} onPress={() => onPick(g.key)} style={[s.tile, on && s.tileOn]}>
               <View>
-                <Image source={guidePhotos[g.key]} style={s.tilePhoto} contentFit="cover" transition={200} accessibilityIgnoresInvertColors />
+                {guidePhotos[g.key] ? (
+                  <Image source={guidePhotos[g.key]} style={s.tilePhoto} contentFit="cover" transition={200} accessibilityIgnoresInvertColors />
+                ) : (
+                  <View style={[s.tilePhoto, s.tilePlain]}>
+                    <T v="title" tone={color.inkSoft} numberOfLines={1}>
+                      {g.label}
+                    </T>
+                  </View>
+                )}
                 {g.usual ? (
                   <View style={s.usual}>
                     <T v="smallStrong" style={{ fontSize: 11 }}>
@@ -674,6 +682,7 @@ function Line({ icon, label, value, onPress, last }: { icon: IconName; label: st
 }
 
 const s = StyleSheet.create({
+  tilePlain: { backgroundColor: color.lavenderTint, alignItems: "center", justifyContent: "center" },
   withPill: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: color.coralTint },
   page: { flex: 1, backgroundColor: color.canvas },
   top: { flexDirection: "row", alignItems: "center", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },

@@ -12,6 +12,7 @@ import {
   travelModes,
 } from "@/lib/schema";
 import { planner, demoAllowed, aiConfigured } from "@/lib/server/providers";
+import { withStatedNeeds } from "@/lib/intent";
 import {
   GooglePlaces,
   autocomplete,
@@ -38,7 +39,7 @@ import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { summarize } from "@/lib/metrics";
 import { FREE } from "@/lib/plus";
-import { customGroup, groupByKey } from "@/lib/guide";
+import { cuisines, customGroup, groupByKey } from "@/lib/guide";
 import {
   AdEvent,
   NewCampaign,
@@ -479,6 +480,7 @@ async function handlePOST(request: Request, ctx: Context) {
       const data = z
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
+      data.request = withStatedNeeds(data.request);
       await requirePlanAllowance(request, user?.id);
       const started = Date.now();
       const result = await planner(data.request, data.demo)
@@ -535,6 +537,7 @@ async function handlePOST(request: Request, ctx: Context) {
           demo: z.boolean().default(false),
         })
         .parse(input);
+      data.request = withStatedNeeds(data.request, data.feedback);
       await requirePlanAllowance(request, user?.id);
       const started = Date.now();
       const options = await planner(data.request, data.demo)
@@ -585,6 +588,10 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "remix") {
       const data = RemixRequest.parse(input);
+      data.spec = {
+        ...data.spec,
+        request: withStatedNeeds(data.spec.request, data.action),
+      };
       const result = await planner(data.spec.request, data.spec.demo)
         .withCrowd(await crowdSignals())
         .generate(data.spec.request, data.spec, data.action);
@@ -593,6 +600,10 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "magic-edit") {
       const data = MagicEditRequest.parse(input);
+      data.spec = {
+        ...data.spec,
+        request: withStatedNeeds(data.spec.request, data.instruction),
+      };
       const countEdit = await requireEditAllowance(
         request,
         user?.id,
@@ -775,7 +786,7 @@ async function handlePOST(request: Request, ctx: Context) {
           /** Free text when the person typed what they want instead of picking a tile. */
           text: z.string().max(80).optional(),
           /** Minutes a place must stay open from the start time (browsing needs less). */
-          openFor: z.number().int().min(30).max(240).default(180),
+          openFor: z.number().int().min(30).max(240).optional(),
           limit: z.number().int().min(1).max(12).default(8),
           demo: z.boolean().default(false),
         })
@@ -793,7 +804,13 @@ async function handlePOST(request: Request, ctx: Context) {
       return ok(
         await planner(data.request, data.demo)
           .withCrowd(await crowdSignals())
-          .options(data.request, group, data.limit, data.openFor),
+          // A meal needs about 90 minutes; an activity about two hours of opening time left.
+          .options(
+            data.request,
+            group,
+            data.limit,
+            data.openFor ?? (cuisines.includes(group) || group.key === "sweet" ? 90 : 120),
+          ),
       );
     }
     if (path === "place") {

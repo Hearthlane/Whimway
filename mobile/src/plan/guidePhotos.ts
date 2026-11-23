@@ -4,7 +4,8 @@
 import { activities, cuisines, groupByKey, inGroup } from "@shared/guide";
 import type { CandidatePlace } from "@shared/schema";
 
-export const guidePhotos: Record<string, number> = {
+// A category without its own photo shows a plain tile rather than another cuisine's dish.
+export const guidePhotos: Partial<Record<string, number>> = {
   japanese: require("../../assets/guide/japanese.jpg"),
   chinese: require("../../assets/guide/chinese.jpg"),
   thai: require("../../assets/guide/thai.jpg"),

@@ -39,7 +39,8 @@ export function costTotal(places: CandidatePlace[]) {
     currency: places[0]?.price.currency ?? "USD",
   };
 }
-import { isAlcoholLed, isOutdoor, vibeFit } from "./planner-filters";
+import { isAlcoholLed, isOutdoor, notAnOuting, vibeFit } from "./planner-filters";
+import { arrange, fitMinutes, kindOfPlace, shapeSummary, stopsFor } from "./arc";
 import { crowdFor, type CrowdSignals } from "./crowd";
 export { isOutdoor };
 /** Review-weighted quality nudged by the user's learned category affinity. */
@@ -127,7 +128,12 @@ export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
         (p.price.high !== null && p.price.high <= request.budget)) &&
       (!request.accessibility || p.wheelchairAccessible !== false) &&
       (!request.indoorOnly || !isOutdoor(p)) &&
-      (!request.alcoholFree || !isAlcoholLed(p)) &&
+      // Families with kids and anyone who said they don't drink never get bars or pubs.
+      ((!request.alcoholFree && request.companions !== "family") ||
+        request.anchorPlaceIds.includes(p.id) ||
+        !isAlcoholLed(p)) &&
+      // Hotels, parking, travel agents and whole neighbourhoods aren't things to do.
+      (request.anchorPlaceIds.includes(p.id) || !notAnOuting(p)) &&
       (!request.skipFood ||
         request.anchorPlaceIds.includes(p.id) ||
         !isEatery(p)),
@@ -416,6 +422,16 @@ export class Planner {
     const lockedPlaces = await Promise.all(
       locked.map((s) => this.details(s.placeId, request.location.currency)),
     );
+    // Places the person picked for a new plan get a sensible length for what they are:
+    // a proper meal, a long visit for a museum or aquarium, an hour or so otherwise.
+    if (!previous)
+      for (const [i, s] of locked.entries()) {
+        const p = lockedPlaces[i];
+        const k = kindOfPlace(p);
+        const big = /museum|aquarium|zoo|amusement_park|theme_park|science|hiking/.test(p.types.join(" "));
+        s.minutes =
+          k === "meal" ? 75 : k === "treat" ? 40 : big ? (request.duration >= 360 ? 150 : 90) : 60;
+      }
     let candidates = candidatesFor({ ...request, hardBudget: false }, [
       ...found,
       ...lockedPlaces,
@@ -516,20 +532,33 @@ export class Planner {
         title: selection.title,
         summary: selection.summary,
         request,
-        stops: optimizeOrder(
-          selection.stops.map((s) => ({
+        stops: (() => {
+          const refs = selection.stops.map((s) => ({
             ...s,
             locked: locked.some((l) => l.placeId === s.placeId),
-          })),
-          candidates,
-          request,
-        ),
+          }));
+          if (previous) return optimizeOrder(refs, candidates, request);
+          // A new plan: meals at mealtimes, parks in daylight, filling the time asked for.
+          const byId = new Map(candidates.map((p) => [p.id, p]));
+          const day = localStart(request.date, "00:00", request.location.timezone);
+          const openAt = (p: CandidatePlace, minute: number, length: number) =>
+            !hoursCheck(p, day.plus({ minutes: minute }), day.plus({ minutes: minute + length })).closed;
+          return optimizeOrder(
+            arrange(fitMinutes(refs, byId, request), byId, request, openAt),
+            candidates,
+            request,
+          );
+        })(),
         demo: this.demo,
         areaSource: "user",
         revision: (previous?.revision ?? -1) + 1,
       };
       try {
-        return await schedule(spec, candidates, this.routes, attempt === 1);
+        const plan = await schedule(spec, candidates, this.routes, attempt === 1);
+        // If a chosen stop couldn't be kept, the original summary may name it: describe what's left.
+        return plan.stops.length < spec.stops.length
+          ? { ...plan, summary: shapeSummary(plan.stops, plan.request) }
+          : plan;
       } catch (e) {
         // A favourite the plan is built around must be visited while it is open: move it to
         // the start of the outing before giving up.
@@ -656,9 +685,8 @@ export class Planner {
       plan = {
         ...plan,
         // Targeted edits keep the plan's identity; only a full rework renames it.
-        ...(op.targets.length < spec.stops.length
-          ? { title: spec.title, summary: spec.summary }
-          : {}),
+        ...(op.targets.length < spec.stops.length ? { title: spec.title } : {}),
+        summary: shapeSummary(plan.stops, plan.request),
         stops: plan.stops.map((s) => ({
           ...s,
           locked: userLocked.has(s.placeId),
@@ -694,11 +722,13 @@ export class Planner {
         this.details(s.placeId, spec.request.location.currency),
       ),
     );
-    return schedule(
+    const plan = await schedule(
       { ...spec, revision: spec.revision + 1 },
       places,
       this.routes,
     );
+    // The summary always describes the stops the plan has now.
+    return { ...plan, summary: shapeSummary(plan.stops, plan.request) };
   }
   async explore(request: PlanRequest, query?: string) {
     const basic = candidatesFor(
@@ -741,12 +771,18 @@ export class Planner {
       ];
       return candidatesFor(req, found).filter((p) => inGroup(p, group));
     };
+    // A typed name ("CN Tower") means that place itself, ahead of anything that mentions it.
+    const named = group.key === "custom" ? group.query.toLowerCase() : "";
+    const exact = (p: CandidatePlace) =>
+      named && p.name.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim() === named.replace(/[^a-z0-9 ]/g, "").trim() ? 5 : 0;
     const rank = async (pool: CandidatePlace[]) => {
       pool.sort(
         (a, b) =>
+          exact(b) +
           score(b, request, this.crowd) -
           distance(b.point, request.area.center) / 4000 -
-          (score(a, request, this.crowd) -
+          (exact(a) +
+            score(a, request, this.crowd) -
             distance(a.point, request.area.center) / 4000),
       );
       const detailed = await Promise.all(
@@ -830,29 +866,32 @@ export class Planner {
       : undefined;
     const evening = Number(request.startTime.slice(0, 2)) >= 17;
     const picked = request.anchorPlaceIds.length > 0;
+    // Three ways to spend the same time the person asked for: fewer longer stops, a balance,
+    // or more packed in. None of them stretches the outing past what was asked.
     const shapes = [
       {
         key: "simple",
-        label: picked ? "Just your picks" : "Short and easy",
-        blurb: "Two stops, no rush.",
+        label: picked ? "Just your picks" : "Easy pace",
         pace: "relaxed" as const,
-        extra: 0,
       },
       {
         key: "extra",
         label: picked ? "With something extra" : "A proper outing",
-        blurb: "Three stops, with one more thing to do.",
         pace: "balanced" as const,
-        extra: 75,
       },
       {
         key: "full",
-        label: evening ? "Make a night of it" : "Make a day of it",
-        blurb: "Four stops for when you want it to last.",
+        label: evening ? "Pack in more" : "Make a day of it",
         pace: "packed" as const,
-        extra: 165,
       },
     ];
+    const blurbFor = (plan: Itinerary) => {
+      const n = plan.stops.length;
+      const mins = plan.totalMinutes;
+      const length = mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60}m` : ""}` : `${mins} min`;
+      const over = mins - base.duration;
+      return `${n} stops over about ${length}${over >= 30 ? `, about ${Math.round(over / 30) / 2}h longer than you said` : ""}.`;
+    };
     const out: {
       key: string;
       label: string;
@@ -871,18 +910,22 @@ export class Planner {
         ),
       )
     ).reduce((n, p) => n + (p?.price.high ?? 0), 0);
-    const stopsIn = { relaxed: 2, balanced: 3, packed: 4 };
     for (const shape of shapes) {
       const added = Math.max(
         0,
-        stopsIn[shape.pace] - request.anchorPlaceIds.length,
+        stopsFor({ duration: base.duration, pace: shape.pace }) -
+          request.anchorPlaceIds.length,
       );
       // Around the person's picks, look for different kinds of places (a café, a park, a
       // bar), not more of what they already chose. Each option leans a different way.
-      const around: PlanRequest["interests"] =
-        shape.key === "full"
-          ? ["Nightlife", "Outdoors", "Food & drinks"]
-          : ["Relaxation", "Arts & culture", "Outdoors"];
+      const around: PlanRequest["interests"] = [
+        ...new Set([
+          ...base.interests.filter((i) => i !== "Surprise me"),
+          ...(shape.key === "full"
+            ? (["Interactive fun", "Arts & culture", "Food & drinks"] as const)
+            : (["Relaxation", "Arts & culture", "Outdoors"] as const)),
+        ]),
+      ].slice(0, 10);
       const variant: PlanRequest = {
         ...base,
         interests: picked && added > 0 ? around : base.interests,
@@ -890,7 +933,14 @@ export class Planner {
           ? Math.max(base.budget, pickedCost + added * 20)
           : base.budget,
         pace: shape.pace,
-        duration: Math.min(720, base.duration + shape.extra),
+        // "Pack in more" may run longer, but only when no length or end time was given.
+        duration: base.fixedLength
+          ? base.duration
+          : Math.min(
+              720,
+              base.duration +
+                (shape.key === "full" ? 120 : shape.key === "extra" ? 60 : 0),
+            ),
         excludedPlaceIds: [
           ...new Set([...base.excludedPlaceIds, ...used]),
         ].slice(0, 100),
@@ -899,7 +949,7 @@ export class Planner {
         let plan = await this.generate(variant, undefined, action);
         // Excluding earlier options' places can starve a bigger plan. If it came out
         // thin, rebuild it from the full pool; the duplicate check below still applies.
-        const wanted = stopsIn[shape.pace];
+        const wanted = stopsFor({ duration: base.duration, pace: shape.pace });
         if (plan.stops.length < wanted - 1 && used.size)
           plan = await this.generate(
             { ...variant, excludedPlaceIds: base.excludedPlaceIds },
@@ -923,7 +973,7 @@ export class Planner {
         out.push({
           key: shape.key,
           label: shape.label,
-          blurb: shape.blurb,
+          blurb: blurbFor(plan),
           plan,
         });
         // Later options should open differently, not avoid every place shown: excluding
@@ -1085,7 +1135,13 @@ export function optimizeOrder(
   for (let pass = 0; pass < 2; pass++)
     for (let i = 0; i < best.length - 1; i++)
       for (let j = i + 1; j < best.length; j++) {
-        if (best.slice(i, j + 1).some((s) => s.locked)) continue;
+        // Locked stops and meals (placed at mealtime) stay where they are.
+        if (
+          best
+            .slice(i, j + 1)
+            .some((s) => s.locked || kindOfPlace(byId.get(s.placeId)!) === "meal")
+        )
+          continue;
         const proposal = [
           ...best.slice(0, i),
           ...best.slice(i, j + 1).reverse(),

@@ -15,6 +15,12 @@ import { hoursCheck } from "../hours";
 import { localStart } from "../time";
 import { voice } from "./demo-voice";
 import { activities, inGroup } from "../guide";
+import { mealsFor, stopsFor, sunsetMinutes } from "../arc";
+// Parks and trails are dark after sunset; lit squares and landmarks are fine.
+const isNature = (p: CandidatePlace) =>
+  /park|hiking|beach|garden|campground|picnic|playground|trail|ravine|conservation/.test(
+    `${p.types[0] ?? ""} ${p.category}`.toLowerCase(),
+  ) && !/amusement|theme|water_park|skating|rink/.test(p.types.join(" "));
 
 /** Two places are the same kind of outing (both games, both shows) even if named differently. */
 const sameActivity = (a: CandidatePlace, b: CandidatePlace) =>
@@ -1130,12 +1136,11 @@ export function demoSelect(
     ? locked.length + 1
     : previousStops?.length
       ? Math.max(previousStops.length, locked.length + 1)
-      : req.pace === "relaxed"
-        ? 2
-        : req.pace === "packed" || req.duration >= 360
-          ? 4
-          : 3;
+      : stopsFor(req);
   const chosen: CandidatePlace[] = [];
+  const startMin =
+    Number(req.startTime.slice(0, 2)) * 60 + Number(req.startTime.slice(3, 5));
+  const allDark = startMin >= sunsetMinutes(req.date) - 30;
   // Words from what the person asked for ("we want games"), to honour over a soft budget.
   const askedFor = (
     (action ?? "").match(/"(.+?)"/)?.[1] ??
@@ -1160,16 +1165,19 @@ export function demoSelect(
       : // Live data often has no price for activities; assume a typical ticket, capped by budget.
         (p.price.high ?? Math.min(req.budget, 25));
   // Evening outings of 3h+ reserve budget for one proper meal before anything else.
-  const wantsMeal =
-    req.duration >= 180 &&
-    meals === 0 &&
-    !previousStops?.length &&
-    (Number(req.startTime.slice(0, 2)) >= 16 ||
-      req.interests.includes("Food & drinks"));
-  const meal = wantsMeal
-    ? pool.find((p) => isMeal(p) && spent + cost(p) <= req.budget * 1.1)
-    : undefined;
-  if (meal) {
+  // Outings that span a mealtime get a proper meal; a long day gets lunch and dinner.
+  const mealTarget = previousStops?.length
+    ? Math.max(meals, 1)
+    : Math.max(meals, mealsFor(req));
+  while (!previousStops?.length && meals < mealTarget) {
+    const meal = pool.find(
+      (p) =>
+        isMeal(p) &&
+        !chosen.includes(p) &&
+        !chosen.some((c) => c.category === p.category) &&
+        spent + cost(p) <= req.budget * 1.1 * (meals + 1),
+    );
+    if (!meal) break;
     chosen.push(meal);
     meals++;
     spent += cost(meal);
@@ -1187,7 +1195,9 @@ export function demoSelect(
       !asked(p)
     )
       continue;
-    if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
+    if (isMeal(p) && meals >= mealTarget) continue; // meals only at mealtimes
+    // A park or walk only while it's light, unless they asked for the outdoors.
+    if (allDark && isNature(p) && !req.vibes.includes("outdoorsy")) continue;
     if (
       [...chosen, ...lockedPlaces].some(
         (c) => c.category === p.category || sameActivity(c, p),

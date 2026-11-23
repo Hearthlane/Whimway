@@ -54,6 +54,8 @@ export const PlanRequest = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   duration: z.number().int().min(60).max(720),
+  /** The person stated how long or when to finish ("3 hours", "home by 4"): never run over. */
+  fixedLength: z.boolean().default(false),
   budget: z.number().min(0).max(1000000),
   hardBudget: z.boolean().default(false),
   participants: z.number().int().min(1).max(20),

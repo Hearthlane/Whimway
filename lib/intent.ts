@@ -33,8 +33,27 @@ export type Draft = {
   radius?: number;
   indoorOnly?: boolean;
   area?: Area;
-  occasion?: "birthday" | "anniversary";
+  occasion?: "birthday" | "anniversary" | "first date";
+  /** How long or when to finish was said outright. */
+  fixedLength?: boolean;
+  /** Said they don't drink or don't want bars ("sober", "no bars", "halal"). */
+  alcoholFree?: boolean;
+  /** Food needs stated in the words ("vegetarian", "halal"), passed to the planner. */
+  dietary?: string[];
 };
+
+/** Words that mean "no alcohol-led places": checked in prompts, onboarding notes and people notes. */
+export const ALCOHOL_FREE_WORDS =
+  /\b(sober|alcohol[- ]free|no alcohol|non[- ]?alcoholic|(?:don'?t|do not|doesn'?t|does not|not|never) drink(?:ing)?|no (?:bars?|pubs?|clubs?|drinking|booze|drinks)|not into (?:bars|drinking)|dry (?:night|date|january)|halal|teetotal\w*)\b/;
+const DIET_WORDS: [string, RegExp][] = [
+  ["halal", /\bhalal\b/],
+  ["kosher", /\bkosher\b/],
+  ["vegan", /\bvegan\b/],
+  ["vegetarian", /\b(vegetarian|veggie)\b/],
+  ["gluten-free", /\b(gluten[- ]free|celiac|coeliac)\b/],
+  ["nut allergy", /\b(nut|peanut) allerg\w*\b/],
+  ["dairy-free", /\b(dairy[- ]free|lactose)\b/],
+];
 
 const numberWords: Record<string, number> = {
   a: 1,
@@ -66,7 +85,7 @@ const vibeWords: [Vibe, RegExp][] = [
   ],
   ["cozy", /\b(cozy|cosy|rainy|snug|warm up|hygge)(?![a-z])/],
   ["cinematic", /\b(cinematic|movie|film|aesthetic|main character)(?![a-z])/],
-  ["chill", /\b(chill|relax\w*|low[- ]key|lazy|calm|laid[- ]back)(?![a-z])/],
+  ["chill", /\b(chill|relax\w*|low[- ]key|lazy|calm|laid[- ]back|quiet|somewhere we can talk|not too loud)(?![a-z])/],
   [
     "lively",
     /\b(lively|party|buzzing|energetic|night out|dancing|turn up)(?![a-z])/,
@@ -122,6 +141,8 @@ function roundUp(dt: DateTime, minutes = 30): DateTime {
 }
 
 function parseClock(text: string) {
+  if (/\b(?:at|around|by|from)?\s*(?:12\s*)?(noon|midday)\b/.test(text) && !/\bafter(?:noon)?\s/.test(text.match(/\b\w+\s+(?:noon|midday)\b/)?.[0] ?? ""))
+    return { h: 12, min: 0 };
   const m = text.match(
     /\b(?:at|around|by|from)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)/,
   );
@@ -183,14 +204,30 @@ export function interpret(input: string, now: DateTime): Draft {
   // Occasion
   if (/\bbirthday|bday\b/.test(text)) draft.occasion = "birthday";
   if (/\banniversary\b/.test(text)) draft.occasion = "anniversary";
+  if (/\b(first date|1st date|second date|someone new|blind date|tinder|hinge|bumble)\b/.test(text)) {
+    draft.occasion = "first date";
+    draft.companions = "partner";
+    draft.participants = 2;
+  }
+
+  // Needs
+  if (ALCOHOL_FREE_WORDS.test(text)) draft.alcoholFree = true;
+  const diets = DIET_WORDS.filter(([, re]) => re.test(text)).map(([d]) => d);
+  if (diets.length) draft.dietary = diets;
 
   // Budget
   const money = text.match(
     /(?:\$\s?(\d{1,5})|\b(\d{1,5})\s?(?:dollars|bucks|cad)\b)([^.,;!?]{0,24})/,
   );
-  if (money) {
-    const amount = Number(money[1] ?? money[2]);
-    const after = money[3] ?? "";
+  // "under 25 each", "max 40pp", "no more than 30 a person": a number with a limit word is a budget.
+  const capped = money
+    ? null
+    : text.match(
+        /\b(?:under|below|less than|max(?:imum)?|up to|no more than|at most|budget(?: of| is)?)\s+\$?(\d{1,4})(?=pp\b|\b)(?!\s*(?:am|pm|hours?|hrs?|min|km|people|of us|friends|years?))([^.,;!?]{0,24})/,
+      );
+  if (money || capped) {
+    const amount = Number(money ? (money[1] ?? money[2]) : capped![1]);
+    const after = (money ? money[3] : capped![2]) ?? "";
     const perPerson =
       /\b(each|per person|pp|a head|per head|apiece|\/person|\/pp|per)\b|\/\s?(person|pp|head)/.test(
         after,
@@ -309,11 +346,33 @@ export function interpret(input: string, now: DateTime): Draft {
   const hours = text.match(
     new RegExp(`\\b${NUM}\\s*(?:-|to)?\\s*(?:\\d\\s*)?(?:hours?|hrs?)\\b`),
   );
-  if (hours) draft.duration = Math.max(60, Math.min(720, num(hours[1]) * 60));
+  if (hours) {
+    draft.duration = Math.max(60, Math.min(720, num(hours[1]) * 60));
+    draft.fixedLength = true;
+  }
   else if (/\b(all day|full day|whole day|day trip)\b/.test(text))
     draft.duration = 480;
   else if (/\b(quick|short|an hour|little while)\b/.test(text))
     draft.duration = 120;
+
+  // An end time ("home by 4", "10am to 8pm", "until 9") sets the length from the start.
+  const end =
+    text.match(/\b(?:home|back|done|finished|finish|wrap up|wrapped up)\s+(?:by|before|around)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/) ??
+    text.match(/\d\s*(?:am|pm)?\s*(?:to|-|–|until|till|til)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)/) ??
+    text.match(/\b(?:until|till|til)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/);
+  if (end && draft.startTime) {
+    const [sh, sm] = draft.startTime.split(":").map(Number);
+    let eh = Number(end[1]) % 12;
+    const suffix = end[3];
+    if (suffix?.startsWith("p")) eh += 12;
+    // No am/pm: pick the reading that comes after the start ("home by 4" from noon is 4 pm).
+    else if (!suffix && eh + 12 > sh && (eh <= sh || eh < 8)) eh += 12;
+    const minutes = eh * 60 + Number(end[2] ?? 0) - (sh * 60 + sm);
+    if (minutes >= 60 && minutes <= 720) {
+      draft.duration = minutes;
+      draft.fixedLength = true;
+    }
+  }
 
   // Getting around
   if (
@@ -428,11 +487,27 @@ export function buildRequest(
       ? Math.round((draft.budget.amount / participants) * 100) / 100
       : draft.budget.amount
     : Math.round(perPersonDefault);
-  const interests = draft.interests.length
-    ? draft.interests
-    : profile.interests.length
-      ? profile.interests
-      : (["Surprise me"] as Interest[]);
+  // Not drinking is a need, not a mood: words in the prompt or the saved notes turn it on.
+  const alcoholFree =
+    profile.alcoholFree ||
+    Boolean(draft.alcoholFree) ||
+    ALCOHOL_FREE_WORDS.test(` ${profile.dietary.toLowerCase()} `);
+  const dietary = [
+    profile.dietary.trim(),
+    ...(draft.dietary ?? []).filter(
+      (d) => !profile.dietary.toLowerCase().includes(d),
+    ),
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .slice(0, 300);
+  const interests = (
+    draft.interests.length
+      ? draft.interests
+      : profile.interests.length
+        ? profile.interests
+        : (["Surprise me"] as Interest[])
+  ).filter((i) => !(alcoholFree && i === "Nightlife"));
   return PlanRequest.parse({
     location: toLocation(area),
     area: {
@@ -443,16 +518,20 @@ export function buildRequest(
     prompt: [
       prompt.trim(),
       draft.occasion ? `Occasion: ${draft.occasion}.` : "",
+      alcoholFree ? "No alcohol-focused places." : "",
     ]
       .filter(Boolean)
       .join(" ")
       .slice(0, 1500),
-    interests: [...new Set(interests)].slice(0, 10),
+    interests: interests.length
+      ? [...new Set(interests)].slice(0, 10)
+      : (["Surprise me"] as Interest[]),
     vibes: (draft.vibes.length ? draft.vibes : profile.vibes).slice(0, 4),
     companions,
     date,
     startTime,
     duration: draft.duration ?? 240,
+    fixedLength: draft.fixedLength ?? false,
     budget,
     budgetBasis: draft.budget?.basis ?? "person",
     hardBudget: false,
@@ -460,12 +539,12 @@ export function buildRequest(
     mode,
     indoorOnly: draft.indoorOnly ?? false,
     pace: profile.pace,
-    alcoholFree: profile.alcoholFree,
+    alcoholFree,
     affinity: profile.affinity,
     excludedPlaceIds: [
       ...new Set([...(overrides.excludedPlaceIds ?? []), ...profile.disliked]),
     ].slice(0, 100),
-    dietary: profile.dietary,
+    dietary,
     accessibility: profile.accessibility,
   });
 }
@@ -485,8 +564,9 @@ export function describe(request: PlanRequest, now?: DateTime) {
       : days === 1
         ? "Tomorrow"
         : start.toFormat("ccc d LLL");
+  const firstDate = /Occasion: first date/.test(request.prompt);
   const who = {
-    partner: "With your partner",
+    partner: firstDate ? "A first date" : "The two of you",
     friends: `${request.participants} friends`,
     solo: "Just you",
     family: `Family of ${request.participants}`,
@@ -508,5 +588,35 @@ export function describe(request: PlanRequest, now?: DateTime) {
     area: request.location.name,
     vibe: request.vibes.map((v) => v[0].toUpperCase() + v.slice(1)).join(" · "),
     indoor: request.indoorOnly ? "Indoors" : "",
+    alcohol: request.alcoholFree ? "Alcohol-free" : "",
+  };
+}
+
+/**
+ * Apply needs stated anywhere in free text (the prompt, the saved notes, "none of these?"
+ * feedback, a Magic Edit instruction) to a request, on the server too, so a client that
+ * missed them can't produce a plan that ignores them.
+ */
+export function withStatedNeeds(
+  request: PlanRequest,
+  ...texts: (string | undefined)[]
+): PlanRequest {
+  const text = ` ${[request.prompt, request.dietary, ...texts].filter(Boolean).join(" ").toLowerCase().replace(/[’']/g, "'")} `;
+  const alcoholFree = request.alcoholFree || ALCOHOL_FREE_WORDS.test(text);
+  const diets = DIET_WORDS.filter(
+    ([d, re]) => re.test(text) && !request.dietary.toLowerCase().includes(d),
+  ).map(([d]) => d);
+  if (alcoholFree === request.alcoholFree && !diets.length) return request;
+  const interests = request.interests.filter(
+    (i) => !(alcoholFree && i === "Nightlife"),
+  );
+  return {
+    ...request,
+    alcoholFree,
+    interests: interests.length ? interests : ["Surprise me"],
+    dietary: [request.dietary.trim(), ...diets]
+      .filter(Boolean)
+      .join(", ")
+      .slice(0, 300),
   };
 }
