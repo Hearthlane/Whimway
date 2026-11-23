@@ -5,11 +5,22 @@ import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import type { PlanEntry } from "@/lib/store";
 import { guidePhotos } from "@/plan/guidePhotos";
+import { StopArt } from "@/plan/StopArt";
 import { Button, Icon, Press, T } from "@/ui/kit";
 import { color, font, radius, shadow, space } from "@/ui/theme";
 
 export { endOf, startOf, whenLabel } from "@shared/today";
-const photosOf = (e: PlanEntry) => (e.meta.brief?.length ? e.meta.brief.map((b) => guidePhotos[b.kind] ?? guidePhotos.sights) : [guidePhotos.sights]);
+// A photo of the kind of stop when there is one; otherwise a drawn illustration.
+const photosOf = (e: PlanEntry) => (e.meta.brief?.length ? e.meta.brief.map((b) => ({ src: guidePhotos[b.kind], kind: b.kind })) : [{ src: undefined, kind: "" }]);
+function Pic({ src, kind, style }: { src?: number; kind: string; style: object }) {
+  return src ? (
+    <Image source={src} style={style} contentFit="cover" accessibilityIgnoresInvertColors />
+  ) : (
+    <View style={[style, { overflow: "hidden" }]}>
+      <StopArt place={{ category: kind, types: [kind] }} height={220} />
+    </View>
+  );
+}
 
 /** Horizontal photo cards for upcoming or recent plans. */
 export function PlanCards({ entries, prefix }: { entries: [string, PlanEntry][]; prefix: string }) {
@@ -19,8 +30,8 @@ export function PlanCards({ entries, prefix }: { entries: [string, PlanEntry][];
         <Animated.View key={id} entering={FadeInDown.delay(i * 60).duration(300)}>
           <Press testID={`${prefix}-${id}`} accessibilityRole="button" accessibilityLabel={`${e.meta.title}, ${whenLabel(e)}`} scaleTo={0.97} onPress={() => router.push(`/plan/${id}`)} style={s.card}>
             <View style={s.strip}>
-              {photosOf(e).slice(0, 3).map((src, j) => (
-                <Image key={j} source={src} style={s.photo} contentFit="cover" accessibilityIgnoresInvertColors />
+              {photosOf(e).slice(0, 3).map((p, j) => (
+                <Pic key={j} {...p} style={s.photo} />
               ))}
               {e.saved ? (
                 <View style={s.saved}>
@@ -47,7 +58,7 @@ export function PlanCards({ entries, prefix }: { entries: [string, PlanEntry][];
 export function PlanTile({ id, entry }: { id: string; entry: PlanEntry }) {
   return (
     <Press testID={`plan-tile-${id}`} accessibilityRole="button" accessibilityLabel={entry.meta.title} scaleTo={0.97} onPress={() => router.push(`/plan/${id}`)} style={s.tile}>
-      <Image source={photosOf(entry)[0]} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors />
+      <Pic {...photosOf(entry)[0]} style={StyleSheet.absoluteFill} />
       <View style={s.tileShade} />
       <View style={s.tileText}>
         <T v="smallStrong" tone={color.paper} numberOfLines={2}>

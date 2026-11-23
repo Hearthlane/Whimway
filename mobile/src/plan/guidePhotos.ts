@@ -28,5 +28,8 @@ export const guidePhotos: Partial<Record<string, number>> = {
 /** The category a place mainly belongs to, preferring the one the person was browsing. */
 export function kindOf(p: Pick<CandidatePlace, "category" | "types">, chosen?: string) {
   const current = chosen ? groupByKey(chosen) : undefined;
-  return current && inGroup(p, current) ? current.key : ([...cuisines, ...activities].find((g) => inGroup(p, g))?.key ?? "sights");
+  if (current && inGroup(p, current)) return current.key;
+  // A games café that also pours drinks is games, not drinks.
+  const groups = [...cuisines, ...activities].filter((g) => inGroup(p, g));
+  return (groups.find((g) => g.key !== "drinks") ?? groups[0])?.key ?? "";
 }

@@ -35,14 +35,17 @@ const friendly: Record<string, string> = {
   OFFLINE: "You’re offline",
   ANCHOR_CLOSED: "That place is closed then",
   TIMEOUT: "That took too long",
+  PROVIDER_DAILY_LIMIT: "Live place details are paused for today",
 };
+// Errors that trying again right now can't fix.
+const final = new Set(["PROVIDER_DAILY_LIMIT", "GLOBAL_LIMIT", "RATE_LIMIT", "PAST_TIME"]);
 
 export default function PlanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const store = useStore();
   const insets = useSafeAreaInsets();
   const [plan, setPlan] = useState<Itinerary | undefined>(id === "new" ? undefined : store.live[id]);
-  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [error, setError] = useState<{ title: string; message: string; code?: string } | null>(null);
   const [stage, setStage] = useState(0);
   const [selected, setSelected] = useState<string>();
   const [editOpen, setEditOpen] = useState(false);
@@ -72,7 +75,7 @@ export default function PlanScreen() {
     const err = e instanceof ApiError ? e : new ApiError((e as Error).message);
     // The server enforces the free monthly allowance; send people to Plus instead of an error.
     if (err.code === "PLAN_LIMIT") return router.replace({ pathname: "/plus", params: { reason: "limit" } });
-    setError({ title: friendly[err.code] ?? "We couldn’t build that plan", message: err.message });
+    setError({ title: friendly[err.code] ?? "", message: err.message, code: err.code });
   };
 
   // New plan: generate from the pending request.
@@ -212,7 +215,12 @@ export default function PlanScreen() {
       const unlock = action === "remove" || action === "longer" || action === "shorter";
       const spec = toSpec(unlock ? { ...plan, stops: plan.stops.map((s, i) => (i === index ? { ...s, locked: false } : s)) } : plan);
       if (unlock) target.locked = false;
-      const next = await api<Itinerary>("edit", { spec, stops: refs });
+      const edited = await api<Itinerary>("edit", { spec, stops: refs });
+      // Changing a kept stop's length keeps it kept: the new length is the person's choice too.
+      const wasKept = before.stops[index].locked && (action === "longer" || action === "shorter");
+      const next = wasKept
+        ? { ...edited, stops: edited.stops.map((s) => (s.placeId === target.placeId ? { ...s, locked: true } : s)) }
+        : edited;
       update(next);
       setChanged([]);
       tap("select");
@@ -297,14 +305,35 @@ export default function PlanScreen() {
           <Icon name="compass" size={28} />
         </View>
         <T v="title" style={{ textAlign: "center" }}>
-          {error.title}
+          {error.title || (id === "new" ? "We couldn’t build that plan" : "We couldn’t open that plan")}
         </T>
         <T v="body" tone={color.muted} style={{ textAlign: "center", maxWidth: 360 }}>
           {error.message}
         </T>
-        <View style={{ flexDirection: "row", gap: space.md, marginTop: space.lg }}>
-          <Button kind="soft" label="Change request" icon="edit-2" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
-          <Button label="Try again" icon="refresh-cw" onPress={() => (id === "new" && !plan ? generate() : hydrate())} />
+        {entry?.meta.brief?.length ? (
+          // A plan already made still shows its stops, times and directions without the server.
+          <View style={s.offline} testID="plan-offline">
+            <T v="smallStrong">{entry.meta.title}</T>
+            {entry.meta.brief.map((b) => (
+              <Press key={b.placeId} accessibilityRole="link" accessibilityLabel={`Directions to ${b.name}`} onPress={() => void Linking.openURL(b.mapsUrl)} style={s.offlineRow}>
+                <T v="small" tone={color.muted} style={{ width: 64 }}>
+                  {DateTime.fromISO(b.at).setZone("America/Toronto").toFormat("h:mm a")}
+                </T>
+                <T v="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+                  {b.name}
+                </T>
+                <Icon name="navigation" size={14} tint={color.coralText} />
+              </Press>
+            ))}
+          </View>
+        ) : null}
+        <View style={{ flexDirection: "row", gap: space.md, marginTop: space.lg, flexWrap: "wrap", justifyContent: "center" }}>
+          <Button kind="soft" label={id === "new" ? "Change request" : "Back"} icon={id === "new" ? "edit-2" : "arrow-left"} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
+          {final.has(error.code ?? "") ? (
+            <Button label="Home" icon="home" onPress={() => router.replace("/")} />
+          ) : (
+            <Button label="Try again" icon="refresh-cw" onPress={() => (id === "new" && !plan ? generate() : hydrate())} />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -583,6 +612,8 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const s = StyleSheet.create({
+  offline: { alignSelf: "stretch", maxWidth: 420, width: "100%", gap: space.sm, marginTop: space.lg, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  offlineRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 40 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: space.md, padding: space.xl, backgroundColor: color.canvas },
   stateIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
   orb: { width: 72, height: 72, borderRadius: 36, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", ...shadow.lift },

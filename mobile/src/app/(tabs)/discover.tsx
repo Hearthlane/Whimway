@@ -27,7 +27,9 @@ const groups = [...activities, ...cuisines];
 const whenOptions = [
   { key: "now", label: "Now" },
   { key: "tonight", label: "Tonight" },
-  { key: "tomorrow", label: "Tomorrow" },
+  { key: "morning", label: "Tomorrow morning" },
+  { key: "tomorrow", label: "Tomorrow evening" },
+  { key: "weekend", label: "This weekend" },
 ] as const;
 const km = (m: number) => (m < 950 ? `${Math.round(m / 50) * 50} m` : `${(m / 1000).toFixed(1)} km`);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -56,9 +58,13 @@ export default function Discover() {
         ? now.plus({ minutes: 30 - (now.minute % 30) })
         : when === "tonight"
           ? now.set({ hour: Math.max(18, now.hour + 1), minute: 0 })
-          : now.plus({ days: 1 }).set({ hour: 18, minute: 30 });
+          : when === "morning"
+            ? now.plus({ days: 1 }).set({ hour: 10, minute: 0 })
+            : when === "weekend"
+              ? (now.weekday >= 6 && now.hour < 15 ? now.plus({ hours: 1 }) : now.plus({ days: (6 - now.weekday + 7) % 7 || 7 })).set({ hour: now.weekday >= 6 && now.hour < 15 ? now.hour + 1 : 11, minute: 0 })
+              : now.plus({ days: 1 }).set({ hour: 18, minute: 30 });
     const late = start.hour >= 23 || start.day !== now.day;
-    const at = when !== "tomorrow" && late ? now.plus({ days: 1 }).set({ hour: 18, minute: 30 }) : start;
+    const at = (when === "now" || when === "tonight") && late ? now.plus({ days: 1 }).set({ hour: 18, minute: 30 }) : start;
     return { ...base, date: at.toISODate()!, startTime: at.toFormat("HH:mm"), duration: 180, anchorPlaceIds: [] };
     // Re-derive when the person changes area or time, not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,7 +148,7 @@ export default function Discover() {
             Discover
           </T>
           <T v="body" tone={color.muted}>
-            Real places in {area.name}, open {when === "now" ? "right now" : when === "tonight" ? "tonight" : "tomorrow evening"}.
+            Real places in {area.name}, open {when === "now" ? "right now" : when === "tonight" ? "tonight" : when === "morning" ? "tomorrow morning" : when === "weekend" ? "this weekend" : "tomorrow evening"}.
           </T>
         </View>
 
@@ -281,9 +287,9 @@ export default function Discover() {
               <T v="small" tone={color.muted}>
                 {[open.rating ? `★ ${open.rating.toFixed(1)}${open.reviews ? ` from ${open.reviews.toLocaleString()} reviews` : ""}` : "", open.price.high == null ? "Price varies" : open.price.high === 0 ? "Free" : `${money(open.price.low ?? 0)}–${money(open.price.high)} per person`].filter(Boolean).join(" · ")}
               </T>
-              {open.hours[0] ? (
+              {open.hours.find((h) => h.startsWith(DateTime.fromISO(request.date).toFormat("cccc"))) ? (
                 <T v="small" tone={color.muted}>
-                  {open.hours.slice(0, 2).join(" · ")}
+                  {open.hours.find((h) => h.startsWith(DateTime.fromISO(request.date).toFormat("cccc")))}
                 </T>
               ) : null}
             </View>

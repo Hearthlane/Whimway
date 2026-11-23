@@ -649,9 +649,41 @@ export class Planner {
     );
     if (op.kind === "noop")
       throw new AppError("NOTHING_TO_CHANGE", op.summary, 422);
+    // Stops the person named are theirs to change this time.
+    if (op.unlock?.length)
+      spec = {
+        ...spec,
+        stops: spec.stops.map((s, i) =>
+          op.unlock!.includes(i) ? { ...s, locked: false } : s,
+        ),
+      };
     const request: PlanRequest = { ...spec.request, ...op.patch };
     const before = new Set(spec.stops.map((s) => s.placeId));
     let plan: Itinerary;
+    if (op.kind === "reorder") {
+      let order = op.order ?? spec.stops.map((_, i) => i);
+      if (op.mealAt) {
+        // Try each position for the meal and keep the one whose arrival is closest to the time asked.
+        const { index, minute } = op.mealAt;
+        const others = order.filter((i) => i !== index);
+        const [h, m] = spec.request.startTime.split(":").map(Number);
+        let best = order;
+        let gap = Infinity;
+        for (let pos = 0; pos <= others.length; pos++) {
+          const o = [...others];
+          o.splice(pos, 0, index);
+          const arrive =
+            h * 60 + m + o.slice(0, pos).reduce((n, i) => n + spec.stops[i].minutes + 15, 0);
+          if (Math.abs(arrive - minute) < gap) {
+            gap = Math.abs(arrive - minute);
+            best = o;
+          }
+        }
+        order = best;
+      }
+      plan = await this.edit({ ...spec, stops: order.map((i) => spec.stops[i]) });
+      return { plan, op, changed: [] };
+    }
     if (op.kind === "remove") {
       plan = await this.edit({
         ...spec,
@@ -705,7 +737,11 @@ export class Planner {
     )
       throw new AppError(
         "NOTHING_TO_CHANGE",
-        "Nothing else that fits is open at that time, so your plan is unchanged. Try an earlier start, or a bigger budget.",
+        op.action.startsWith("Make it cheaper")
+          ? "Nothing cheaper that fits is open at that time, so your plan is unchanged."
+          : op.kind === "add"
+            ? "I couldn't find another place that's open then and fits around your stops, so your plan is unchanged. Try a different kind of stop, or start earlier."
+            : "I couldn't find a different place that's open then and fits, so your plan is unchanged. Try describing another kind of place.",
         422,
       );
     return {
@@ -726,7 +762,23 @@ export class Planner {
       { ...spec, revision: spec.revision + 1 },
       places,
       this.routes,
-    );
+    ).catch((e) => {
+      // Say which stop no longer fits, so the person knows what to move or remove.
+      const name = e instanceof AppError && e.placeId
+        ? places.find((p) => p.id === e.placeId)?.name
+        : undefined;
+      if (name && (e.code === "CLOSED" || e.code === "TOO_LONG"))
+        throw new AppError(
+          e.code,
+          e.code === "CLOSED"
+            ? `That change moves ${name} to a time when it's closed. Move or remove ${name} as well.`
+            : `That change pushes ${name} past the end of your time. Remove a stop or make the outing longer.`,
+          422,
+          undefined,
+          e.placeId,
+        );
+      throw e;
+    });
     // The summary always describes the stops the plan has now.
     return { ...plan, summary: shapeSummary(plan.stops, plan.request) };
   }

@@ -18,6 +18,11 @@ function activity(stop: Itinerary["stops"][number], hour: number) {
   if (/comedy/.test(types)) return "Comedy";
   if (/performing_arts|theat/.test(types)) return "A show";
   if (/museum|gallery/.test(types)) return "Art & exhibits";
+  if (/skating|ice_skating_rink|\brink\b/.test(types)) return "Skating";
+  if (/market/.test(types)) return "Browse";
+  // A pub or bar that serves food, visited at a mealtime, is the meal.
+  if (/restaurant/.test(types) && ((hour >= 11 && hour < 15) || (hour >= 17 && hour < 21)))
+    return hour < 15 ? "Lunch" : "Dinner";
   if (kind === "meal") return hour < 11 ? "Breakfast" : hour < 16 ? "Lunch" : "Dinner";
   if (kind === "drinks") return "Drinks";
   if (kind === "cafe") return "Coffee";

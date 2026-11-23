@@ -191,7 +191,8 @@ export default function Guide() {
       setFailed("");
       try {
         const res = await api<{ places: Option[]; widened: boolean }>("guide/options", { request: { ...request, anchorPlaceIds: [] }, group, text: group === "custom" ? said : undefined, demo: store.demo });
-        if (live) setOptions({ key: lookup, ...res });
+        // "Closest first" means closest first.
+        if (live) setOptions({ key: lookup, ...res, places: [...res.places].sort((x, y) => x.meters - y.meters) });
       } catch (e) {
         if (live) setFailed((e as Error).message || "Couldn’t load places.");
       }

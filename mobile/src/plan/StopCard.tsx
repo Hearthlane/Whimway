@@ -168,7 +168,7 @@ export function StopCard({
             <Animated.View entering={FadeIn.duration(motion.standard)} style={s.more}>
               <Fact icon="clock">
                 {stop.hoursStatus}
-                {stop.place.hours[0] ? `. ${stop.place.hours[0]}` : ""}
+                {hoursOn(stop.place.hours, stop.arrival, plan.request.location.timezone)}
               </Fact>
               <Fact icon="map-pin">{stop.place.address}</Fact>
               <Fact icon="tag">
@@ -228,6 +228,13 @@ function Fact({ icon, children }: { icon: IconName; children: React.ReactNode })
       </T>
     </View>
   );
+}
+
+/** The opening hours for the day of the visit ("Saturday: 10 AM – 6 PM"), not Monday's. */
+export function hoursOn(hours: string[], iso: string, zone: string) {
+  const day = DateTime.fromISO(iso).setZone(zone).toFormat("cccc");
+  const line = hours.find((h) => h.startsWith(day));
+  return line ? `. ${line}` : "";
 }
 
 function Action({ icon, label, onPress, active, primary }: { icon: IconName; label: string; onPress: () => void; active?: boolean; primary?: boolean }) {
