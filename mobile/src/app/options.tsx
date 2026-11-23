@@ -122,7 +122,7 @@ export default function Options() {
               onChangeText={setFeedback}
               multiline
               maxLength={300}
-              placeholder="We haven’t seen each other in ages. Something we can do together, not just sit and eat."
+              placeholder="Something we can do together, not just sit and eat. No bars, and nothing too loud."
               placeholderTextColor={color.faint}
               accessibilityLabel="Describe what you want instead"
               style={s.input}

@@ -45,10 +45,15 @@ type Answers = {
   mood: Vibe[];
   /** Per person. Undefined keeps the usual budget from the profile. */
   budget?: number;
+  /** Minutes. Undefined keeps the length from the words or the usual for the time. */
+  length?: number;
+  /** How many people in total, when the person changed it. */
+  size?: number;
   note: string;
 };
 
 const times: { time: string; label: string; hint: string; icon: IconName }[] = [
+  { time: "10:00", label: "Morning", hint: "From 10, brunch or a day out", icon: "sunrise" },
   { time: "12:00", label: "Lunchtime", hint: "From noon", icon: "sun" },
   { time: "14:30", label: "Afternoon", hint: "From 2:30", icon: "coffee" },
   { time: "18:30", label: "Evening", hint: "From 6:30", icon: "sunset" },
@@ -61,6 +66,14 @@ const budgets: { amount: number; label: string }[] = [
   { amount: 250, label: "No limit" },
 ];
 const people: Record<Who, number> = { partner: 2, friends: 4, solo: 1, family: 4 };
+const lengths: { minutes: number; label: string }[] = [
+  { minutes: 120, label: "2 hours" },
+  { minutes: 180, label: "3 hours" },
+  { minutes: 240, label: "4 hours" },
+  { minutes: 360, label: "Half day" },
+  { minutes: 480, label: "Full day" },
+  { minutes: 600, label: "10 hours" },
+];
 const interestFor: Record<string, PlanRequest["interests"][number]> = {
   games: "Interactive fun",
   shows: "Arts & culture",
@@ -93,7 +106,16 @@ export default function Guide() {
   const [seed] = useState(guideSeed);
   // Arriving from a person on the home screen: plan with them, their favourites first.
   const { person: personId } = useLocalSearchParams<{ person?: string }>();
-  const person = profile.people.find((p) => p.id === personId);
+  // Several people can come along: the one tapped on Home, plus anyone added here.
+  const [withIds, setWithIds] = useState<string[]>(() => (personId ? String(personId).split(",") : []));
+  const coming = profile.people.filter((p) => withIds.includes(p.id));
+  const person = coming[0];
+  const likesOf = [...new Set(coming.flatMap((p) => p.likes))];
+  const relationOf: Who = coming.some((p) => p.relation === "family")
+    ? "family"
+    : coming.length === 1 && coming[0].relation === "partner"
+      ? "partner"
+      : "friends";
   const [skip] = useState<ReadonlySet<Step>>(() => {
     if (!seed) return new Set<Step>(person ? ["who"] : []);
     const stated = readStated(seed.text);
@@ -105,7 +127,7 @@ export default function Guide() {
   });
   const [a, setA] = useState<Answers>(() => {
     const blank: Answers = { who: profile.companions, day: lateToday ? 1 : 0, time: lateToday || now.hour < 17 ? "18:30" : "20:30", mode: profile.mode, mood: [], note: "" };
-    if (!seed) return person ? { ...blank, who: person.relation === "partner" ? "partner" : person.relation === "family" ? "family" : "friends", note: person.note } : blank;
+    if (!seed) return person ? { ...blank, who: relationOf, note: coming.map((p) => p.note).filter(Boolean).join(". ") } : blank;
     const r = seed.request;
     const day = Math.max(0, Math.round(DateTime.fromISO(r.date, { zone: ZONE }).startOf("day").diff(now.startOf("day"), "days").days));
     return { ...blank, who: r.companions ?? profile.companions, day, time: r.startTime, mode: r.mode, mood: r.vibes, note: seed.text, ...readStated(seed.text) };
@@ -159,7 +181,13 @@ export default function Guide() {
     return {
       ...base,
       companions: a.who,
-      participants: seed && a.who === base.companions ? base.participants : person?.relation === "friend" ? 2 : people[a.who],
+      participants:
+        a.size ??
+        (seed && a.who === base.companions
+          ? base.participants
+          : coming.length && a.who !== "family"
+            ? coming.length + 1
+            : people[a.who]),
       date: now.plus({ days: a.day }).toISODate()!,
       startTime: a.time,
       mode: a.mode,
@@ -171,10 +199,12 @@ export default function Guide() {
       skipFood: a.food === "none",
       anchorPlaceIds: chosen.map((p) => p.id),
       pace: decided ? "relaxed" : "balanced",
-      duration: chosen.length === 2 ? 210 : decided ? 150 : 240,
+      // A length the person chose (or said) wins; otherwise sized to the picks.
+      duration: a.length ?? (seed?.request.fixedLength ? base.duration : chosen.length === 2 ? 210 : decided ? 150 : 240),
+      fixedLength: Boolean(a.length) || Boolean(seed?.request.fixedLength),
       prompt: [picks, a.note.trim()].filter(Boolean).join(". ").slice(0, 1500),
     };
-  }, [a, now, profile, seed, person?.relation]);
+  }, [a, now, profile, seed, coming.length]);
 
   // Places for the current "pick one" step.
   const group = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : undefined;
@@ -210,7 +240,7 @@ export default function Guide() {
   );
   // Their person's favourites lead, then the groups this user keeps choosing.
   const theirsFirst = (tiles: ReturnType<typeof orderByTaste>) => {
-    const likes = person?.likes ?? [];
+    const likes = likesOf;
     return [...tiles.filter((t) => likes.includes(t.key)).map((t) => ({ ...t, usual: true })), ...tiles.filter((t) => !likes.includes(t.key))];
   };
   const cuisineTiles = useMemo(() => theirsFirst(orderByTaste(cuisines, liked)), [liked, person]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -229,7 +259,7 @@ export default function Guide() {
     who: ["Who’s coming?", "This shapes the kind of places and how they’re described."],
     when: ["When are you heading out?", "Places are checked against their opening hours for this time."],
     food: ["Are you eating?", "If you’ve already eaten, the plan skips restaurants."],
-    cuisine: ["What are you hungry for?", person?.likes.length ? `${person.name}’s favourites come first.` : liked.length ? "Your usual picks come first." : "Pick one, or type what you’re craving."],
+    cuisine: ["What are you hungry for?", likesOf.length ? `${coming.map((p) => p.name).join(" & ")}’s favourites come first.` : liked.length ? "Your usual picks come first." : "Pick one, or type what you’re craving."],
     foodPlace: [a.food === "light" ? "Somewhere for coffee or dessert" : `${named(a.cuisine, a.cuisineText)} near you`, "Open at your time, closest first. Pick one."],
     fun: ["Want something to do as well?", a.food === "none" ? "Since you’re not eating, pick what the outing is about." : "Before or after you eat."],
     kind: ["What sounds fun?", "Pick one, or type what you have in mind."],
@@ -289,11 +319,26 @@ export default function Guide() {
         <ScrollView contentContainerStyle={[s.body, hasFooter && { paddingBottom: 140 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={{ gap: space.sm }}>
             {person ? (
-              <View style={s.withPill} testID="planning-with">
-                <Icon name="users" size={13} />
-                <T v="smallStrong" style={{ fontSize: 12 }}>
-                  Planning with {person.name}
-                </T>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+                <View style={s.withPill} testID="planning-with">
+                  <Icon name="users" size={13} />
+                  <T v="smallStrong" style={{ fontSize: 12 }}>
+                    Planning with {coming.map((p) => p.name).join(" & ")}
+                  </T>
+                </View>
+                {step === "who" || index <= 1
+                  ? profile.people
+                      .filter((p) => !withIds.includes(p.id))
+                      .slice(0, 6)
+                      .map((p) => (
+                        <Press key={p.id} testID={`guide-with-${p.id}`} accessibilityRole="button" accessibilityLabel={`Add ${p.name}`} onPress={() => (tap("select"), setWithIds([...withIds, p.id]), setA((cur) => ({ ...cur, who: p.relation === "family" || relationOf === "family" ? "family" : "friends" })))} style={s.addWith}>
+                          <Icon name="plus" size={12} />
+                          <T v="smallStrong" style={{ fontSize: 12 }}>
+                            {p.name}
+                          </T>
+                        </Press>
+                      ))
+                  : null}
               </View>
             ) : null}
             <T v="hero" accessibilityRole="header" style={{ fontSize: 32, lineHeight: 35 }}>
@@ -320,7 +365,7 @@ export default function Guide() {
           {step === "when" ? (
             <>
               <View style={s.days}>
-                {[0, 1, 2, 3, 4, 5, 6].filter((d) => d > 0 || !lateToday).map((d) => (
+                {Array.from({ length: 14 }, (_, d) => d).filter((d) => d > 0 || !lateToday).map((d) => (
                   <Press key={d} testID={`guide-day-${d}`} accessibilityRole="button" accessibilityState={{ selected: a.day === d }} onPress={() => (tap("select"), setA({ ...a, day: d }))} style={[s.day, a.day === d && s.dayOn]}>
                     <T v="smallStrong" tone={a.day === d ? color.paper : color.ink}>
                       {day(d)}
@@ -328,6 +373,33 @@ export default function Guide() {
                   </Press>
                 ))}
               </View>
+              <T v="smallStrong" style={{ marginTop: space.sm }}>How long?</T>
+              <View style={s.days}>
+                {lengths.map((l) => (
+                  <Press key={l.minutes} testID={`guide-length-${l.minutes}`} accessibilityRole="button" accessibilityState={{ selected: (a.length ?? request.duration) === l.minutes }} onPress={() => (tap("select"), setA({ ...a, length: l.minutes }))} style={[s.day, (a.length ?? request.duration) === l.minutes && s.dayOn]}>
+                    <T v="smallStrong" tone={(a.length ?? request.duration) === l.minutes ? color.paper : color.ink}>
+                      {l.label}
+                    </T>
+                  </Press>
+                ))}
+              </View>
+              {a.who === "friends" || a.who === "family" ? (
+                <View style={s.sizeRow}>
+                  <T v="smallStrong" style={{ flex: 1 }}>
+                    How many people, including you?
+                  </T>
+                  <Press testID="guide-size-minus" accessibilityRole="button" accessibilityLabel="Fewer people" onPress={() => setA({ ...a, size: Math.max(2, (a.size ?? request.participants) - 1) })} style={s.step}>
+                    <Icon name="minus" size={16} />
+                  </Press>
+                  <T v="title" testID="guide-size" style={{ minWidth: 32, textAlign: "center" }}>
+                    {a.size ?? request.participants}
+                  </T>
+                  <Press testID="guide-size-plus" accessibilityRole="button" accessibilityLabel="More people" onPress={() => setA({ ...a, size: Math.min(20, (a.size ?? request.participants) + 1) })} style={s.step}>
+                    <Icon name="plus" size={16} />
+                  </Press>
+                </View>
+              ) : null}
+              <T v="smallStrong" style={{ marginTop: space.sm }}>Starting around</T>
               <View style={{ gap: space.md }}>
                 {times
                   .filter((t) => a.day > 0 || Number(t.time.slice(0, 2)) > now.hour)
@@ -452,7 +524,7 @@ export default function Guide() {
                   onChangeText={(note) => setA({ ...a, note })}
                   multiline
                   maxLength={400}
-                  placeholder="It’s her birthday. Somewhere quiet, nothing with stairs, and we need to be home by 10."
+                  placeholder="It’s a birthday. Somewhere quiet, nothing with stairs, and home by 10."
                   placeholderTextColor={color.faint}
                   accessibilityLabel="Anything else we should know"
                   style={[s.input, s.note]}
@@ -463,8 +535,8 @@ export default function Guide() {
 
           {step === "review" ? (
             <View style={s.summary}>
-              <Line icon={companionCopy[a.who].icon} label="Who" value={a.who === "partner" ? "A date" : companionCopy[a.who].label} onPress={() => go("who", -1)} />
-              <Line icon="calendar" label="When" value={`${day(a.day)}, from ${DateTime.fromFormat(a.time, "HH:mm").toFormat("h:mm a")}`} onPress={() => go("when", -1)} />
+              <Line icon={companionCopy[a.who].icon} label="Who" value={`${coming.length ? `You, ${coming.map((p) => p.name).join(" & ")}` : a.who === "partner" ? "A date" : companionCopy[a.who].label} · ${request.participants} ${request.participants === 1 ? "person" : "people"}`} onPress={() => go(skip.has("who") ? "when" : "who", -1)} />
+              <Line icon="calendar" label="When" value={`${day(a.day)}, ${DateTime.fromFormat(a.time, "HH:mm").toFormat("h:mm a")}–${DateTime.fromFormat(a.time, "HH:mm").plus({ minutes: request.duration }).toFormat("h:mm a")}`} onPress={() => go("when", -1)} />
               <Line
                 icon="coffee"
                 label="Food"
@@ -683,6 +755,9 @@ function Line({ icon, label, value, onPress, last }: { icon: IconName; label: st
 }
 
 const s = StyleSheet.create({
+  addWith: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1, borderColor: color.line, backgroundColor: color.paper },
+  sizeRow: { flexDirection: "row", alignItems: "center", gap: space.md, marginTop: space.sm, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  step: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: color.line, alignItems: "center", justifyContent: "center" },
   tilePlain: { backgroundColor: color.lavenderTint, alignItems: "center", justifyContent: "center" },
   withPill: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: color.coralTint },
   page: { flex: 1, backgroundColor: color.canvas },

@@ -13,7 +13,7 @@ import { useStore } from "@/lib/store";
 import { FREE, plansLeft } from "@shared/plus";
 import { PollCard } from "@/plan/PollCard";
 import { Sponsored } from "@/plan/Sponsored";
-import { Avatar, PeopleRow } from "@/home/People";
+import { Avatar, PeopleRow, PersonSheet, type Person } from "@/home/People";
 import { PlanCards, TodayCard, endOf, startOf } from "@/home/Plans";
 import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Card, Chip, Icon, IconButton, Notice, Press, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
@@ -33,6 +33,7 @@ type Overrides = {
   /** Device location (rounded to ~100 m), only when the user taps "Near me". */
   near?: { lat: number; lng: number; areaKey: string };
   indoorOnly?: boolean;
+  alcoholFree?: boolean;
 };
 const ZONE = "America/Toronto";
 
@@ -48,6 +49,7 @@ export default function PlanHome() {
   // Arriving from onboarding, the composer starts with a suggestion built from the new taste profile.
   const { starter, welcome, restoredPlans } = useLocalSearchParams<{ starter?: string; welcome?: string; restoredPlans?: string }>();
   const [welcomed, setWelcomed] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | "new" | null>(null);
   const [text, setText] = useState(typeof starter === "string" ? starter : "");
   const [o, setO] = useState<Overrides>({});
   const [field, setField] = useState<Field | null>(null);
@@ -73,6 +75,7 @@ export default function PlanHome() {
     if (o.duration) r.duration = o.duration;
     if (o.vibes) r.vibes = o.vibes;
     if (o.indoorOnly !== undefined) r.indoorOnly = o.indoorOnly;
+    if (o.alcoholFree !== undefined) r.alcoholFree = o.alcoholFree;
     const budget = o.budget ?? (r.budgetBasis === "total" ? { amount: r.budget * base.participants, basis: "total" as const } : undefined);
     if (budget) {
       r.budgetBasis = budget.basis;
@@ -173,7 +176,7 @@ export default function PlanHome() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(70).duration(380)}>
-          <PeopleRow />
+          <PeopleRow onEdit={setEditingPerson} />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(380)} style={s.composer}>
@@ -185,7 +188,7 @@ export default function PlanHome() {
             multiline
             maxLength={1500}
             accessibilityLabel="Describe the experience you want"
-            placeholder="A spontaneous Saturday night with my girlfriend, $100 total, romantic but a little adventurous…"
+            placeholder="Saturday with my partner, $100 total, romantic but a little adventurous…"
             placeholderTextColor={color.faint}
             style={s.input}
           />
@@ -206,6 +209,13 @@ export default function PlanHome() {
             {chipRow.map((c) => (
               <Chip key={c.key} testID={`chip-${c.key}`} icon={c.icon} label={c.label} onPress={() => setField(c.key)} tone={c.key === "budget" ? "yellow" : c.key === "vibe" ? "lavender" : "mint"} />
             ))}
+            <Chip
+              testID="chip-alcohol"
+              icon="slash"
+              label={request.alcoholFree ? "Alcohol-free" : "Drinks OK"}
+              selected={request.alcoholFree}
+              onPress={() => setO({ ...o, alcoholFree: !request.alcoholFree })}
+            />
             <Chip
               icon="umbrella"
               label={request.indoorOnly ? "Indoors only" : "Indoor or outdoor"}
@@ -313,6 +323,7 @@ export default function PlanHome() {
 
       </ScrollView>
 
+      <PersonSheet person={editingPerson} onClose={() => setEditingPerson(null)} />
       <Editors field={field} close={() => setField(null)} request={request} o={o} setO={setO} totalBudget={totalBudget} now={now} />
     </SafeAreaView>
   );

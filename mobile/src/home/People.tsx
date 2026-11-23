@@ -29,9 +29,10 @@ export function planWith(person: Person) {
 }
 
 /** Horizontal row of people with an add button, for the home screen. */
-export function PeopleRow() {
+/** The add/edit sheet is rendered by the screen (`onEdit`), so it covers the whole screen. */
+export function PeopleRow({ onEdit }: { onEdit: (p: Person | "new") => void }) {
   const { profile } = useStore();
-  const [editing, setEditing] = useState<Person | "new" | null>(null);
+  const setEditing = onEdit;
   return (
     <View style={{ gap: space.md }}>
       <View style={s.head}>
@@ -71,7 +72,6 @@ export function PeopleRow() {
           Tap to plan with someone. Press and hold to edit.
         </T>
       )}
-      <PersonSheet person={editing} onClose={() => setEditing(null)} />
     </View>
   );
 }

@@ -8,7 +8,7 @@ import { areaByKey, areas } from "@shared/areas";
 import { groupByKey } from "@shared/guide";
 import { buildRequest, interpret } from "@shared/intent";
 import { vibes as vibeKeys } from "@shared/schema";
-import { companionCopy, vibeCopy } from "@/lib/copy";
+import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { Avatar, PersonSheet, planWith, type Person } from "@/home/People";
 import { PlanTile, startOf } from "@/home/Plans";
@@ -231,6 +231,11 @@ function EditProfile({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [name, setName] = useState(profile.name);
   const [home, setHome] = useState(profile.homeArea);
   const [vibes, setVibes] = useState(profile.vibes);
+  const [dietary, setDietary] = useState(profile.dietary);
+  const [accessibility, setAccessibility] = useState(profile.accessibility);
+  const [alcoholFree, setAlcoholFree] = useState(profile.alcoholFree);
+  const [budget, setBudget] = useState(profile.budget);
+  const [mode, setMode] = useState(profile.mode);
   // Start from the saved profile each time the sheet opens.
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
@@ -239,10 +244,15 @@ function EditProfile({ open, onClose }: { open: boolean; onClose: () => void }) 
       setName(profile.name);
       setHome(profile.homeArea);
       setVibes(profile.vibes);
+      setDietary(profile.dietary);
+      setAccessibility(profile.accessibility);
+      setAlcoholFree(profile.alcoholFree);
+      setBudget(profile.budget);
+      setMode(profile.mode);
     }
   }
   const save = () => {
-    setProfile({ ...profile, name: name.trim().slice(0, 40), homeArea: home, vibes });
+    setProfile({ ...profile, name: name.trim().slice(0, 40), homeArea: home, vibes, dietary: dietary.slice(0, 300), accessibility: accessibility.slice(0, 300), alcoholFree, budget, mode });
     tap("success");
     onClose();
   };
@@ -275,6 +285,39 @@ function EditProfile({ open, onClose }: { open: boolean; onClose: () => void }) 
             {persona(vibes)}
           </T>
         </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Usual spend per person</T>
+          <View style={s.chips}>
+            {[20, 45, 80, 150].map((b) => (
+              <Chip key={b} label={b === 20 ? "Under $25" : b === 45 ? "$25–60" : b === 80 ? "$60–100" : "$100+"} selected={budget === b} onPress={() => setBudget(b)} />
+            ))}
+          </View>
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Getting around</T>
+          <View style={s.chips}>
+            {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
+              <Chip key={m} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={mode === m} onPress={() => setMode(m)} />
+            ))}
+          </View>
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Food needs</T>
+          <TextInput value={dietary} onChangeText={setDietary} placeholder="e.g. vegetarian, halal, nut allergy" placeholderTextColor={color.faint} maxLength={300} accessibilityLabel="Food needs" style={s.input} testID="edit-dietary" />
+        </View>
+        <View style={{ gap: space.sm }}>
+          <T v="smallStrong">Accessibility</T>
+          <TextInput value={accessibility} onChangeText={setAccessibility} placeholder="e.g. step-free access, short walks" placeholderTextColor={color.faint} maxLength={300} accessibilityLabel="Accessibility needs" style={s.input} testID="edit-accessibility" />
+        </View>
+        <Press accessibilityRole="switch" accessibilityState={{ checked: alcoholFree }} onPress={() => setAlcoholFree(!alcoholFree)} style={s.toggle} testID="edit-alcohol-free">
+          <View style={{ flex: 1, gap: 2 }}>
+            <T v="bodyStrong">Skip bars and drinking spots</T>
+            <T v="small" tone={color.muted}>
+              Restaurants still count.
+            </T>
+          </View>
+          <View style={[s.knob, alcoholFree && s.knobOn]}>{alcoholFree ? <Icon name="check" size={14} tint={color.paper} /> : null}</View>
+        </Press>
       </View>
     </Sheet>
   );
@@ -300,5 +343,8 @@ const s = StyleSheet.create({
   rowIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
   empty: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
+  toggle: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, backgroundColor: color.paper },
+  knob: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: color.line, alignItems: "center", justifyContent: "center" },
+  knobOn: { backgroundColor: color.ink, borderColor: color.ink },
   input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1.5, borderColor: color.line, backgroundColor: color.paper, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
 });

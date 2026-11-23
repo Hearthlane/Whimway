@@ -16,7 +16,7 @@ import { color, font, motion, radius, shadow, space } from "@/ui/theme";
 
 const budgets = [
   { value: 20, label: "Under $25", hint: "Free stuff, cheap eats" },
-  { value: 45, label: "$25–60", hint: "A nice night out" },
+  { value: 45, label: "$25–60", hint: "A nice outing" },
   { value: 80, label: "$60–100", hint: "Treat yourselves" },
   { value: 150, label: "$100+", hint: "Go big sometimes" },
 ];
@@ -34,7 +34,7 @@ export function persona(vibes: string[]) {
 function starterPrompt(p: TasteProfile) {
   const mood = p.vibes.slice(0, 2).join(" and ") || "memorable";
   const who = { partner: "with my partner", friends: "with friends", solo: "just for me", family: "with the family" }[p.companions];
-  return `A ${mood} night ${who} this Saturday`;
+  return `A ${mood} outing ${who} this Saturday`;
 }
 
 /** Welcome hero: the product in miniature. A sentence goes in, a night comes out. */
@@ -48,7 +48,7 @@ function MiniDemo() {
     <View style={s.demo} accessibilityLabel="Example: a sentence becomes a three-stop plan" accessible>
       <Animated.View entering={FadeInDown.delay(250).duration(motion.slow)} style={s.bubble}>
         <T v="body" tone={color.paper}>
-          “Romantic night, $100, not too far”
+          “Saturday with the kids, $100, not too far”
         </T>
       </Animated.View>
       <Animated.View entering={ZoomIn.delay(900).duration(motion.standard)} style={s.demoSpark}>
@@ -131,12 +131,13 @@ export default function Onboarding() {
   const [signedInAtStart] = useState(() => Boolean(session));
   const offerAccount = cloudConfigured && !signedInAtStart && !signedInAs;
   const steps: readonly Step[] = offerAccount ? [...baseSteps, "account"] : baseSteps;
-  const [draft, setDraft] = useState<TasteProfile>({ ...profile, analytics: true });
+  const [draft, setDraft] = useState<TasteProfile>({ ...profile });
   const set = (patch: Partial<TasteProfile>) => setDraft((d) => ({ ...d, ...patch }));
   const toggle = <K extends "vibes" | "interests">(key: K, value: TasteProfile[K][number], max: number) =>
     setDraft((d) => {
       const list = d[key] as string[];
-      const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value].slice(-max);
+      // At the limit, a new pick is ignored (the hint says so) rather than silently dropping the first.
+      const next = list.includes(value) ? list.filter((x) => x !== value) : list.length >= max ? list : [...list, value];
       return { ...d, [key]: next };
     });
   useEffect(() => {
@@ -267,7 +268,7 @@ export default function Onboarding() {
                   From “what should we do?” to “we’re going” in under a minute.
                 </T>
                 <T v="body" tone={color.muted}>
-                  Say the mood, the budget and who’s coming. Get a night of real places, with times and routes you can follow.
+                  Say the mood, the budget and who’s coming. Get a plan of real places, with times and routes you can follow.
                 </T>
               </View>
             </View>
@@ -335,9 +336,9 @@ export default function Onboarding() {
 
           {current === "vibes" ? (
             <>
-              <T v="title">What kind of nights make you feel most alive?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                Pick up to four.
+              <T v="title">What kind of outings do you love?</T>
+              <T v="body" tone={draft.vibes.length >= 4 ? color.coralText : color.muted} style={s.sub}>
+                {draft.vibes.length >= 4 ? "That’s four. Tap one to swap it out." : `Pick up to four${draft.vibes.length ? ` (${draft.vibes.length} picked)` : ""}.`}
               </T>
               <View style={s.grid}>
                 {vibeKeys.map((v) => (
@@ -363,7 +364,7 @@ export default function Onboarding() {
 
           {current === "budget" ? (
             <>
-              <T v="title">A typical night out, per person?</T>
+              <T v="title">A typical outing, per person?</T>
               <View style={s.grid}>
                 {budgets.map((b) => (
                   <Tile key={b.value} label={b.label} hint={b.hint} selected={draft.budget === b.value} onPress={() => set({ budget: b.value })} />
@@ -432,9 +433,18 @@ export default function Onboarding() {
               <TextInput accessibilityLabelledBy="access-label" value={draft.accessibility} onChangeText={(accessibility) => set({ accessibility: accessibility.slice(0, 300) })} placeholder="e.g. step-free access" placeholderTextColor={color.faint} style={s.input} />
               <View style={s.consent}>
                 <View style={{ flex: 1, gap: 4 }}>
+                  <T v="bodyStrong">Skip bars and drinking spots</T>
+                  <T v="small" tone={color.muted}>
+                    For when you don’t drink, or don’t want plans built around alcohol. Restaurants still count.
+                  </T>
+                </View>
+                <Switch testID="onboarding-alcohol-free" value={draft.alcoholFree} onValueChange={(alcoholFree) => set({ alcoholFree })} trackColor={{ true: color.ink, false: color.line }} thumbColor={color.paper} accessibilityLabel="Skip bars and drinking spots" />
+              </View>
+              <View style={s.consent}>
+                <View style={{ flex: 1, gap: 4 }}>
                   <T v="bodyStrong">Help improve Whimway</T>
                   <T v="small" tone={color.muted}>
-                    Share anonymous usage (e.g. “plan saved”). Never your prompts, location or places. Change anytime in You.
+                    Share anonymous usage (e.g. “plan saved”). Never your prompts, location or places. Off unless you turn it on; change it anytime in Settings.
                   </T>
                 </View>
                 <Switch value={draft.analytics} onValueChange={(analytics) => set({ analytics })} trackColor={{ true: color.ink, false: color.line }} thumbColor={color.paper} accessibilityLabel="Share anonymous usage" />

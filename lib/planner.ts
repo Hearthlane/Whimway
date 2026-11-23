@@ -772,7 +772,7 @@ export class Planner {
           e.code,
           e.code === "CLOSED"
             ? `That change moves ${name} to a time when it's closed. Move or remove ${name} as well.`
-            : `That change pushes ${name} past the end of your time. Remove a stop or make the outing longer.`,
+            : `That change pushes ${name} past the end of your time window. Remove a stop or make the outing longer.`,
           422,
           undefined,
           e.placeId,

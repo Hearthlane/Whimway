@@ -195,7 +195,7 @@ let page;
   assert.equal(sawPaywall, false, "free app shows no paywall after onboarding");
   assert.equal(askedWho, false, "does not re-ask what the words already said");
   assert.ok(chips.some((c) => c.includes("$100 total · $50/person")), "budget understood");
-  assert.ok(chips.some((c) => c.includes("With your partner")), "companion understood");
+  assert.ok(chips.some((c) => c.includes("The two of you")), "companion understood");
   assert.ok(stopsBefore.length >= 2 && stopsBefore.length <= 4, "2–4 stops");
   assert.equal(stopsAfter.length, stopsBefore.length, "magic edit keeps the stop count");
   assert.deepEqual(summarize(stopsAfter).slice(0, -1), summarize(stopsBefore).slice(0, -1), "kept stops untouched");

@@ -8,7 +8,7 @@ import { Badge, Button, Icon, IconButton, T } from "@/ui/kit";
 import { color, radius, space } from "@/ui/theme";
 
 export default function Saved() {
-  const { plans, remove, setPending } = useStore();
+  const { plans, remove, setPending, profile } = useStore();
   const saved = Object.entries(plans).filter(([, e]) => e.saved);
   const now = DateTime.now().toISODate()!;
   const upcoming = saved.filter(([, e]) => e.meta.date >= now).sort((a, b) => a[1].meta.date.localeCompare(b[1].meta.date));
@@ -35,7 +35,7 @@ export default function Saved() {
             <View style={s.emptyIcon}>
               <Icon name="bookmark" size={26} />
             </View>
-            <T v="heading">No saved plans yet</T>
+            <T v="heading">{profile.favourites.length ? "No saved plans yet" : "Nothing saved yet"}</T>
             <T v="body" tone={color.muted} style={{ textAlign: "center" }}>
               Plans you save land here, ready to reopen, rerun or rate after you go.
             </T>
@@ -44,6 +44,33 @@ export default function Saved() {
         ) : null}
         {upcoming.length ? <Section title="Coming up" items={upcoming} onReuse={reuse} onRemove={remove} /> : null}
         {past.length ? <Section title="Been there" items={past} onReuse={reuse} onRemove={remove} past /> : null}
+        {profile.favourites.length ? (
+          <View style={{ gap: space.sm }} testID="saved-places">
+            <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+              <T v="heading">Saved places</T>
+              <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/profile", params: { tab: "places" } })} hitSlop={8}>
+                <T v="smallStrong" tone={color.coralText}>
+                  Plan around one
+                </T>
+              </Pressable>
+            </View>
+            {profile.favourites.slice(0, 8).map((f) => (
+              <View key={f.id} style={s.place}>
+                <Icon name="heart" size={16} tint={color.coralText} />
+                <View style={{ flex: 1 }}>
+                  <T v="bodyStrong" numberOfLines={1}>
+                    {f.name}
+                  </T>
+                  {f.category ? (
+                    <T v="small" tone={color.muted} numberOfLines={1}>
+                      {f.category[0].toUpperCase() + f.category.slice(1)}
+                    </T>
+                  ) : null}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -103,6 +130,7 @@ function Section({ title, items, onReuse, onRemove, past }: { title: string; ite
 }
 
 const s = StyleSheet.create({
+  place: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   page: { padding: space.xl, paddingBottom: space.xxxl, maxWidth: 680, width: "100%", alignSelf: "center" },
   empty: { alignItems: "center", gap: space.md, padding: space.xl, marginTop: space.xl, borderRadius: radius.xl, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },

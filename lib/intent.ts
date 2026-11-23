@@ -567,7 +567,7 @@ export function describe(request: PlanRequest, now?: DateTime) {
   const firstDate = /Occasion: first date/.test(request.prompt);
   const who = {
     partner: firstDate ? "A first date" : "The two of you",
-    friends: `${request.participants} friends`,
+    friends: `Group of ${request.participants}`,
     solo: "Just you",
     family: `Family of ${request.participants}`,
   }[request.companions ?? "partner"];
