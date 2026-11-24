@@ -15,6 +15,20 @@ import { color } from "@/ui/theme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
+// Web: a clear keyboard focus ring that follows each control's shape, and visible
+// scrollbars on horizontal rows so they can be scrolled with a mouse.
+if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("whimway-focus")) {
+  const css = document.createElement("style");
+  css.id = "whimway-focus";
+  css.textContent = `
+    [tabindex]:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid ${color.ink} !important; outline-offset: 2px; border-radius: 12px;
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  `;
+  document.head.appendChild(css);
+}
+
 function Navigator() {
   const { ready, track } = useStore();
   const [fontsLoaded] = useFonts({ InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
@@ -42,6 +56,9 @@ function Navigator() {
         <Stack.Screen name="import" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="plus" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="create" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
+        <Stack.Screen name="activity" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="history" options={{ animation: "slide_from_right" }} />
       </Stack>
       {launching ? (
         <Animated.View exiting={FadeOut.duration(320)} style={[StyleSheet.absoluteFill, { backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }]} pointerEvents="none">

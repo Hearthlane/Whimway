@@ -70,6 +70,11 @@ export default function PlanScreen() {
   const started = useRef(0);
   const once = useRef(false);
   const entry = plan ? store.plans[plan.id] : store.plans[id];
+  // History: when this plan was last opened.
+  const { viewedPlan } = store;
+  useEffect(() => {
+    if (plan?.id) viewedPlan(plan.id);
+  }, [plan?.id, viewedPlan]);
 
   const fail = (e: unknown) => {
     const err = e instanceof ApiError ? e : new ApiError((e as Error).message);

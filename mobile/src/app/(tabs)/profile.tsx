@@ -1,12 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { DateTime } from "luxon";
 import { useState } from "react";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areaByKey, areas } from "@shared/areas";
 import { groupByKey } from "@shared/guide";
-import { buildRequest, interpret } from "@shared/intent";
 import { vibes as vibeKeys } from "@shared/schema";
 import { companionCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
@@ -17,25 +15,31 @@ import { cloudConfigured } from "@/lib/config";
 import { Button, Chip, Icon, IconButton, Press, Sheet, T, tap, type IconName } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
-type Tab = "plans" | "places" | "people";
+type Tab = "plans" | "people";
 const tabs: { key: Tab; icon: IconName; label: string }[] = [
   { key: "plans", icon: "grid", label: "Plans" },
-  { key: "places", icon: "heart", label: "Places" },
   { key: "people", icon: "users", label: "People" },
 ];
 
 export default function Profile() {
   const store = useStore();
-  const { profile, plans, setProfile } = store;
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const { profile, plans } = store;
+  const params = useLocalSearchParams<{ tab?: string; edit?: string }>();
   const [tab, setTab] = useState<Tab>("plans");
   // "See all" on home opens a specific tab.
   const [asked, setAsked] = useState(params.tab);
   if (params.tab !== asked) {
     setAsked(params.tab);
-    if (params.tab === "people" || params.tab === "places" || params.tab === "plans") setTab(params.tab);
+    // Saved places live in the Saved tab now.
+    if (params.tab === "places") router.replace({ pathname: "/saved", params: { tab: "places" } });
+    else if (params.tab === "people" || params.tab === "plans") setTab(params.tab);
   }
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(params.edit === "1");
+  const [askedEdit, setAskedEdit] = useState(params.edit);
+  if (params.edit !== askedEdit) {
+    setAskedEdit(params.edit);
+    if (params.edit === "1") setEditing(true);
+  }
   const [person, setPerson] = useState<Person | "new" | null>(null);
 
   const nightsOut = Object.values(plans).filter((p) => p.feedback && p.feedback.went !== "no").length;
@@ -45,25 +49,9 @@ export default function Profile() {
   const stats = [
     { value: grid.length, label: grid.length === 1 ? "plan" : "plans", tab: "plans" as Tab },
     { value: nightsOut, label: nightsOut === 1 ? "outing done" : "outings done", tab: "plans" as Tab },
-    { value: profile.favourites.length, label: profile.favourites.length === 1 ? "saved place" : "saved places", tab: "places" as Tab },
+    { value: profile.favourites.length, label: profile.favourites.length === 1 ? "place" : "places", tab: "places" as const },
     { value: profile.people.length, label: profile.people.length === 1 ? "person" : "people", tab: "people" as Tab },
   ];
-
-  const planAround = (f: (typeof profile.favourites)[number]) => {
-    if (!store.unlocked) return router.push({ pathname: "/plus", params: { reason: "favourite" } });
-    const now = DateTime.now().setZone("America/Toronto");
-    const prompt = `Plan something around ${f.name}`;
-    const base = buildRequest(prompt, interpret(prompt, now), profile, now, { area: areaByKey(f.area) });
-    // Late in the day, plan it for tomorrow evening so the place is open.
-    const late = base.date === now.toISODate() && base.startTime >= "19:30";
-    store.setPending({
-      ...base,
-      ...(late ? { date: now.plus({ days: 1 }).toISODate()!, startTime: "18:30" } : {}),
-      anchorPlaceIds: [f.id],
-      excludedPlaceIds: profile.disliked.filter((id) => id !== f.id),
-    });
-    router.push("/plan/new");
-  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
@@ -72,6 +60,7 @@ export default function Profile() {
           <T v="title" numberOfLines={1} style={{ flex: 1 }} accessibilityRole="header">
             {name}
           </T>
+          <IconButton icon="clock" label="History" onPress={() => router.push("/history")} />
           <IconButton icon="settings" label="Settings" onPress={() => router.push("/settings")} />
         </View>
 
@@ -79,7 +68,7 @@ export default function Profile() {
           <Avatar name={name} size={84} ring />
           <View style={s.stats} testID="your-nights">
             {stats.map((st) => (
-              <Press key={st.label} accessibilityRole="button" accessibilityLabel={`${st.value} ${st.label}`} onPress={() => setTab(st.tab)} style={s.stat}>
+              <Press key={st.label} accessibilityRole="button" accessibilityLabel={`${st.value} ${st.label}`} onPress={() => (st.tab === "places" ? router.push({ pathname: "/saved", params: { tab: "places" } }) : setTab(st.tab))} style={s.stat}>
                 <T style={s.statValue}>{st.value}</T>
                 <T v="small" tone={color.muted} style={{ fontSize: 12, textAlign: "center" }}>
                   {st.label}
@@ -151,32 +140,6 @@ export default function Profile() {
               </View>
             ) : (
               <Empty icon="calendar" text="Plans you make show up here, newest first." action="Plan something" onPress={() => router.push("/")} />
-            )
-          ) : null}
-
-          {tab === "places" ? (
-            profile.favourites.length ? (
-              <View style={{ gap: space.sm }}>
-                {profile.favourites.slice(0, 50).map((f) => (
-                  <View key={f.id} style={s.row} testID="favourite">
-                    <View style={s.rowIcon}>
-                      <Icon name="heart" size={16} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <T v="bodyStrong" numberOfLines={1}>
-                        {f.name}
-                      </T>
-                      <T v="small" tone={color.muted} numberOfLines={1}>
-                        {[f.category, areaByKey(f.area)?.name].filter(Boolean).join(" · ")}
-                      </T>
-                    </View>
-                    <Button kind="soft" label="Plan around it" onPress={() => planAround(f)} />
-                    <IconButton icon="x" label={`Remove ${f.name}`} onPress={() => setProfile({ ...profile, favourites: profile.favourites.filter((x) => x.id !== f.id) })} />
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Empty icon="heart" text="Tap the heart on any stop to save it, then plan a whole outing around it in one tap." action="Find places" onPress={() => router.push("/discover")} />
             )
           ) : null}
 

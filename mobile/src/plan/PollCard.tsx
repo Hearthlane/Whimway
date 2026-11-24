@@ -55,7 +55,7 @@ export function PollCard() {
       <View style={s.header}>
         <View style={s.badge}>
           <Icon name="bar-chart-2" size={13} tint={color.ink} />
-          <T v="eyebrow" style={{ fontSize: 10 }}>
+          <T v="eyebrow" style={{ fontSize: 13 }}>
             Quick poll
           </T>
         </View>

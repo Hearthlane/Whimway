@@ -25,13 +25,13 @@ let page;
   await p.waitForTimeout(2600);
   await shot(p, '01-welcome');
   await p.getByTestId('onboarding-next').click();
+  // Who: picking a tile moves on by itself.
   await p.getByTestId('who-partner').click();
-  await p.getByTestId('onboarding-next').click();
   await p.getByTestId('vibe-romantic').click();
   await p.getByTestId('vibe-adventurous').click();
   await shot(p, '03-vibes');
   await p.getByTestId('onboarding-next').click();
-  await p.getByTestId('onboarding-next').click();
+  // People (optional): later.
   await p.getByTestId('onboarding-next').click();
   await p.getByTestId('area-queen-west').click();
   await p.getByTestId('onboarding-next').click();
@@ -43,7 +43,7 @@ let page;
   await shot(p, '03b-reveal');
   await p.getByTestId('onboarding-next').click();
   // The app is free by default: onboarding goes straight home, no paywall.
-  await p.getByTestId('prompt-input').waitFor();
+  await p.getByTestId('home-start').waitFor();
   const sawPaywall = await p.getByTestId('plus-skip').isVisible().catch(() => false);
   const onboardMs = Date.now() - t0;
   // Poll
@@ -57,6 +57,9 @@ let page;
   await p.waitForTimeout(300);
   const nextPollText = await p.getByTestId('poll-card').innerText();
   await p.evaluate(() => window.scrollTo(0, 0));
+  // The centre "Plan" tab opens the Create sheet.
+  await p.getByTestId('tab-plan').click();
+  await p.getByTestId('prompt-input').waitFor();
   const prompt = "Plan a spontaneous night out tomorrow at 6pm with my girlfriend. We have $100 total, we're near Toronto, we want something romantic but adventurous, and we don't want to drive too far.";
   await p.getByTestId('prompt-input').fill(prompt);
   await p.waitForTimeout(300);
@@ -130,6 +133,7 @@ let page;
   await p.waitForTimeout(500);
   await shot(p, '16-profile');
   const planTiles = await p.locator('[data-testid^="plan-tile-"]').count();
+  const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
   // People: add someone with what they like, then plan with them from home.
   await p.getByRole('button', { name: 'Add person' }).click();
   await p.getByTestId('person-name').fill('Sam');
@@ -156,13 +160,12 @@ let page;
   const withSam = await p.getByTestId('planning-with').innerText().catch(() => '');
   const samAskedWho = await p.getByTestId('guide-who-partner').isVisible().catch(() => false);
   await shot(p, '16d-guide-with-sam');
-  await p.goto(`${base}/profile`, { waitUntil: 'networkidle' });
-  await p.waitForTimeout(400);
-  await p.getByTestId('profile-tab-places').click();
+  // Saved places live in Saved › Places.
+  await p.goto(`${base}/saved`, { waitUntil: 'networkidle' });
+  await p.getByTestId('saved-tab-places').click();
   await p.waitForTimeout(300);
   // Favourites → plan around it
   const favListed = (await p.getByTestId('favourite').allInnerTexts()).join(' ');
-  const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
   // Plan around a favourite: open to everyone in the free app.
   await p.getByRole('button', { name: 'Plan around it' }).first().click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
@@ -175,8 +178,8 @@ let page;
   await p.getByTestId('import-open').click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   const importedTitle = await p.getByTestId('plan-title').innerText();
-  // Near me
-  await p.goto(`${base}/`, { waitUntil: 'networkidle' });
+  // Near me (in the Create sheet)
+  await p.goto(`${base}/create`, { waitUntil: 'networkidle' });
   await p.getByTestId('chip-area').click();
   await p.getByTestId('near-me').click();
   await p.getByText('Using your location').waitFor({ timeout: 10000 });

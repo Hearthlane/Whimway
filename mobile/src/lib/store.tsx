@@ -10,6 +10,7 @@ import { api, setClientContext, type Status } from "./api";
 import { isPlus } from "@shared/plus";
 import { kindOf } from "@/plan/guidePhotos";
 import { supabase } from "./auth";
+import { setTextScale } from "@/ui/kit";
 
 /**
  * Device-first state. Plans are stored as specs (place IDs + user choices), never as
@@ -186,6 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
   const viewedPlace = useCallback<Store["viewedPlace"]>((place) => {
     setState((s) => {
+      if (!s.profile.keepHistory) return s;
       const history = { ...s.history, places: [{ ...place, name: place.name.slice(0, 120), category: place.category.slice(0, 60), at: new Date().toISOString() }, ...s.history.places.filter((p) => p.id !== place.id)].slice(0, 50) };
       persistHistory(history);
       return { ...s, history };
@@ -195,6 +197,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const query = q.trim().slice(0, 80);
     if (query.length < 2) return;
     setState((s) => {
+      if (!s.profile.keepHistory) return s;
       const history = { ...s.history, searches: [{ q: query, at: new Date().toISOString() }, ...s.history.searches.filter((x) => x.q.toLowerCase() !== query.toLowerCase())].slice(0, 20) };
       persistHistory(history);
       return { ...s, history };
@@ -232,6 +235,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void api("signals", { installId: s.installId, source, reason, entries: entries.slice(0, 16) }).catch(() => undefined);
   }, []);
 
+  // Larger text follows the profile.
+  setTextScale(state.profile.textScale);
   const setProfile = useCallback((profile: TasteProfile) => {
     // Apply immediately so anything tracked in the same tick sees the new consent and stats.
     stateRef.current = { ...stateRef.current, profile };

@@ -50,7 +50,7 @@ const fs = require("node:fs");
     } catch {}
   });
   await p.goto(base, { waitUntil: "networkidle", timeout: 90000 });
-  for (const t of ["Skip", "Skip for now", "Maybe later"]) {
+  for (const t of ["Look around first", "Skip", "Skip for now", "Maybe later"]) {
     const el = p.getByText(t, { exact: true }).first();
     if (await el.isVisible().catch(() => false)) {
       await el.click();

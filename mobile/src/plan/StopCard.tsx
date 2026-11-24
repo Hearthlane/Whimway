@@ -122,7 +122,7 @@ export function StopCard({
                 <Image source={{ uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}` }} style={s.photo} contentFit="cover" transition={250} accessibilityIgnoresInvertColors />
                 {photo.authors[0] ? (
                   <View style={s.credit}>
-                    <T v="small" tone={color.paper} style={{ fontSize: 10 }}>
+                    <T v="small" tone={color.paper} style={{ fontSize: 13 }}>
                       Photo: {photo.authors[0].name}
                     </T>
                   </View>

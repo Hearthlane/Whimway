@@ -13,8 +13,8 @@ const { chromium } = require("playwright");
   const shot = async (n) => { await p.waitForTimeout(900); await p.screenshot({ path: `${out}/${n}.png` }); };
   await shot("00-first");
   // skip onboarding if present
-  for (const t of ["Skip", "Skip for now", "Maybe later"]) { const el = p.getByText(t, { exact: true }).first(); if (await el.isVisible().catch(() => false)) { await el.click(); await p.waitForTimeout(800); } }
-  await p.goto("http://localhost:8090/", { waitUntil: "networkidle" }).catch(() => {});
+  for (const t of ["Look around first", "Skip", "Skip for now", "Maybe later"]) { const el = p.getByText(t, { exact: true }).first(); if (await el.isVisible().catch(() => false)) { await el.click(); await p.waitForTimeout(800); } }
+  await p.goto("http://localhost:8090/create", { waitUntil: "networkidle" }).catch(() => {});
   await p.waitForTimeout(1500);
   await shot("01-home");
   const start = p.getByTestId("guide-start");
@@ -88,7 +88,7 @@ const { chromium } = require("playwright");
   if (added === "silent") throw new Error("Add a stop did nothing and said nothing");
   await p.goto("http://localhost:8090/", { waitUntil: "networkidle" });
   await p.waitForTimeout(1500);
-  await p.getByText("Upcoming", { exact: true }).scrollIntoViewIfNeeded().catch(() => {});
+  await p.getByText("Coming up", { exact: true }).scrollIntoViewIfNeeded().catch(() => {});
   await p.screenshot({ path: `${out}/15-home-lists.png` });
   console.log("home lists:", await p.getByText("Upcoming", { exact: true }).isVisible().catch(() => false), await p.getByText("Recently created", { exact: true }).isVisible().catch(() => false));
   console.log("errors:", errs);

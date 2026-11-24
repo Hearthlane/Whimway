@@ -64,7 +64,7 @@ export function PlanTile({ id, entry }: { id: string; entry: PlanEntry }) {
         <T v="smallStrong" tone={color.paper} numberOfLines={2}>
           {entry.meta.title}
         </T>
-        <T v="small" tone={color.paper} style={{ fontSize: 11, opacity: 0.85 }} numberOfLines={1}>
+        <T v="small" tone={color.paper} style={{ fontSize: 13, opacity: 0.85 }} numberOfLines={1}>
           {startOf(entry).toFormat("d LLL")}
         </T>
       </View>

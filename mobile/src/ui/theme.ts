@@ -8,8 +8,11 @@ export const color = {
   ink: "#10173A",
   inkSoft: "#27305A",
   muted: "#4E5674",
-  faint: "#8B92AB",
+  // Quiet text still has to be readable: 5.6:1 on white, 5.2:1 on canvas.
+  faint: "#5F6684",
   line: "#E1E4EC",
+  // Control borders and switch tracks need 3:1 against their surroundings.
+  lineStrong: "#8B92AB",
   // The accent is marquee yellow: a fill colour that always carries ink text.
   coral: "#FFC53D",
   // Coloured copy and links use signal blue, which passes contrast on white and canvas.
@@ -39,12 +42,14 @@ export const type = {
   hero: { fontFamily: font.displayBold, fontSize: 38, lineHeight: 40, letterSpacing: -1.2 },
   title: { fontFamily: font.display, fontSize: 27, lineHeight: 31, letterSpacing: -0.7 },
   heading: { fontFamily: font.displayBold, fontSize: 19, lineHeight: 24, letterSpacing: -0.2 },
-  body: { fontFamily: font.body, fontSize: 15, lineHeight: 22 },
-  bodyStrong: { fontFamily: font.bodyBold, fontSize: 15, lineHeight: 22 },
-  small: { fontFamily: font.body, fontSize: 13, lineHeight: 18 },
-  smallStrong: { fontFamily: font.bodyMedium, fontSize: 13, lineHeight: 18 },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 24 },
+  bodyStrong: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 24 },
+  small: { fontFamily: font.body, fontSize: 14, lineHeight: 20 },
+  smallStrong: { fontFamily: font.bodyMedium, fontSize: 14, lineHeight: 20 },
+  // Credits and legal lines only. Nothing in the app is smaller than this.
+  caption: { fontFamily: font.body, fontSize: 13, lineHeight: 18 },
   // Small label above content. Sentence case: quieter and easier to read than tracked capitals.
-  eyebrow: { fontFamily: font.bodyMedium, fontSize: 13, lineHeight: 18, letterSpacing: 0.1 },
+  eyebrow: { fontFamily: font.bodyMedium, fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
 };
 export const shadow = {
   card: {
@@ -66,4 +71,4 @@ export const shadow = {
 export const touch = 44;
 
 // Motion tokens: quick for feedback, standard for reveals, spring for anything touched.
-export const motion = { quick: 140, standard: 280, slow: 480, spring: { damping: 16, stiffness: 220, mass: 0.8 } };
+export const motion = { quick: 140, standard: 240, slow: 300, enter: 240, spring: { damping: 16, stiffness: 220, mass: 0.8 } };

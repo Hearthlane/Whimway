@@ -49,8 +49,18 @@ export function Icon({ name, size = 18, tint = color.ink }: { name: IconName; si
 }
 
 type Variant = keyof typeof type;
+// Larger text (Settings › Accessibility). Set from the profile; every T scales with it.
+let textScale = 1;
+export function setTextScale(scale: "default" | "large" | "largest") {
+  textScale = scale === "largest" ? 1.3 : scale === "large" ? 1.15 : 1;
+}
 export function T({ v = "body", style, tone, ...rest }: TextProps & { v?: Variant; tone?: string; style?: StyleProp<TextStyle> }) {
-  return <Text {...rest} style={[type[v] as TextStyle, { color: tone ?? color.ink }, style]} />;
+  const flat = StyleSheet.flatten([type[v] as TextStyle, style]) ?? {};
+  const scaled =
+    textScale === 1
+      ? undefined
+      : { fontSize: (flat.fontSize ?? 16) * textScale, lineHeight: flat.lineHeight ? flat.lineHeight * textScale : undefined };
+  return <Text {...rest} style={[type[v] as TextStyle, { color: tone ?? color.ink }, style, scaled]} />;
 }
 
 export function tap(kind: "light" | "success" | "select" = "light") {
@@ -260,7 +270,7 @@ export function Spark({ size = 24, fill = color.paper, accent = color.ink }: { s
 
 export function Wordmark({ size = 24 }: { size?: number }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="header" accessibilityLabel="Whimway">
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="image" accessibilityLabel="Whimway">
       <View style={[styles.mark, { width: size * 1.35, height: size * 1.35, borderRadius: size * 0.42 }]}>
         <Spark size={size * 1.35} />
       </View>
@@ -294,7 +304,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chip: {
-    minHeight: 38,
+    minHeight: touch,
     paddingHorizontal: 14,
     borderRadius: radius.pill,
     borderWidth: 1,

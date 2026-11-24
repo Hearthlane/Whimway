@@ -617,7 +617,7 @@ function Tiles({ groups, value, onPick, prefix, usualLabel = "Your usual" }: { g
                 )}
                 {g.usual ? (
                   <View style={s.usual}>
-                    <T v="smallStrong" style={{ fontSize: 11 }}>
+                    <T v="smallStrong" style={{ fontSize: 13 }}>
                       {usualLabel}
                     </T>
                   </View>

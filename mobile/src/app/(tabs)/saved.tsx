@@ -1,14 +1,18 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { planAround } from "@/home/actions";
 import { DateTime } from "luxon";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore, type PlanEntry } from "@/lib/store";
-import { Badge, Button, Icon, IconButton, T } from "@/ui/kit";
+import { Badge, Button, Icon, IconButton, Press, T } from "@/ui/kit";
 import { color, radius, space } from "@/ui/theme";
 
 export default function Saved() {
-  const { plans, remove, setPending, profile } = useStore();
+  const store = useStore();
+  const { plans, remove, setPending, profile, setProfile } = store;
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<"plans" | "places">(params.tab === "places" ? "places" : "plans");
   const saved = Object.entries(plans).filter(([, e]) => e.saved);
   const now = DateTime.now().toISODate()!;
   const upcoming = saved.filter(([, e]) => e.meta.date >= now).sort((a, b) => a[1].meta.date.localeCompare(b[1].meta.date));
@@ -28,48 +32,66 @@ export default function Saved() {
           <T v="hero" accessibilityRole="header">
             Saved
           </T>
-          <Button testID="open-shared" kind="ghost" icon="link" label="Open a shared plan" onPress={() => router.push("/import")} />
+          <Button testID="open-shared" kind="ghost" icon="link" label="Open a link" onPress={() => router.push("/import")} />
         </View>
-        {!saved.length ? (
+        <View style={s.segment} accessibilityRole="tablist">
+          {(["plans", "places"] as const).map((t) => (
+            <Press key={t} testID={`saved-tab-${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} onPress={() => setTab(t)} style={[s.segmentItem, tab === t && s.segmentOn]}>
+              <T v="smallStrong" tone={tab === t ? color.paper : color.ink}>
+                {t === "plans" ? `Plans${saved.length ? ` · ${saved.length}` : ""}` : `Places${profile.favourites.length ? ` · ${profile.favourites.length}` : ""}`}
+              </T>
+            </Press>
+          ))}
+        </View>
+        {tab === "plans" && !saved.length ? (
           <View style={s.empty}>
             <View style={s.emptyIcon}>
               <Icon name="bookmark" size={26} />
             </View>
-            <T v="heading">{profile.favourites.length ? "No saved plans yet" : "Nothing saved yet"}</T>
+            <T v="heading">No saved plans yet</T>
             <T v="body" tone={color.muted} style={{ textAlign: "center" }}>
               Plans you save land here, ready to reopen, rerun or rate after you go.
             </T>
             <Button label="Plan something" icon="star" onPress={() => router.push("/")} />
           </View>
         ) : null}
-        {upcoming.length ? <Section title="Coming up" items={upcoming} onReuse={reuse} onRemove={remove} /> : null}
-        {past.length ? <Section title="Been there" items={past} onReuse={reuse} onRemove={remove} past /> : null}
-        {profile.favourites.length ? (
-          <View style={{ gap: space.sm }} testID="saved-places">
-            <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-              <T v="heading">Saved places</T>
-              <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/profile", params: { tab: "places" } })} hitSlop={8}>
-                <T v="smallStrong" tone={color.coralText}>
-                  Plan around one
-                </T>
-              </Pressable>
-            </View>
-            {profile.favourites.slice(0, 8).map((f) => (
-              <View key={f.id} style={s.place}>
-                <Icon name="heart" size={16} tint={color.coralText} />
-                <View style={{ flex: 1 }}>
-                  <T v="bodyStrong" numberOfLines={1}>
-                    {f.name}
-                  </T>
-                  {f.category ? (
-                    <T v="small" tone={color.muted} numberOfLines={1}>
-                      {f.category[0].toUpperCase() + f.category.slice(1)}
+        {tab === "plans" && upcoming.length ? <Section title="Coming up" items={upcoming} onReuse={reuse} onRemove={remove} /> : null}
+        {tab === "plans" && past.length ? <Section title="Been there" items={past} onReuse={reuse} onRemove={remove} past /> : null}
+        {tab === "places" ? (
+          profile.favourites.length ? (
+            <View style={{ gap: space.sm, marginTop: space.lg }} testID="saved-places">
+              {profile.favourites.map((f) => (
+                <View key={f.id} style={s.place} testID="favourite">
+                  <View style={s.placeIcon}>
+                    <Icon name="heart" size={16} tint={color.coralText} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <T v="bodyStrong" numberOfLines={1}>
+                      {f.name}
                     </T>
-                  ) : null}
+                    {f.category ? (
+                      <T v="small" tone={color.muted} numberOfLines={1}>
+                        {f.category[0].toUpperCase() + f.category.slice(1)}
+                      </T>
+                    ) : null}
+                  </View>
+                  <Button kind="soft" label="Plan around it" onPress={() => planAround(f, profile, store)} />
+                  <IconButton icon="x" label={`Remove ${f.name}`} onPress={() => setProfile({ ...profile, favourites: profile.favourites.filter((x) => x.id !== f.id) })} />
                 </View>
+              ))}
+            </View>
+          ) : (
+            <View style={s.empty}>
+              <View style={s.emptyIcon}>
+                <Icon name="heart" size={26} />
               </View>
-            ))}
-          </View>
+              <T v="heading">No saved places yet</T>
+              <T v="body" tone={color.muted} style={{ textAlign: "center" }}>
+                Tap the heart on any place in Explore or in a plan, then build a whole outing around it.
+              </T>
+              <Button label="Explore places" icon="search" onPress={() => router.push("/discover")} />
+            </View>
+          )
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -130,6 +152,10 @@ function Section({ title, items, onReuse, onRemove, past }: { title: string; ite
 }
 
 const s = StyleSheet.create({
+  segment: { flexDirection: "row", gap: 4, padding: 4, marginTop: space.lg, borderRadius: radius.pill, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  segmentItem: { flex: 1, minHeight: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  segmentOn: { backgroundColor: color.ink },
+  placeIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
   place: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   page: { padding: space.xl, paddingBottom: space.xxxl, maxWidth: 680, width: "100%", alignSelf: "center" },
   empty: { alignItems: "center", gap: space.md, padding: space.xl, marginTop: space.xl, borderRadius: radius.xl, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },

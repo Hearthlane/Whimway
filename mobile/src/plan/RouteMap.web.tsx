@@ -104,14 +104,14 @@ function TileMap({ plan, selected, onSelect, onError }: { plan: Itinerary; selec
       <View style={s.legend}>
         {model.stops.map((st) => (
           <Pressable key={st.id} onPress={() => onSelect(st.id)} accessibilityRole="button" accessibilityLabel={`Stop ${st.n}: ${st.name}`} style={s.legendItem}>
-            <T v="smallStrong" style={{ fontSize: 11 }} numberOfLines={1}>
+            <T v="smallStrong" style={{ fontSize: 13 }} numberOfLines={1}>
               {st.n}. {st.name}
             </T>
           </Pressable>
         ))}
       </View>
       <View style={s.credit} pointerEvents="none">
-        <T v="small" style={{ fontSize: 10 }} tone={color.muted}>
+        <T v="small" style={{ fontSize: 13 }} tone={color.muted}>
           Map data ©{new Date().getFullYear()} Google
         </T>
       </View>
@@ -136,7 +136,7 @@ function GoogleMapImage({ plan, onSelect, onError }: { plan: Itinerary; onSelect
       <View style={s.legend}>
         {model.stops.map((st) => (
           <Pressable key={st.id} onPress={() => onSelect(st.id)} accessibilityRole="button" accessibilityLabel={`Stop ${st.n}: ${st.name}`} style={s.legendItem}>
-            <T v="smallStrong" style={{ fontSize: 11 }} numberOfLines={1}>
+            <T v="smallStrong" style={{ fontSize: 13 }} numberOfLines={1}>
               {st.n}. {st.name}
             </T>
           </Pressable>
@@ -206,14 +206,14 @@ function Sketch({ plan, model, selected, onSelect }: { plan: Itinerary; model: R
       <View style={s.legend}>
         {model.stops.map((st) => (
           <Pressable key={st.id} onPress={() => onSelect(st.id)} accessibilityRole="button" accessibilityLabel={`Stop ${st.n}: ${st.name}`} style={s.legendItem}>
-            <T v="smallStrong" style={{ fontSize: 11 }} numberOfLines={1}>
+            <T v="smallStrong" style={{ fontSize: 13 }} numberOfLines={1}>
               {st.n}. {st.name}
             </T>
           </Pressable>
         ))}
       </View>
       <View style={s.note}>
-        <T v="small" style={{ fontSize: 11 }}>
+        <T v="small" style={{ fontSize: 13 }}>
           Route sketch · not to scale
         </T>
       </View>

@@ -66,6 +66,10 @@ export const TasteProfile = z.object({
   analytics: z.boolean().default(false),
   pace: z.enum(["relaxed", "balanced", "packed"]).default("balanced"),
   alcoholFree: z.boolean().default(false),
+  /** Larger text across the app (Settings › Accessibility). */
+  textScale: z.enum(["default", "large", "largest"]).default("default"),
+  /** Keep History on this device (recent places, searches). */
+  keepHistory: z.boolean().default(true),
   /** Whimway Plus entitlement. In the beta this is a demo flag; production verifies store receipts. */
   plus: z
     .object({

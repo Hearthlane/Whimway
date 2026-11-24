@@ -36,14 +36,14 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 export default function Discover() {
   const store = useStore();
+  const params = useLocalSearchParams<{ when?: string; q?: string }>();
   const { profile } = store;
   // No drinks category for anyone skipping alcohol.
   const groups = allGroups.filter((g) => !(profile.alcoholFree && g.key === "drinks"));
   const [group, setGroup] = useState<string>(profile.interests.includes("Food & drinks") ? "sweet" : "games");
-  const [typed, setTyped] = useState("");
-  const [query, setQuery] = useState("");
+  const [typed, setTyped] = useState(typeof params.q === "string" ? params.q : "");
+  const [query, setQuery] = useState(typeof params.q === "string" ? params.q : "");
   const [areaKey, setAreaKey] = useState(profile.homeArea || "downtown");
-  const params = useLocalSearchParams<{ when?: string }>();
   const [when, setWhen] = useState<(typeof whenOptions)[number]["key"]>(() => (whenOptions.some((w) => w.key === params.when) ? (params.when as (typeof whenOptions)[number]["key"]) : "tonight"));
   const [sort, setSort] = useState<Sort>("closest");
   const [result, setResult] = useState<{ key: string; places: Place[]; widened: boolean } | null>(null);
@@ -109,11 +109,13 @@ export default function Discover() {
     return list;
   }, [places, sort]);
 
-  const search = () => {
-    const q = typed.trim();
+  const search = (value = typed) => {
+    const q = value.trim();
     if (q.length < 2) return;
     tap("select");
+    setTyped(q);
     setQuery(q);
+    store.searched(q);
     store.track("plan_requested", { words: q.split(/\s+/).length, edited: 0, discover: true });
   };
   const pickGroup = (key: string) => {
@@ -163,7 +165,7 @@ export default function Discover() {
               testID="discover-search"
               value={typed}
               onChangeText={setTyped}
-              onSubmitEditing={search}
+              onSubmitEditing={() => search()}
               returnKeyType="search"
               placeholder="Search ramen, bowling, a rooftop…"
               placeholderTextColor={color.faint}
@@ -182,6 +184,25 @@ export default function Discover() {
               <Chip key={g.key} testID={`discover-cat-${g.key}`} label={g.label} selected={!query && group === g.key} onPress={() => pickGroup(g.key)} />
             ))}
           </ScrollView>
+          {!query && store.history.searches.length ? (
+            <View style={{ gap: space.sm }} testID="recent-searches">
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+                <T v="smallStrong" tone={color.muted}>
+                  Recent searches
+                </T>
+                <Press accessibilityRole="button" onPress={() => store.clearHistory("searches")} hitSlop={10}>
+                  <T v="smallStrong" tone={color.coralText}>
+                    Clear
+                  </T>
+                </Press>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.bleed} contentContainerStyle={s.row}>
+                {store.history.searches.slice(0, 8).map((h) => (
+                  <Chip key={h.q} icon="clock" label={h.q} onPress={() => search(h.q)} />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </View>
 
         <View style={{ gap: space.sm }}>
@@ -238,7 +259,7 @@ export default function Discover() {
             {result?.widened && sorted[0].meters > 4000 ? <Notice icon="map">Not much close by, so these are a little farther out.</Notice> : null}
             {sorted.map((p, i) => (
               <Animated.View key={p.id} entering={FadeInDown.delay(Math.min(i, 6) * 50).duration(300)} style={{ gap: space.md }}>
-                <Press testID={`discover-place-${i}`} accessibilityRole="button" accessibilityLabel={`${p.name}, ${p.category}, ${km(p.meters)} away`} scaleTo={0.985} onPress={() => setOpen(p)} style={s.place}>
+                <Press testID={`discover-place-${i}`} accessibilityRole="button" accessibilityLabel={`${p.name}, ${p.category}, ${km(p.meters)} away`} scaleTo={0.985} onPress={() => (setOpen(p), store.viewedPlace({ id: p.id, name: p.name, category: p.category, area: areaKey }))} style={s.place}>
                   <PlaceImage place={p} chosen={query ? undefined : group} style={s.photo} />
                   <View style={{ flex: 1, gap: 3 }}>
                     <T v="bodyStrong" numberOfLines={1} style={{ fontSize: 16 }}>

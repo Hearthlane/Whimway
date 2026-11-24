@@ -85,10 +85,9 @@ async function wire(page, acct, errors) {
     await shot(a, "01-welcome");
     await a.getByTestId("onboarding-next").click();
     await a.getByTestId("who-friends").click();
-    await a.getByTestId("onboarding-next").click();
     await a.getByTestId("vibe-lively").click();
     await a.getByTestId("vibe-playful").click();
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       await a.getByTestId("onboarding-next").click();
       await a.waitForTimeout(250);
     }
@@ -116,7 +115,7 @@ async function wire(page, acct, errors) {
     await shot(a, "04-wrong-code");
     await a.getByTestId("signin-code").fill(CODE);
     await a.waitForURL((u) => !u.pathname.startsWith("/onboarding"), { timeout: 20000 });
-    await a.getByTestId("prompt-input").waitFor({ timeout: 20000 });
+    await a.getByTestId("home-start").waitFor({ timeout: 20000 });
     await shot(a, "05-home-signed-in");
     result.tasteUploaded = acct.taste && acct.taste.onboarded === true && acct.taste.name === "Ana";
     // Add someone and make a plan, so there is something for another device to restore.
@@ -129,7 +128,7 @@ async function wire(page, acct, errors) {
     await a.waitForTimeout(600);
     result.personSynced = (acct.taste?.people ?? []).some((p) => p.name === "Sam");
     await shot(a, "06-profile-synced");
-    await a.goto(`${base}/`, { waitUntil: "networkidle" });
+    await a.goto(`${base}/create`, { waitUntil: "networkidle" });
     await a.getByRole("button", { name: "Surprise me", exact: true }).click();
     await a.getByTestId("plan-title").waitFor({ timeout: 60000 });
     await a.waitForTimeout(800);
@@ -142,7 +141,7 @@ async function wire(page, acct, errors) {
     // 2) Settings: sign out keeps everything on the device.
     await a.goto(`${base}/settings`, { waitUntil: "networkidle" });
     await a.getByRole("button", { name: "Sign out" }).click();
-    await a.getByTestId("signin-email").waitFor({ timeout: 10000 });
+    await a.getByTestId("settings-signin").waitFor({ timeout: 10000 });
     await a.goto(`${base}/profile`, { waitUntil: "networkidle" });
     result.keptAfterSignOut = (await a.getByText("Ana").first().isVisible()) && (await a.getByTestId("profile-save-account").isVisible());
     await shot(a, "07-signed-out");
@@ -183,12 +182,12 @@ async function wire(page, acct, errors) {
     await d.getByTestId("onboarding-signed-in").waitFor({ timeout: 20000 });
     result.newAccountContinues = await d.getByTestId("who-friends").isVisible();
     await shot(d, "11-new-account-continues");
-    for (let i = 0; i < 6; i++) {
+    await d.getByTestId("who-friends").click();
+    for (let i = 0; i < 4; i++) {
       await d.getByTestId("onboarding-next").click();
       await d.waitForTimeout(300);
     }
     await d.getByTestId("persona").waitFor({ timeout: 10000 }).catch(() => undefined);
-    await shot(d, "12-before-finish");
     await d.getByTestId("onboarding-next").click();
     await d.waitForURL((u) => !u.pathname.startsWith("/onboarding"), { timeout: 20000 });
     result.noAccountStepWhenSignedIn = !(await d.getByTestId("onboarding-account").isVisible().catch(() => false));

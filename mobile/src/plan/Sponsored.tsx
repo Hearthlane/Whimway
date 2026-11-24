@@ -59,7 +59,7 @@ export function Sponsored({ surface, point, category }: { surface: Surface; poin
       >
         <View style={s.top}>
           <View style={s.label}>
-            <T v="smallStrong" style={{ fontSize: 11 }} tone={color.muted}>
+            <T v="smallStrong" style={{ fontSize: 13 }} tone={color.muted}>
               Sponsored
             </T>
           </View>
