@@ -6,16 +6,21 @@ import type { Itinerary } from "@shared/schema";
 import { Button, Chip, Icon, Notice, Sheet, T } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
-const suggestions = [
-  "Make it cheaper",
-  "Make it more romantic",
-  "Replace dinner with something adventurous",
-  "Keep the first two stops, change the last one",
-  "Reduce walking",
-  "It’s raining — make it indoors",
-  "Add dessert at the end",
-  "Make it shorter",
-];
+// Suggestions that fit this plan: no "romantic" for friends, no "replace dinner" without one.
+function suggestionsFor(plan: Itinerary) {
+  const dinner = plan.stops.some((s) => /restaurant/.test(s.place.types.join(" ")) && new Date(s.arrival).getHours() >= 16);
+  const sweet = plan.stops.some((s) => /dessert|ice_cream|bakery/.test(s.place.types.join(" ")));
+  return [
+    "Make it cheaper",
+    plan.request.companions === "partner" ? "Make it more romantic" : "Make it more fun",
+    dinner ? "Swap dinner for somewhere different" : "Add a proper meal",
+    plan.stops.length > 2 ? "Keep the first two stops, change the last one" : "Add a stop",
+    "Reduce walking",
+    "It’s raining — make it indoors",
+    sweet ? "Make it shorter" : "Add dessert at the end",
+    "Finish by 9pm",
+  ];
+}
 
 export function MagicEditSheet({ open, onClose, plan, busy, error, onApply }: { open: boolean; onClose: () => void; plan: Itinerary; busy: boolean; error: string; onApply: (instruction: string) => void }) {
   const [text, setText] = useState("");
@@ -68,7 +73,7 @@ export function MagicEditSheet({ open, onClose, plan, busy, error, onApply }: { 
         autoFocus
       />
       <View style={s.chips}>
-        {suggestions.map((x) => (
+        {suggestionsFor(plan).map((x) => (
           <Chip key={x} label={x} onPress={() => setText(x)} selected={text === x} />
         ))}
       </View>

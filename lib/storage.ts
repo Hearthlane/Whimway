@@ -36,13 +36,16 @@ export function publicSpec(input: PlanSpec): PlanSpec {
       excludedPlaceIds: [],
       dietary: "",
       accessibility: "",
+      // Private needs and who it's with stay with the planner, not the link.
+      alcoholFree: false,
+      companions: undefined,
       affinity: {},
       anchorPlaceIds: [],
       start: undefined,
       end: undefined,
       location: {
         ...input.request.location,
-        name: "Shared exploration area",
+        name: "Toronto area",
         placeId: undefined,
         center: { lat: 0, lng: 0 },
       },

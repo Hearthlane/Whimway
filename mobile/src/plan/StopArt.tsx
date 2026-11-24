@@ -13,6 +13,8 @@ export function artKind(place: { category: string; types: string[] }): ArtKind {
   if (/aquarium|island|beach|waterfront|marina|lake/.test(t)) return "water";
   if (/ice_cream|dessert|patisserie|bakery|chocolate/.test(t)) return "sweet";
   if (/cafe|café|coffee|tea/.test(t)) return "cafe";
+  // An arcade or games bar is games first.
+  if (/arcade|bowling|game|amusement|escape|karaoke/.test(t)) return "play";
   if (/bar|brewery|wine|cocktail|pub|night_club/.test(t) && !/restaurant/.test(place.types[0] ?? "")) return "drinks";
   if (/restaurant|brunch|food_court|diner|meal/.test(t)) return "meal";
   if (/game|bowling|amusement|arcade|karaoke|escape|mini_golf/.test(t)) return "play";

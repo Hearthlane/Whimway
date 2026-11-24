@@ -209,6 +209,9 @@ export default function PlanHome() {
             {chipRow.map((c) => (
               <Chip key={c.key} testID={`chip-${c.key}`} icon={c.icon} label={c.label} onPress={() => setField(c.key)} tone={c.key === "budget" ? "yellow" : c.key === "vibe" ? "lavender" : "mint"} />
             ))}
+            {chips.needs ? (
+              <Chip testID="chip-needs" icon="check-circle" label={chips.needs} onPress={() => router.push("/profile")} tone="lavender" />
+            ) : null}
             <Chip
               testID="chip-alcohol"
               icon="slash"
@@ -225,9 +228,12 @@ export default function PlanHome() {
           </ScrollView>
           <View style={s.actions}>
             <Button testID="plan-it" kind="dark" size="lg" label="Next" icon="arrow-right" onPress={clarify} disabled={!ready} style={{ flex: 1 }} />
-            <IconButton
+            <Button
+              kind="soft"
+              size="lg"
               icon="shuffle"
               label="Surprise me"
+              testID="surprise-me"
               onPress={() => (store.unlocked ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
             />
           </View>
@@ -280,7 +286,7 @@ export default function PlanHome() {
           </View>
         ) : null}
 
-        <Press testID="home-discover" accessibilityRole="button" accessibilityLabel="See what's open near you" onPress={() => router.push("/discover")} style={s.nearby} scaleTo={0.98}>
+        <Press testID="home-discover" accessibilityRole="button" accessibilityLabel="See what's open near you" onPress={() => router.push({ pathname: "/discover", params: { when: "now" } })} style={s.nearby} scaleTo={0.98}>
           <View style={s.nearbyIcon}>
             <Icon name="compass" size={20} />
           </View>

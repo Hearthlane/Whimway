@@ -39,17 +39,24 @@ export function costTotal(places: CandidatePlace[]) {
     currency: places[0]?.price.currency ?? "USD",
   };
 }
-import { isAlcoholLed, isBarLike, isOutdoor, notAnOuting, vibeFit } from "./planner-filters";
+import { isBarLike, isOutdoor, notAnOuting, vibeFit } from "./planner-filters";
 import { arrange, fitMinutes, kindOfPlace, shapeSummary, stopsFor } from "./arc";
 import { crowdFor, type CrowdSignals } from "./crowd";
 export { isOutdoor };
 /** Review-weighted quality nudged by the user's learned category affinity. */
 export function score(
   p: CandidatePlace,
-  request?: Partial<Pick<PlanRequest, "affinity" | "vibes" | "budget">>,
+  request?: Partial<Pick<PlanRequest, "affinity" | "vibes" | "budget" | "dietary">>,
   crowd: CrowdSignals = {},
 ) {
   const affinity = request?.affinity ?? {};
+  // Food needs lead the ranking where a place says it serves them (a vegan or halal kitchen).
+  const diet = (request?.dietary ?? "").toLowerCase();
+  const text = `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
+  const serves =
+    (/vegan/.test(diet) && /vegan|plant[- ]based/.test(text)) ||
+    (/vegetarian/.test(diet) && /vegetarian|vegan|plant[- ]based|indian|falafel/.test(text)) ||
+    (/halal/.test(diet) && /halal|middle_eastern|middle eastern|lebanese|turkish|afghan|pakistani|somali|shawarma|persian/.test(text));
   const taste = Math.max(
     -3,
     Math.min(
@@ -70,7 +77,8 @@ export function score(
     quality(p) +
     crowdFor(p, crowd) * 0.3 +
     taste * 0.15 +
-    vibeFit(p, request?.vibes ?? []) * 0.2 -
+    vibeFit(p, request?.vibes ?? []) * 0.2 +
+    (serves ? 0.8 : 0) -
     (overBudget ? 0.4 : 0)
   );
 }
@@ -389,7 +397,7 @@ export class Planner {
     if (!options.extend && previous?.stops.every((s) => s.locked))
       throw new AppError(
         "ALL_LOCKED",
-        "All stops are locked. Unlock a stop before remixing.",
+        "Every stop is locked in. Open a stop and choose “Let it change” first.",
         422,
       );
     const locked = previous
@@ -557,7 +565,7 @@ export class Planner {
         if (!s || s.minutes !== lock.minutes || s.reason !== lock.reason)
           throw new AppError(
             "LOCK_CONFLICT",
-            "A locked stop would change. Try another remix.",
+            "That would change a stop you locked in. Try a different change.",
             422,
           );
       }
@@ -952,8 +960,18 @@ export class Planner {
         places = wider;
       }
     }
+    // A typed search ("go karts") that only matched loosely related places says so.
+    const words = group.key === "custom"
+      ? group.query.toLowerCase().split(/[^a-z0-9']+/).filter((w) => w.length > 2 && !/^(the|and|for|with|some|place|places|near|good|best|somewhere|something|food|fun)$/.test(w))
+      : [];
+    const literal = (p: CandidatePlace) => {
+      const t = `${p.name} ${p.category} ${p.types.join(" ")}`.toLowerCase();
+      return words.some((w) => t.includes(w.replace(/s$/, "")));
+    };
+    const related = words.length > 0 && places.length > 0 && !places.some(literal);
     return {
       widened,
+      related,
       places: places.map((p) => ({
         ...p,
         meters: Math.round(distance(p.point, request.area.center)),

@@ -102,7 +102,7 @@ export function StopCard({
             until {t(stop.departure)}
           </T>
           {isNew ? <Badge tone="coral" icon="star" label="New" /> : null}
-          {stop.locked ? <Badge tone="ink" icon="lock" label="Kept" /> : null}
+          {stop.locked ? <Badge tone="ink" icon="lock" label="Locked in" /> : null}
         </View>
 
         <View style={[s.card, selected && s.cardOn, isNew && s.cardNew]}>
@@ -177,7 +177,7 @@ export function StopCard({
               <View style={s.actions}>
                 <Action icon="calendar" label="Book or go" onPress={onBook} primary />
                 <Action icon="heart" label={favourite ? "Saved place" : "Save place"} onPress={onFavourite} active={favourite} />
-                <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
+                <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Let it change" : "Lock it in"} onPress={onToggleLock} />
                 {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
               </View>
               {onArrange ? (

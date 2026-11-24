@@ -43,8 +43,8 @@ export default function Profile() {
   const area = areaByKey(profile.homeArea)?.name ?? "GTA";
   const name = profile.name || "You";
   const stats = [
-    { value: profile.stats.plans, label: profile.stats.plans === 1 ? "plan made" : "plans made", tab: "plans" as Tab },
-    { value: nightsOut, label: nightsOut === 1 ? "night out" : "nights out", tab: "plans" as Tab },
+    { value: grid.length, label: grid.length === 1 ? "plan" : "plans", tab: "plans" as Tab },
+    { value: nightsOut, label: nightsOut === 1 ? "outing done" : "outings done", tab: "plans" as Tab },
     { value: profile.favourites.length, label: profile.favourites.length === 1 ? "saved place" : "saved places", tab: "places" as Tab },
     { value: profile.people.length, label: profile.people.length === 1 ? "person" : "people", tab: "people" as Tab },
   ];

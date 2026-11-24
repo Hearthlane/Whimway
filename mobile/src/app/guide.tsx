@@ -7,7 +7,7 @@ import Animated, { Easing, FadeIn, FadeInDown, FadeInLeft, FadeInRight, FadeOutL
 import { SafeAreaView } from "react-native-safe-area-context";
 import { defaultRadius } from "@shared/areas";
 import { activities, cuisines, groupByKey, orderByTaste, readStated, type GuideGroup } from "@shared/guide";
-import { buildRequest, interpret } from "@shared/intent";
+import { buildRequest, describe, interpret } from "@shared/intent";
 import { plansLeft } from "@shared/plus";
 import { vibes as vibeKeys, type CandidatePlace, type PlanRequest, type Vibe } from "@shared/schema";
 import { api } from "@/lib/api";
@@ -54,8 +54,11 @@ type Answers = {
 
 const times: { time: string; label: string; hint: string; icon: IconName }[] = [
   { time: "10:00", label: "Morning", hint: "From 10, brunch or a day out", icon: "sunrise" },
+  { time: "11:00", label: "Late morning", hint: "From 11", icon: "sunrise" },
   { time: "12:00", label: "Lunchtime", hint: "From noon", icon: "sun" },
+  { time: "13:00", label: "Early afternoon", hint: "From 1", icon: "sun" },
   { time: "14:30", label: "Afternoon", hint: "From 2:30", icon: "coffee" },
+  { time: "17:30", label: "Early evening", hint: "From 5:30", icon: "sunset" },
   { time: "18:30", label: "Evening", hint: "From 6:30", icon: "sunset" },
   { time: "20:30", label: "Late", hint: "From 8:30", icon: "moon" },
 ];
@@ -209,7 +212,7 @@ export default function Guide() {
   // Places for the current "pick one" step.
   const group = step === "foodPlace" ? (a.food === "light" ? "sweet" : a.cuisine) : step === "funPlace" ? a.kind : undefined;
   const said = step === "foodPlace" ? a.cuisineText : step === "funPlace" ? a.kindText : undefined;
-  const [options, setOptions] = useState<{ key: string; places: Option[]; widened: boolean } | null>(null);
+  const [options, setOptions] = useState<{ key: string; places: Option[]; widened: boolean; related?: boolean } | null>(null);
   const [failed, setFailed] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [expanded, setExpanded] = useState("");
@@ -220,7 +223,7 @@ export default function Guide() {
     void Promise.resolve().then(async () => {
       setFailed("");
       try {
-        const res = await api<{ places: Option[]; widened: boolean }>("guide/options", { request: { ...request, anchorPlaceIds: [] }, group, text: group === "custom" ? said : undefined, demo: store.demo });
+        const res = await api<{ places: Option[]; widened: boolean; related?: boolean }>("guide/options", { request: { ...request, anchorPlaceIds: [] }, group, text: group === "custom" ? said : undefined, demo: store.demo });
         // "Closest first" means closest first.
         if (live) setOptions({ key: lookup, ...res, places: [...res.places].sort((x, y) => x.meters - y.meters) });
       } catch (e) {
@@ -244,7 +247,9 @@ export default function Guide() {
     return [...tiles.filter((t) => likes.includes(t.key)).map((t) => ({ ...t, usual: true })), ...tiles.filter((t) => !likes.includes(t.key))];
   };
   const cuisineTiles = useMemo(() => theirsFirst(orderByTaste(cuisines, liked)), [liked, person]); // eslint-disable-line react-hooks/exhaustive-deps
-  const kindTiles = useMemo(() => theirsFirst(orderByTaste(activities, liked)), [liked, person]); // eslint-disable-line react-hooks/exhaustive-deps
+  // No "Drinks" tile for anyone skipping alcohol, or a family outing.
+  const noDrinks = request.alcoholFree || a.who === "family";
+  const kindTiles = useMemo(() => theirsFirst(orderByTaste(activities.filter((g) => !(noDrinks && g.key === "drinks")), liked)), [liked, person, noDrinks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const build = () => {
     if (store.limits && plansLeft(profile) <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
@@ -253,7 +258,8 @@ export default function Guide() {
     router.push("/options");
   };
 
-  const day = (d: number) => (d === 0 ? "Today" : d === 1 ? "Tomorrow" : now.plus({ days: d }).toFormat("cccc"));
+  // Within the week a weekday is clear; further out it needs the date.
+  const day = (d: number) => (d === 0 ? "Today" : d === 1 ? "Tomorrow" : now.plus({ days: d }).toFormat(d < 7 ? "cccc" : "ccc d LLL"));
   const named = (key?: string, text?: string) => (key === "custom" ? `“${text}”` : (groupByKey(key ?? "")?.label ?? ""));
   const titles: Record<Step, [string, string]> = {
     who: ["Who’s coming?", "This shapes the kind of places and how they’re described."],
@@ -421,7 +427,7 @@ export default function Guide() {
 
           {step === "cuisine" ? (
             <>
-              <Tiles prefix="guide-cuisine" groups={cuisineTiles} value={a.cuisine} onPick={(key) => answer({ cuisine: key, cuisineText: undefined, foodPlace: undefined }, "cuisine")} />
+              <Tiles usualLabel={coming.length ? `${coming[0].name} likes` : undefined} prefix="guide-cuisine" groups={cuisineTiles} value={a.cuisine} onPick={(key) => answer({ cuisine: key, cuisineText: undefined, foodPlace: undefined }, "cuisine")} />
               {other("cuisine")}
             </>
           ) : null}
@@ -432,6 +438,8 @@ export default function Guide() {
               failed={failed}
               places={places}
               widened={Boolean(options?.widened)}
+              said={said}
+              related={Boolean(options?.related)}
               all={expanded === lookup}
               onMore={() => setExpanded(lookup)}
               onRetry={() => setAttempt((n) => n + 1)}
@@ -453,7 +461,7 @@ export default function Guide() {
 
           {step === "kind" ? (
             <>
-              <Tiles prefix="guide-kind" groups={kindTiles} value={a.kind} onPick={(key) => answer({ kind: key, kindText: undefined, funPlace: undefined }, "kind")} />
+              <Tiles usualLabel={coming.length ? `${coming[0].name} likes` : undefined} prefix="guide-kind" groups={kindTiles} value={a.kind} onPick={(key) => answer({ kind: key, kindText: undefined, funPlace: undefined }, "kind")} />
               {other("kind")}
             </>
           ) : null}
@@ -464,6 +472,8 @@ export default function Guide() {
               failed={failed}
               places={places}
               widened={Boolean(options?.widened)}
+              said={said}
+              related={Boolean(options?.related)}
               all={expanded === lookup}
               onMore={() => setExpanded(lookup)}
               onRetry={() => setAttempt((n) => n + 1)}
@@ -536,6 +546,9 @@ export default function Guide() {
           {step === "review" ? (
             <View style={s.summary}>
               <Line icon={companionCopy[a.who].icon} label="Who" value={`${coming.length ? `You, ${coming.map((p) => p.name).join(" & ")}` : a.who === "partner" ? "A date" : companionCopy[a.who].label} · ${request.participants} ${request.participants === 1 ? "person" : "people"}`} onPress={() => go(skip.has("who") ? "when" : "who", -1)} />
+              {describe(request).needs ? (
+                <Line icon="check-circle" label="Needs" value={`${describe(request).needs}. Noted for every stop; confirm with venues.`} onPress={() => router.push("/profile")} />
+              ) : null}
               <Line icon="calendar" label="When" value={`${day(a.day)}, ${DateTime.fromFormat(a.time, "HH:mm").toFormat("h:mm a")}–${DateTime.fromFormat(a.time, "HH:mm").plus({ minutes: request.duration }).toFormat("h:mm a")}`} onPress={() => go("when", -1)} />
               <Line
                 icon="coffee"
@@ -584,7 +597,7 @@ function Row({ icon, label, hint, selected, onPress, testID }: { icon: IconName;
   );
 }
 
-function Tiles({ groups, value, onPick, prefix }: { groups: (GuideGroup & { usual: boolean })[]; value?: string; onPick: (key: string) => void; prefix: string }) {
+function Tiles({ groups, value, onPick, prefix, usualLabel = "Your usual" }: { groups: (GuideGroup & { usual: boolean })[]; value?: string; onPick: (key: string) => void; prefix: string; usualLabel?: string }) {
   return (
     <View style={s.grid}>
       {groups.map((g, i) => {
@@ -605,7 +618,7 @@ function Tiles({ groups, value, onPick, prefix }: { groups: (GuideGroup & { usua
                 {g.usual ? (
                   <View style={s.usual}>
                     <T v="smallStrong" style={{ fontSize: 11 }}>
-                      Your usual
+                      {usualLabel}
                     </T>
                   </View>
                 ) : null}
@@ -642,7 +655,11 @@ function Places({
   group,
   all,
   onMore,
+  said,
+  related,
 }: {
+  said?: string;
+  related?: boolean;
   group?: string;
   value?: Option;
   onPick: (p: Option) => void;
@@ -676,7 +693,7 @@ function Places({
   if (!places.length)
     return (
       <View style={{ gap: space.md }}>
-        <Notice icon="info">Nothing like that is open at that time. Go back to pick something else, or let Whimway choose.</Notice>
+        <Notice icon="info">{said ? `We couldn’t find “${said}” open around then. Go back to try other words or pick a tile, or let Whimway choose.` : "Nothing like that is open at that time. Go back to pick something else, or let Whimway choose."}</Notice>
         <Button kind="dark" label="Choose something else" onPress={onBack} testID={`${prefix}-back`} />
         <Button kind="soft" label="Let Whimway choose" onPress={onSkip} />
       </View>
@@ -684,7 +701,8 @@ function Places({
   const shown = all ? places : places.slice(0, 4);
   return (
     <View style={{ gap: space.md }}>
-      {widened && places[0].meters > 4000 ? <Notice icon="map">Nothing close by, so these are a little farther out.</Notice> : null}
+      {related && said ? <Notice icon="info">{`No exact match for “${said}” nearby. These are the closest kinds of places we found.`}</Notice> : null}
+      {widened && places[0].meters > 4000 ? <Notice icon="map">{`Nothing close by, so these are farther out: the nearest is ${km(places[0].meters)} away.`}</Notice> : null}
       {shown.map((p, i) => {
         const on = value?.id === p.id;
         return (

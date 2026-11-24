@@ -23,7 +23,7 @@ function activity(stop: Itinerary["stops"][number], hour: number) {
   // A pub or bar that serves food, visited at a mealtime, is the meal.
   if (/restaurant/.test(types) && ((hour >= 11 && hour < 15) || (hour >= 17 && hour < 21)))
     return hour < 15 ? "Lunch" : "Dinner";
-  if (kind === "meal") return hour < 11 ? "Breakfast" : hour < 16 ? "Lunch" : "Dinner";
+  if (kind === "meal") return hour < 11 ? "Breakfast" : hour < 15 ? "Lunch" : hour < 17 ? "Late lunch" : "Dinner";
   if (kind === "drinks") return "Drinks";
   if (kind === "cafe") return "Coffee";
   if (kind === "sweet") return "Dessert";

@@ -534,7 +534,7 @@ function interpret(
       targets: [],
       action: "",
       patch: {},
-      summary: "Every stop is locked. Unlock one to change it.",
+      summary: "Every stop is locked in. Open a stop and choose “Let it change” first.",
     };
   const vibeText = newVibes.length
     ? `Make it more ${newVibes.join(" and ")}. `

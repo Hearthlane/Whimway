@@ -635,6 +635,15 @@ export function describe(request: PlanRequest, now?: DateTime) {
     vibe: request.vibes.map((v) => v[0].toUpperCase() + v.slice(1)).join(" · "),
     indoor: request.indoorOnly ? "Indoors" : "",
     alcohol: request.alcoholFree ? "Alcohol-free" : "",
+    // What we heard about needs, so people see it was received (and that it's asked of venues, not verified).
+    needs: [
+      ...(request.dietary.match(/vegan|vegetarian|halal|kosher|gluten-free|nut allergy|dairy-free/gi) ?? []),
+      /wheelchair/i.test(request.accessibility) ? "Wheelchair access" : /step-free|short walks|cane|stairs/i.test(request.accessibility) ? "Step-free" : "",
+    ]
+      .filter(Boolean)
+      .map((n) => n[0].toUpperCase() + n.slice(1))
+      .filter((n, i, all) => all.indexOf(n) === i)
+      .join(" · "),
   };
 }
 

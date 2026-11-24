@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, ScrollView, StyleSheet, TextInput, View } from "react-native";
@@ -23,7 +23,7 @@ import { color, font, radius, space } from "@/ui/theme";
 const ZONE = "America/Toronto";
 type Place = CandidatePlace & { meters: number };
 type Sort = "closest" | "rated" | "cheapest";
-const groups = [...activities, ...cuisines];
+const allGroups = [...activities, ...cuisines];
 const whenOptions = [
   { key: "now", label: "Now" },
   { key: "tonight", label: "Tonight" },
@@ -37,11 +37,14 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 export default function Discover() {
   const store = useStore();
   const { profile } = store;
+  // No drinks category for anyone skipping alcohol.
+  const groups = allGroups.filter((g) => !(profile.alcoholFree && g.key === "drinks"));
   const [group, setGroup] = useState<string>(profile.interests.includes("Food & drinks") ? "sweet" : "games");
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [areaKey, setAreaKey] = useState(profile.homeArea || "downtown");
-  const [when, setWhen] = useState<(typeof whenOptions)[number]["key"]>("tonight");
+  const params = useLocalSearchParams<{ when?: string }>();
+  const [when, setWhen] = useState<(typeof whenOptions)[number]["key"]>(() => (whenOptions.some((w) => w.key === params.when) ? (params.when as (typeof whenOptions)[number]["key"]) : "tonight"));
   const [sort, setSort] = useState<Sort>("closest");
   const [result, setResult] = useState<{ key: string; places: Place[]; widened: boolean } | null>(null);
   const [error, setError] = useState("");
