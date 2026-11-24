@@ -15,7 +15,10 @@ const ago = (iso: string) => DateTime.fromISO(iso).toRelative({ style: "short" }
 export default function History() {
   const { plans, history, clearHistory } = useStore();
   const [tab, setTab] = useState<Tab>("plans");
+  const [confirming, setConfirming] = useState(false);
+  // Recently opened only: every plan you made lives on You; this is what you looked at.
   const viewed = Object.entries(plans)
+    .filter(([, e]) => e.viewedAt)
     .sort((a, b) => (b[1].viewedAt ?? b[1].createdAt).localeCompare(a[1].viewedAt ?? a[1].createdAt));
   const counts = { plans: viewed.length, places: history.places.length, searches: history.searches.length };
   return (
@@ -25,11 +28,11 @@ export default function History() {
         <T v="title" accessibilityRole="header" style={{ flex: 1 }}>
           History
         </T>
-        {tab !== "plans" && counts[tab] ? <Button kind="ghost" label="Clear" onPress={() => clearHistory(tab)} testID="history-clear" /> : null}
+        {tab !== "plans" && counts[tab] ? <Button kind="ghost" label="Clear" onPress={() => setConfirming(true)} testID="history-clear" /> : null}
       </View>
       <View style={s.tabs} accessibilityRole="tablist">
         {(["plans", "places", "searches"] as const).map((t) => (
-          <Press key={t} testID={`history-tab-${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} onPress={() => setTab(t)} style={[s.tab, tab === t && s.tabOn]}>
+          <Press key={t} testID={`history-tab-${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} onPress={() => (setTab(t), setConfirming(false))} style={[s.tab, tab === t && s.tabOn]}>
             <T v="smallStrong" tone={tab === t ? color.ink : color.muted}>
               {t[0].toUpperCase() + t.slice(1)}
               {counts[t] ? ` · ${counts[t]}` : ""}
@@ -38,6 +41,15 @@ export default function History() {
         ))}
       </View>
       <ScrollView contentContainerStyle={s.page}>
+        {confirming && tab !== "plans" ? (
+          <View style={s.confirm}>
+            <T v="small" style={{ flexBasis: "100%" }}>
+              Clear all recent {tab}? This can’t be undone.
+            </T>
+            <Button kind="ghost" label="Cancel" onPress={() => setConfirming(false)} />
+            <Button kind="dark" label={`Clear ${tab}`} onPress={() => (clearHistory(tab), setConfirming(false))} testID="history-clear-confirm" />
+          </View>
+        ) : null}
         {tab === "plans" ? (
           viewed.length ? (
             <View style={s.grid}>
@@ -48,7 +60,7 @@ export default function History() {
               ))}
             </View>
           ) : (
-            <Empty text="Plans you make and open show up here." />
+            <Empty text="Plans you open show up here, most recent first." />
           )
         ) : null}
         {tab === "places" ? (
@@ -116,5 +128,6 @@ const s = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -2 },
   cell: { width: "33.333%", padding: 2 },
   row: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 56, paddingHorizontal: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  confirm: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, marginBottom: space.sm },
   empty: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
 });

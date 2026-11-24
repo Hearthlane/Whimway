@@ -14,7 +14,7 @@ export { endOf, startOf, whenLabel } from "@shared/today";
 const photosOf = (e: PlanEntry) => (e.meta.brief?.length ? e.meta.brief.map((b) => ({ src: guidePhotos[b.kind], kind: b.kind })) : [{ src: undefined, kind: "" }]);
 function Pic({ src, kind, style }: { src?: number; kind: string; style: object }) {
   return src ? (
-    <Image source={src} style={style} contentFit="cover" accessibilityIgnoresInvertColors />
+    <Image source={src} style={style} contentFit="cover" accessibilityIgnoresInvertColors alt="" accessible={false} />
   ) : (
     <View style={[style, { overflow: "hidden" }]}>
       <StopArt place={{ category: kind, types: [kind] }} height={220} />
@@ -83,11 +83,11 @@ export function TodayCard({ plans }: { plans: Record<string, PlanEntry> }) {
   const { live } = t;
   const title = plans[t.id].meta.title;
   return (
-    <Animated.View entering={FadeInDown.duration(380)} style={[s.today, live && s.todayLive]} testID="today-card">
+    <Animated.View entering={FadeInDown.duration(240)} style={[s.today, live && s.todayLive]} testID="today-card">
       <View style={s.todayTop}>
         <View style={[s.pill, live && { backgroundColor: color.coral }]}>
           {live ? <View style={s.dot} /> : <Icon name="calendar" size={12} tint={color.ink} />}
-          <T v="smallStrong" style={{ fontSize: 12 }}>
+          <T v="smallStrong" style={{ fontSize: 13 }}>
             {t.label}
           </T>
         </View>

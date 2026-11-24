@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { StopArt } from "@/plan/StopArt";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInLeft, SlideInRight, ZoomIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInLeft, SlideInRight, ZoomIn, useAnimatedStyle, useSharedValue, withTiming, useReducedMotion } from "react-native-reanimated";
 import * as Location from "expo-location";
 import { Avatar, PersonSheet, type Person } from "@/home/People";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -53,7 +53,7 @@ function MiniDemo() {
               <T v="smallStrong" style={{ fontSize: 13, lineHeight: 14 }} tone={color.coralText}>
                 {st.time}
               </T>
-              <T v="smallStrong" style={{ fontSize: 12, lineHeight: 15 }} numberOfLines={2}>
+              <T v="smallStrong" style={{ fontSize: 13, lineHeight: 15 }} numberOfLines={2}>
                 {st.name}
               </T>
             </View>
@@ -71,7 +71,7 @@ function ProgressBar({ value }: { value: number }) {
   }, [value, w]);
   const fill = useAnimatedStyle(() => ({ width: `${w.get() * 100}%` }));
   return (
-    <View style={s.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
+    <View style={s.progress} accessibilityRole="progressbar" accessibilityLabel="Setup progress" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
       <Animated.View style={[s.progressFill, fill]} />
     </View>
   );
@@ -127,6 +127,7 @@ function toggleWord(list: string, word: string, on: boolean) {
 const hasNeed = (d: TasteProfile, key: string) =>
   key === "alcohol" ? d.alcoholFree : key === "step-free" ? /step-free/i.test(d.accessibility) : new RegExp(`\\b${key}\\b`, "i").test(d.dietary);
 const extraInterests = ["Interactive fun", "Shopping", "Hidden gems", "Relaxation", "Family"] as const;
+const commonAreas = ["downtown", "north-york", "scarborough", "etobicoke", "mississauga", "markham"];
 const budgetChoices = [
   { value: 25, label: "Under $25" },
   { value: 50, label: "About $50" },
@@ -143,6 +144,10 @@ export default function Onboarding() {
   const [who, setWho] = useState<TasteProfile["companions"] | null>(profile.onboarded ? profile.companions : null);
   const [person, setPerson] = useState<Person | "new" | null>(null);
   const [locating, setLocating] = useState(false);
+  // Only answers the person gave show on the reveal; defaults never pose as answers.
+  const [told, setTold] = useState<{ area?: boolean; mode?: boolean; budget?: boolean }>({});
+  const [allAreas, setAllAreas] = useState(false);
+  const reduceMotion = useReducedMotion();
   const [signingIn, setSigningIn] = useState(false);
   const [signedInAs, setSignedInAs] = useState("");
   const [signedInAtStart] = useState(() => Boolean(session));
@@ -189,7 +194,7 @@ export default function Onboarding() {
     tap("select");
     setWho(c);
     set({ companions: c });
-    setTimeout(() => go(step + 1), 220);
+    setTimeout(() => go(step + 1), 360);
   };
   const useLocation = async () => {
     setLocating(true);
@@ -198,7 +203,10 @@ export default function Onboarding() {
       if (status === "granted") {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         const near = nearestArea({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        if (near) set({ homeArea: near.key });
+        if (near) {
+          set({ homeArea: near.key });
+          setTold((t) => ({ ...t, area: true }));
+        }
       }
     } catch {
       // Location is optional; the list is right there.
@@ -217,6 +225,15 @@ export default function Onboarding() {
     go(1);
   };
   const people = profile.people;
+  const needs = [draft.dietary, draft.accessibility, draft.alcoholFree ? "no bars" : ""].filter(Boolean).join(", ");
+  const revealRows: { icon: IconName; label: string; value: string }[] = [
+    ...(who ? [{ icon: companionCopy[who].icon, label: "Usually with", value: companionCopy[who].label }] : []),
+    ...(told.area ? [{ icon: "map-pin" as IconName, label: "Starting from", value: areas.find((a) => a.key === draft.homeArea)?.name ?? "Greater Toronto" }] : []),
+    ...(told.mode ? [{ icon: modeCopy[draft.mode].icon, label: "Getting around", value: modeCopy[draft.mode].label }] : []),
+    ...(told.budget ? [{ icon: "credit-card" as IconName, label: "Usual spend", value: budgetChoices.find((b) => b.value === draft.budget)?.label ?? `about $${draft.budget}` }] : []),
+    ...(needs ? [{ icon: "check-circle" as IconName, label: "Always", value: needs }] : []),
+    ...(people.length ? [{ icon: "users" as IconName, label: "Your people", value: people.map((p) => p.name).join(", ") }] : []),
+  ];
   const Enter = dir === 1 ? SlideInRight : SlideInLeft;
 
   return (
@@ -233,11 +250,20 @@ export default function Onboarding() {
         ) : (
           <View style={s.topButton} />
         )}
-        {step > 0 && !signingIn ? <ProgressBar value={step / (steps.length - 1)} /> : <View style={{ flex: 1 }} />}
+        {step > 0 && !signingIn ? (
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            <ProgressBar value={step / (steps.length - 1)} />
+            <T v="small" tone={color.muted} accessibilityLabel={`Step ${step} of ${steps.length - 1}`}>
+              {step} of {steps.length - 1}
+            </T>
+          </View>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
         {current === "welcome" || current === "reveal" || current === "account" || signingIn ? (
           <View style={[s.topButton, { width: 56 }]} />
         ) : (
-          <Pressable accessibilityRole="button" onPress={() => go(step + 1)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip-step">
+          <Pressable accessibilityRole="button" accessibilityLabel="Skip this question" onPress={() => go(step + 1)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip-step">
             <T v="smallStrong" tone={color.muted}>
               Skip
             </T>
@@ -273,7 +299,7 @@ export default function Onboarding() {
                 <MiniDemo />
                 <View style={{ gap: space.md }}>
                   <T v="hero" style={{ fontSize: 32, lineHeight: 36 }} accessibilityRole="header">
-                    From “what should we do?” to “we’re going” in a minute.
+                    From “what should we do?” to “we’re going” in minutes.
                   </T>
                   <T v="body" tone={color.muted}>
                     Say the mood, who’s coming and when. Get real places in Toronto, with times and routes.
@@ -347,17 +373,25 @@ export default function Onboarding() {
             {current === "place" ? (
               <>
                 <T v="title" accessibilityRole="header">Where do you usually start?</T>
-                <Button kind="soft" icon="navigation" label={locating ? "Finding you…" : "Use my location"} onPress={useLocation} testID="onboarding-locate" />
-                <View style={s.chips}>
-                  {areas.map((a) => (
-                    <Chip key={a.key} testID={`area-${a.key}`} label={a.name} selected={draft.homeArea === a.key} onPress={() => (tap("select"), set({ homeArea: a.key }))} />
-                  ))}
+                <View style={{ gap: space.sm }}>
+                  <T v="heading">Getting around</T>
+                  <View style={s.chips}>
+                    {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
+                      <Chip key={m} testID={`mode-${m}`} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={Boolean(told.mode) && draft.mode === m} onPress={() => (set({ mode: m }), setTold((t) => ({ ...t, mode: true })))} />
+                    ))}
+                  </View>
                 </View>
-                <T v="heading" style={{ marginTop: space.sm }}>Getting around</T>
-                <View style={s.chips}>
-                  {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
-                    <Chip key={m} testID={`mode-${m}`} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={draft.mode === m} onPress={() => set({ mode: m })} />
-                  ))}
+                <View style={{ gap: space.sm, marginTop: space.md }}>
+                  <T v="heading">Starting from</T>
+                  <Button kind="soft" icon="navigation" label={locating ? "Finding you…" : "Use my location"} onPress={useLocation} testID="onboarding-locate" />
+                  <View style={s.chips}>
+                    {areas
+                      .filter((a) => allAreas || commonAreas.includes(a.key) || (told.area && a.key === draft.homeArea))
+                      .map((a) => (
+                        <Chip key={a.key} testID={`area-${a.key}`} label={a.name} selected={Boolean(told.area) && draft.homeArea === a.key} onPress={() => (tap("select"), set({ homeArea: a.key }), setTold((t) => ({ ...t, area: true })))} />
+                      ))}
+                    {allAreas ? null : <Chip testID="areas-more" icon="plus" label={`${areas.length - commonAreas.length} more areas`} onPress={() => setAllAreas(true)} />}
+                  </View>
                 </View>
               </>
             ) : null}
@@ -365,53 +399,73 @@ export default function Onboarding() {
             {current === "needs" ? (
               <>
                 <T v="title" accessibilityRole="header">Anything plans should respect?</T>
-                <T v="heading">A typical outing, per person</T>
-                <View style={s.chips}>
-                  {budgetChoices.map((b) => (
-                    <Chip key={b.value} testID={`budget-${b.value}`} icon="credit-card" label={b.label} selected={draft.budget === b.value} onPress={() => set({ budget: b.value })} />
-                  ))}
+                <View style={{ gap: space.sm }}>
+                  <T v="heading">A typical outing, per person</T>
+                  <View style={s.chips}>
+                    {budgetChoices.map((b) => (
+                      <Chip key={b.value} testID={`budget-${b.value}`} icon="credit-card" label={b.label} selected={Boolean(told.budget) && draft.budget === b.value} onPress={() => (set({ budget: b.value }), setTold((t) => ({ ...t, budget: true })))} />
+                    ))}
+                  </View>
                 </View>
-                <T v="heading" style={{ marginTop: space.sm }}>Always</T>
-                <View style={s.chips}>
-                  {NEEDS.map((n) => (
-                    <Chip key={n.key} testID={n.key === "alcohol" ? "onboarding-alcohol-free" : `need-${n.key}`} icon={n.icon} label={n.label} selected={hasNeed(draft, n.key)} onPress={() => set(n.apply(draft, !hasNeed(draft, n.key)))} />
-                  ))}
+                <View style={{ gap: space.sm, marginTop: space.md }}>
+                  <T v="heading">Always respect</T>
+                  <View style={s.chips}>
+                    {NEEDS.map((n) => (
+                      <Chip key={n.key} testID={n.key === "alcohol" ? "onboarding-alcohol-free" : `need-${n.key}`} icon={n.icon} label={n.label} selected={hasNeed(draft, n.key)} onPress={() => set(n.apply(draft, !hasNeed(draft, n.key)))} />
+                    ))}
+                  </View>
+                  <T v="small" tone={color.muted}>
+                    We look for places that fit and pass these on with every plan. Venues confirm the details.
+                  </T>
                 </View>
-                <T v="small" tone={color.muted}>
-                  We look for places that fit and pass these on with every plan. Venues confirm the details.
-                </T>
-                <T v="smallStrong" style={s.label} nativeID="name-label">
-                  What should we call you?
-                </T>
-                <TextInput accessibilityLabelledBy="name-label" accessibilityLabel="What should we call you?" value={draft.name} onChangeText={(name) => set({ name: name.slice(0, 40) })} placeholder="First name (optional)" placeholderTextColor={color.faint} style={s.input} />
               </>
             ) : null}
 
             {current === "reveal" ? (
               <View style={{ gap: space.xl, alignItems: "center", paddingTop: space.lg }}>
-                <Animated.View entering={ZoomIn.springify().damping(12)} style={s.revealMark}>
+                <Animated.View entering={reduceMotion ? undefined : ZoomIn.duration(motion.enter)} style={s.revealMark}>
                   <Spark size={64} />
                 </Animated.View>
                 <View style={{ alignItems: "center", gap: space.sm }}>
-                  <T v="body" tone={color.muted}>
-                    {draft.name ? `${draft.name}, you’re a` : "You’re a"}
-                  </T>
-                  <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
-                    {persona(draft.vibes)}
-                  </T>
-                  <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
-                    {draft.vibes.length >= 2 ? `From your top two moods: ${draft.vibes.slice(0, 2).join(" and ")}.` : "Pick a few moods any time to sharpen this."}
-                  </T>
+                  {draft.vibes.length ? (
+                    <>
+                      <T v="body" tone={color.muted}>
+                        {draft.name ? `${draft.name}, you’re a` : "You’re a"}
+                      </T>
+                      <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
+                        {persona(draft.vibes)}
+                      </T>
+                      <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+                        {draft.vibes.length >= 2 ? `From your top two moods: ${draft.vibes.slice(0, 2).join(" and ")}.` : `From your mood: ${draft.vibes[0]}.`}
+                      </T>
+                    </>
+                  ) : (
+                    <>
+                      <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
+                        Ready when you are
+                      </T>
+                      <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+                        Pick a few moods any time to sharpen your plans.
+                      </T>
+                    </>
+                  )}
                 </View>
-                <View style={s.revealCard}>
-                  <RevealRow icon={companionCopy[who ?? draft.companions].icon} label="Usually with" value={companionCopy[who ?? draft.companions].label} />
-                  <RevealRow icon="map-pin" label="Starting from" value={areas.find((a) => a.key === draft.homeArea)?.name ?? "Greater Toronto"} />
-                  <RevealRow icon={modeCopy[draft.mode].icon} label="Getting around" value={modeCopy[draft.mode].label} />
-                  <RevealRow icon="credit-card" label="Usual spend" value={budgetChoices.find((b) => b.value === draft.budget)?.label ?? `about $${draft.budget}`} last={!draft.dietary && !draft.accessibility && !draft.alcoholFree} />
-                  {draft.dietary || draft.accessibility || draft.alcoholFree ? (
-                    <RevealRow icon="check-circle" label="Always" value={[draft.dietary, draft.accessibility, draft.alcoholFree ? "no bars" : ""].filter(Boolean).join(", ")} last />
-                  ) : null}
+                {revealRows.length ? (
+                  <View style={s.revealCard}>
+                    {revealRows.map((r, i) => (
+                      <RevealRow key={r.label} icon={r.icon} label={r.label} value={r.value} last={i === revealRows.length - 1} />
+                    ))}
+                  </View>
+                ) : null}
+                <View style={{ alignSelf: "stretch", gap: space.sm }}>
+                  <T v="smallStrong" style={s.label} nativeID="name-label">
+                    What should we call you?
+                  </T>
+                  <TextInput testID="onboarding-name" accessibilityLabelledBy="name-label" accessibilityLabel="What should we call you?" value={draft.name} onChangeText={(name) => set({ name: name.slice(0, 40) })} placeholder="First name (optional)" placeholderTextColor={color.faint} style={s.input} />
                 </View>
+                <T v="small" tone={color.muted} style={{ textAlign: "center" }}>
+                  Plans start from this. Change it any time in You.
+                </T>
               </View>
             ) : null}
 
@@ -439,7 +493,7 @@ export default function Onboarding() {
                   {limitHit ? "Four max" : `${draft.vibes.length} of 4`}
                 </T>
               ) : null}
-              <Button testID="onboarding-next" size="lg" label={current === "welcome" ? "Make it mine" : current === "reveal" ? "Start planning" : current === "people" && !people.length ? "Later" : "Continue"} icon="arrow-right" onPress={next} style={{ flex: 1 }} />
+              <Button testID="onboarding-next" size="lg" label={current === "welcome" ? "Set my taste · 1 min" : current === "reveal" ? "Start planning" : current === "people" && !people.length ? "Later" : "Continue"} icon="arrow-right" onPress={next} style={{ flex: 1 }} />
             </View>
           )}
           {current === "welcome" ? (

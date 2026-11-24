@@ -91,9 +91,9 @@ async function wire(page, acct, errors) {
       await a.getByTestId("onboarding-next").click();
       await a.waitForTimeout(250);
     }
-    await a.getByLabel("What should we call you?").fill("Ana");
     await a.getByTestId("onboarding-next").click();
     await a.getByTestId("persona").waitFor({ timeout: 10000 });
+    await a.getByLabel("What should we call you?").fill("Ana");
     result.persona = await a.getByTestId("persona").innerText();
     await a.getByTestId("onboarding-next").click();
     await a.getByTestId("onboarding-account").waitFor();

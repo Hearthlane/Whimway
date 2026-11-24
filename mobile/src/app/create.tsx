@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,7 +40,7 @@ export default function Create() {
   const store = useStore();
   const { profile, status, demo } = store;
   // Arriving from onboarding, the composer starts with a suggestion built from the new taste profile.
-  const { starter } = useLocalSearchParams<{ starter?: string }>();
+  const { starter, surprise } = useLocalSearchParams<{ starter?: string; surprise?: string }>();
   const [text, setText] = useState(typeof starter === "string" ? starter : "");
   const [o, setO] = useState<Overrides>({});
   const [field, setField] = useState<Field | null>(null);
@@ -87,6 +87,15 @@ export default function Create() {
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
     router.push("/plan/new");
   };
+  // Home's first-run "Surprise me" lands here and plans straight away, once the server is known.
+  const surprised = useRef(false);
+  useEffect(() => {
+    if (surprise !== "1" || surprised.current || !ready) return;
+    surprised.current = true;
+    if (store.unlocked) plan("Surprise me with something memorable");
+    else router.push({ pathname: "/plus", params: { reason: "surprise" } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surprise, ready]);
   // Typed ideas go through the guided questions first, minus whatever the words already answer,
   // so the plan is built from choices and not from guesses.
   const clarify = () => {
@@ -113,21 +122,6 @@ export default function Create() {
           <IconButton icon="x" label="Close" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
         </View>
 
-        <Animated.View entering={FadeInDown.delay(40).duration(380)}>
-          <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" scaleTo={0.98} onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.guide}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <T v="title" tone={color.ink}>
-                Build it step by step
-              </T>
-              <T v="small" tone={color.inkSoft}>
-                Food, something to do, how you’re getting there. You pick the places.
-              </T>
-            </View>
-            <View style={s.guideGo}>
-              <Icon name="arrow-right" size={22} tint={color.paper} />
-            </View>
-          </Press>
-        </Animated.View>
 
         {profile.people.length ? (
           <View style={{ gap: space.sm }}>
@@ -145,8 +139,8 @@ export default function Create() {
           </View>
         ) : null}
 
-        <Animated.View entering={FadeInDown.delay(100).duration(380)} style={s.composer}>
-          <T v="heading">Or just say it</T>
+        <Animated.View entering={FadeInDown.duration(240)} style={s.composer}>
+          <T v="heading">Describe it</T>
           <TextInput
             testID="prompt-input"
             value={text}
@@ -176,7 +170,7 @@ export default function Create() {
               <Chip key={c.key} testID={`chip-${c.key}`} icon={c.icon} label={c.label} onPress={() => setField(c.key)} tone={c.key === "budget" ? "yellow" : c.key === "vibe" ? "lavender" : "mint"} />
             ))}
             {chips.needs ? (
-              <Chip testID="chip-needs" icon="check-circle" label={chips.needs} onPress={() => router.push("/profile")} tone="lavender" />
+              <Chip testID="chip-needs" icon="check-circle" label={chips.needs} onPress={() => router.push({ pathname: "/profile", params: { edit: "1" } })} tone="lavender" />
             ) : null}
             <Chip
               testID="chip-alcohol"
@@ -193,13 +187,14 @@ export default function Create() {
             />
           </ScrollView>
           <View style={s.actions}>
-            <Button testID="plan-it" kind="dark" size="lg" label="Next" icon="arrow-right" onPress={clarify} disabled={!ready} style={{ flex: 1 }} />
+            <Button testID="plan-it" kind="dark" size="lg" label="Plan it" icon="arrow-right" onPress={clarify} disabled={!ready} style={{ flex: 1 }} />
             <Button
               kind="soft"
               size="lg"
               icon="shuffle"
               label="Surprise me"
               testID="surprise-me"
+              style={{ flex: 1 }}
               onPress={() => (store.unlocked ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
             />
           </View>
@@ -223,6 +218,19 @@ export default function Create() {
         ) : demo ? (
           <Notice icon="info">Demo mode. The places are real; hours, prices and travel times are estimates.</Notice>
         ) : null}
+
+        <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.nearby}>
+          <View style={[s.nearbyIcon, { backgroundColor: color.coralTint }]}>
+            <Icon name="list" size={18} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <T v="bodyStrong">Build it step by step</T>
+            <T v="small" tone={color.muted}>
+              Food, something to do, how you’re getting there. You pick the places.
+            </T>
+          </View>
+          <Icon name="chevron-right" tint={color.faint} />
+        </Press>
 
         {profile.favourites.length ? (
           <View style={{ gap: space.sm }}>

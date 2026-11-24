@@ -225,5 +225,5 @@ const s = StyleSheet.create({
   note: { position: "absolute", right: 10, top: 10, backgroundColor: color.paper, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   legend: { position: "absolute", left: 10, bottom: 10, right: 10, flexDirection: "row", flexWrap: "wrap", gap: 6 },
   credit: { position: "absolute", right: 8, top: 8, backgroundColor: "rgba(255,255,255,0.85)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  legendItem: { backgroundColor: color.paper, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, maxWidth: 180 },
+  legendItem: { backgroundColor: color.paper, paddingHorizontal: 10, minHeight: 36, justifyContent: "center", borderRadius: radius.pill, maxWidth: 180 },
 });

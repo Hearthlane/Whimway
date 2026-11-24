@@ -100,13 +100,13 @@ export default function Options() {
         {error && !options ? <Button kind="dark" label="Try again" icon="refresh-cw" onPress={() => load()} /> : null}
 
         {options?.map((o, i) => (
-          <Animated.View key={o.plan.id} entering={FadeInDown.delay(80 + i * 110).duration(380)}>
+          <Animated.View key={o.plan.id} entering={FadeInDown.delay(80 + i * 110).duration(240)}>
             <OptionCard option={o} chosen={chosen === o.key} onPick={() => pick(o)} testID={`option-${i}`} />
           </Animated.View>
         ))}
 
         {options ? (
-          <Animated.View entering={FadeIn.delay(450).duration(320)} style={s.refine}>
+          <Animated.View entering={FadeIn.delay(450).duration(240)} style={s.refine}>
             <T v="heading">None of these?</T>
             <T v="small" tone={color.muted}>
               Say what’s missing and you’ll get a different set.

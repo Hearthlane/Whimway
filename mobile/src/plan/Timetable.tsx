@@ -53,7 +53,7 @@ export function Timetable({ plan, selected, onSelect }: { plan: Itinerary; selec
         const next = plan.stops[i + 1];
         const on = selected === stop.placeId;
         return (
-          <Animated.View key={stop.placeId} entering={FadeInDown.delay(120 + i * 90).duration(360)}>
+          <Animated.View key={stop.placeId} entering={FadeInDown.delay(120 + i * 90).duration(240)}>
             <View style={s.row}>
               <View style={s.times}>
                 <View>
@@ -109,7 +109,7 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "stretch", gap: space.md },
   times: { width: 58, justifyContent: "space-between", paddingVertical: 2 },
   clock: { fontFamily: font.displayBold, fontSize: 22, lineHeight: 24, letterSpacing: -0.6, color: color.ink, fontVariant: ["tabular-nums"] },
-  meridiem: { fontSize: 12, lineHeight: 14 },
+  meridiem: { fontSize: 13, lineHeight: 14 },
   end: { fontVariant: ["tabular-nums"] },
   block: { flex: 1, flexDirection: "row", gap: space.md, borderRadius: radius.lg, padding: space.md, borderWidth: 2, borderColor: "transparent" },
   blockOn: { borderColor: color.ink },

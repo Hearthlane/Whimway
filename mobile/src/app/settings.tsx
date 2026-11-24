@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState, type ReactNode } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { areaByKey } from "@shared/areas";
 import { TasteProfile } from "@shared/profile";
@@ -13,6 +13,7 @@ import { supabase } from "@/lib/auth";
 import { cloudConfigured, SHARE_ORIGIN } from "@/lib/config";
 import { companionCopy, modeCopy } from "@/lib/copy";
 import { useStore } from "@/lib/store";
+import { saveFile } from "@/lib/files";
 import { Button, Icon, IconButton, Notice, Press, Sheet, T, type IconName } from "@/ui/kit";
 import { color, radius, space, touch } from "@/ui/theme";
 
@@ -101,9 +102,29 @@ export default function Settings() {
           <Row icon="heart" label="Access needs" detail={profile.accessibility || "Add step-free access, short walks…"} onPress={() => router.push({ pathname: "/profile", params: { edit: "1" } })} chevron />
         </Group>
 
+        <Group title="Notifications">
+          <Toggle icon="bell" label="Before a plan" detail="A reminder two hours before your first stop" value={profile.remindDayOf} onChange={(remindDayOf) => setProfile({ ...profile, remindDayOf })} />
+          <Toggle icon="star" label="How was it?" detail="A check-in the morning after" value={profile.remindRate} onChange={(remindRate) => setProfile({ ...profile, remindRate })} />
+          {Platform.OS === "web" ? <Row icon="smartphone" label="Reminders arrive in the phone app" detail="The web version shows them in Activity instead" /> : null}
+        </Group>
+
         <Group title="Privacy & data">
           <Toggle icon="bar-chart-2" label="Anonymous usage stats" detail="Events like “plan saved”. Never prompts, places or location." value={profile.analytics} onChange={(analytics) => setProfile(TasteProfile.parse({ ...profile, analytics }))} />
           <Toggle icon="clock" label="Keep history" detail="Recent places and searches, on this device only" value={profile.keepHistory} onChange={(keepHistory) => setProfile({ ...profile, keepHistory })} />
+          <Row
+            testID="settings-export"
+            icon="download"
+            label="Download my data"
+            detail="Your taste, people, plans and history as a file"
+            onPress={() =>
+              void saveFile(
+                `whimway-data-${new Date().toISOString().slice(0, 10)}.json`,
+                "application/json",
+                JSON.stringify({ exportedAt: new Date().toISOString(), profile, plans: Object.fromEntries(Object.entries(store.plans).map(([id, e]) => [id, { saved: e.saved, createdAt: e.createdAt, feedback: e.feedback, meta: e.meta, spec: e.spec }])), history }, null, 2),
+              ).catch(() => setMessage("Couldn’t create the file. Try again."))
+            }
+            chevron
+          />
           <Row icon="list" label="See history" detail={`${history.places.length} places · ${history.searches.length} searches`} onPress={() => router.push("/history")} chevron />
           {confirm === "history" ? (
             <Confirm text="Clear recent places and searches?" action="Clear history" onCancel={() => setConfirm(null)} onConfirm={() => (store.clearHistory(), setConfirm(null))} />
@@ -120,7 +141,6 @@ export default function Settings() {
         <Group title="About">
           <Row icon="shield" label="Privacy policy" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/privacy`)} chevron />
           <Row icon="file-text" label="Terms" onPress={() => void WebBrowser.openBrowserAsync(`${SHARE_ORIGIN}/terms`)} chevron />
-          <Row icon="play-circle" label="Replay the intro" onPress={retune} chevron />
           <Row icon="info" label="Version" detail={`Whimway beta ${Constants.expoConfig?.version ?? ""} · Greater Toronto`} />
         </Group>
 
@@ -231,7 +251,7 @@ function Segment({ value, options, onChange, testID }: { value: string; options:
   return (
     <View style={s.segment} accessibilityRole="radiogroup">
       {options.map((o) => (
-        <Press key={o.key} testID={testID ? `${testID}-${o.key}` : undefined} accessibilityRole="radio" accessibilityState={{ checked: value === o.key }} onPress={() => onChange(o.key)} style={[s.segmentItem, value === o.key && s.segmentOn]}>
+        <Press key={o.key} testID={testID ? `${testID}-${o.key}` : undefined} accessibilityRole="radio" accessibilityState={{ checked: value === o.key }} aria-checked={value === o.key} onPress={() => onChange(o.key)} style={[s.segmentItem, value === o.key && s.segmentOn]}>
           <T v="smallStrong" tone={value === o.key ? color.paper : color.ink}>
             {o.label}
           </T>
@@ -261,7 +281,7 @@ const s = StyleSheet.create({
   rowIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: color.canvas, alignItems: "center", justifyContent: "center" },
   inline: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: color.line },
   segment: { flexDirection: "row", gap: 4, padding: 4, borderRadius: radius.pill, backgroundColor: color.canvas },
-  segmentItem: { flex: 1, minHeight: touch - 4, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  segmentItem: { flex: 1, minHeight: touch, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   segmentOn: { backgroundColor: color.ink },
   track: { width: 50, height: 30, borderRadius: 15, backgroundColor: color.lineStrong, padding: 3 },
   trackOn: { backgroundColor: color.ink },

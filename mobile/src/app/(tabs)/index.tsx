@@ -7,13 +7,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { areaByKey, defaultArea } from "@shared/areas";
 import { examplePrompts } from "@/lib/copy";
 import { useStore } from "@/lib/store";
-import { activityFor } from "@/home/activity";
+import { activityFor, isNew } from "@/home/activity";
 import { planAround } from "@/home/actions";
 import { PeopleRow, PersonSheet, type Person } from "@/home/People";
 import { PlanCards, TodayCard, endOf, startOf } from "@/home/Plans";
 import { PollCard } from "@/plan/PollCard";
 import { Sponsored } from "@/plan/Sponsored";
-import { Icon, Notice, Press, T, Wordmark, type IconName } from "@/ui/kit";
+import { Button, Icon, Notice, Press, T, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
 
 const ZONE = "America/Toronto";
@@ -45,13 +45,16 @@ export default function Home() {
     .filter(([id]) => !upcoming.some(([u]) => u === id))
     .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
     .slice(0, 8);
-  const alerts = useMemo(() => activityFor(plans, profile).filter((i) => i.kind === "today" || i.kind === "soon" || i.kind === "rate").length, [plans, profile]);
+  const seenAt = store.history.activitySeenAt;
+  const alerts = useMemo(() => activityFor(plans, profile).filter((i) => isNew(i, seenAt)).length, [plans, profile, seenAt]);
 
-  // The feed: ideas in the person's mood first, mixed with their saved places, a poll and a sponsored pick.
+  // The feed: ideas that match who they go out with and their moods first, mixed with saved places, a poll and a sponsored pick.
   const ideas = useMemo(() => {
-    const liked = profile.vibes.join(" ");
-    return [...examplePrompts].sort((a, b) => Number(liked && b.prompt.toLowerCase().includes(liked.split(" ")[0] ?? "")) - Number(liked && a.prompt.toLowerCase().includes(liked.split(" ")[0] ?? "")));
-  }, [profile.vibes]);
+    const score = (e: (typeof examplePrompts)[number]) =>
+      (profile.onboarded && e.who === profile.companions ? 3 : 0) + (e.vibes ?? []).filter((v) => profile.vibes.includes(v as never)).length;
+    return [...examplePrompts].sort((a, b) => score(b) - score(a));
+  }, [profile.vibes, profile.companions, profile.onboarded]);
+  const firstRun = Object.keys(plans).length === 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
@@ -61,7 +64,7 @@ export default function Home() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
             {demo ? (
               <View style={s.demoPill} accessibilityLabel="Demo mode">
-                <T v="smallStrong" tone={color.warning} style={{ fontSize: 12 }}>
+                <T v="smallStrong" tone={color.warning} style={{ fontSize: 13 }}>
                   Demo data
                 </T>
               </View>
@@ -77,7 +80,7 @@ export default function Home() {
           </View>
         </View>
 
-        <Animated.View entering={FadeInDown.duration(320)} style={{ gap: 4 }}>
+        <Animated.View entering={FadeInDown.duration(240)} style={{ gap: 4 }}>
           <T v="small" tone={color.muted}>
             {greeting(profile.name)}
           </T>
@@ -86,7 +89,7 @@ export default function Home() {
           </T>
         </Animated.View>
 
-        <Press testID="home-start" accessibilityRole="button" accessibilityLabel="Start a plan" onPress={() => router.push("/create")} style={s.start} scaleTo={0.98}>
+        <Press testID="home-start" accessibilityRole="button" accessibilityLabel="Tell us the mood, who’s coming, when. Start a plan" onPress={() => router.push("/create")} style={s.start} scaleTo={0.98}>
           <Icon name="edit-3" size={18} tint={color.muted} />
           <T v="body" tone={color.muted} style={{ flex: 1 }}>
             Tell us the mood, who’s coming, when…
@@ -107,6 +110,19 @@ export default function Home() {
           <Notice tone="coral" icon="wifi-off">
             Can’t reach Whimway right now. Your plans are still here; new plans need a connection.
           </Notice>
+        ) : null}
+
+        {firstRun ? (
+          <Animated.View entering={FadeInDown.duration(240)} style={s.firstRun} testID="home-first-run">
+            <T v="title">Your first plan</T>
+            <T v="body" tone={color.inkSoft}>
+              {profile.vibes.length ? `Tuned for ${profile.vibes.slice(0, 2).join(" and ")} moods. ` : ""}Tap Plan below any time, or let us pick something now.
+            </T>
+            <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.xs }}>
+              <Button kind="dark" icon="shuffle" label="Surprise me" onPress={() => router.push({ pathname: "/create", params: { surprise: "1" } })} style={{ flex: 1 }} testID="home-surprise" />
+              <Button kind="soft" label="Describe it" onPress={() => router.push("/create")} style={{ flex: 1 }} />
+            </View>
+          </Animated.View>
         ) : null}
 
         <TodayCard plans={plans} />
@@ -138,7 +154,7 @@ export default function Home() {
         </Section>
 
         {recent.length ? (
-          <Section title="Recently created" onMore={() => router.push("/history")}>
+          <Section title="Recently created" onMore={() => router.push("/profile")}>
             <PlanCards entries={recent} prefix="recent" />
           </Section>
         ) : null}
@@ -154,7 +170,7 @@ function Section({ title, onMore, children }: { title: string; onMore?: () => vo
       <View style={s.sectionRow}>
         <T v="heading">{title}</T>
         {onMore ? (
-          <Press accessibilityRole="button" accessibilityLabel={`See all ${title.toLowerCase()}`} onPress={onMore} hitSlop={10}>
+          <Press accessibilityRole="button" accessibilityLabel={`See all ${title.toLowerCase()}`} onPress={onMore} hitSlop={10} style={{ minHeight: 44, justifyContent: "center" }}>
             <T v="smallStrong" tone={color.coralText}>
               See all
             </T>
@@ -194,5 +210,6 @@ const s = StyleSheet.create({
   startGo: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.ink, alignItems: "center", justifyContent: "center" },
   sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
   idea: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, minHeight: 84 },
+  firstRun: { gap: space.sm, padding: space.xl, borderRadius: radius.xl, backgroundColor: color.yellowTint, borderWidth: 1, borderColor: color.line },
   ideaIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.paper, alignItems: "center", justifyContent: "center" },
 });

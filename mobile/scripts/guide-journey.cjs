@@ -90,7 +90,7 @@ const { chromium } = require("playwright");
   await p.waitForTimeout(1500);
   await p.getByText("Coming up", { exact: true }).scrollIntoViewIfNeeded().catch(() => {});
   await p.screenshot({ path: `${out}/15-home-lists.png` });
-  console.log("home lists:", await p.getByText("Upcoming", { exact: true }).isVisible().catch(() => false), await p.getByText("Recently created", { exact: true }).isVisible().catch(() => false));
+  console.log("home lists:", await p.getByText("Coming up", { exact: true }).isVisible().catch(() => false), await p.getByText("Recently created", { exact: true }).isVisible().catch(() => false));
   console.log("errors:", errs);
   await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

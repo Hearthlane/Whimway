@@ -22,6 +22,8 @@ export function PlaceImage({ place, style }: { place: Pick<CandidatePlace, "phot
         contentFit="cover"
         transition={200}
         accessibilityIgnoresInvertColors
+        alt=""
+        accessible={false}
       />
     );
   const flat = StyleSheet.flatten(style) ?? {};

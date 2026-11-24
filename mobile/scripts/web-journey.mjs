@@ -33,11 +33,14 @@ let page;
   await p.getByTestId('onboarding-next').click();
   // People (optional): later.
   await p.getByTestId('onboarding-next').click();
+  await p.getByTestId('mode-TRANSIT').click();
+  await p.getByTestId('areas-more').click();
   await p.getByTestId('area-queen-west').click();
   await p.getByTestId('onboarding-next').click();
-  await p.getByLabel('What should we call you?').fill('Sam').catch(() => {});
+  await p.getByTestId('budget-50').click();
   await p.getByTestId('onboarding-next').click();
   await p.getByTestId('persona').waitFor({ timeout: 15000 });
+  await p.getByLabel('What should we call you?').fill('Sam');
   await p.waitForTimeout(1400);
   const personaName = await p.getByTestId('persona').innerText();
   await shot(p, '03b-reveal');

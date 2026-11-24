@@ -70,6 +70,9 @@ export const TasteProfile = z.object({
   textScale: z.enum(["default", "large", "largest"]).default("default"),
   /** Keep History on this device (recent places, searches). */
   keepHistory: z.boolean().default(true),
+  /** Phone reminders: two hours before a saved plan, and a "how was it?" the next morning. */
+  remindDayOf: z.boolean().default(true),
+  remindRate: z.boolean().default(true),
   /** Whimway Plus entitlement. In the beta this is a demo flag; production verifies store receipts. */
   plus: z
     .object({

@@ -59,7 +59,7 @@ export function PollCard() {
             Quick poll
           </T>
         </View>
-        <Pressable accessibilityRole="button" onPress={next} hitSlop={10} testID="poll-next">
+        <Pressable accessibilityRole="button" onPress={next} hitSlop={10} testID="poll-next" style={{ minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center" }}>
           <T v="smallStrong" tone={color.muted}>
             {result ? "Next" : "Skip"}
           </T>

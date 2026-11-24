@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
-import { type ComponentProps, type ReactNode } from "react";
+import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -49,12 +49,15 @@ export function Icon({ name, size = 18, tint = color.ink }: { name: IconName; si
 }
 
 type Variant = keyof typeof type;
-// Larger text (Settings › Accessibility). Set from the profile; every T scales with it.
-let textScale = 1;
-export function setTextScale(scale: "default" | "large" | "largest") {
-  textScale = scale === "largest" ? 1.3 : scale === "large" ? 1.15 : 1;
+// Larger text (Settings › Accessibility). Provided from the profile; every T scales with it.
+const TextScale = createContext(1);
+export const scaleOf = (scale: "default" | "large" | "largest") => (scale === "largest" ? 1.3 : scale === "large" ? 1.15 : 1);
+export function TextScaleProvider({ scale, children }: { scale: "default" | "large" | "largest"; children: ReactNode }) {
+  return <TextScale.Provider value={scaleOf(scale)}>{children}</TextScale.Provider>;
 }
+export const useTextScale = () => useContext(TextScale);
 export function T({ v = "body", style, tone, ...rest }: TextProps & { v?: Variant; tone?: string; style?: StyleProp<TextStyle> }) {
+  const textScale = useContext(TextScale);
   const flat = StyleSheet.flatten([type[v] as TextStyle, style]) ?? {};
   const scaled =
     textScale === 1
@@ -204,7 +207,7 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       {icon ? <Icon name={icon} size={12} tint={fg} /> : null}
-      <T v="smallStrong" tone={fg} style={{ fontSize: 12, lineHeight: 16 }}>
+      <T v="smallStrong" tone={fg} style={{ fontSize: 13, lineHeight: 16 }}>
         {label}
       </T>
     </View>
@@ -214,10 +217,21 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
 /** Bottom sheet built on Modal: native slide on iOS/Android, fade on web. */
 export function Sheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
+  // Web: Escape closes the sheet, and focus moves into it when it opens.
+  const sheetRef = useRef<any>(null);
+  useEffect(() => {
+    if (Platform.OS !== "web" || !open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const node = sheetRef.current as HTMLElement | null;
+    const first = node?.querySelector?.<HTMLElement>("input, textarea, button, [role=button], [tabindex]");
+    first?.focus?.();
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
   const content = (
       <Animated.View entering={FadeIn.duration(motion.quick)} style={styles.scrim}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-        <Animated.View entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
+        <Animated.View ref={sheetRef} entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
           <View style={styles.grabber} />
           <View style={styles.sheetHeader}>
             <T v="heading" style={{ flex: 1 }} accessibilityRole="header">

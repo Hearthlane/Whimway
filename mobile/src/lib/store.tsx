@@ -10,7 +10,7 @@ import { api, setClientContext, type Status } from "./api";
 import { isPlus } from "@shared/plus";
 import { kindOf } from "@/plan/guidePhotos";
 import { supabase } from "./auth";
-import { setTextScale } from "@/ui/kit";
+import { TextScaleProvider } from "@/ui/kit";
 
 /**
  * Device-first state. Plans are stored as specs (place IDs + user choices), never as
@@ -41,6 +41,8 @@ export type PlanEntry = {
 export type History = {
   places: { id: string; name: string; category: string; area?: string; at: string }[];
   searches: { q: string; at: string }[];
+  /** When Activity was last opened; the bell counts only what came after. */
+  activitySeenAt?: string;
 };
 type State = {
   history: History;
@@ -58,6 +60,7 @@ type Store = State & {
   searched: (q: string) => void;
   viewedPlan: (id: string) => void;
   clearHistory: (what?: "places" | "searches" | "all") => void;
+  markActivitySeen: () => void;
   /** Live itineraries for this app session (memory only). */
   live: Record<string, Itinerary>;
   remember: (plan: Itinerary, opts?: { saved?: boolean }) => void;
@@ -151,7 +154,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let history = emptyHistory();
       try {
         const h = JSON.parse(rawHistory ?? "null") as History | null;
-        if (h && Array.isArray(h.places) && Array.isArray(h.searches)) history = { places: h.places.slice(0, 50), searches: h.searches.slice(0, 20) };
+        if (h && Array.isArray(h.places) && Array.isArray(h.searches)) history = { places: h.places.slice(0, 50), searches: h.searches.slice(0, 20), activitySeenAt: typeof h.activitySeenAt === "string" ? h.activitySeenAt : undefined };
       } catch {
         // Corrupt history is just forgotten.
       }
@@ -213,7 +216,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const clearHistory = useCallback<Store["clearHistory"]>((what = "all") => {
     setState((s) => {
-      const history = { places: what === "searches" ? s.history.places : [], searches: what === "places" ? s.history.searches : [] };
+      const history = { ...s.history, places: what === "searches" ? s.history.places : [], searches: what === "places" ? s.history.searches : [] };
+      persistHistory(history);
+      return { ...s, history };
+    });
+  }, []);
+
+  const markActivitySeen = useCallback(() => {
+    setState((s) => {
+      const history = { ...s.history, activitySeenAt: new Date().toISOString() };
       persistHistory(history);
       return { ...s, history };
     });
@@ -235,8 +246,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void api("signals", { installId: s.installId, source, reason, entries: entries.slice(0, 16) }).catch(() => undefined);
   }, []);
 
-  // Larger text follows the profile.
-  setTextScale(state.profile.textScale);
   const setProfile = useCallback((profile: TasteProfile) => {
     // Apply immediately so anything tracked in the same tick sees the new consent and stats.
     stateRef.current = { ...stateRef.current, profile };
@@ -380,10 +389,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const limits = Boolean(state.status?.plus);
   const unlocked = !limits || isPlus(state.profile);
   const value = useMemo<Store>(
-    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory }),
-    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory],
+    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory, markActivitySeen }),
+    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory, markActivitySeen],
   );
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={value}>
+      <TextScaleProvider scale={state.profile.textScale}>{children}</TextScaleProvider>
+    </Ctx.Provider>
+  );
 }
 
 export function useStore() {

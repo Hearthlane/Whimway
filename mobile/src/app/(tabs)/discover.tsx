@@ -150,7 +150,7 @@ export default function Discover() {
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" stickyHeaderIndices={[1]}>
         <View style={{ gap: space.xs }}>
           <T v="hero" accessibilityRole="header">
-            Discover
+            Explore
           </T>
           <T v="body" tone={color.muted}>
             Real places in {area.name}, open {when === "now" ? "right now" : when === "tonight" ? "tonight" : when === "morning" ? "tomorrow morning" : when === "weekend" ? "this weekend" : "tomorrow evening"}.
@@ -218,7 +218,7 @@ export default function Discover() {
         </View>
 
         <View style={s.head}>
-          <T v="heading" numberOfLines={1} style={{ flex: 1 }}>
+          <T v="heading" numberOfLines={2} style={{ flex: 1, minWidth: "40%" }}>
             {label}
           </T>
           <View style={s.sorts}>
@@ -269,9 +269,9 @@ export default function Discover() {
                       {cap(p.category)}
                     </T>
                     <View style={s.facts}>
-                      <T v="smallStrong">{km(p.meters)}</T>
+                      <T v="smallStrong" numberOfLines={1}>{km(p.meters)}</T>
                       <View style={s.dot} />
-                      <T v="smallStrong">{p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low ?? 0)}–${money(p.price.high)}`}</T>
+                      <T v="smallStrong" numberOfLines={1}>{p.price.high == null ? "Price varies" : p.price.high === 0 ? "Free" : `${money(p.price.low ?? 0)}–${money(p.price.high)}`}</T>
                       {p.rating ? (
                         <>
                           <View style={s.dot} />
@@ -338,18 +338,18 @@ const s = StyleSheet.create({
   body: { padding: space.xl, paddingTop: space.lg, gap: space.lg, maxWidth: 640, width: "100%", alignSelf: "center", paddingBottom: space.xxxl },
   sticky: { gap: space.md, backgroundColor: color.canvas, paddingVertical: space.sm },
   search: { flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 52, paddingHorizontal: space.lg, borderRadius: radius.pill, backgroundColor: color.paper, borderWidth: 1.5, borderColor: color.line },
-  input: { flex: 1, fontFamily: font.body, fontSize: 16, color: color.ink, paddingVertical: space.sm },
+  input: { flex: 1, alignSelf: "stretch", minHeight: 48, fontFamily: font.body, fontSize: 16, color: color.ink, paddingVertical: space.sm },
   bleed: { marginHorizontal: -space.xl },
   row: { gap: space.sm, paddingHorizontal: space.xl, alignItems: "center" },
   divider: { width: 1, height: 24, backgroundColor: color.line, marginHorizontal: space.xs },
-  head: { flexDirection: "row", alignItems: "center", gap: space.md },
+  head: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.md },
   sorts: { flexDirection: "row", gap: 4, backgroundColor: color.paper, borderRadius: radius.pill, padding: 3, borderWidth: 1, borderColor: color.line },
-  sort: { paddingHorizontal: space.md, minHeight: 32, justifyContent: "center", borderRadius: radius.pill },
+  sort: { paddingHorizontal: space.md, minHeight: 44, justifyContent: "center", borderRadius: radius.pill },
   sortOn: { backgroundColor: color.ink },
   place: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.sm, paddingRight: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   photo: { width: 84, height: 84, borderRadius: radius.md, backgroundColor: color.line },
   hero: { width: "100%", height: 180, borderRadius: radius.lg, backgroundColor: color.line },
-  facts: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  facts: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 },
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: color.faint },
   skeleton: { height: 100, borderRadius: radius.lg, backgroundColor: color.line, opacity: 0.6 },
   empty: { alignItems: "center", gap: space.sm, paddingVertical: space.xxl },

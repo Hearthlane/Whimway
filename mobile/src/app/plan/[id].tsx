@@ -1,4 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { saveFile } from "@/lib/files";
+import { planToIcs } from "@/plan/calendar";
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -45,6 +47,8 @@ export default function PlanScreen() {
   const store = useStore();
   const insets = useSafeAreaInsets();
   const [plan, setPlan] = useState<Itinerary | undefined>(id === "new" ? undefined : store.live[id]);
+  const [born] = useState(id === "new");
+  const leave = () => (born ? router.dismissTo("/") : router.canGoBack() ? router.back() : router.replace("/"));
   const [error, setError] = useState<{ title: string; message: string; code?: string } | null>(null);
   const [stage, setStage] = useState(0);
   const [selected, setSelected] = useState<string>();
@@ -363,12 +367,12 @@ export default function PlanScreen() {
         <LinearGradient colors={[color.ink, "#1B2660"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
           <View style={s.heroInner}>
           <View style={s.heroTop}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={s.heroBtn}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={leave} style={s.heroBtn}>
               <Icon name="arrow-left" tint={color.paper} />
             </Pressable>
             {plan.demo ? <Badge tone="yellow" label="Demo estimates" /> : null}
           </View>
-          <Animated.View entering={FadeInDown.duration(420)}>
+          <Animated.View entering={FadeInDown.duration(240)}>
             <T v="eyebrow" tone={color.mint} style={{ marginTop: space.lg }}>
               {start.isValid ? start.toFormat("cccc d LLLL") : plan.request.date} in {plan.request.location.name}
             </T>
@@ -379,7 +383,7 @@ export default function PlanScreen() {
               {plan.summary}
             </T>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(80).duration(420)} style={s.stats}>
+          <Animated.View entering={FadeInDown.delay(80).duration(240)} style={s.stats}>
             <Stat value={start.isValid ? start.toFormat("h:mm a") : "—"} label={end.isValid ? `until ${end.toFormat("h:mm a")}` : ""} />
             <View style={s.statRule} />
             <Stat
@@ -538,6 +542,7 @@ export default function PlanScreen() {
         <Button testID="magic-edit" label="Magic edit" icon="star" kind="dark" onPress={() => { setEditError(""); setEditOpen(true); }} style={{ flex: 1 }} />
         <IconButton icon={entry?.saved ? "check" : "bookmark"} label={entry?.saved ? "Saved" : "Save plan"} active={entry?.saved} onPress={save} />
         <IconButton icon={sharing ? "loader" : "share"} label="Share plan" onPress={share} />
+        {entry ? <IconButton icon="calendar" label="Add to calendar" onPress={() => void saveFile(`${entry.meta.title.replace(/[^\w]+/g, "-").toLowerCase() || "plan"}.ics`, "text/calendar", planToIcs(plan.id, entry)).catch(() => undefined)} /> : null}
         <IconButton icon="navigation" label="Start: open directions" onPress={go} tint={color.coralText} />
         </View>
       </View>
@@ -606,10 +611,10 @@ export default function PlanScreen() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={s.stat}>
-      <T v="heading" tone={color.paper} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+      <T v="heading" tone={color.paper} numberOfLines={2}>
         {value}
       </T>
-      <T v="small" tone="#AEB5D3" style={{ fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+      <T v="small" tone="#AEB5D3" style={{ fontSize: 13, lineHeight: 16 }} numberOfLines={2}>
         {label}
       </T>
     </View>

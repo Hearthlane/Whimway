@@ -48,7 +48,7 @@ export default function Profile() {
   const name = profile.name || "You";
   const stats = [
     { value: grid.length, label: grid.length === 1 ? "plan" : "plans", tab: "plans" as Tab },
-    { value: nightsOut, label: nightsOut === 1 ? "outing done" : "outings done", tab: "plans" as Tab },
+    { value: nightsOut, label: nightsOut === 1 ? "outing" : "outings", tab: "plans" as Tab },
     { value: profile.favourites.length, label: profile.favourites.length === 1 ? "place" : "places", tab: "places" as const },
     { value: profile.people.length, label: profile.people.length === 1 ? "person" : "people", tab: "people" as Tab },
   ];
@@ -70,7 +70,7 @@ export default function Profile() {
             {stats.map((st) => (
               <Press key={st.label} accessibilityRole="button" accessibilityLabel={`${st.value} ${st.label}`} onPress={() => (st.tab === "places" ? router.push({ pathname: "/saved", params: { tab: "places" } }) : setTab(st.tab))} style={s.stat}>
                 <T style={s.statValue}>{st.value}</T>
-                <T v="small" tone={color.muted} style={{ fontSize: 12, textAlign: "center" }}>
+                <T v="small" tone={color.muted} style={{ fontSize: 13, textAlign: "center" }}>
                   {st.label}
                 </T>
               </Press>
@@ -139,7 +139,7 @@ export default function Profile() {
                 ))}
               </View>
             ) : (
-              <Empty icon="calendar" text="Plans you make show up here, newest first." action="Plan something" onPress={() => router.push("/")} />
+              <Empty icon="calendar" text="Plans you make show up here, newest first." action="Plan something" onPress={() => router.push("/create")} />
             )
           ) : null}
 

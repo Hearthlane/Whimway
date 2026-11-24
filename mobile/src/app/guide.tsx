@@ -316,7 +316,7 @@ export default function Guide() {
     <SafeAreaView style={s.page}>
       <View style={s.top}>
         <IconButton icon="arrow-left" label="Back" onPress={back} />
-        <View style={s.track} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: flow.length, now: index + 1 }}>
+        <View style={s.track} accessibilityRole="progressbar" accessibilityLabel={`Question ${index + 1} of ${flow.length}`} accessibilityValue={{ min: 0, max: flow.length, now: index + 1 }}>
           <Animated.View style={[s.fill, bar]} />
         </View>
         <IconButton icon="x" label="Close" onPress={() => router.replace("/")} />
@@ -328,7 +328,7 @@ export default function Guide() {
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
                 <View style={s.withPill} testID="planning-with">
                   <Icon name="users" size={13} />
-                  <T v="smallStrong" style={{ fontSize: 12 }}>
+                  <T v="smallStrong" style={{ fontSize: 13 }}>
                     Planning with {coming.map((p) => p.name).join(" & ")}
                   </T>
                 </View>
@@ -339,7 +339,7 @@ export default function Guide() {
                       .map((p) => (
                         <Press key={p.id} testID={`guide-with-${p.id}`} accessibilityRole="button" accessibilityLabel={`Add ${p.name}`} onPress={() => (tap("select"), setWithIds([...withIds, p.id]), setA((cur) => ({ ...cur, who: p.relation === "family" || relationOf === "family" ? "family" : "friends" })))} style={s.addWith}>
                           <Icon name="plus" size={12} />
-                          <T v="smallStrong" style={{ fontSize: 12 }}>
+                          <T v="smallStrong" style={{ fontSize: 13 }}>
                             {p.name}
                           </T>
                         </Press>
@@ -547,7 +547,7 @@ export default function Guide() {
             <View style={s.summary}>
               <Line icon={companionCopy[a.who].icon} label="Who" value={`${coming.length ? `You, ${coming.map((p) => p.name).join(" & ")}` : a.who === "partner" ? "A date" : companionCopy[a.who].label} · ${request.participants} ${request.participants === 1 ? "person" : "people"}`} onPress={() => go(skip.has("who") ? "when" : "who", -1)} />
               {describe(request).needs ? (
-                <Line icon="check-circle" label="Needs" value={`${describe(request).needs}. Noted for every stop; confirm with venues.`} onPress={() => router.push("/profile")} />
+                <Line icon="check-circle" label="Needs" value={`${describe(request).needs}. Noted for every stop; confirm with venues.`} onPress={() => router.push({ pathname: "/profile", params: { edit: "1" } })} />
               ) : null}
               <Line icon="calendar" label="When" value={`${day(a.day)}, ${DateTime.fromFormat(a.time, "HH:mm").toFormat("h:mm a")}–${DateTime.fromFormat(a.time, "HH:mm").plus({ minutes: request.duration }).toFormat("h:mm a")}`} onPress={() => go("when", -1)} />
               <Line
@@ -564,7 +564,7 @@ export default function Guide() {
         </ScrollView>
       </Animated.View>
       {hasFooter ? (
-        <Animated.View key={step} entering={FadeInDown.delay(180).duration(320)} style={s.footer}>
+        <Animated.View key={step} entering={FadeInDown.delay(180).duration(240)} style={s.footer}>
           {step === "extras" ? <Button testID="guide-extras-next" size="lg" kind="dark" label={extrasSummary ? "Continue" : "Skip"} onPress={forward} /> : <Button testID="guide-build" size="lg" label="Show me options" onPress={build} />}
         </Animated.View>
       ) : null}
@@ -574,7 +574,7 @@ export default function Guide() {
 
 function Row({ icon, label, hint, selected, onPress, testID }: { icon: IconName; label: string; hint?: string; selected?: boolean; onPress: () => void; testID?: string }) {
   return (
-    <Press testID={testID} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={label} scaleTo={0.98} onPress={onPress} style={[s.row, selected && s.rowOn]}>
+    <Press testID={testID} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={hint ? `${label}. ${hint}` : label} scaleTo={0.98} onPress={onPress} style={[s.row, selected && s.rowOn]}>
       <View style={[s.rowIcon, selected && { backgroundColor: color.coral }]}>
         <Icon name={icon} size={20} />
       </View>
@@ -603,11 +603,11 @@ function Tiles({ groups, value, onPick, prefix, usualLabel = "Your usual" }: { g
       {groups.map((g, i) => {
         const on = value === g.key;
         return (
-          <Animated.View key={g.key} entering={FadeInDown.delay(60 + i * 40).duration(320)} style={s.cell}>
+          <Animated.View key={g.key} entering={FadeInDown.delay(60 + i * 40).duration(240)} style={s.cell}>
             <Press testID={`${prefix}-${g.key}`} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${g.label}. ${g.hint}`} scaleTo={0.96} onPress={() => onPick(g.key)} style={[s.tile, on && s.tileOn]}>
               <View>
                 {guidePhotos[g.key] ? (
-                  <Image source={guidePhotos[g.key]} style={s.tilePhoto} contentFit="cover" transition={200} accessibilityIgnoresInvertColors />
+                  <Image source={guidePhotos[g.key]} style={s.tilePhoto} contentFit="cover" transition={200} accessibilityIgnoresInvertColors alt="" accessible={false} />
                 ) : (
                   <View style={[s.tilePhoto, s.tilePlain]}>
                     <T v="title" tone={color.inkSoft} numberOfLines={1}>
@@ -706,7 +706,7 @@ function Places({
       {shown.map((p, i) => {
         const on = value?.id === p.id;
         return (
-          <Animated.View key={p.id} entering={FadeInDown.delay((i % 4) * 60).duration(320)}>
+          <Animated.View key={p.id} entering={FadeInDown.delay((i % 4) * 60).duration(240)}>
             <Press testID={`${prefix}-${i}`} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${p.name}, ${p.category}, ${km(p.meters)} away`} scaleTo={0.98} onPress={() => onPick(p)} style={[s.place, on && s.rowOn]}>
               <PlaceImage place={p} chosen={group} style={s.placePhoto} />
               <View style={{ flex: 1, gap: 3 }}>

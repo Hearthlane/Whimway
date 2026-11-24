@@ -32,7 +32,7 @@ export default function Saved() {
           <T v="hero" accessibilityRole="header">
             Saved
           </T>
-          <Button testID="open-shared" kind="ghost" icon="link" label="Open a link" onPress={() => router.push("/import")} />
+          <Button testID="open-shared" kind="ghost" icon="link" label="Open a shared plan" onPress={() => router.push("/import")} />
         </View>
         <View style={s.segment} accessibilityRole="tablist">
           {(["plans", "places"] as const).map((t) => (
@@ -52,7 +52,7 @@ export default function Saved() {
             <T v="body" tone={color.muted} style={{ textAlign: "center" }}>
               Plans you save land here, ready to reopen, rerun or rate after you go.
             </T>
-            <Button label="Plan something" icon="star" onPress={() => router.push("/")} />
+            <Button label="Plan something" icon="star" onPress={() => router.push("/create")} />
           </View>
         ) : null}
         {tab === "plans" && upcoming.length ? <Section title="Coming up" items={upcoming} onReuse={reuse} onRemove={remove} /> : null}
@@ -153,7 +153,7 @@ function Section({ title, items, onReuse, onRemove, past }: { title: string; ite
 
 const s = StyleSheet.create({
   segment: { flexDirection: "row", gap: 4, padding: 4, marginTop: space.lg, borderRadius: radius.pill, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
-  segmentItem: { flex: 1, minHeight: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  segmentItem: { flex: 1, minHeight: 44, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   segmentOn: { backgroundColor: color.ink },
   placeIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
   place: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },

@@ -1,10 +1,10 @@
 import { router } from "expo-router";
 import { DateTime } from "luxon";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { activityFor, type ActivityItem } from "@/home/activity";
+import { activityFor, isNew, type ActivityItem } from "@/home/activity";
 import { useStore } from "@/lib/store";
 import { Button, Icon, IconButton, Press, T, type IconName } from "@/ui/kit";
 import { color, radius, space } from "@/ui/theme";
@@ -20,7 +20,10 @@ const look: Record<ActivityItem["kind"], { icon: IconName; tint: string }> = {
 
 /** Activity: reminders and nudges worked out from your own plans, people and places. */
 export default function Activity() {
-  const { plans, profile } = useStore();
+  const { plans, profile, history, markActivitySeen } = useStore();
+  // Remember what was new on arrival, then mark everything seen so the bell clears.
+  const [seenAt] = useState(history.activitySeenAt);
+  useEffect(() => markActivitySeen(), [markActivitySeen]);
   const items = useMemo(() => activityFor(plans, profile), [plans, profile]);
   const now = DateTime.now();
   const groups: { title: string; items: ActivityItem[] }[] = [
@@ -61,11 +64,15 @@ export default function Activity() {
                     <Icon name={look[item.kind].icon} size={18} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <T v="bodyStrong" numberOfLines={2}>
-                      {item.title}
-                    </T>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      {isNew(item, seenAt) ? <View style={s.dot} accessibilityLabel="New" /> : null}
+                      <T v="bodyStrong" numberOfLines={2} style={{ flexShrink: 1 }}>
+                        {item.title}
+                      </T>
+                    </View>
                     <T v="small" tone={color.muted} numberOfLines={2}>
                       {item.body}
+                      {item.became ? ` · ${DateTime.fromISO(item.became).toRelative({ style: "short" })}` : ""}
                     </T>
                   </View>
                   <View style={s.action}>
@@ -85,6 +92,7 @@ export default function Activity() {
 }
 
 const s = StyleSheet.create({
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.coral },
   top: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm },
   page: { padding: space.xl, paddingTop: space.md, gap: space.xl, maxWidth: 680, width: "100%", alignSelf: "center" },
   row: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, minHeight: 72, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
