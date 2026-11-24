@@ -39,7 +39,7 @@ export function costTotal(places: CandidatePlace[]) {
     currency: places[0]?.price.currency ?? "USD",
   };
 }
-import { isAlcoholLed, isOutdoor, notAnOuting, vibeFit } from "./planner-filters";
+import { isAlcoholLed, isBarLike, isOutdoor, notAnOuting, vibeFit } from "./planner-filters";
 import { arrange, fitMinutes, kindOfPlace, shapeSummary, stopsFor } from "./arc";
 import { crowdFor, type CrowdSignals } from "./crowd";
 export { isOutdoor };
@@ -131,7 +131,7 @@ export function candidatesFor(request: PlanRequest, places: CandidatePlace[]) {
       // Families with kids and anyone who said they don't drink never get bars or pubs.
       ((!request.alcoholFree && request.companions !== "family") ||
         request.anchorPlaceIds.includes(p.id) ||
-        !isAlcoholLed(p)) &&
+        !isBarLike(p)) &&
       // Hotels, parking, travel agents and whole neighbourhoods aren't things to do.
       (request.anchorPlaceIds.includes(p.id) || !notAnOuting(p)) &&
       (!request.skipFood ||
@@ -412,16 +412,43 @@ export class Planner {
             : action?.includes("More relaxing")
               ? "Relaxation"
               : undefined;
+    const lockedPlaces = await Promise.all(
+      locked.map((s) => this.details(s.placeId, request.location.currency)),
+    );
+    // The search follows the plan: if the stops already chosen are farther out than the
+    // usual area (nothing close to home, so the picks are downtown), look around them too,
+    // or there is nothing to add next to them.
+    const spread = Math.max(
+      0,
+      ...lockedPlaces.map((p) => distance(request.area.center, p.point)),
+    );
+    if (spread > request.area.radius * 0.8)
+      request = {
+        ...request,
+        area: {
+          ...request.area,
+          radius: Math.min(40000, Math.round(spread + 4000)),
+        },
+      };
     const retrievalRequest = focus
       ? {
           ...request,
           interests: [focus, ...request.interests.filter((i) => i !== focus)],
         }
       : request;
-    const found = await this.places.search(retrievalRequest);
-    const lockedPlaces = await Promise.all(
-      locked.map((s) => this.details(s.placeId, request.location.currency)),
-    );
+    let found = await this.places.search(retrievalRequest);
+    // Nothing at all in the usual area (a suburb the catalogue barely covers): widen, as the
+    // place lists do, rather than failing.
+    if (
+      !candidatesFor({ ...request, hardBudget: false }, found).length &&
+      request.area.radius < 30000
+    ) {
+      request = {
+        ...request,
+        area: { ...request.area, radius: 30000, locked: false },
+      };
+      found = await this.places.search({ ...retrievalRequest, area: request.area });
+    }
     // Places the person picked for a new plan get a sensible length for what they are:
     // a proper meal, a long visit for a museum or aquarium, an hour or so otherwise.
     if (!previous)
@@ -429,9 +456,16 @@ export class Planner {
         const p = lockedPlaces[i];
         const k = kindOfPlace(p);
         const big = /museum|aquarium|zoo|amusement_park|theme_park|science|hiking/.test(p.types.join(" "));
+        const film = /movie_theater|cinema|performing_arts|theater/.test(p.types.join(" "));
         s.minutes =
-          k === "meal" ? 75 : k === "treat" ? 40 : big ? (request.duration >= 360 ? 150 : 90) : 60;
+          film ? 120 : k === "meal" ? 75 : k === "treat" ? 40 : big ? (request.duration >= 360 ? 150 : 90) : 60;
       }
+    // Without a length they set, the outing is at least long enough for their own picks.
+    if (!previous && locked.length && !request.fixedLength) {
+      const needed = locked.reduce((n, l) => n + l.minutes, 0) + 35 * locked.length;
+      if (needed > request.duration)
+        request = { ...request, duration: Math.min(720, Math.ceil(needed / 15) * 15) };
+    }
     let candidates = candidatesFor({ ...request, hardBudget: false }, [
       ...found,
       ...lockedPlaces,
@@ -533,10 +567,13 @@ export class Planner {
         summary: selection.summary,
         request,
         stops: (() => {
+          // Picks hold their place while the plan is built; afterwards they're ordinary
+          // stops the person can change, so editing a guided plan isn't blocked.
           const refs = selection.stops.map((s) => ({
             ...s,
             locked: locked.some((l) => l.placeId === s.placeId),
           }));
+
           if (previous) return optimizeOrder(refs, candidates, request);
           // A new plan: meals at mealtimes, parks in daylight, filling the time asked for.
           const byId = new Map(candidates.map((p) => [p.id, p]));
@@ -554,9 +591,20 @@ export class Planner {
         revision: (previous?.revision ?? -1) + 1,
       };
       try {
-        const plan = await schedule(spec, candidates, this.routes, attempt === 1);
-        // If a chosen stop couldn't be kept, the original summary may name it: describe what's left.
-        return plan.stops.length < spec.stops.length
+        const scheduled = await schedule(spec, candidates, this.routes, attempt === 1);
+        const plan = previous
+          ? scheduled
+          : { ...scheduled, stops: scheduled.stops.map((st) => ({ ...st, locked: false })) };
+        // The summary must only name places that are in the plan: if it mentions any other
+        // candidate (a stop that couldn't be kept), describe what's actually there.
+        const inPlan = new Set(plan.stops.map((st) => st.placeId));
+        const stray = candidates.some(
+          (c) =>
+            !inPlan.has(c.id) &&
+            c.name.replace(/ \(.*\)$/, "").length > 3 &&
+            plan.summary.includes(c.name.replace(/ \(.*\)$/, "").replace(/\.$/, "")),
+        );
+        return stray || plan.stops.length < spec.stops.length
           ? { ...plan, summary: shapeSummary(plan.stops, plan.request) }
           : plan;
       } catch (e) {
@@ -574,7 +622,10 @@ export class Planner {
           ];
           // Chosen places can be far apart or open at different hours: try each order, and
           // allow extra time for the journey between them, before giving up.
-          const orders = [first, [...first].reverse()];
+          // Last resort: shorter visits at the picks (a 90-minute show instead of two hours).
+          const shorter = (list: typeof first) =>
+            list.map((x) => ({ ...x, minutes: Math.max(45, Math.round((x.minutes * 0.75) / 5) * 5) }));
+          const orders = [first, [...first].reverse(), shorter(first), shorter([...first].reverse())];
           for (const extra of [0, 90, 180])
             for (const stops of orders) {
               try {
@@ -660,7 +711,34 @@ export class Planner {
     const request: PlanRequest = { ...spec.request, ...op.patch };
     const before = new Set(spec.stops.map((s) => s.placeId));
     let plan: Itinerary;
+    if (op.kind === "endBy" && op.endBy !== undefined) {
+      // Fit inside the end time: trim unlocked visits (to no less than 30 min), then drop
+      // trailing unlocked stops that aren't the meal. Travel is estimated at 15 min a leg.
+      const [h, m] = spec.request.startTime.split(":").map(Number);
+      const window = op.endBy - (h * 60 + m);
+      if (window < 45)
+        throw new AppError("NOTHING_TO_CHANGE", "That end time is before the plan really gets going. Try a later time, or start earlier.", 422);
+      let stops = spec.stops.map((st) => ({ ...st }));
+      const total = () => stops.reduce((n, st) => n + st.minutes, 0) + 15 * (stops.length - 1);
+      for (const st of stops)
+        if (total() > window && !st.locked)
+          st.minutes = Math.max(30, st.minutes - Math.min(st.minutes * 0.3, total() - window));
+      while (total() > window && stops.length > 1) {
+        const drop = [...stops].reverse().find((st) => !st.locked && kindOfPlace(places[spec.stops.findIndex((x) => x.placeId === st.placeId)]) !== "meal") ?? [...stops].reverse().find((st) => !st.locked);
+        if (!drop) break;
+        stops = stops.filter((st) => st !== drop);
+      }
+      stops = stops.map((st) => ({ ...st, minutes: Math.round(st.minutes / 5) * 5 }));
+      plan = await this.edit({
+        ...spec,
+        request: { ...spec.request, duration: Math.max(60, Math.min(720, window)), fixedLength: true },
+        stops,
+      });
+      return { plan, op, changed: [] };
+    }
     if (op.kind === "reorder") {
+      if (!op.mealAt && op.order?.every((v, i) => v === i))
+        throw new AppError("NOTHING_TO_CHANGE", op.summary || "That's already the order.", 422);
       let order = op.order ?? spec.stops.map((_, i) => i);
       if (op.mealAt) {
         // Try each position for the meal and keep the one whose arrival is closest to the time asked.

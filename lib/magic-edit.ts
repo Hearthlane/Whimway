@@ -20,7 +20,9 @@ export type EditStop = {
   travel: number;
 };
 export type EditOp = {
-  kind: "replace" | "remove" | "add" | "reorder" | "noop";
+  kind: "replace" | "remove" | "add" | "reorder" | "endBy" | "noop";
+  /** For "endBy": finish by this minute of the day. */
+  endBy?: number;
   /** Indices of stops to regenerate (replace) or drop (remove). */
   targets: number[];
   /** For "reorder": the new order, as indices into the current stops. */
@@ -147,8 +149,10 @@ function reorder(
   }
   if (first && !/\b(add|swap|replace)\b/.test(text)) {
     const i = subject(first[1]);
-    if (i !== undefined && i !== 0)
-      return { order: moveTo(i, 0), summary: `Putting ${label(i)} first; same places, new times.` };
+    if (i !== undefined)
+      return i === 0
+        ? { order: idx, summary: `${label(i)} is already first.` }
+        : { order: moveTo(i, 0), summary: `Putting ${label(i)} first; same places, new times.` };
   }
   if (last && !/\b(add|swap|replace)\b/.test(text)) {
     const i = subject(last[1]);
@@ -177,7 +181,13 @@ function reorder(
   const at = clock(text);
   const meal = text.match(/\b(dinner|lunch|brunch|breakfast)\b/);
   if (at !== undefined && meal) {
-    const i = stops.findIndex((s) => fits(s, categoryRefs[0][1]));
+    // The meal for that time: not a brunch café for dinner, and not a stop they locked in.
+    const i = stops.findIndex(
+      (s) =>
+        fits(s, categoryRefs[0][1]) &&
+        !s.locked &&
+        !(meal[1] === "dinner" && /brunch|breakfast|caf/.test(s.category.toLowerCase())),
+    );
     if (i >= 0)
       return {
         order: idx,
@@ -186,6 +196,11 @@ function reorder(
       };
   }
   return undefined;
+}
+
+/** Outdoor by its name or kind even when the provider's type says "tourist attraction". */
+function looksOutdoor(s: EditStop) {
+  return /\b(park|garden|trail|alley|district|square|plaza|harbourfront|waterfront|beach|bluffs?|island|market street|ravine|patio)\b/i.test(`${s.name} ${s.category}`);
 }
 
 /** Parse "keep the first two" style instructions into kept indices. */
@@ -250,6 +265,33 @@ function interpret(
         "I didn't understand that. Try something like “swap dinner for sushi”, “make it cheaper” or “add dessert at the end”.",
     };
 
+  // "Home by 4", "finish by 3:30": fit the plan inside that end time.
+  const finish = text.match(/\b(?:home|back|done|finish(?:ed)?|end|wrap up|out)\s+(?:in [a-z ]+ )?(?:by|before|at)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (finish && !/\b(longer|later|extend)\b/.test(text)) {
+    let h = Number(finish[1]) % 12;
+    if (finish[3] === "pm" || (!finish[3] && h < 9)) h += 12;
+    return {
+      kind: "endBy",
+      targets: [],
+      endBy: h * 60 + Number(finish[2] ?? 0),
+      action: "",
+      patch: {},
+      summary: `Fitting the plan to finish by ${finish[1]}${finish[2] ? `:${finish[2]}` : ""}${finish[3] ? ` ${finish[3].toUpperCase()}` : h >= 12 ? " PM" : " AM"}: shorter visits first, then dropping the last stop if needed.`,
+    };
+  }
+  // "Make it longer", "go until 8pm", "fill the day": add a stop and the time for it.
+  const until = text.match(/\b(?:until|till|til|to)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  if (/\b(longer|extend|more time|fill (?:the|our) (?:day|evening|afternoon)|keep going)\b/.test(text) || (until && /\b(go|last|stay|make|fill|keep)\b/.test(text))) {
+    const extra = until ? undefined : 75;
+    return {
+      kind: "add",
+      targets: [],
+      action: `Add exactly one new stop that suits the plan${/adventur|fun|active/.test(text) ? ", something adventurous or active" : ""}. Keep every existing stop.`,
+      patch: { duration: Math.min(720, request.duration + (extra ?? 120)) },
+      summary: until ? `Adding a stop so the plan runs to about ${until[1]}${until[3] ? ` ${until[3].toUpperCase()}` : ""}; your stops stay.` : "Adding a stop and about an hour; your stops stay.",
+    };
+  }
+
   // Order: "brunch first", "move the museum to the end", "dinner at 6:30".
   const order = reorder(text, stops);
   if (order)
@@ -298,7 +340,9 @@ function interpret(
 
   // 1. Removal: "drop the bar", "skip the last stop"
   if (/\b(remove|drop|skip|cut|lose|get rid of|delete)\b/.test(text)) {
-    const targets = free(referenced(text, stops));
+    // Only what follows the verb, up to "and/then/,": "remove the dinner, end with dessert" keeps dessert.
+    const clause = text.match(/\b(?:remove|drop|skip|cut|lose|get rid of|delete)\b(.*?)(?:,|;|\band\b|\bthen\b|\bbut\b|$)/)?.[1] ?? text;
+    const targets = free(referenced(` ${clause} `, stops));
     if (targets.length && targets.length < n)
       return {
         kind: "remove",
@@ -379,7 +423,9 @@ function interpret(
         targets: [],
         action: "",
         patch: {},
-        summary: "Every stop is already free — nothing cheaper to swap in.",
+        summary: stops.some((st) => st.locked && (st.priceHigh ?? 1) > 0)
+          ? "The stops that cost money are locked in. Tap one and choose “Let it change” to swap it for something cheaper."
+          : "Every stop is already free, so there's nothing cheaper to swap in.",
       };
     return {
       kind: "replace",
@@ -394,7 +440,19 @@ function interpret(
     patch.indoorOnly = true;
     const outdoor = targets.length
       ? targets
-      : all.filter((i) => isOutdoor(stops[i]));
+      : all.filter((i) => isOutdoor(stops[i]) || looksOutdoor(stops[i]));
+    // "Indoors, maybe a movie": the rest of the request still counts.
+    const more = /\b(movie|cinema|museum|gallery|caf[eé]|coffee|lunch|dinner|dessert|game|arcade|bowling|show|until|longer|add)\b/.test(text);
+    if (!outdoor.length && more) {
+      return {
+        kind: "replace",
+        unlock: [...named],
+        targets: all.slice(-1),
+        action: `Indoors only. User request: "${instruction.trim().slice(0, 200)}". Replace only the unlocked stops; keep the others exactly.`,
+        patch,
+        summary: `Everything is already indoors; reworking ${names(all.slice(-1))} for what you asked.${lockedNote}`,
+      };
+    }
     if (!outdoor.length)
       return {
         kind: "noop",

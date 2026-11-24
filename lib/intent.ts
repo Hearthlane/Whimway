@@ -40,6 +40,8 @@ export type Draft = {
   alcoholFree?: boolean;
   /** Food needs stated in the words ("vegetarian", "halal"), passed to the planner. */
   dietary?: string[];
+  /** Access needs stated in the words ("can't walk far", "wheelchair"). */
+  access?: string[];
 };
 
 /** Words that mean "no alcohol-led places": checked in prompts, onboarding notes and people notes. */
@@ -141,6 +143,15 @@ function roundUp(dt: DateTime, minutes = 30): DateTime {
 }
 
 function parseClock(text: string) {
+  // "1 to 6pm", "1-6pm": the first number takes the second's am/pm (or am if it would be later).
+  const range = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(?:to|-|–|until|till)\s*(\d{1,2})(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)/);
+  if (range && !/^\s*(am|pm)/.test(text.slice((range.index ?? 0) + range[1].length + (range[2] ? range[2].length + 1 : 0)))) {
+    const startH = Number(range[1]) % 12;
+    const endH = Number(range[3]) % 12;
+    const pm = range[4].startsWith("p");
+    const h = pm && startH <= endH ? startH + 12 : startH;
+    return { h, min: Number(range[2] ?? 0) };
+  }
   if (/\b(?:at|around|by|from)?\s*(?:12\s*)?(noon|midday)\b/.test(text) && !/\bafter(?:noon)?\s/.test(text.match(/\b\w+\s+(?:noon|midday)\b/)?.[0] ?? ""))
     return { h: 12, min: 0 };
   const m = text.match(
@@ -198,8 +209,20 @@ export function interpret(input: string, now: DateTime): Draft {
     draft.companions = "solo";
     draft.participants = 1;
   }
+  if (/\b(roommate|room mate|coworker|co-worker|colleague|buddy|bestie|best friend)\b/.test(text) && !draft.companions) {
+    draft.companions = "friends";
+    draft.participants ??= 2;
+  }
   if (/\b(family|kids|my parents|my mom|my dad)\b/.test(text))
     draft.companions ??= "family";
+  // One child or parent named ("my 15 year old daughter"): the two of you.
+  const kids = text.match(new RegExp(`\\b${NUM}\\s+(?:kids|children|grandkids|grandchildren)\\b`));
+  if (/\bmy (?:\d{1,2}[- ]year[- ]old |teenage |little )?(daughter|son|kid|child|mom|mum|dad|mother|father|grandson|granddaughter)\b/.test(text)) {
+    draft.companions = "family";
+    draft.participants ??= 2;
+  }
+  if (kids && draft.companions === "family" && !group)
+    draft.participants = Math.min(20, num(kids[1]) + (/\b(wife|husband|partner|daughter|son|spouse)\b/.test(text) ? 2 : 1));
 
   // Occasion
   if (/\bbirthday|bday\b/.test(text)) draft.occasion = "birthday";
@@ -212,6 +235,12 @@ export function interpret(input: string, now: DateTime): Draft {
 
   // Needs
   if (ALCOHOL_FREE_WORDS.test(text)) draft.alcoholFree = true;
+  const access = [
+    /\b(wheelchair|wheel chair|mobility scooter)\b/.test(text) ? "wheelchair access" : "",
+    /\b(can'?t|cannot|can not|doesn'?t|does not|don'?t) walk (?:far|much|long)|\bshort walks?\b|\bcane\b|\bwalker\b|\bbad knees?\b|\bno stairs\b|\bstep[- ]free\b/.test(text) ? "short walks, step-free" : "",
+    /\b(stroller|pram|buggy)\b/.test(text) ? "stroller friendly" : "",
+  ].filter(Boolean);
+  if (access.length) draft.access = access;
   const diets = DIET_WORDS.filter(([, re]) => re.test(text)).map(([d]) => d);
   if (diets.length) draft.dietary = diets;
 
@@ -324,11 +353,15 @@ export function interpret(input: string, now: DateTime): Draft {
     // A named future day with no time ("Saturday") starts around noon; today starts soon.
     else if (day && !day.hasSame(local, "day"))
       start = start.set({ hour: 12, minute: 0 });
+    else if (/\b(right now|now|asap|immediately)\b/.test(text) && !clock)
+      start = roundUp(local.plus({ minutes: 10 }), 15);
     else start = roundUp(local.plus({ minutes: 45 }));
     // If that time has passed today, start soon instead (or roll to tomorrow when no day was said).
     if (start <= local.plus({ minutes: 20 })) {
       const soon = roundUp(local.plus({ minutes: 45 }));
-      start = !day && !partOfDay && clock ? start.plus({ days: 1 }) : soon;
+      // A clock time that has passed today ("lunch at noon", said at 4 pm) means tomorrow,
+      // never a quiet change of hour.
+      start = !day && clock ? start.plus({ days: 1 }) : /\b(right now|now|asap)\b/.test(text) ? roundUp(local.plus({ minutes: 10 }), 15) : soon;
     }
     draft.date = start.toISODate()!;
     draft.startTime = start.toFormat("HH:mm");
@@ -396,7 +429,12 @@ export function interpret(input: string, now: DateTime): Draft {
     draft.mode = "TRANSIT";
   else if (/\b(drive|driving|by car|road trip|we have a car)\b/.test(text))
     draft.mode = "DRIVE";
-  else if (/\b(walk|walking|walkable|on foot|stroll)\b/.test(text))
+  else if (
+    /\b(walk|walking|walkable|on foot|stroll)\b/.test(text) &&
+    // "she can't walk far" is an access need, not a way of getting around.
+    !/\b(can'?t|cannot|can not|doesn'?t|does not|don'?t|not|no) (?:\w+ )?walk/.test(text) &&
+    !/\bshort walks?\b/.test(text)
+  )
     draft.mode = "WALK";
   if (
     /\b(nearby|close by|near me|around here|not too far|walking distance)\b/.test(
@@ -412,11 +450,12 @@ export function interpret(input: string, now: DateTime): Draft {
   if (/\b(rain\w*|indoors?|inside|cold|snow\w*|freezing|stormy)\b/.test(text))
     draft.indoorOnly = true;
 
-  // Vibes and interests
-  for (const [v, re] of vibeWords) if (re.test(text)) draft.vibes.push(v);
+  // Vibes and interests, ignoring what they said they don't want ("no bars", "not into clubs").
+  const wanted = text.replace(/\b(?:no|not|without|never|avoid|skip|nothing with|not into|don'?t want)\s+(?:any\s+|a\s+|the\s+)?[a-z]+(?:\s+or\s+[a-z]+)*/g, " ");
+  for (const [v, re] of vibeWords) if (re.test(wanted)) draft.vibes.push(v);
   draft.vibes = draft.vibes.slice(0, 4);
   for (const [i, re] of interestWords)
-    if (re.test(text)) draft.interests.push(i);
+    if (re.test(wanted)) draft.interests.push(i);
   if (draft.indoorOnly)
     draft.interests = draft.interests.filter((i) => i !== "Outdoors");
 
@@ -501,6 +540,13 @@ export function buildRequest(
     .filter(Boolean)
     .join(", ")
     .slice(0, 300);
+  const accessibility = [
+    profile.accessibility.trim(),
+    ...(draft.access ?? []).filter((a) => !profile.accessibility.toLowerCase().includes(a)),
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .slice(0, 300);
   const interests = (
     draft.interests.length
       ? draft.interests
@@ -545,7 +591,7 @@ export function buildRequest(
       ...new Set([...(overrides.excludedPlaceIds ?? []), ...profile.disliked]),
     ].slice(0, 100),
     dietary,
-    accessibility: profile.accessibility,
+    accessibility,
   });
 }
 

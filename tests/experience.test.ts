@@ -369,7 +369,7 @@ describe("Transit navigation", () => {
 
 describe("Plan around a favourite", () => {
   const future = DateTime.now().setZone("America/Toronto").plus({ days: 3 });
-  it("keeps the anchored place, locked, and builds the rest around it", async () => {
+  it("keeps the anchored place and builds the rest around it; it can be changed afterwards", async () => {
     const area = areaByKey("kensington")!;
     const r = {
       ...buildRequest("", interpret("", future), profile, future, { area }),
@@ -385,7 +385,7 @@ describe("Plan around a favourite", () => {
     ).generate(r);
     const anchor = plan.stops.find((s) => s.placeId === "gta-bar-raval");
     expect(anchor).toBeDefined();
-    expect(anchor!.locked).toBe(true);
+    expect(anchor!.locked).toBe(false); // held while building, then editable
     expect(plan.stops.length).toBeGreaterThanOrEqual(2);
   });
   it("finds the nearest launch area for a favourite, or none outside the GTA", async () => {

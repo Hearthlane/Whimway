@@ -159,13 +159,14 @@ export function fitMinutes(
   const current = free.reduce((n, r) => n + r.minutes, 0);
   if (!free.length || available <= 0 || current <= 0) return refs;
   // Only ever lengthen visits (up to 1.8x): a short plan is filled, a full one is left alone.
-  const factor = Math.min(1.8, available / current);
-  if (factor <= 1.05) return refs;
+  // A film or show always gets the time a film or show takes.
+  const factor = Math.max(1, Math.min(1.8, available / current));
   const bounds = (r: Ref): [number, number] => {
     const p = places.get(r.placeId);
     const k = p ? kindOfPlace(p) : "activity";
     const big = p && /museum|aquarium|zoo|amusement_park|science|theme_park|hiking/.test(p.types.join(" "));
-    return k === "meal" ? [45, 110] : k === "treat" ? [25, 60] : k === "drinks" ? [40, 120] : big ? [60, 210] : [40, 150];
+    const film = p && /movie_theater|cinema|performing_arts|theater|concert/.test(p.types.join(" "));
+    return film ? [110, 180] : k === "meal" ? [45, 90] : k === "treat" ? [25, 60] : k === "drinks" ? [40, 120] : big ? [60, 210] : [40, 150];
   };
   return refs.map((r) => {
     if (r.locked) return r;

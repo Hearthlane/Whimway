@@ -19,9 +19,16 @@ const OUTDOOR_TYPES = new Set([
   "ski_resort",
   "picnic_ground",
 ]);
-/** True only when provider types say the venue is primarily outdoors. */
-export function isOutdoor(place: Pick<CandidatePlace, "types">) {
-  return place.types.some((t) => OUTDOOR_TYPES.has(t));
+/**
+ * Primarily outdoors: by provider type, or by what the place is called when the type is a
+ * generic "tourist attraction" (a district, a lane, a square, the waterfront).
+ */
+export function isOutdoor(place: Pick<CandidatePlace, "types"> & { name?: string; category?: string }) {
+  if (place.types.some((t) => OUTDOOR_TYPES.has(t))) return true;
+  if (/museum|gallery|cinema|theater|aquarium|mall|restaurant|cafe|bowling|arcade|store/.test(place.types[0] ?? "")) return false;
+  return /\b(park|garden|trail|alley|district|square|harbourfront|waterfront|beach|bluffs?|islands?|ravine|boardwalk|lakeshore)\b/i.test(
+    `${place.name ?? ""} ${place.category ?? ""}`,
+  );
 }
 
 /** Provider place types that typically suit each vibe. Used for ranking, never as a hard filter. */
@@ -63,6 +70,16 @@ export function isAlcoholLed(place: Pick<CandidatePlace, "types">) {
   const primary = place.types[0] ?? "";
   if (/restaurant|cafe|bakery|amusement/.test(primary)) return false;
   return place.types.some((t) => ALCOHOL_TYPES.has(t));
+}
+/**
+ * A place built around a bar even if it's also games or food ("arcade bar", "bocce golf bar",
+ * "sports bar"): left out for families with kids and anyone not drinking.
+ */
+export function isBarLike(place: Pick<CandidatePlace, "types"> & { name?: string; category?: string }) {
+  if (isAlcoholLed(place)) return true;
+  return /\b(bar|pub|tavern|brewery|brewpub|taproom|lounge|beer hall|axe throwing)\b/i.test(
+    `${place.category ?? ""} ${place.name ?? ""}`.replace(/\b(raw|salad|juice|snack|sushi|oyster|espresso|coffee|milk|tea|dessert|bar-b-q|barbecue)\s+bar\b/gi, ""),
+  );
 }
 
 const NOT_AN_OUTING = new Set([

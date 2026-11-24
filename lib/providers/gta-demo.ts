@@ -1224,7 +1224,10 @@ export function demoSelect(
           : 0;
   const fresh = chosen.sort((a, b) => rank(a) - rank(b));
   const vibe = req.vibes[0] ?? "chill";
-  const options = titles[vibe] ?? titles.chill;
+  const evening17 = Number(req.startTime.slice(0, 2)) >= 17;
+  const pool0 = titles[vibe] ?? titles.chill;
+  // A daytime plan isn't a "night".
+  const options = evening17 ? pool0 : pool0.filter((t) => !/night/i.test(t)).length ? pool0.filter((t) => !/night/i.test(t)) : titles.chill;
   const title =
     options[(req.date.charCodeAt(9) + req.participants) % options.length];
   const who = {
@@ -1241,7 +1244,9 @@ export function demoSelect(
     return `${p.category[0].toUpperCase()}${p.category.slice(1)} that gives ${who} something to do together${fit ? `, and it suits a ${fit} mood` : ""}.`;
   };
   const minutes = (p: CandidatePlace) =>
-    isMeal(p)
+    /movie_theater|cinema|performing_arts|theater/.test(p.types.join(" "))
+      ? 120
+      : isMeal(p)
       ? 75
       : /museum|gallery|aquarium|castle|amusement|island/.test(text(p))
         ? 90
