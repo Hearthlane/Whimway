@@ -19,6 +19,8 @@ export type PlanEntry = {
   spec: PlanSpec;
   saved: boolean;
   createdAt: string;
+  /** Last time the plan was opened, for History. */
+  viewedAt?: string;
   feedback?: Feedback;
   /**
    * Display snapshot for the home screen and lists: title, time, and per stop its name, kind
@@ -34,7 +36,13 @@ export type PlanEntry = {
     brief?: { placeId: string; name: string; kind: string; at: string; until: string; mapsUrl: string }[];
   };
 };
+/** What the person looked at and searched for, on this device only. */
+export type History = {
+  places: { id: string; name: string; category: string; area?: string; at: string }[];
+  searches: { q: string; at: string }[];
+};
 type State = {
+  history: History;
   ready: boolean;
   profile: TasteProfile;
   plans: Record<string, PlanEntry>;
@@ -44,6 +52,11 @@ type State = {
 };
 type Store = State & {
   setProfile: (p: TasteProfile) => void;
+  /** History: a place opened, a search made, a plan viewed; and clearing it. */
+  viewedPlace: (place: { id: string; name: string; category: string; area?: string }) => void;
+  searched: (q: string) => void;
+  viewedPlan: (id: string) => void;
+  clearHistory: (what?: "places" | "searches" | "all") => void;
   /** Live itineraries for this app session (memory only). */
   live: Record<string, Itinerary>;
   remember: (plan: Itinerary, opts?: { saved?: boolean }) => void;
@@ -73,7 +86,8 @@ type Store = State & {
 };
 
 const Ctx = createContext<Store | null>(null);
-const KEYS = { profile: "whimway:profile", plans: "whimway:plans:v1", install: "whimway:install" };
+const KEYS = { profile: "whimway:profile", plans: "whimway:plans:v1", install: "whimway:install", history: "whimway:history:v1" };
+const emptyHistory = (): History => ({ places: [], searches: [] });
 const randomId = () =>
   "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -111,6 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     installId: "",
     status: null,
     session: null,
+    history: emptyHistory(),
   });
   const [live, setLive] = useState<Record<string, Itinerary>>({});
   const pendingRef = useRef<PlanRequest | null>(null);
@@ -126,11 +141,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Load persisted state once.
   useEffect(() => {
     (async () => {
-      const [rawProfile, rawPlans, rawInstall] = await Promise.all([
+      const [rawProfile, rawPlans, rawInstall, rawHistory] = await Promise.all([
         AsyncStorage.getItem(KEYS.profile).catch(() => null),
         AsyncStorage.getItem(KEYS.plans).catch(() => null),
         AsyncStorage.getItem(KEYS.install).catch(() => null),
+        AsyncStorage.getItem(KEYS.history).catch(() => null),
       ]);
+      let history = emptyHistory();
+      try {
+        const h = JSON.parse(rawHistory ?? "null") as History | null;
+        if (h && Array.isArray(h.places) && Array.isArray(h.searches)) history = { places: h.places.slice(0, 50), searches: h.searches.slice(0, 20) };
+      } catch {
+        // Corrupt history is just forgotten.
+      }
       const parsedProfile = TasteProfile.safeParse(rawProfile ? JSON.parse(rawProfile) : {});
       const plans: Record<string, PlanEntry> = {};
       try {
@@ -151,10 +174,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         plans,
         installId,
         session,
+        history,
       }));
     })();
     const sub = supabase?.auth.onAuthStateChange((_event, session) => setState((s) => ({ ...s, session })));
     return () => sub?.data.subscription.unsubscribe();
+  }, []);
+
+  const persistHistory = (history: History) => {
+    void AsyncStorage.setItem(KEYS.history, JSON.stringify(history)).catch(() => undefined);
+  };
+  const viewedPlace = useCallback<Store["viewedPlace"]>((place) => {
+    setState((s) => {
+      const history = { ...s.history, places: [{ ...place, name: place.name.slice(0, 120), category: place.category.slice(0, 60), at: new Date().toISOString() }, ...s.history.places.filter((p) => p.id !== place.id)].slice(0, 50) };
+      persistHistory(history);
+      return { ...s, history };
+    });
+  }, []);
+  const searched = useCallback<Store["searched"]>((q) => {
+    const query = q.trim().slice(0, 80);
+    if (query.length < 2) return;
+    setState((s) => {
+      const history = { ...s.history, searches: [{ q: query, at: new Date().toISOString() }, ...s.history.searches.filter((x) => x.q.toLowerCase() !== query.toLowerCase())].slice(0, 20) };
+      persistHistory(history);
+      return { ...s, history };
+    });
+  }, []);
+  const viewedPlan = useCallback<Store["viewedPlan"]>((id) => {
+    setState((s) => {
+      if (!s.plans[id]) return s;
+      const plans = { ...s.plans, [id]: { ...s.plans[id], viewedAt: new Date().toISOString() } };
+      persistPlans(plans);
+      return { ...s, plans };
+    });
+  }, []);
+  const clearHistory = useCallback<Store["clearHistory"]>((what = "all") => {
+    setState((s) => {
+      const history = { places: what === "searches" ? s.history.places : [], searches: what === "places" ? s.history.searches : [] };
+      persistHistory(history);
+      return { ...s, history };
+    });
   }, []);
 
   const persistPlans = (plans: Record<string, PlanEntry>) => {
@@ -275,9 +334,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state.ready, signedIn, syncEntitlement]);
 
   const resetDevice = useCallback(async () => {
-    await AsyncStorage.multiRemove([KEYS.profile, KEYS.plans]);
+    await AsyncStorage.multiRemove([KEYS.profile, KEYS.plans, KEYS.history]);
     setLive({});
-    setState((s) => ({ ...s, profile: emptyProfile(), plans: {} }));
+    setState((s) => ({ ...s, profile: emptyProfile(), plans: {}, history: emptyHistory() }));
   }, []);
 
   const syncAccount = useCallback<Store["syncAccount"]>(async () => {
@@ -316,8 +375,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const limits = Boolean(state.status?.plus);
   const unlocked = !limits || isPlus(state.profile);
   const value = useMemo<Store>(
-    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo }),
-    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo],
+    () => ({ ...state, limits, unlocked, live, setProfile, remember, setSaved, remove, submitFeedback, pendingRef, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory }),
+    [limits, unlocked, state, live, setProfile, remember, setSaved, remove, submitFeedback, setPending, track, react, refreshStatus, syncEntitlement, resetDevice, syncAccount, demo, viewedPlace, searched, viewedPlan, clearHistory],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
