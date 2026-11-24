@@ -1,4 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
+import { useWide } from "@/ui/layout";
 import * as Haptics from "expo-haptics";
 import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useId, useRef } from "react";
 import {
@@ -217,6 +218,7 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
 /** Bottom sheet built on Modal: native slide on iOS/Android, fade on web. */
 export function Sheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
+  const wide = useWide();
   // Web: focus moves into the sheet, Tab stays inside it, Escape closes it (even mid-typing),
   // and focus returns to whatever opened it.
   const sheetId = `sheet-${useId().replace(/[^\w-]/g, "")}`;
@@ -266,11 +268,11 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
     };
   }, [open, sheetId]);
   const content = (
-      <Animated.View entering={FadeIn.duration(motion.quick)} style={styles.scrim}>
+      <Animated.View entering={FadeIn.duration(motion.quick)} style={[styles.scrim, wide && { justifyContent: "center", padding: space.xl }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-        <Animated.View entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
+        <Animated.View entering={wide ? FadeIn.duration(motion.standard) : SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }, wide && { maxWidth: 520, borderRadius: radius.xl }]} accessibilityViewIsModal>
           <View nativeID={sheetId} role="dialog" aria-modal aria-label={title} tabIndex={-1} style={{ flexShrink: 1 }}>
-          <View style={styles.grabber} />
+          {wide ? null : <View style={styles.grabber} />}
           <View style={styles.sheetHeader}>
             <T v="heading" style={{ flex: 1 }} accessibilityRole="header">
               {title}

@@ -80,8 +80,13 @@ describe("Provider integrations", () => {
     const r = request();
     r.interests = ["Food & drinks", "Shopping", "Outdoors"];
     const p = await new GooglePlaces().search(r);
-    expect(p).toHaveLength(3);
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    // Every search returns the same place here, and a place appears once.
+    expect(p).toHaveLength(1);
+    // Two interests, the moods and a time-of-day search (at most four text searches), plus nearby.
+    expect(fetcher.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(fetcher.mock.calls.length).toBeLessThanOrEqual(5);
+    const bodies = fetcher.mock.calls.map((c) => JSON.parse(String(c[1].body ?? "{}")) as { textQuery?: string });
+    expect(bodies.filter((b) => b.textQuery).length).toBeLessThanOrEqual(4);
     const init = fetcher.mock.calls[0][1];
     expect(init.headers["X-Goog-FieldMask"]).not.toContain("*");
     expect(init.headers["X-Goog-FieldMask"]).not.toContain("photos");

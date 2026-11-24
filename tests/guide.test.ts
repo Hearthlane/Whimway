@@ -254,23 +254,31 @@ describe("guided planning", () => {
   });
   it("direct edits reorder, retime and remove stops, and reschedule the rest", async () => {
     const r = { ...base(), startTime: "14:00" };
-    const plan = (await planner(r).alternatives(r))
+    const plans = (await planner(r).alternatives(r))
       .map((o) => o.plan)
-      .sort((a, b) => b.stops.length - a.stops.length)[0];
-    expect(plan.stops.length).toBeGreaterThanOrEqual(2);
-    const refs = plan.stops.map((s) => ({
-      placeId: s.placeId,
-      minutes: s.minutes,
-      locked: false,
-      reason: s.reason,
-    }));
-    // Swap the first two and give the new first stop 15 more minutes.
-    const swapped = [
-      { ...refs[1], minutes: refs[1].minutes + 15 },
-      refs[0],
-      ...refs.slice(2),
-    ];
-    const edited = await planner(r).edit({ ...plan, stops: swapped });
+      .filter((p) => p.stops.length >= 2)
+      .sort((a, b) => b.stops.length - a.stops.length);
+    expect(plans.length).toBeGreaterThan(0);
+    const refsOf = (p: (typeof plans)[number]) =>
+      p.stops.map((s) => ({ placeId: s.placeId, minutes: s.minutes, locked: false, reason: s.reason }));
+    // Swap the first two and give the new first stop 15 more minutes. A swap that would put a
+    // later stop at a closed venue is refused (correctly), so use a plan where the swap fits.
+    const swapOf = (refs: ReturnType<typeof refsOf>) => [{ ...refs[1], minutes: refs[1].minutes + 15 }, refs[0], ...refs.slice(2)];
+    let plan = plans[0];
+    let edited: Awaited<ReturnType<ReturnType<typeof planner>["edit"]>> | undefined;
+    for (const candidate of plans) {
+      try {
+        edited = await planner(r).edit({ ...candidate, stops: swapOf(refsOf(candidate)) });
+        plan = candidate;
+        break;
+      } catch (e) {
+        if (!["CLOSED", "TOO_LONG"].includes((e as { code?: string }).code ?? "")) throw e;
+      }
+    }
+    expect(edited).toBeDefined();
+    if (!edited) return;
+    const refs = refsOf(plan);
+    const swapped = swapOf(refs);
     expect(edited.stops.map((s) => s.placeId)).toEqual(
       swapped.map((s) => s.placeId),
     );

@@ -2,7 +2,7 @@ import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@exp
 import { InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold } from "@expo-google-fonts/instrument-sans";
 import { useFonts } from "expo-font";
 import { router, Stack, type ErrorBoundaryProps } from "expo-router";
-import { Platform, View , StyleSheet, useWindowDimensions } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { api } from "@/lib/api";
 import { Button, Icon, T , Spark } from "@/ui/kit";
 import * as SplashScreen from "expo-splash-screen";
@@ -89,12 +89,10 @@ function Navigator() {
  * (no fake phone bezel); on phones it fills the screen.
  */
 function Frame({ children }: { children: React.ReactNode }) {
-  const { width } = useWindowDimensions();
   if (Platform.OS !== "web") return <>{children}</>;
-  if (width < 600) return <View role="main" style={{ flex: 1 }}>{children}</View>;
   return (
-    <View style={{ flex: 1, backgroundColor: "#E9EBF2", alignItems: "center" }}>
-      <View role="main" style={{ flex: 1, width: Math.min(560, width), backgroundColor: color.canvas, borderLeftWidth: 1, borderRightWidth: 1, borderColor: color.line }}>{children}</View>
+    <View role="main" style={{ flex: 1 }}>
+      {children}
     </View>
   );
 }

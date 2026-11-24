@@ -1028,8 +1028,8 @@ const vibeTypes: Record<string, RegExp> = {
 };
 // A meal is a venue whose primary purpose is eating (not a mall that happens to have a food court).
 const isMeal = (p: CandidatePlace) =>
-  /restaurant|brunch|food court/.test(p.category) ||
-  /restaurant|food_court/.test(p.types[0] ?? "");
+  /restaurant|brunch|food court|steak ?house|diner|bistro|brewpub|gastropub|hot pot/.test(p.category) ||
+  /restaurant|food_court|steak_house|diner|bistro|brewpub|gastropub/.test(p.types[0] ?? "");
 const isSweetOrDrink = (p: CandidatePlace) =>
   /dessert|ice_cream|bar|brewery|wine|cocktail|cafe|bakery/.test(
     p.types.join(" "),
@@ -1159,24 +1159,33 @@ export function demoSelect(
   // Free places always fit; unknown prices count as the whole budget.
   let spent = lockedPlaces.reduce((n, p) => n + (p.price.high ?? 0), 0);
   // Free-to-browse places (optional spend) cost their minimum; unknown prices cost the whole budget.
+  // A listed range ("$30–$80") is budgeted at its middle, what a typical visit costs; planning
+  // at the top end let one dinner use a whole evening's budget and left a one-stop plan.
   const cost = (p: CandidatePlace) =>
     p.price.optional
       ? (p.price.low ?? 0)
-      : // Live data often has no price for activities; assume a typical ticket, capped by budget.
-        (p.price.high ?? Math.min(req.budget, 25));
+      : p.price.high == null
+        ? // Live data often has no price at all; count a modest share so one unknown doesn't
+          // crowd out the rest (the plan still says which prices are unknown).
+          Math.min(req.budget * 0.15, 15)
+        : p.price.low != null && p.price.low < p.price.high
+          ? (p.price.low + p.price.high) / 2
+          : p.price.high;
   // Evening outings of 3h+ reserve budget for one proper meal before anything else.
   // Outings that span a mealtime get a proper meal; a long day gets lunch and dinner.
   const mealTarget = previousStops?.length
     ? Math.max(meals, 1)
     : Math.max(meals, mealsFor(req));
   while (!previousStops?.length && meals < mealTarget) {
-    const meal = pool.find(
-      (p) =>
-        isMeal(p) &&
-        !chosen.includes(p) &&
-        !chosen.some((c) => c.category === p.category) &&
-        spent + cost(p) <= req.budget * 1.1 * (meals + 1),
-    );
+    const fits = (p: CandidatePlace, share: number) =>
+      isMeal(p) &&
+      !chosen.includes(p) &&
+      !chosen.some((c) => c.category === p.category) &&
+      spent + cost(p) <= req.budget * share;
+    // Prefer a meal that leaves room for the rest of the outing; else the best that fits at all.
+    const meal =
+      pool.find((p) => fits(p, (meals + 0.65) / mealTarget)) ??
+      pool.find((p) => fits(p, 1.1 * (meals + 1)));
     if (!meal) break;
     chosen.push(meal);
     meals++;

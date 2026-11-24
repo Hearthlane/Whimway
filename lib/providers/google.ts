@@ -317,13 +317,35 @@ const searches: Record<string, string> = {
   "Hidden gems": "local cultural attractions",
   "Surprise me": "interesting things to do",
 };
+// Moods add their own searches, so a "romantic" plan isn't built only from generic results.
+const moodSearches: Record<string, string> = {
+  romantic: "romantic restaurants and scenic views",
+  adventurous: "unique experiences and activities",
+  cozy: "cozy cafes and bookstores",
+  cinematic: "cinemas and scenic viewpoints",
+  chill: "relaxed cafes and lounges",
+  lively: "live music and lively bars",
+  artsy: "art galleries and theatres",
+  foodie: "best restaurants and food halls",
+  outdoorsy: "parks trails and waterfront",
+  playful: "arcades games and fun activities",
+};
 export class GooglePlaces implements PlacesProvider {
   async search(req: PlanRequest, query?: string) {
+    const hour = Number(req.startTime.slice(0, 2));
+    // Interests and moods, plus something for the time of day, so every plan has food, a
+    // thing to do and somewhere to finish. Up to four searches, cached for 15 minutes.
     const categories = query
       ? [query]
-      : (req.interests.length ? req.interests : ["Surprise me"])
-          .slice(0, 2)
-          .map((i) => searches[i]);
+      : [
+          ...new Set([
+            ...(req.interests.length ? req.interests : ["Surprise me"]).slice(0, 2).map((i) => searches[i]),
+            ...req.vibes.slice(0, 2).map((v) => moodSearches[v]),
+            req.skipFood ? "things to do" : hour >= 17 ? "dessert and cocktail bars" : "things to do and attractions",
+          ]),
+        ]
+          .filter(Boolean)
+          .slice(0, 4);
     const mask = `places.${fields.split(",").join(",places.")}`;
     const jobs = categories.map((q) =>
       call(
@@ -382,6 +404,7 @@ export class GooglePlaces implements PlacesProvider {
       );
     }
     const results = await Promise.all(jobs);
+    const seen = new Set<string>();
     return results
       .flatMap((r) =>
         // One malformed result is dropped instead of failing the whole search.
@@ -393,7 +416,8 @@ export class GooglePlaces implements PlacesProvider {
           }
         }),
       )
-      .slice(0, 36);
+      .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+      .slice(0, 60);
   }
   async details(id: string, currency: string) {
     if (!/^[\w-]+$/.test(id))

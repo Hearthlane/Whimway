@@ -2,6 +2,7 @@ import { Redirect, router } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import { View } from "react-native";
 import { useStore } from "@/lib/store";
+import { useWide } from "@/ui/layout";
 import { Icon, type IconName } from "@/ui/kit";
 import { color, font, shadow } from "@/ui/theme";
 
@@ -13,6 +14,7 @@ function icon(name: IconName) {
 
 export default function TabsLayout() {
   const { profile } = useStore();
+  const wide = useWide();
   if (!profile.onboarded) return <Redirect href="/onboarding" />;
   return (
     <Tabs
@@ -20,8 +22,16 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: color.ink,
         tabBarInactiveTintColor: color.muted,
-        tabBarStyle: { backgroundColor: color.paper, borderTopColor: color.line, height: 68, paddingTop: 6, paddingBottom: 8 },
-        tabBarLabelStyle: { fontFamily: font.bodyMedium, fontSize: 13 },
+        // Phones: a bottom tab bar. Computers: the same tabs as a left sidebar.
+        tabBarPosition: wide ? "left" : "bottom",
+        tabBarVariant: wide ? "material" : "uikit",
+        tabBarLabelPosition: wide ? "beside-icon" : "below-icon",
+        tabBarStyle: wide
+          ? { backgroundColor: color.paper, borderRightColor: color.line, width: 232, paddingTop: 24, paddingHorizontal: 8 }
+          : { backgroundColor: color.paper, borderTopColor: color.line, height: 68, paddingTop: 6, paddingBottom: 8 },
+        tabBarItemStyle: wide ? { justifyContent: "flex-start", minHeight: 52, borderRadius: 14, paddingHorizontal: 12 } : undefined,
+        tabBarActiveBackgroundColor: wide ? color.canvas : undefined,
+        tabBarLabelStyle: { fontFamily: font.bodyMedium, fontSize: wide ? 16 : 13 },
         sceneStyle: { backgroundColor: color.canvas },
       }}
     >
@@ -33,11 +43,16 @@ export default function TabsLayout() {
           title: "Plan",
           tabBarAccessibilityLabel: "Make a plan",
           tabBarButtonTestID: "tab-plan",
-          tabBarIcon: () => (
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", marginTop: -14, borderWidth: 3, borderColor: color.paper, ...shadow.card }}>
-              <Icon name="plus" size={24} tint={color.ink} />
-            </View>
-          ),
+          tabBarIcon: () =>
+            wide ? (
+              <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }}>
+                <Icon name="plus" size={18} tint={color.ink} />
+              </View>
+            ) : (
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", marginTop: -14, borderWidth: 3, borderColor: color.paper, ...shadow.card }}>
+                <Icon name="plus" size={24} tint={color.ink} />
+              </View>
+            ),
         }}
         // Tabs are places; making a plan is an action, so it opens a sheet over the current tab.
         listeners={{

@@ -116,7 +116,7 @@ export default function Home() {
           <Animated.View entering={FadeInDown.duration(240)} style={s.firstRun} testID="home-first-run">
             <T v="title">Your first plan</T>
             <T v="body" tone={color.inkSoft}>
-              {profile.vibes.length ? `Tuned for ${profile.vibes.slice(0, 2).join(" and ")} moods. ` : ""}Tap Plan below any time, or let us pick something now.
+              {profile.vibes.length ? `Tuned for ${profile.vibes.slice(0, 2).join(" and ")} moods. ` : ""}Make one any time with Plan, or let us pick something now.
             </T>
             <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.xs }}>
               <Button kind="dark" icon="shuffle" label="Surprise me" onPress={() => router.push({ pathname: "/create", params: { surprise: "1" } })} style={{ flex: 1 }} testID="home-surprise" />

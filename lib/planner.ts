@@ -1236,7 +1236,10 @@ export function diverseShortlist(
   // Restaurants of every cuisine share one group, so a food-heavy area cannot crowd out
   // dessert, drinks and things to do.
   const kind = (p: CandidatePlace) =>
-    /restaurant|diner/.test(p.category) ? "restaurant" : p.category;
+    /restaurant|diner|steak ?house|bistro|food court|brewpub|gastropub/.test(p.category) ? "restaurant" : p.category;
+  // Restaurants go first in each round: with many kinds of place nearby, a 12-place shortlist
+  // could otherwise fill up before any meal, leaving an evening with no dinner.
+  groups.set("restaurant", []);
   for (const p of candidates) {
     const group = groups.get(kind(p)) ?? [];
     group.push(p);
