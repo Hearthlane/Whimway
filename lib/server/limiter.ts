@@ -1,8 +1,9 @@
 import { AppError } from "../errors";
 const buckets = new Map<string, { n: number; expires: number }>();
 export async function counter(key: string, seconds: number) {
-  const url = process.env.UPSTASH_REDIS_REST_URL,
-    token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel's Redis (Upstash) integration may name these KV_REST_API_URL / KV_REST_API_TOKEN.
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL,
+    token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
     if (process.env.NODE_ENV === "production")
       throw new AppError(

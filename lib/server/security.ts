@@ -19,11 +19,7 @@ export async function rateLimit(
     | "tile",
   userId?: string,
 ) {
-  // On Vercel, the platform overwrites x-vercel-forwarded-for. Self-hosting must strip incoming forwarded headers.
-  const ip =
-    request.headers.get("x-vercel-forwarded-for") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0] ??
-    "local";
+  const ip = clientIp(request);
   // A person is their account, or their app install on this network. Network address
   // alone would make everyone on shared wifi (a campus, a café) share one allowance.
   const install = request.headers.get("x-whimway-install");
@@ -197,9 +193,25 @@ export function requestOrigin(request: Request) {
  * and could be rotated to inflate counts. (People sharing a network count once.)
  */
 export function networkId(request: Request) {
-  const ip =
+  const ip = clientIp(request);
+  return `n-${createHash("sha256").update(`ad|${ip}`).digest("hex").slice(0, 32)}`;
+}
+
+/**
+ * The caller's network address. On Vercel the platform overwrites x-vercel-forwarded-for;
+ * self-hosting must strip incoming forwarded headers. When the app's web site forwards
+ * /api/* here (mobile/api/proxy.js), it passes the visitor's address in
+ * x-whimway-client-ip together with the shared WHIMWAY_PROXY_SECRET, so limits stay per
+ * person instead of per proxy. Without the matching secret that header is ignored.
+ */
+export function clientIp(request: Request) {
+  const secret = process.env.WHIMWAY_PROXY_SECRET;
+  const forwarded = request.headers.get("x-whimway-client-ip");
+  if (secret && secret.length >= 16 && forwarded && request.headers.get("x-whimway-proxy-secret") === secret)
+    return forwarded.split(",")[0].trim().slice(0, 64);
+  return (
     request.headers.get("x-vercel-forwarded-for") ??
     request.headers.get("x-forwarded-for")?.split(",")[0] ??
-    "local";
-  return `n-${createHash("sha256").update(`ad|${ip}`).digest("hex").slice(0, 32)}`;
+    "local"
+  );
 }
