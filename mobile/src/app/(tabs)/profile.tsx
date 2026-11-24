@@ -57,7 +57,7 @@ export default function Profile() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
       <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
         <View style={s.top}>
-          <T v="title" numberOfLines={1} style={{ flex: 1 }} accessibilityRole="header">
+          <T v="title" numberOfLines={1} style={{ flex: 1 }} accessibilityRole="header" aria-level={1}>
             {name}
           </T>
           <IconButton icon="clock" label="History" onPress={() => router.push("/history")} />

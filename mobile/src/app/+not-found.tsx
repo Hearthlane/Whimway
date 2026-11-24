@@ -13,7 +13,7 @@ export default function NotFound() {
         <View style={s.icon}>
           <Icon name="map" size={28} />
         </View>
-        <T v="title" accessibilityRole="header" style={{ textAlign: "center" }}>
+        <T v="title" accessibilityRole="header" aria-level={1} style={{ textAlign: "center" }}>
           This page took a wrong turn
         </T>
         <T v="body" tone={color.muted} style={{ textAlign: "center", maxWidth: 320 }}>

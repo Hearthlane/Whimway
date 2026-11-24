@@ -347,7 +347,7 @@ export default function Guide() {
                   : null}
               </View>
             ) : null}
-            <T v="hero" accessibilityRole="header" style={{ fontSize: 32, lineHeight: 35 }}>
+            <T v="hero" accessibilityRole="header" aria-level={1} style={{ fontSize: 32, lineHeight: 35 }}>
               {title}
             </T>
             <T v="body" tone={color.muted}>
@@ -574,7 +574,7 @@ export default function Guide() {
 
 function Row({ icon, label, hint, selected, onPress, testID }: { icon: IconName; label: string; hint?: string; selected?: boolean; onPress: () => void; testID?: string }) {
   return (
-    <Press testID={testID} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={hint ? `${label}. ${hint}` : label} scaleTo={0.98} onPress={onPress} style={[s.row, selected && s.rowOn]}>
+    <Press testID={testID} accessibilityRole="button" accessibilityState={{ selected }} scaleTo={0.98} onPress={onPress} style={[s.row, selected && s.rowOn]}>
       <View style={[s.rowIcon, selected && { backgroundColor: color.coral }]}>
         <Icon name={icon} size={20} />
       </View>
@@ -755,7 +755,7 @@ function Places({
 
 function Line({ icon, label, value, onPress, last }: { icon: IconName; label: string; value: string; onPress: () => void; last?: boolean }) {
   return (
-    <Press accessibilityRole="button" accessibilityLabel={`${label}: ${value}. Change`} scaleTo={0.99} onPress={onPress} style={[s.line, last && { borderBottomWidth: 0 }]}>
+    <Press accessibilityRole="button" scaleTo={0.99} onPress={onPress} style={[s.line, last && { borderBottomWidth: 0 }]}>
       <Icon name={icon} size={18} tint={color.muted} />
       <View style={{ flex: 1 }}>
         <T v="small" tone={color.muted}>

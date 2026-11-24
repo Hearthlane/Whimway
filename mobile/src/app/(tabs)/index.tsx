@@ -84,7 +84,7 @@ export default function Home() {
           <T v="small" tone={color.muted}>
             {greeting(profile.name)}
           </T>
-          <T v="hero" accessibilityRole="header">
+          <T v="hero" accessibilityRole="header" aria-level={1}>
             What should we do?
           </T>
         </Animated.View>

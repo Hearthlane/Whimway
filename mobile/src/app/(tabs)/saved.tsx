@@ -29,7 +29,7 @@ export default function Saved() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
       <ScrollView contentContainerStyle={s.page}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <T v="hero" accessibilityRole="header">
+          <T v="hero" accessibilityRole="header" aria-level={1}>
             Saved
           </T>
           <Button testID="open-shared" kind="ghost" icon="link" label="Open a shared plan" onPress={() => router.push("/import")} />
@@ -118,7 +118,8 @@ function Section({ title, items, onReuse, onRemove, past }: { title: string; ite
             </View>
           );
         return (
-          <Pressable key={id} accessibilityRole="button" accessibilityLabel={`Open ${e.meta.title}`} onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.card, pressed && { opacity: 0.8 }]}>
+          <View key={id} style={s.card}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${e.meta.title}, ${when.toFormat("ccc d LLL, h:mm a")}`} onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.open, pressed && { opacity: 0.8 }]}>
             <View style={s.date}>
               <T v="smallStrong" tone={color.coralText}>
                 {when.toFormat("LLL").toUpperCase()}
@@ -140,11 +141,12 @@ function Section({ title, items, onReuse, onRemove, past }: { title: string; ite
                 {e.meta.demo ? <Badge tone="yellow" label="Demo" /> : null}
               </View>
             </View>
+          </Pressable>
             <View style={{ gap: space.sm }}>
               <IconButton icon="repeat" label={`Plan ${e.meta.title} again`} onPress={() => onReuse(e)} />
               <IconButton icon="trash-2" label={`Delete ${e.meta.title}`} onPress={() => setConfirm(id)} />
             </View>
-          </Pressable>
+          </View>
         );
       })}
     </View>
@@ -160,6 +162,7 @@ const s = StyleSheet.create({
   page: { padding: space.xl, paddingBottom: space.xxxl, maxWidth: 680, width: "100%", alignSelf: "center" },
   empty: { alignItems: "center", gap: space.md, padding: space.xl, marginTop: space.xl, borderRadius: radius.xl, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
+  open: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.md },
   card: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   date: { width: 56, height: 64, borderRadius: radius.md, backgroundColor: color.canvas, alignItems: "center", justifyContent: "center" },
 });

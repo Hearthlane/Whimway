@@ -40,7 +40,7 @@ export default function Settings() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
       <View style={s.top}>
         <IconButton icon="arrow-left" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))} />
-        <T v="title" accessibilityRole="header">
+        <T v="title" accessibilityRole="header" aria-level={1}>
           Settings
         </T>
       </View>
@@ -216,7 +216,7 @@ function Row({ icon, label, detail, onPress, chevron, danger, testID }: { icon: 
     </>
   );
   return onPress ? (
-    <Press testID={testID} accessibilityRole="button" accessibilityLabel={detail ? `${label}. ${detail}` : label} onPress={onPress} style={s.row} scaleTo={0.99}>
+    <Press testID={testID} accessibilityRole="button" onPress={onPress} style={s.row} scaleTo={0.99}>
       {body}
     </Press>
   ) : (
@@ -228,7 +228,7 @@ function Row({ icon, label, detail, onPress, chevron, danger, testID }: { icon: 
 
 function Toggle({ icon, label, detail, value, onChange, testID }: { icon: IconName; label: string; detail?: string; value: boolean; onChange: (v: boolean) => void; testID?: string }) {
   return (
-    <Press testID={testID} accessibilityRole="switch" accessibilityState={{ checked: value }} accessibilityLabel={label} onPress={() => onChange(!value)} style={s.row} scaleTo={0.99}>
+    <Press testID={testID} accessibilityRole="switch" accessibilityState={{ checked: value }} accessibilityLabel={label} aria-checked={value} onPress={() => onChange(!value)} style={s.row} scaleTo={0.99}>
       <View style={s.rowIcon}>
         <Icon name={icon} size={18} />
       </View>

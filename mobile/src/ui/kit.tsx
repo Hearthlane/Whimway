@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
-import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useRef } from "react";
+import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useId, useRef } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -217,21 +217,59 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
 /** Bottom sheet built on Modal: native slide on iOS/Android, fade on web. */
 export function Sheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
-  // Web: Escape closes the sheet, and focus moves into it when it opens.
-  const sheetRef = useRef<any>(null);
+  // Web: focus moves into the sheet, Tab stays inside it, Escape closes it (even mid-typing),
+  // and focus returns to whatever opened it.
+  const sheetId = `sheet-${useId().replace(/[^\w-]/g, "")}`;
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
   useEffect(() => {
     if (Platform.OS !== "web" || !open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    const node = sheetRef.current as HTMLElement | null;
-    const first = node?.querySelector?.<HTMLElement>("input, textarea, button, [role=button], [tabindex]");
-    first?.focus?.();
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    const opener = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      Array.from(document.getElementById(sheetId)?.querySelectorAll<HTMLElement>('input, textarea, button, [role="button"], [role="switch"], [role="radio"], [tabindex="0"]') ?? []).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+    // The sheet mounts during its entrance; try for a moment, then fall back to the dialog itself.
+    let tries = 0;
+    const settle = () => {
+      const target = focusables()[1] ?? focusables()[0];
+      if (target) target.focus();
+      else if (tries++ < 10) frame = window.setTimeout(settle, 30);
+      else document.getElementById(sheetId)?.focus();
+    };
+    let frame = window.setTimeout(settle, 30);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeRef.current();
+      } else if (e.key === "Tab") {
+        const els = focusables();
+        if (!els.length) return;
+        const first = els[0];
+        const last = els[els.length - 1];
+        const inside = document.getElementById(sheetId)?.contains(document.activeElement);
+        if (e.shiftKey && (document.activeElement === first || !inside)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      clearTimeout(frame);
+      window.removeEventListener("keydown", onKey, true);
+      opener?.focus?.();
+    };
+  }, [open, sheetId]);
   const content = (
       <Animated.View entering={FadeIn.duration(motion.quick)} style={styles.scrim}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-        <Animated.View ref={sheetRef} entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
+        <Animated.View entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
+          <View nativeID={sheetId} role="dialog" aria-modal aria-label={title} tabIndex={-1} style={{ flexShrink: 1 }}>
           <View style={styles.grabber} />
           <View style={styles.sheetHeader}>
             <T v="heading" style={{ flex: 1 }} accessibilityRole="header">
@@ -243,6 +281,7 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
             {children}
           </ScrollView>
           {footer}
+          </View>
         </Animated.View>
       </Animated.View>
   );

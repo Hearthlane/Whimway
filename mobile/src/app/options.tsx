@@ -90,7 +90,7 @@ export default function Options() {
       </View>
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
         <View style={{ gap: space.sm }}>
-          <T v="hero" accessibilityRole="header" style={{ fontSize: 32, lineHeight: 35 }}>
+          <T v="hero" accessibilityRole="header" aria-level={1} style={{ fontSize: 32, lineHeight: 35 }}>
             {options ? "Pick the one that sounds best" : "That didn’t work"}
           </T>
           <T v="body" tone={color.muted}>

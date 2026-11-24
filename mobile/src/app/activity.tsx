@@ -35,7 +35,7 @@ export default function Activity() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
       <View style={s.top}>
         <IconButton icon="arrow-left" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
-        <T v="title" accessibilityRole="header">
+        <T v="title" accessibilityRole="header" aria-level={1}>
           Activity
         </T>
       </View>
@@ -59,7 +59,7 @@ export default function Activity() {
             </T>
             {g.items.map((item, i) => (
               <Animated.View key={item.id} entering={FadeInDown.delay(i * 40).duration(220)}>
-                <Press testID={`activity-${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.title}. ${item.body}`} onPress={() => router.push(item.href as never)} style={s.row}>
+                <Press testID={`activity-${item.id}`} accessibilityRole="button" onPress={() => router.push(item.href as never)} style={s.row}>
                   <View style={[s.icon, { backgroundColor: look[item.kind].tint }]}>
                     <Icon name={look[item.kind].icon} size={18} />
                   </View>

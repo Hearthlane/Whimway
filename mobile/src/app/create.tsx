@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
@@ -85,8 +85,19 @@ export default function Create() {
     if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
     store.setPending({ ...request, prompt: prompt.slice(0, 1500) });
     store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
-    router.push("/plan/new");
+    router.replace("/plan/new");
   };
+  // Web: Escape closes Create, unless a sheet on it already handled the key.
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (router.canGoBack()) router.back();
+      else router.replace("/");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // Home's first-run "Surprise me" lands here and plans straight away, once the server is known.
   const surprised = useRef(false);
   useEffect(() => {
@@ -116,7 +127,7 @@ export default function Create() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
       <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
-          <T v="title" accessibilityRole="header">
+          <T v="title" accessibilityRole="header" aria-level={1}>
             New plan
           </T>
           <IconButton icon="x" label="Close" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
@@ -192,7 +203,7 @@ export default function Create() {
               kind="soft"
               size="lg"
               icon="shuffle"
-              label="Surprise me"
+              label="Surprise"
               testID="surprise-me"
               style={{ flex: 1 }}
               onPress={() => (store.unlocked ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
@@ -219,7 +230,7 @@ export default function Create() {
           <Notice icon="info">Demo mode. The places are real; hours, prices and travel times are estimates.</Notice>
         ) : null}
 
-        <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build a plan step by step" onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.nearby}>
+        <Press testID="guide-start" accessibilityRole="button" accessibilityLabel="Build it step by step" onPress={() => (setGuideSeed(null), router.push("/guide"))} style={s.nearby}>
           <View style={[s.nearbyIcon, { backgroundColor: color.coralTint }]}>
             <Icon name="list" size={18} />
           </View>

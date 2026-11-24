@@ -25,7 +25,7 @@ export default function History() {
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
       <View style={s.top}>
         <IconButton icon="arrow-left" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))} />
-        <T v="title" accessibilityRole="header" style={{ flex: 1 }}>
+        <T v="title" accessibilityRole="header" aria-level={1} style={{ flex: 1 }}>
           History
         </T>
         {tab !== "plans" && counts[tab] ? <Button kind="ghost" label="Clear" onPress={() => setConfirming(true)} testID="history-clear" /> : null}

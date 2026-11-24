@@ -129,7 +129,7 @@ async function wire(page, acct, errors) {
     result.personSynced = (acct.taste?.people ?? []).some((p) => p.name === "Sam");
     await shot(a, "06-profile-synced");
     await a.goto(`${base}/create`, { waitUntil: "networkidle" });
-    await a.getByRole("button", { name: "Surprise me", exact: true }).click();
+    await a.getByTestId("surprise-me").click();
     await a.getByTestId("plan-title").waitFor({ timeout: 60000 });
     await a.waitForTimeout(800);
     const stored = await a.evaluate(() => JSON.parse(localStorage.getItem("whimway:plans:v1") ?? "{}"));

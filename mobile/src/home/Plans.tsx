@@ -14,7 +14,9 @@ export { endOf, startOf, whenLabel } from "@shared/today";
 const photosOf = (e: PlanEntry) => (e.meta.brief?.length ? e.meta.brief.map((b) => ({ src: guidePhotos[b.kind], kind: b.kind })) : [{ src: undefined, kind: "" }]);
 function Pic({ src, kind, style }: { src?: number; kind: string; style: object }) {
   return src ? (
-    <Image source={src} style={style} contentFit="cover" accessibilityIgnoresInvertColors alt="" accessible={false} />
+    <View style={style} aria-hidden importantForAccessibility="no-hide-descendants">
+      <Image source={src} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors alt="" accessible={false} />
+    </View>
   ) : (
     <View style={[style, { overflow: "hidden" }]}>
       <StopArt place={{ category: kind, types: [kind] }} height={220} />

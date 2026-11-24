@@ -68,7 +68,7 @@ export default function Import() {
         <View style={s.icon}>
           <Icon name="link" size={24} />
         </View>
-        <T v="title" accessibilityRole="header">
+        <T v="title" accessibilityRole="header" aria-level={1}>
           Open a shared plan
         </T>
         <T v="body" tone={color.muted}>

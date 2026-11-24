@@ -70,7 +70,7 @@ export function Timetable({ plan, selected, onSelect }: { plan: Itinerary; selec
                 testID={`timetable-row-${i}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${from.toFormat("h:mm a")} to ${to.toFormat("h:mm a")}: ${activity(stop, from.hour)} at ${stop.place.name}`}
+                accessibilityLabel={`${activity(stop, from.hour)} ${stop.place.name}, ${from.toFormat("h:mm a")} to ${to.toFormat("h:mm a")}`}
                 scaleTo={0.985}
                 onPress={() => onSelect(stop.placeId)}
                 style={[s.block, { backgroundColor: fills[i % fills.length], minHeight: Math.min(190, 84 + minutes * 0.45) }, on && s.blockOn]}
@@ -115,6 +115,6 @@ const s = StyleSheet.create({
   blockOn: { borderColor: color.ink },
   text: { flex: 1, gap: 2 },
   doing: { fontFamily: font.displayBold, fontSize: 21, lineHeight: 24, letterSpacing: -0.5, color: color.ink },
-  photo: { width: 76, alignSelf: "stretch", minHeight: 60, borderRadius: radius.md, backgroundColor: color.line },
+  photo: { width: 76, alignSelf: "stretch", minHeight: 60, borderRadius: radius.md, backgroundColor: color.line, overflow: "hidden" },
   leg: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingLeft: space.md },
 });

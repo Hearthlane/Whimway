@@ -149,7 +149,7 @@ export default function Discover() {
     <SafeAreaView style={s.page} edges={["top"]}>
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" stickyHeaderIndices={[1]}>
         <View style={{ gap: space.xs }}>
-          <T v="hero" accessibilityRole="header">
+          <T v="hero" accessibilityRole="header" aria-level={1}>
             Explore
           </T>
           <T v="body" tone={color.muted}>

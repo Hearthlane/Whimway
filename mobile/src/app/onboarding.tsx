@@ -83,7 +83,6 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={hint ? `${label}. ${hint}` : label}
       onPress={() => {
         tap("select");
         onPress();
@@ -310,7 +309,7 @@ export default function Onboarding() {
 
             {current === "who" ? (
               <>
-                <T v="title" accessibilityRole="header">Who’s usually coming?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>Who’s usually coming?</T>
                 <T v="body" tone={color.muted}>
                   You can change it for any plan.
                 </T>
@@ -324,7 +323,7 @@ export default function Onboarding() {
 
             {current === "vibes" ? (
               <>
-                <T v="title" accessibilityRole="header">What are you into?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>What are you into?</T>
                 <T v="body" tone={color.muted}>
                   Pick up to four moods, and anything else you love.
                 </T>
@@ -344,7 +343,7 @@ export default function Onboarding() {
 
             {current === "people" ? (
               <>
-                <T v="title" accessibilityRole="header">Who do you go out with?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>Who do you go out with?</T>
                 <T v="body" tone={color.muted}>
                   Add a few people and what they enjoy. Planning with them puts their favourites first. Only you can see this.
                 </T>
@@ -372,7 +371,7 @@ export default function Onboarding() {
 
             {current === "place" ? (
               <>
-                <T v="title" accessibilityRole="header">Where do you usually start?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>Where do you usually start?</T>
                 <View style={{ gap: space.sm }}>
                   <T v="heading">Getting around</T>
                   <View style={s.chips}>
@@ -398,7 +397,7 @@ export default function Onboarding() {
 
             {current === "needs" ? (
               <>
-                <T v="title" accessibilityRole="header">Anything plans should respect?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>Anything plans should respect?</T>
                 <View style={{ gap: space.sm }}>
                   <T v="heading">A typical outing, per person</T>
                   <View style={s.chips}>
@@ -471,7 +470,7 @@ export default function Onboarding() {
 
             {current === "account" ? (
               <View style={{ gap: space.lg }} testID="onboarding-account">
-                <T v="title" accessibilityRole="header">Keep it on every device?</T>
+                <T v="title" accessibilityRole="header" aria-level={1}>Keep it on every device?</T>
                 <T v="body" tone={color.muted}>
                   Your taste, people and saved plans, wherever you sign in. No password and no spam; delete it anytime in Settings.
                 </T>
