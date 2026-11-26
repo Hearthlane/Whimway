@@ -1,0 +1,23 @@
+// Cloudflare Workers settings for the app's site (Cloudflare build root directory: mobile).
+// Build: npm run build:cloudflare   Deploy: npx wrangler deploy
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "whimway",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Unknown paths open the app, which routes them itself (/p#…, /s/…, /plan/…).
+    "not_found_handling": "single-page-application",
+    // Only /api/* runs the Worker first; everything else is served straight from the build.
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // The Whimway API on Supabase Edge Functions.
+    "WHIMWAY_API_ORIGIN": "https://studvwvuoqdsevlhwofw.supabase.co/functions/v1",
+    // The app address the API expects (its APP_ORIGIN); requests are checked here first.
+    "WHIMWAY_APP_ORIGIN": "https://whimway.pages.dev"
+  },
+  "observability": { "enabled": true }
+}

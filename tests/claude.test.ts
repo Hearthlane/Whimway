@@ -113,10 +113,24 @@ describe("Claude as the planner", () => {
     const payload = JSON.parse(
       (sent.messages as { content: string }[])[0].content,
     );
-    expect(payload.candidates.map((c: { id: string }) => c.id).sort()).toEqual(
-      candidates.map((c) => c.id).sort(),
+    // Claude sees short labels (p1, p2, …) in place of long Google place IDs.
+    expect(payload.candidates.map((c: { id: string }) => c.id)).toEqual(
+      candidates.map((_, i) => `p${i + 1}`),
     );
     expect(JSON.stringify(sent)).not.toContain("test-key");
+  });
+
+  it("maps short labels back to real places, and drops a stop that names no offered place", async () => {
+    const { client } = claudeReturning({
+      title: "Night",
+      summary: "x",
+      stops: [
+        { placeId: "p2", minutes: 60, reason: "By label." },
+        { placeId: "ChIJ-made-up-typo", minutes: 60, reason: "Mistyped." },
+      ],
+    });
+    const s = await new ClaudeRecommender(client).select(request(), candidates, []);
+    expect(s.stops.map((x) => x.placeId)).toEqual([candidates[1].id]);
   });
 
   it("keeps locked stops exactly and clamps visit lengths", async () => {

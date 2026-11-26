@@ -1,12 +1,12 @@
-# Put Whimway online for free: Cloudflare Pages + Supabase
+# Put Whimway online for free: Cloudflare + Supabase
 
 | Part | Where | Address |
 | --- | --- | --- |
-| The app's website | Cloudflare Pages (project root `mobile`) | `https://whimway.pages.dev` |
+| The app's website | Cloudflare Workers (project root `mobile`) | `https://whimway.<your-subdomain>.workers.dev` |
 | The API (planning, Google, Claude, your keys) | Supabase Edge Function `api` | `https://studvwvuoqdsevlhwofw.supabase.co/functions/v1/api/…` |
 | Accounts, saved plans, shares, usage limits | Supabase database | already set up |
 
-The site forwards `/api/*` to Supabase (`mobile/functions/api/[[path]].js`), so the browser only
+The site forwards `/api/*` to Supabase (`mobile/worker/index.js`), so the browser only
 talks to one address.
 
 ## 1. Keys for the API (Supabase)
@@ -28,19 +28,16 @@ your Cloudflare address is not `https://whimway.pages.dev`.
 3. GitHub → **Actions → Deploy API to Supabase → Run workflow** (branch `guided-planner`). After that it redeploys on every push.
 4. Check `https://studvwvuoqdsevlhwofw.supabase.co/functions/v1/api/status`. You want `"places":true`, `"ai":true`, `"demo":false`.
 
-## 3. The website (Cloudflare Pages)
+## 3. The website (Cloudflare Workers)
 
-1. dash.cloudflare.com → sign up (free) → **Workers & Pages → Create → Pages → Connect to Git**.
-2. Pick GitHub → allow access to `Hearthlane/Whimway` → select it.
-3. Settings:
-   - **Project name:** `whimway`
-   - **Production branch:** `guided-planner`
-   - **Framework preset:** None
-   - **Root directory:** `mobile`
-   - **Build command:** `npm run build:cloudflare`
-   - **Build output directory:** `dist`
-4. **Save and Deploy.** Nothing else to set: `mobile/wrangler.toml` points the site at the API, and the public Supabase values are in `mobile/.env.cloudflare`.
-5. If Cloudflare gives a different address than `whimway.pages.dev`, add `APP_ORIGIN` with that address in step 1's Supabase secrets.
+Cloudflare dashboard → **Compute → Workers & Pages → Create** → **Import a repository** → GitHub → `Hearthlane/Whimway`:
+
+- **Project name:** `whimway`
+- **Build command:** `npm run build:cloudflare`
+- **Deploy command:** `npx wrangler deploy`
+- **Advanced settings → Root directory:** `mobile`, and **Production branch:** `guided-planner`
+
+`mobile/wrangler.jsonc` does the rest. `mobile/worker/index.js` serves the app and forwards `/api/*` to Supabase, presenting the app's canonical origin, so the site works from whatever `*.workers.dev` address Cloudflare gives it.
 
 ## 4. Sign-in emails (optional)
 

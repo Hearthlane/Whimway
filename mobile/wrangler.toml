@@ -1,8 +1,0 @@
-# Cloudflare Pages settings for the app's site (project root directory: mobile).
-name = "whimway"
-pages_build_output_dir = "dist"
-compatibility_date = "2026-11-01"
-
-[vars]
-# Where functions/api/[[path]].js forwards /api/* : the Whimway API on Supabase Edge Functions.
-WHIMWAY_API_ORIGIN = "https://studvwvuoqdsevlhwofw.supabase.co/functions/v1"

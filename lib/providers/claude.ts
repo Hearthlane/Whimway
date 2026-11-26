@@ -66,6 +66,12 @@ export class ClaudeRecommender implements RecommendationProvider {
     previousStops?: PlanSpec["stops"],
     crowd: Record<string, number> = {},
   ) {
+    // Google place IDs are long opaque strings that a model can mistype by one character, so
+    // Claude sees short labels (p1, p2, …) and they are mapped back here.
+    const label = new Map(candidates.map((p, i) => [p.id, `p${i + 1}`]));
+    const byLabel = new Map([...label].map(([id, l]) => [l, id]));
+    const short = (id: string) => label.get(id) ?? id;
+    const real = (id: string) => byLabel.get(id.trim()) ?? id.trim();
     let response;
     try {
       response = await this.api().messages.parse({
@@ -96,7 +102,7 @@ export class ClaudeRecommender implements RecommendationProvider {
                 area: request.location.name,
               },
               candidates: candidates.map((p) => ({
-                id: p.id,
+                id: short(p.id),
                 name: p.name,
                 category: p.category,
                 point: p.point,
@@ -109,9 +115,9 @@ export class ClaudeRecommender implements RecommendationProvider {
                 hours: p.hours.slice(0, 7),
                 communitySentiment: crowd[p.id] ?? 0,
               })),
-              locked,
+              locked: locked.map((l) => ({ ...l, placeId: short(l.placeId) })),
               previousStops: previousStops?.map((s) => ({
-                placeId: s.placeId,
+                placeId: short(s.placeId),
                 minutes: s.minutes,
                 locked: s.locked,
               })),
@@ -165,7 +171,8 @@ export class ClaudeRecommender implements RecommendationProvider {
         502,
       );
 
-    const answer = response.parsed_output;
+    const parsed = response.parsed_output;
+    const answer = { ...parsed, stops: parsed.stops.map((s) => ({ ...s, placeId: real(s.placeId) })) };
     const ids = new Set(candidates.map((p) => p.id));
     const seen = new Set<string>();
     const stops = answer.stops
@@ -186,7 +193,8 @@ export class ClaudeRecommender implements RecommendationProvider {
         );
       });
     for (const lock of locked) if (!seen.has(lock.placeId)) stops.unshift(lock);
-    if (!stops.length || answer.stops.some((s) => !ids.has(s.placeId)))
+    // A stop that names no offered place is dropped; only a plan with nothing usable fails.
+    if (!stops.length)
       throw new AppError(
         "INVALID_AI_OUTPUT",
         "The AI planner chose a place that wasn't offered. No plan was saved.",
