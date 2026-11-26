@@ -1,10 +1,24 @@
 {
   "name": "Whimway preview",
   "image": "node:24-bookworm",
-  "forwardPorts": [
-    8090,
-    3000
-  ],
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "containerEnv": {
+    "EXPO_PUBLIC_SUPABASE_URL": "https://studvwvuoqdsevlhwofw.supabase.co",
+    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_7iDjquzMnUJ6K4x6YGs8YQ_S4MFgTwP",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://studvwvuoqdsevlhwofw.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_7iDjquzMnUJ6K4x6YGs8YQ_S4MFgTwP"
+  },
+  "secrets": {
+    "GOOGLE_MAPS_SERVER_KEY": {
+      "description": "Google Maps server key (Places API (New), Routes API, Geocoding API). With it the preview runs LIVE on real places; without it, demo data.",
+      "documentationUrl": "https://developers.google.com/maps/documentation/places/web-service/get-api-key"
+    },
+    "ANTHROPIC_API_KEY": {
+      "description": "Claude API key, so Claude plans the outings. Optional: without it the built-in planner is used.",
+      "documentationUrl": "https://console.anthropic.com/settings/keys"
+    }
+  },
+  "forwardPorts": [8090, 3000],
   "portsAttributes": {
     "8090": {
       "label": "Whimway app (browser preview)",

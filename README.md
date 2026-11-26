@@ -22,6 +22,8 @@ npm run preview
 
 Then open **http://localhost:8090** — the full app in your browser (onboarding, planning, Magic Edit, polls, saved, sharing). The web app and share links run on http://localhost:3000. In **GitHub Codespaces** (Code → Codespaces → Create codespace) this starts automatically and opens the app port. Everything runs in labelled demo mode with raised fair-use limits; reset the app via You → Delete data on this device.
 
+**Live in Codespaces.** Add `GOOGLE_MAPS_SERVER_KEY` (and `ANTHROPIC_API_KEY` for Claude planning) under GitHub → Settings → Codespaces → Secrets, give them access to this repository, then create the codespace. The preview then starts **live**: real places, Claude planning, accounts on. Ports stay private, so only you, signed in to GitHub, can open the link, on your computer or your phone. Daily caps stay on (40 plans per person per day; change with `DAILY_GUEST_GENERATIONS`).
+
 ## Quick start (no credentials needed)
 
 ```sh
