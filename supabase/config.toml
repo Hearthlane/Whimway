@@ -1,0 +1,8 @@
+# Supabase CLI settings used by .github/workflows/deploy-api.yml.
+project_id = "whimway"
+
+[functions.api]
+# The API checks its own callers (app origin, signed-in users' tokens), so no Supabase JWT is required.
+verify_jwt = false
+# Built by scripts/build-edge.mjs from supabase/functions/api/entry.ts.
+entrypoint = "./functions/api/index.js"

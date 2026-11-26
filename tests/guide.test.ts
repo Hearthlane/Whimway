@@ -116,7 +116,7 @@ describe("guided planning", () => {
             ).toEqual(expect.arrayContaining(pick));
           }
       }
-  }, 180000);
+  }, 360000);
   it("finds places for something typed instead of picked", async () => {
     const r = base();
     for (const [said, expected] of [

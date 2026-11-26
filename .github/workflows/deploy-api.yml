@@ -1,0 +1,48 @@
+name: Deploy API to Supabase
+
+# Bundles the Whimway API (app/api + lib) and deploys it as the Supabase Edge Function "api".
+# Needs one repository secret: SUPABASE_ACCESS_TOKEN (supabase.com/dashboard/account/tokens).
+on:
+  push:
+    branches: [main, guided-planner]
+    paths:
+      - "app/api/**"
+      - "lib/**"
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - "scripts/build-edge.mjs"
+      - "package-lock.json"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: studvwvuoqdsevlhwofw
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Bundle the API for Supabase Edge Functions
+        run: node scripts/build-edge.mjs
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy
+        if: env.SUPABASE_ACCESS_TOKEN != ''
+        run: supabase functions deploy api --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+      - name: Missing access token
+        if: env.SUPABASE_ACCESS_TOKEN == ''
+        run: |
+          echo "::error::Add the SUPABASE_ACCESS_TOKEN repository secret (Settings → Secrets and variables → Actions) to deploy."
+          exit 1

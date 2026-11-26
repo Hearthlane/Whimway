@@ -15,3 +15,6 @@ test-results/
 /.claude/skills/react-native-design/
 mobile/discover-shots/
 mobile/guide-shots/
+# Built by scripts/build-edge.mjs in CI
+supabase/functions/api/index.js
+!mobile/.env.cloudflare
