@@ -34,9 +34,11 @@ const result = await build({
   legalComments: "none",
   metafile: true,
   plugins: [shims],
-  define: { "process.env.NODE_ENV": '"production"' },
+  // Supabase's runtime doesn't allow changing environment variables, so the API reads (and
+  // sets its defaults on) a plain copy of them, made before anything else runs.
+  define: { "process.env.NODE_ENV": '"production"', "process.env": "globalThis.__whimwayEnv" },
   // Libraries that still read globals like Buffer get them from node: modules.
-  banner: { js: 'import { Buffer } from "node:buffer"; globalThis.Buffer ??= Buffer; import __process from "node:process"; globalThis.process ??= __process;' },
+  banner: { js: 'globalThis.__whimwayEnv ??= { ...(globalThis.Deno?.env?.toObject?.() ?? globalThis.process?.env ?? {}) }; import { Buffer } from "node:buffer"; globalThis.Buffer ??= Buffer; import __process from "node:process"; globalThis.process ??= __process;' },
   logLevel: "warning",
 });
 const bytes = Object.values(result.metafile.outputs)[0].bytes;

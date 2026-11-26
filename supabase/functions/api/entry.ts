@@ -2,7 +2,6 @@
 // route handlers in app/api/[...path]/route.ts and everything they import into index.js.
 // Supabase routes https://<project>.supabase.co/functions/v1/api/<path> here with the path
 // "/api/<path>", the same paths the Next.js API serves.
-import process from "node:process";
 import { runWithRequest } from "./shims/request-context";
 import { DELETE, GET, POST } from "../../../app/api/[...path]/route";
 
@@ -30,4 +29,5 @@ Deno.serve((request: Request) => {
   return runWithRequest(request, () => handler(request, { params: Promise.resolve({ path }) }));
 });
 
+declare const process: { env: Record<string, string | undefined> };
 declare const Deno: { serve: (handler: (request: Request) => Response | Promise<Response>) => unknown };
