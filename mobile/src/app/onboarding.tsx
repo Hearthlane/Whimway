@@ -1,24 +1,23 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { StopArt } from "@/plan/StopArt";
-import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInLeft, SlideInRight, ZoomIn, useAnimatedStyle, useSharedValue, withTiming, useReducedMotion } from "react-native-reanimated";
+import * as Location from "expo-location";
+import { Avatar, PersonSheet, type Person } from "@/home/People";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { areas } from "@shared/areas";
+import { areas, nearestArea } from "@shared/areas";
 import type { TasteProfile } from "@shared/profile";
-import { companions as companionKeys, interests as interestKeys, vibes as vibeKeys } from "@shared/schema";
+import { companions as companionKeys, vibes as vibeKeys } from "@shared/schema";
 import { useStore } from "@/lib/store";
+import { cloudConfigured } from "@/lib/config";
+import { SignIn, type SignedIn } from "@/account/SignIn";
 import { companionCopy, interestCopy, modeCopy, vibeCopy } from "@/lib/copy";
 import { Button, Chip, Icon, Press, Spark, T, tap, Wordmark, type IconName } from "@/ui/kit";
 import { color, font, motion, radius, shadow, space } from "@/ui/theme";
 
-const budgets = [
-  { value: 20, label: "Under $25", hint: "Free stuff, cheap eats" },
-  { value: 45, label: "$25–60", hint: "A nice night out" },
-  { value: 80, label: "$60–100", hint: "Treat yourselves" },
-  { value: 150, label: "$100+", hint: "Go big sometimes" },
-];
-const steps = ["welcome", "who", "vibes", "interests", "budget", "area", "details", "building", "reveal"] as const;
+const baseSteps = ["welcome", "who", "vibes", "people", "place", "needs", "reveal"] as const;
+type Step = (typeof baseSteps)[number] | "account";
 
 // Personality reveal: first vibe gives the adjective, second the noun.
 const adjective: Record<string, string> = { romantic: "Romantic", adventurous: "Bold", cozy: "Cozy", cinematic: "Cinematic", chill: "Easygoing", lively: "Lively", artsy: "Artsy", foodie: "Hungry", outdoorsy: "Fresh-Air", playful: "Playful" };
@@ -27,11 +26,6 @@ export function persona(vibes: string[]) {
   if (!vibes.length) return "Open-Minded Explorer";
   if (vibes.length === 1) return `The ${noun[vibes[0]]}`;
   return `${adjective[vibes[0]]} ${noun[vibes[1]]}`;
-}
-function starterPrompt(p: TasteProfile) {
-  const mood = p.vibes.slice(0, 2).join(" and ") || "memorable";
-  const who = { partner: "with my partner", friends: "with friends", solo: "just for me", family: "with the family" }[p.companions];
-  return `A ${mood} night ${who} this Saturday`;
 }
 
 /** Welcome hero: the product in miniature. A sentence goes in, a night comes out. */
@@ -45,7 +39,7 @@ function MiniDemo() {
     <View style={s.demo} accessibilityLabel="Example: a sentence becomes a three-stop plan" accessible>
       <Animated.View entering={FadeInDown.delay(250).duration(motion.slow)} style={s.bubble}>
         <T v="body" tone={color.paper}>
-          “Romantic night, $100, not too far”
+          “Saturday with the kids, $100, not too far”
         </T>
       </Animated.View>
       <Animated.View entering={ZoomIn.delay(900).duration(motion.standard)} style={s.demoSpark}>
@@ -56,10 +50,10 @@ function MiniDemo() {
           <Animated.View key={st.name} entering={FadeInUp.delay(1250 + i * 220).duration(motion.slow)} style={s.demoStop}>
             <StopArt place={st.place} height={62} />
             <View style={{ padding: 8 }}>
-              <T v="smallStrong" style={{ fontSize: 11, lineHeight: 14 }} tone={color.coralText}>
+              <T v="smallStrong" style={{ fontSize: 13, lineHeight: 14 }} tone={color.coralText}>
                 {st.time}
               </T>
-              <T v="smallStrong" style={{ fontSize: 12, lineHeight: 15 }} numberOfLines={2}>
+              <T v="smallStrong" style={{ fontSize: 13, lineHeight: 15 }} numberOfLines={2}>
                 {st.name}
               </T>
             </View>
@@ -77,7 +71,7 @@ function ProgressBar({ value }: { value: number }) {
   }, [value, w]);
   const fill = useAnimatedStyle(() => ({ width: `${w.get() * 100}%` }));
   return (
-    <View style={s.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
+    <View style={s.progress} accessibilityRole="progressbar" accessibilityLabel="Setup progress" accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}>
       <Animated.View style={[s.progressFill, fill]} />
     </View>
   );
@@ -89,7 +83,6 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={hint ? `${label}. ${hint}` : label}
       onPress={() => {
         tap("select");
         onPress();
@@ -105,7 +98,7 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
         {label}
       </T>
       {hint ? (
-        <T v="small" tone={selected ? "#C9D1D6" : color.muted}>
+        <T v="small" tone={selected ? "#C7CCE4" : color.muted}>
           {hint}
         </T>
       ) : null}
@@ -118,56 +111,158 @@ function Tile({ icon, label, hint, selected, onPress, testID }: { icon?: IconNam
   );
 }
 
+const NEEDS: { key: string; label: string; icon: IconName; apply: (d: TasteProfile, on: boolean) => Partial<TasteProfile> }[] = [
+  { key: "vegetarian", label: "Vegetarian", icon: "feather", apply: (d, on) => ({ dietary: toggleWord(d.dietary, "vegetarian", on) }) },
+  { key: "vegan", label: "Vegan", icon: "feather", apply: (d, on) => ({ dietary: toggleWord(d.dietary, "vegan", on) }) },
+  { key: "halal", label: "Halal", icon: "check-circle", apply: (d, on) => ({ dietary: toggleWord(d.dietary, "halal", on) }) },
+  { key: "nut allergy", label: "Nut allergy", icon: "alert-circle", apply: (d, on) => ({ dietary: toggleWord(d.dietary, "nut allergy", on) }) },
+  { key: "step-free", label: "Step-free access", icon: "navigation", apply: (d, on) => ({ accessibility: toggleWord(d.accessibility, "step-free", on) }) },
+  { key: "alcohol", label: "No bars", icon: "slash", apply: (_d, on) => ({ alcoholFree: on }) },
+];
+function toggleWord(list: string, word: string, on: boolean) {
+  const parts = list.split(",").map((p) => p.trim()).filter(Boolean).filter((p) => p.toLowerCase() !== word);
+  return (on ? [...parts, word] : parts).join(", ").slice(0, 300);
+}
+const hasNeed = (d: TasteProfile, key: string) =>
+  key === "alcohol" ? d.alcoholFree : key === "step-free" ? /step-free/i.test(d.accessibility) : new RegExp(`\\b${key}\\b`, "i").test(d.dietary);
+const extraInterests = ["Interactive fun", "Shopping", "Hidden gems", "Relaxation", "Family"] as const;
+const commonAreas = ["downtown", "north-york", "scarborough", "etobicoke", "mississauga", "markham"];
+const budgetChoices = [
+  { value: 25, label: "Under $25" },
+  { value: 50, label: "About $50" },
+  { value: 80, label: "$60–100" },
+  { value: 150, label: "$100+" },
+];
+
 export default function Onboarding() {
-  const { profile, setProfile, track } = useStore();
+  const { profile, setProfile, track, session } = useStore();
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<TasteProfile>({ ...profile, analytics: true });
+  const [dir, setDir] = useState<1 | -1>(1);
+  // Nothing is pre-picked: who you go out with is a real answer, not a default.
+  const [draft, setDraft] = useState<TasteProfile>(() => ({ ...profile, budget: budgetChoices.some((b) => b.value === profile.budget) ? profile.budget : 50 }));
+  const [who, setWho] = useState<TasteProfile["companions"] | null>(profile.onboarded ? profile.companions : null);
+  const [person, setPerson] = useState<Person | "new" | null>(null);
+  const [locating, setLocating] = useState(false);
+  // Only answers the person gave show on the reveal; defaults never pose as answers.
+  const [told, setTold] = useState<{ area?: boolean; mode?: boolean; budget?: boolean }>({});
+  const [allAreas, setAllAreas] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const [signingIn, setSigningIn] = useState(false);
+  const [signedInAs, setSignedInAs] = useState("");
+  const [signedInAtStart] = useState(() => Boolean(session));
+  const offerAccount = cloudConfigured && !signedInAtStart && !signedInAs;
+  const steps: readonly Step[] = offerAccount ? [...baseSteps, "account"] : baseSteps;
+  const current = steps[step];
   const set = (patch: Partial<TasteProfile>) => setDraft((d) => ({ ...d, ...patch }));
-  const toggle = <K extends "vibes" | "interests">(key: K, value: TasteProfile[K][number], max: number) =>
+  const [limitHit, setLimitHit] = useState(false);
+  const toggleVibe = (v: TasteProfile["vibes"][number]) =>
     setDraft((d) => {
-      const list = d[key] as string[];
-      const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value].slice(-max);
-      return { ...d, [key]: next };
+      if (d.vibes.includes(v)) return { ...d, vibes: d.vibes.filter((x) => x !== v) };
+      if (d.vibes.length >= 4) {
+        setLimitHit(true);
+        tap("light");
+        return d;
+      }
+      setLimitHit(false);
+      return { ...d, vibes: [...d.vibes, v] };
     });
+  const toggleInterest = (i: TasteProfile["interests"][number]) =>
+    setDraft((d) => ({ ...d, interests: d.interests.includes(i) ? d.interests.filter((x) => x !== i) : [...d.interests, i].slice(-6) }));
   useEffect(() => {
     track("onboarding_started");
   }, [track]);
 
-  const finish = (skipped = false) => {
-    setProfile({ ...draft, onboarded: true });
-    track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: steps[step] });
-    tap("success");
-    // After the reveal, offer Plus once (skippable), then land on the composer with a first prompt ready.
-    router.replace(skipped ? "/" : { pathname: "/plus", params: { reason: "onboarding", starter: starterPrompt(draft) } });
+  const go = (to: number) => {
+    setDir(to > step ? 1 : -1);
+    setStep(Math.max(0, Math.min(steps.length - 1, to)));
   };
-  const next = () => (step === steps.length - 1 ? finish() : setStep(step + 1));
-  const isReveal = steps[step] === "reveal";
-  const isBuilding = steps[step] === "building";
-  // "Building your taste profile": a short beat that makes the reveal feel earned.
-  const [built, setBuilt] = useState(0);
-  useEffect(() => {
-    if (!isBuilding) return;
-    const ticks = [0, 500, 1100, 1700].map((ms, i) => setTimeout(() => setBuilt(i), ms));
-    const done = setTimeout(() => setStep((n) => n + 1), 2400);
-    return () => [...ticks, done].forEach(clearTimeout);
-  }, [isBuilding]);
-  const current = steps[step];
+  const save = () => setProfile({ ...draft, companions: who ?? draft.companions, onboarded: true });
+  const leave = () => router.replace("/");
+  const finish = (skipped = false) => {
+    if (current !== "account") save();
+    track(skipped ? "onboarding_skipped" : "onboarding_completed", { step: current });
+    tap("success");
+    leave();
+  };
+  const next = () => {
+    if (step === steps.length - 1) return finish();
+    if (steps[step + 1] === "account") save();
+    go(step + 1);
+  };
+  const pickWho = (c: TasteProfile["companions"]) => {
+    tap("select");
+    setWho(c);
+    set({ companions: c });
+    setTimeout(() => go(step + 1), 360);
+  };
+  const useLocation = async () => {
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const near = nearestArea({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        if (near) {
+          set({ homeArea: near.key });
+          setTold((t) => ({ ...t, area: true }));
+        }
+      }
+    } catch {
+      // Location is optional; the list is right there.
+    } finally {
+      setLocating(false);
+    }
+  };
+  const returning = (r: SignedIn) => {
+    setSigningIn(false);
+    if (r.restored) {
+      track("onboarding_skipped", { step: "signin" });
+      router.replace({ pathname: "/", params: { welcome: "back", restoredPlans: String(r.plans) } });
+      return;
+    }
+    setSignedInAs(r.email);
+    go(1);
+  };
+  const people = profile.people;
+  const needs = [draft.dietary, draft.accessibility, draft.alcoholFree ? "no bars" : ""].filter(Boolean).join(", ");
+  const revealRows: { icon: IconName; label: string; value: string }[] = [
+    ...(who ? [{ icon: companionCopy[who].icon, label: "Usually with", value: companionCopy[who].label }] : []),
+    ...(told.area ? [{ icon: "map-pin" as IconName, label: "Starting from", value: areas.find((a) => a.key === draft.homeArea)?.name ?? "Greater Toronto" }] : []),
+    ...(told.mode ? [{ icon: modeCopy[draft.mode].icon, label: "Getting around", value: modeCopy[draft.mode].label }] : []),
+    ...(told.budget ? [{ icon: "credit-card" as IconName, label: "Usual spend", value: budgetChoices.find((b) => b.value === draft.budget)?.label ?? `about $${draft.budget}` }] : []),
+    ...(needs ? [{ icon: "check-circle" as IconName, label: "Always", value: needs }] : []),
+    ...(people.length ? [{ icon: "users" as IconName, label: "Your people", value: people.map((p) => p.name).join(", ") }] : []),
+  ];
+  const Enter = dir === 1 ? SlideInRight : SlideInLeft;
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
       <View style={s.top}>
-        {step > 0 ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setStep(step - 1)} hitSlop={10} style={s.topButton}>
+        {signingIn ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setSigningIn(false)} hitSlop={10} style={s.topButton}>
+            <Icon name="arrow-left" />
+          </Pressable>
+        ) : step > 0 && current !== "account" ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => go(step - 1)} hitSlop={10} style={s.topButton}>
             <Icon name="arrow-left" />
           </Pressable>
         ) : (
           <View style={s.topButton} />
         )}
-        <ProgressBar value={step / (steps.length - 1)} />
-        {isReveal ? (
+        {step > 0 && !signingIn ? (
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            <ProgressBar value={step / (steps.length - 1)} />
+            <T v="small" tone={color.muted} accessibilityLabel={`Step ${step} of ${steps.length - 1}`}>
+              {step} of {steps.length - 1}
+            </T>
+          </View>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
+        {current === "welcome" || current === "reveal" || current === "account" || signingIn ? (
           <View style={[s.topButton, { width: 56 }]} />
         ) : (
-          <Pressable accessibilityRole="button" onPress={() => finish(true)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip">
+          <Pressable accessibilityRole="button" accessibilityLabel="Skip this question" onPress={() => go(step + 1)} hitSlop={10} style={[s.topButton, { width: 56 }]} testID="onboarding-skip-step">
             <T v="smallStrong" tone={color.muted}>
               Skip
             </T>
@@ -176,201 +271,249 @@ export default function Onboarding() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-        <Animated.View key={current} entering={FadeInDown.duration(320)}>
-          {current === "welcome" ? (
-            <View style={{ gap: space.xl }}>
-              <Wordmark size={24} />
-              <MiniDemo />
-              <View style={{ gap: space.md }}>
-                <T v="hero" style={{ fontSize: 30, lineHeight: 35 }} accessibilityRole="header">
-                  From “what should we do?” to “we’re going” in under a minute.
+        {signingIn ? (
+          <Animated.View key="signin" entering={FadeIn.duration(motion.enter)} style={{ gap: space.lg }}>
+            <T v="title" accessibilityRole="header">
+              Welcome back
+            </T>
+            <T v="body" tone={color.muted}>
+              Sign in to bring back your taste, people and saved plans.
+            </T>
+            <SignIn onSignedIn={returning} />
+          </Animated.View>
+        ) : (
+          <Animated.View key={current} entering={Enter.duration(motion.enter)} style={{ gap: space.lg }}>
+            {signedInAs && current !== "account" ? (
+              <View style={s.signedIn} testID="onboarding-signed-in">
+                <Icon name="check-circle" size={16} />
+                <T v="small" style={{ flex: 1 }}>
+                  Signed in as {signedInAs}. A few questions to set up your taste.
                 </T>
-                <T v="body" tone={color.muted}>
-                  Say the mood, the budget and who’s coming. Get a night of real places, with times and routes you can follow.
-                </T>
               </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {current === "building" ? (
-            <View style={{ alignItems: "center", gap: space.xl, paddingTop: space.xxxl }} testID="building">
-              <Animated.View entering={ZoomIn.springify().damping(12)} style={s.revealMark}>
-                <Spark size={64} />
-              </Animated.View>
-              <T v="title" style={{ textAlign: "center" }} accessibilityLiveRegion="polite">
-                Building your taste profile
-              </T>
-              <View style={{ alignSelf: "stretch", gap: space.md, paddingHorizontal: space.lg }}>
-                {["Reading your vibes", "Matching places around you", "Setting your budget and pace"].map((line, i) => (
-                  <View key={line} style={{ flexDirection: "row", alignItems: "center", gap: space.md, opacity: built >= i ? 1 : 0.35 }}>
-                    <View style={[s.buildDot, built > i && { backgroundColor: color.ink }]}>{built > i ? <Icon name="check" size={12} tint={color.paper} /> : null}</View>
-                    <T v={built === i ? "bodyStrong" : "body"}>{line}</T>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {current === "reveal" ? (
-            <View style={{ gap: space.xl, alignItems: "center", paddingTop: space.lg }}>
-              <Animated.View entering={ZoomIn.springify().damping(11)} style={s.revealMark}>
-                <Spark size={64} />
-              </Animated.View>
-              <Animated.View entering={FadeInDown.delay(250).duration(motion.slow)} style={{ alignItems: "center", gap: space.sm }}>
-                <T v="body" tone={color.muted}>
-                  {draft.name ? `${draft.name}, you’re a` : "You’re a"}
-                </T>
-                <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
-                  {persona(draft.vibes)}
-                </T>
-              </Animated.View>
-              <Animated.View entering={FadeIn.delay(600).duration(motion.slow)} style={s.revealCard}>
-                <RevealRow icon={companionCopy[draft.companions].icon} label="Usually out" value={{ partner: "with my partner", friends: "with friends", solo: "on my own", family: "with family" }[draft.companions]} />
-                <RevealRow icon="credit-card" label="Comfortable spend" value={`about $${draft.budget} each`} />
-                <RevealRow icon={modeCopy[draft.mode].icon} label="Getting around" value={modeCopy[draft.mode].label.toLowerCase()} />
-                <RevealRow icon="map-pin" label="Home base" value={areas.find((a) => a.key === draft.homeArea)?.name ?? "Greater Toronto"} last />
-              </Animated.View>
-              <Animated.View entering={FadeIn.delay(850).duration(motion.slow)}>
-                <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
-                  Every plan you rate and every poll you answer sharpens this.
-                </T>
-              </Animated.View>
-            </View>
-          ) : null}
-
-          {current === "who" ? (
-            <>
-              <T v="title">Who are you usually planning for?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                You can always change it per plan.
-              </T>
-              <View style={s.grid}>
-                {companionKeys.map((c) => (
-                  <Tile key={c} testID={`who-${c}`} icon={companionCopy[c].icon} label={companionCopy[c].label} hint={companionCopy[c].hint} selected={draft.companions === c} onPress={() => set({ companions: c })} />
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {current === "vibes" ? (
-            <>
-              <T v="title">What kind of nights make you feel most alive?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                Pick up to four.
-              </T>
-              <View style={s.grid}>
-                {vibeKeys.map((v) => (
-                  <Tile key={v} testID={`vibe-${v}`} icon={vibeCopy[v].icon} label={vibeCopy[v].label} hint={vibeCopy[v].hint} selected={draft.vibes.includes(v)} onPress={() => toggle("vibes", v, 4)} />
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {current === "interests" ? (
-            <>
-              <T v="title">What do you love doing?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                We’ll lean toward these when you don’t say otherwise.
-              </T>
-              <View style={s.chips}>
-                {interestKeys.map((i) => (
-                  <Chip key={i} icon={interestCopy[i]} label={i} selected={draft.interests.includes(i)} onPress={() => toggle("interests", i, 6)} />
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {current === "budget" ? (
-            <>
-              <T v="title">A typical night out, per person?</T>
-              <View style={s.grid}>
-                {budgets.map((b) => (
-                  <Tile key={b.value} label={b.label} hint={b.hint} selected={draft.budget === b.value} onPress={() => set({ budget: b.value })} />
-                ))}
-              </View>
-              <T v="heading" style={{ marginTop: space.xl }}>
-                How do you usually get around?
-              </T>
-              <View style={[s.chips, { marginTop: space.md }]}>
-                {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
-                  <Chip key={m} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={draft.mode === m} onPress={() => set({ mode: m })} />
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {current === "area" ? (
-            <>
-              <T v="title">Where do you usually start from?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                We’re launching across the Greater Toronto Area.
-              </T>
-              <View style={{ gap: space.sm, marginTop: space.lg }}>
-                {areas.map((a) => (
-                  <Pressable
-                    key={a.key}
-                    testID={`area-${a.key}`}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: draft.homeArea === a.key }}
-                    onPress={() => {
-                      tap("select");
-                      set({ homeArea: a.key });
-                    }}
-                    style={[s.row, draft.homeArea === a.key && { borderColor: color.ink, backgroundColor: color.paper }]}
-                  >
-                    <Icon name="map-pin" size={16} tint={draft.homeArea === a.key ? color.coralText : color.muted} />
-                    <T v="bodyStrong" style={{ flex: 1 }}>
-                      {a.name}
-                    </T>
-                    <T v="small" tone={color.muted}>
-                      {a.city}
-                    </T>
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {current === "details" ? (
-            <>
-              <T v="title">Last thing — anything we should know?</T>
-              <T v="body" tone={color.muted} style={s.sub}>
-                All optional. Requirements are passed to the planner; always confirm with venues.
-              </T>
-              <T v="smallStrong" style={s.label} nativeID="name-label">
-                What should we call you?
-              </T>
-              <TextInput accessibilityLabelledBy="name-label" value={draft.name} onChangeText={(name) => set({ name: name.slice(0, 40) })} placeholder="First name" placeholderTextColor={color.faint} style={s.input} />
-              <T v="smallStrong" style={s.label} nativeID="diet-label">
-                Dietary needs
-              </T>
-              <TextInput accessibilityLabelledBy="diet-label" value={draft.dietary} onChangeText={(dietary) => set({ dietary: dietary.slice(0, 300) })} placeholder="e.g. vegetarian, halal, nut allergy" placeholderTextColor={color.faint} style={s.input} />
-              <T v="smallStrong" style={s.label} nativeID="access-label">
-                Accessibility
-              </T>
-              <TextInput accessibilityLabelledBy="access-label" value={draft.accessibility} onChangeText={(accessibility) => set({ accessibility: accessibility.slice(0, 300) })} placeholder="e.g. step-free access" placeholderTextColor={color.faint} style={s.input} />
-              <View style={s.consent}>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <T v="bodyStrong">Help improve Whimway</T>
-                  <T v="small" tone={color.muted}>
-                    Share anonymous usage (e.g. “plan saved”). Never your prompts, location or places. Change anytime in You.
+            {current === "welcome" ? (
+              <View style={{ gap: space.xl }}>
+                <Wordmark size={24} />
+                <MiniDemo />
+                <View style={{ gap: space.md }}>
+                  <T v="hero" style={{ fontSize: 32, lineHeight: 36 }} accessibilityRole="header">
+                    From “what should we do?” to “we’re going” in minutes.
+                  </T>
+                  <T v="body" tone={color.muted}>
+                    Say the mood, who’s coming and when. Get real places in Toronto, with times and routes.
                   </T>
                 </View>
-                <Switch value={draft.analytics} onValueChange={(analytics) => set({ analytics })} trackColor={{ true: color.ink, false: color.line }} thumbColor={color.paper} accessibilityLabel="Share anonymous usage" />
               </View>
-            </>
-          ) : null}
-        </Animated.View>
+            ) : null}
+
+            {current === "who" ? (
+              <>
+                <T v="title" accessibilityRole="header" aria-level={1}>Who’s usually coming?</T>
+                <T v="body" tone={color.muted}>
+                  You can change it for any plan.
+                </T>
+                <View style={s.grid}>
+                  {companionKeys.map((c) => (
+                    <Tile key={c} testID={`who-${c}`} icon={companionCopy[c].icon} label={companionCopy[c].label} hint={companionCopy[c].hint} selected={who === c} onPress={() => pickWho(c)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            {current === "vibes" ? (
+              <>
+                <T v="title" accessibilityRole="header" aria-level={1}>What are you into?</T>
+                <T v="body" tone={color.muted}>
+                  Pick up to four moods, and anything else you love.
+                </T>
+                <View style={s.grid}>
+                  {vibeKeys.map((v) => (
+                    <Tile key={v} testID={`vibe-${v}`} icon={vibeCopy[v].icon} label={vibeCopy[v].label} hint={vibeCopy[v].hint} selected={draft.vibes.includes(v)} onPress={() => toggleVibe(v)} />
+                  ))}
+                </View>
+                <T v="heading" style={{ marginTop: space.sm }}>Also into</T>
+                <View style={s.chips}>
+                  {extraInterests.map((i) => (
+                    <Chip key={i} testID={`interest-${i}`} icon={interestCopy[i]} label={i} selected={draft.interests.includes(i)} onPress={() => toggleInterest(i)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            {current === "people" ? (
+              <>
+                <T v="title" accessibilityRole="header" aria-level={1}>Who do you go out with?</T>
+                <T v="body" tone={color.muted}>
+                  Add a few people and what they enjoy. Planning with them puts their favourites first. Only you can see this.
+                </T>
+                <View style={s.peopleRow}>
+                  <Press testID="onboarding-person-add" accessibilityRole="button" accessibilityLabel="Add someone" onPress={() => setPerson("new")} style={s.personItem}>
+                    <View style={s.personAdd}>
+                      <Icon name="plus" size={24} />
+                    </View>
+                    <T v="small">Add</T>
+                  </Press>
+                  {people.map((p) => (
+                    <Press key={p.id} accessibilityRole="button" accessibilityLabel={`Edit ${p.name}`} onPress={() => setPerson(p)} style={s.personItem}>
+                      <Avatar name={p.name} size={56} />
+                      <T v="small" numberOfLines={1}>
+                        {p.name}
+                      </T>
+                    </Press>
+                  ))}
+                </View>
+                <T v="small" tone={color.muted}>
+                  {people.length ? `${people.length} added. Add more anytime from Home.` : "Skip this for now if you like; you can add people from Home."}
+                </T>
+              </>
+            ) : null}
+
+            {current === "place" ? (
+              <>
+                <T v="title" accessibilityRole="header" aria-level={1}>Where do you usually start?</T>
+                <View style={{ gap: space.sm }}>
+                  <T v="heading">Getting around</T>
+                  <View style={s.chips}>
+                    {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
+                      <Chip key={m} testID={`mode-${m}`} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={Boolean(told.mode) && draft.mode === m} onPress={() => (set({ mode: m }), setTold((t) => ({ ...t, mode: true })))} />
+                    ))}
+                  </View>
+                </View>
+                <View style={{ gap: space.sm, marginTop: space.md }}>
+                  <T v="heading">Starting from</T>
+                  <Button kind="soft" icon="navigation" label={locating ? "Finding you…" : "Use my location"} onPress={useLocation} testID="onboarding-locate" />
+                  <View style={s.chips}>
+                    {areas
+                      .filter((a) => allAreas || commonAreas.includes(a.key) || (told.area && a.key === draft.homeArea))
+                      .map((a) => (
+                        <Chip key={a.key} testID={`area-${a.key}`} label={a.name} selected={Boolean(told.area) && draft.homeArea === a.key} onPress={() => (tap("select"), set({ homeArea: a.key }), setTold((t) => ({ ...t, area: true })))} />
+                      ))}
+                    {allAreas ? null : <Chip testID="areas-more" icon="plus" label={`${areas.length - commonAreas.length} more areas`} onPress={() => setAllAreas(true)} />}
+                  </View>
+                </View>
+              </>
+            ) : null}
+
+            {current === "needs" ? (
+              <>
+                <T v="title" accessibilityRole="header" aria-level={1}>Anything plans should respect?</T>
+                <View style={{ gap: space.sm }}>
+                  <T v="heading">A typical outing, per person</T>
+                  <View style={s.chips}>
+                    {budgetChoices.map((b) => (
+                      <Chip key={b.value} testID={`budget-${b.value}`} icon="credit-card" label={b.label} selected={Boolean(told.budget) && draft.budget === b.value} onPress={() => (set({ budget: b.value }), setTold((t) => ({ ...t, budget: true })))} />
+                    ))}
+                  </View>
+                </View>
+                <View style={{ gap: space.sm, marginTop: space.md }}>
+                  <T v="heading">Always respect</T>
+                  <View style={s.chips}>
+                    {NEEDS.map((n) => (
+                      <Chip key={n.key} testID={n.key === "alcohol" ? "onboarding-alcohol-free" : `need-${n.key}`} icon={n.icon} label={n.label} selected={hasNeed(draft, n.key)} onPress={() => set(n.apply(draft, !hasNeed(draft, n.key)))} />
+                    ))}
+                  </View>
+                  <T v="small" tone={color.muted}>
+                    We look for places that fit and pass these on with every plan. Venues confirm the details.
+                  </T>
+                </View>
+              </>
+            ) : null}
+
+            {current === "reveal" ? (
+              <View style={{ gap: space.xl, alignItems: "center", paddingTop: space.lg }}>
+                <Animated.View entering={reduceMotion ? undefined : ZoomIn.duration(motion.enter)} style={s.revealMark}>
+                  <Spark size={64} />
+                </Animated.View>
+                <View style={{ alignItems: "center", gap: space.sm }}>
+                  {draft.vibes.length ? (
+                    <>
+                      <T v="body" tone={color.muted}>
+                        {draft.name ? `${draft.name}, you’re a` : "You’re a"}
+                      </T>
+                      <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
+                        {persona(draft.vibes)}
+                      </T>
+                      <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+                        {draft.vibes.length >= 2 ? `From your top two moods: ${draft.vibes.slice(0, 2).join(" and ")}.` : `From your mood: ${draft.vibes[0]}.`}
+                      </T>
+                    </>
+                  ) : (
+                    <>
+                      <T v="hero" style={{ textAlign: "center" }} testID="persona" accessibilityRole="header">
+                        Ready when you are
+                      </T>
+                      <T v="small" tone={color.muted} style={{ textAlign: "center", maxWidth: 300 }}>
+                        Pick a few moods any time to sharpen your plans.
+                      </T>
+                    </>
+                  )}
+                </View>
+                {revealRows.length ? (
+                  <View style={s.revealCard}>
+                    {revealRows.map((r, i) => (
+                      <RevealRow key={r.label} icon={r.icon} label={r.label} value={r.value} last={i === revealRows.length - 1} />
+                    ))}
+                  </View>
+                ) : null}
+                <View style={{ alignSelf: "stretch", gap: space.sm }}>
+                  <T v="smallStrong" style={s.label} nativeID="name-label">
+                    What should we call you?
+                  </T>
+                  <TextInput testID="onboarding-name" accessibilityLabelledBy="name-label" accessibilityLabel="What should we call you?" value={draft.name} onChangeText={(name) => set({ name: name.slice(0, 40) })} placeholder="First name (optional)" placeholderTextColor={color.faint} style={s.input} />
+                </View>
+                <T v="small" tone={color.muted} style={{ textAlign: "center" }}>
+                  Plans start from this. Change it any time in You.
+                </T>
+              </View>
+            ) : null}
+
+            {current === "account" ? (
+              <View style={{ gap: space.lg }} testID="onboarding-account">
+                <T v="title" accessibilityRole="header" aria-level={1}>Keep it on every device?</T>
+                <T v="body" tone={color.muted}>
+                  Your taste, people and saved plans, wherever you sign in. No password and no spam; delete it anytime in Settings.
+                </T>
+                <SignIn onSignedIn={() => (track("onboarding_completed", { step: "account" }), leave())} />
+              </View>
+            ) : null}
+          </Animated.View>
+        )}
       </ScrollView>
-      <View style={[s.footer, isBuilding && { opacity: 0 }]} pointerEvents={isBuilding ? "none" : "auto"}>
-        <Button
-          testID="onboarding-next"
-          size="lg"
-          label={current === "welcome" ? "Get started" : isReveal ? "Continue" : "Continue"}
-          icon="arrow-right"
-          onPress={next}
-        />
-      </View>
+
+      {signingIn ? null : (
+        <View style={s.footer}>
+          {current === "account" ? (
+            <Button testID="onboarding-not-now" size="lg" kind="ghost" label="Not now, keep it on this device" onPress={next} />
+          ) : current === "who" ? null : (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+              {current === "vibes" ? (
+                <T v="smallStrong" tone={limitHit ? color.coralText : color.muted} style={{ minWidth: 72 }}>
+                  {limitHit ? "Four max" : `${draft.vibes.length} of 4`}
+                </T>
+              ) : null}
+              <Button testID="onboarding-next" size="lg" label={current === "welcome" ? "Set my taste · 1 min" : current === "reveal" ? "Start planning" : current === "people" && !people.length ? "Later" : "Continue"} icon="arrow-right" onPress={next} style={{ flex: 1 }} />
+            </View>
+          )}
+          {current === "welcome" ? (
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: space.xl, paddingTop: space.md, flexWrap: "wrap" }}>
+              <Pressable testID="onboarding-skip" accessibilityRole="button" onPress={() => finish(true)} hitSlop={8} style={s.link}>
+                <T v="smallStrong" tone={color.muted}>
+                  Look around first
+                </T>
+              </Pressable>
+              {cloudConfigured && !session ? (
+                <Pressable testID="onboarding-signin" accessibilityRole="button" onPress={() => setSigningIn(true)} hitSlop={8} style={s.link}>
+                  <T v="smallStrong" tone={color.coralText}>
+                    I have an account
+                  </T>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      )}
+      <PersonSheet person={person} onClose={() => setPerson(null)} />
     </SafeAreaView>
   );
 }
@@ -414,5 +557,12 @@ const s = StyleSheet.create({
   label: { marginTop: space.lg, marginBottom: 6 },
   input: { minHeight: 50, borderRadius: radius.md, borderWidth: 1, borderColor: color.line, backgroundColor: color.paper, paddingHorizontal: space.lg, fontFamily: font.body, fontSize: 16, color: color.ink },
   consent: { flexDirection: "row", gap: space.lg, alignItems: "center", marginTop: space.xl, padding: space.lg, backgroundColor: color.paper, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line },
+  signedIn: { flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, marginBottom: space.lg, borderRadius: radius.md, backgroundColor: color.mintTint },
+  benefit: { flexDirection: "row", alignItems: "center", gap: space.md },
+  benefitIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.coralTint, alignItems: "center", justifyContent: "center" },
+  peopleRow: { flexDirection: "row", flexWrap: "wrap", gap: space.lg },
+  personItem: { alignItems: "center", gap: 6, width: 72 },
+  personAdd: { width: 56, height: 56, borderRadius: 28, borderWidth: 1.5, borderStyle: "dashed", borderColor: color.lineStrong, backgroundColor: color.paper, alignItems: "center", justifyContent: "center" },
+  link: { minHeight: 44, justifyContent: "center", paddingHorizontal: space.sm },
   footer: { padding: space.lg, backgroundColor: color.canvas, borderTopWidth: 1, borderTopColor: color.line },
 });

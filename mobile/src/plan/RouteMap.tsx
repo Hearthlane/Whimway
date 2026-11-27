@@ -54,7 +54,7 @@ export function RouteMap({ plan, selected, onSelect }: { plan: Itinerary; select
       </MapView>
       {model.paths.some((p) => !p.verified) ? (
         <View style={s.note}>
-          <T v="small" style={{ fontSize: 11 }}>
+          <T v="small" style={{ fontSize: 13 }}>
             Dashed = estimated path
           </T>
         </View>

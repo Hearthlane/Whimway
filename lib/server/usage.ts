@@ -25,7 +25,7 @@ export const meteredFetch: typeof fetch = async (input, init) => {
     if (total > max)
       throw new AppError(
         "PROVIDER_DAILY_LIMIT",
-        "Whimway has reached its daily provider-request allowance. Try again tomorrow.",
+        "Whimway has looked up as many places as it can for today, to keep the service free. Plans you've already made still show their stops; new plans and changes work again tomorrow.",
         429,
       );
     const stats = providerStats();

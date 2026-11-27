@@ -1,5 +1,24 @@
 # Validation record
 
+## Onboarding and sign-in phase (Nov 2026)
+
+| Check | Outcome |
+| --- | --- |
+| Sign-in journeys (accounts-on web build, simulated Supabase auth and account endpoints) | New person: onboarding → "Save your profile?" → typo flagged → code sent with resend cooldown → wrong code explained → signed in, profile and people uploaded. Sign out keeps everything on the device. Returning on a new device: "I already have an account" → welcome back with profile, people and a saved plan restored, questions skipped. Account without a profile: signs in, then answers the questions without being asked to sign in again. Zero browser errors |
+| Not tested | A live Supabase project: real emails, real codes, rate limits and RLS through the hosted API |
+
+## Home, people and profile phase (Nov 2026)
+
+| Check | Outcome |
+| --- | --- |
+| Root + app typechecks, ESLint | Passed |
+| Vitest | 183 passed across 16 files (adds today's-plan timing, people validation and the synced-profile size limit) |
+| Playwright (web) | 15 journeys passed |
+| App journeys (Expo web build, mobile Chromium) | Main journey now also adds a person, sees them on the profile, plans with them from home (the guide shows "Planning with Sam" and skips "who"), and uses the Plans / Places tabs; guided-planner and Discover journeys passed; zero browser errors |
+| Database | All migrations + 80 authorization assertions passed on local PostgreSQL 16 |
+| Production build | `next build` passed |
+| Claude as the planner | Unit-tested with a simulated API; not yet run live (needs `ANTHROPIC_API_KEY`) |
+
 ## Design, monetisation and billing phase (Nov 2026)
 
 | Check                                         | Outcome                                                                                                                                                                                                                                                                                                                              |

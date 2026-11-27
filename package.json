@@ -16,6 +16,7 @@
     "check-setup": "node scripts/check-setup.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -41,6 +42,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/tz-lookup": "^6.1.2",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.0",
     "eslint-config-next": "16.4.6",
     "prettier": "^3.9.10",

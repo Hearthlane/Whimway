@@ -38,6 +38,25 @@ export const TasteProfile = z.object({
     )
     .max(100)
     .default([]),
+  /**
+   * The people this person goes out with: a private list on their device (synced with their
+   * profile when signed in). Not a social network: nobody is notified or contacted.
+   */
+  people: z
+    .array(
+      z.object({
+        id: z.string().max(40),
+        name: z.string().min(1).max(40),
+        relation: z.enum(["partner", "friend", "family"]),
+        /** Guided-planning category keys they enjoy (e.g. "mexican", "games"). */
+        likes: z.array(z.string().max(40)).max(8).default([]),
+        /** Anything to keep in mind ("vegetarian", "no stairs"). */
+        note: z.string().max(120).default(""),
+      }),
+    )
+    // Kept small so a signed-in profile stays well within the account's preferences size limit.
+    .max(30)
+    .default([]),
   /** Poll answers by poll id (one-tap "this or that" questions). */
   polls: z
     .record(z.string().max(40), z.enum(["a", "b"]))
@@ -47,6 +66,13 @@ export const TasteProfile = z.object({
   analytics: z.boolean().default(false),
   pace: z.enum(["relaxed", "balanced", "packed"]).default("balanced"),
   alcoholFree: z.boolean().default(false),
+  /** Larger text across the app (Settings › Accessibility). */
+  textScale: z.enum(["default", "large", "largest"]).default("default"),
+  /** Keep History on this device (recent places, searches). */
+  keepHistory: z.boolean().default(true),
+  /** Phone reminders: two hours before a saved plan, and a "how was it?" the next morning. */
+  remindDayOf: z.boolean().default(true),
+  remindRate: z.boolean().default(true),
   /** Whimway Plus entitlement. In the beta this is a demo flag; production verifies store receipts. */
   plus: z
     .object({
@@ -130,4 +156,53 @@ export function applyFeedback(
     ]),
   ].slice(-100);
   return { ...profile, affinity: trimmed, disliked };
+}
+
+const uniqueBy = <T>(items: T[], key: (item: T) => string, max: number) => {
+  const seen = new Set<string>();
+  return items.filter((i) => !seen.has(key(i)) && seen.add(key(i))).slice(0, max);
+};
+
+/**
+ * Combine the profile on this device with the one saved to the account, when someone signs in.
+ * - A device that hasn't been set up yet takes the account's profile as it is ("welcome back").
+ * - Otherwise the device's choices win (they are the most recent), and lists are combined:
+ *   favourites, people, skipped places and poll answers from both are kept.
+ * Learned affinities are averaged where both have them. Plus stays whichever is active.
+ */
+export function mergeProfiles(
+  device: TasteProfile,
+  account: TasteProfile | null,
+): TasteProfile {
+  if (!account) return device;
+  if (!device.onboarded && account.onboarded) return { ...account, onboarded: true };
+  const affinity: Record<string, number> = { ...account.affinity };
+  for (const [k, v] of Object.entries(device.affinity))
+    affinity[k] = k in affinity ? Math.round(((affinity[k] + v) / 2) * 100) / 100 : v;
+  const keptAffinity = Object.fromEntries(
+    Object.entries(affinity)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+      .slice(0, 40),
+  );
+  const plusActive = (p: TasteProfile) => Boolean(p.plus?.active);
+  return TasteProfile.parse({
+    ...device,
+    onboarded: device.onboarded || account.onboarded,
+    name: device.name || account.name,
+    dietary: device.dietary || account.dietary,
+    accessibility: device.accessibility || account.accessibility,
+    affinity: keptAffinity,
+    disliked: [...new Set([...device.disliked, ...account.disliked])].slice(0, 100),
+    favourites: uniqueBy([...device.favourites, ...account.favourites], (f) => f.id, 100),
+    people: uniqueBy([...device.people, ...account.people], (p) => p.id, 30),
+    polls: Object.fromEntries(
+      Object.entries({ ...account.polls, ...device.polls }).slice(-60),
+    ),
+    stats: {
+      plans: Math.max(device.stats.plans, account.stats.plans),
+      edits: Math.max(device.stats.edits, account.stats.edits),
+      shares: Math.max(device.stats.shares, account.stats.shares),
+    },
+    plus: plusActive(device) ? device.plus : (account.plus ?? device.plus),
+  });
 }

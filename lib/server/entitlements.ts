@@ -106,7 +106,10 @@ export async function countPlanMade(
 }
 
 /** Refuse a new plan once the free monthly allowance is used. Web guests with no install are covered by the daily cap. */
+/** Whimway is free and ad-supported unless Plus limits are switched on deliberately. */
+export const plusEnabled = () => process.env.WHIMWAY_PLUS_ENABLED === "true";
 export async function requirePlanAllowance(request: Request, userId?: string) {
+  if (!plusEnabled()) return;
   const install = installOf(request);
   if (!install && !userId) return;
   if ((await entitlementFor(request, userId)).plus) return;
@@ -124,6 +127,7 @@ export async function requireEditAllowance(
   userId: string | undefined,
   planId: string,
 ) {
+  if (!plusEnabled()) return () => Promise.resolve();
   const install = installOf(request);
   if (!install && !userId) return () => Promise.resolve();
   const plus = (await entitlementFor(request, userId)).plus;

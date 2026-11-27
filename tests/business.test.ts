@@ -33,14 +33,14 @@ describe("Whimway Plus limits", () => {
         active: true,
         plan: "yearly" as const,
         since: "2026-11-01",
-        until: "2026-11-20T00:00:00Z",
+        until: "2099-11-20T00:00:00Z",
         demo: true,
       },
     };
     expect(isPlus(plus, now)).toBe(true);
     expect(plansLeft(plus, now)).toBe(Infinity);
     expect(editsLeft(plus, 99)).toBe(Infinity);
-    expect(isPlus(plus, new Date("2026-11-21T00:00:00Z"))).toBe(false);
+    expect(isPlus(plus, new Date("2099-11-21T00:00:00Z"))).toBe(false);
     expect(editsLeft(emptyProfile(), 3)).toBe(0);
     expect(yearlySaving).toBeGreaterThan(40);
   });

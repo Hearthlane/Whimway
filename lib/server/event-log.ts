@@ -10,9 +10,12 @@ import type { LoggedEvent } from "../metrics";
  * serverless hosts the file is not durable: there, Supabase's `events` table (written by
  * the same API call) is the record, queried with docs/metrics.sql.
  */
+// Serverless hosts (Vercel) can only write to /tmp.
 const file =
   process.env.WHIMWAY_EVENT_LOG ??
-  path.join(process.cwd(), ".data", "events.jsonl");
+  (process.env.VERCEL
+    ? "/tmp/whimway-events.jsonl"
+    : path.join(/* turbopackIgnore: true */ process.cwd(), ".data", "events.jsonl"));
 const MAX = 50000;
 let events: LoggedEvent[] | null = null;
 

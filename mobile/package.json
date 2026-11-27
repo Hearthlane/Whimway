@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/instrument-sans": "^0.4.2",
     "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/ui": "~58.0.27",
     "@expo/vector-icons": "^15.0.2",
@@ -13,6 +15,7 @@
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
     "expo-device": "~58.0.5",
+    "expo-file-system": "~58.0.14",
     "expo-font": "~58.0.11",
     "expo-glass-effect": "~58.0.5",
     "expo-haptics": "~58.0.7",
@@ -20,7 +23,9 @@
     "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.16",
     "expo-location": "~58.0.20",
+    "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.30",
+    "expo-sharing": "~58.0.23",
     "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
     "expo-symbols": "~58.0.4",
@@ -52,7 +57,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:cloudflare": "node scripts/build-cloudflare.mjs"
   },
   "private": true
 }

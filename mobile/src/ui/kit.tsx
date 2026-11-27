@@ -1,6 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
+import { useWide } from "@/ui/layout";
 import * as Haptics from "expo-haptics";
-import { type ComponentProps, type ReactNode } from "react";
+import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useId, useRef } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -49,8 +50,21 @@ export function Icon({ name, size = 18, tint = color.ink }: { name: IconName; si
 }
 
 type Variant = keyof typeof type;
+// Larger text (Settings › Accessibility). Provided from the profile; every T scales with it.
+const TextScale = createContext(1);
+export const scaleOf = (scale: "default" | "large" | "largest") => (scale === "largest" ? 1.3 : scale === "large" ? 1.15 : 1);
+export function TextScaleProvider({ scale, children }: { scale: "default" | "large" | "largest"; children: ReactNode }) {
+  return <TextScale.Provider value={scaleOf(scale)}>{children}</TextScale.Provider>;
+}
+export const useTextScale = () => useContext(TextScale);
 export function T({ v = "body", style, tone, ...rest }: TextProps & { v?: Variant; tone?: string; style?: StyleProp<TextStyle> }) {
-  return <Text {...rest} style={[type[v] as TextStyle, { color: tone ?? color.ink }, style]} />;
+  const textScale = useContext(TextScale);
+  const flat = StyleSheet.flatten([type[v] as TextStyle, style]) ?? {};
+  const scaled =
+    textScale === 1
+      ? undefined
+      : { fontSize: (flat.fontSize ?? 16) * textScale, lineHeight: flat.lineHeight ? flat.lineHeight * textScale : undefined };
+  return <Text {...rest} style={[type[v] as TextStyle, { color: tone ?? color.ink }, style, scaled]} />;
 }
 
 export function tap(kind: "light" | "success" | "select" = "light") {
@@ -194,7 +208,7 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       {icon ? <Icon name={icon} size={12} tint={fg} /> : null}
-      <T v="smallStrong" tone={fg} style={{ fontSize: 12, lineHeight: 16 }}>
+      <T v="smallStrong" tone={fg} style={{ fontSize: 13, lineHeight: 16 }}>
         {label}
       </T>
     </View>
@@ -204,11 +218,61 @@ export function Badge({ label, tone = "mint", icon }: { label: string; tone?: "m
 /** Bottom sheet built on Modal: native slide on iOS/Android, fade on web. */
 export function Sheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
+  const wide = useWide();
+  // Web: focus moves into the sheet, Tab stays inside it, Escape closes it (even mid-typing),
+  // and focus returns to whatever opened it.
+  const sheetId = `sheet-${useId().replace(/[^\w-]/g, "")}`;
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    if (Platform.OS !== "web" || !open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      Array.from(document.getElementById(sheetId)?.querySelectorAll<HTMLElement>('input, textarea, button, [role="button"], [role="switch"], [role="radio"], [tabindex="0"]') ?? []).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+    // The sheet mounts during its entrance; try for a moment, then fall back to the dialog itself.
+    let tries = 0;
+    const settle = () => {
+      const target = focusables()[1] ?? focusables()[0];
+      if (target) target.focus();
+      else if (tries++ < 10) frame = window.setTimeout(settle, 30);
+      else document.getElementById(sheetId)?.focus();
+    };
+    let frame = window.setTimeout(settle, 30);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeRef.current();
+      } else if (e.key === "Tab") {
+        const els = focusables();
+        if (!els.length) return;
+        const first = els[0];
+        const last = els[els.length - 1];
+        const inside = document.getElementById(sheetId)?.contains(document.activeElement);
+        if (e.shiftKey && (document.activeElement === first || !inside)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      clearTimeout(frame);
+      window.removeEventListener("keydown", onKey, true);
+      opener?.focus?.();
+    };
+  }, [open, sheetId]);
   const content = (
-      <Animated.View entering={FadeIn.duration(motion.quick)} style={styles.scrim}>
+      <Animated.View entering={FadeIn.duration(motion.quick)} style={[styles.scrim, wide && { justifyContent: "center", padding: space.xl }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
-        <Animated.View entering={SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }]} accessibilityViewIsModal>
-          <View style={styles.grabber} />
+        <Animated.View entering={wide ? FadeIn.duration(motion.standard) : SlideInDown.duration(motion.standard)} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.lg) }, wide && { maxWidth: 520, borderRadius: radius.xl }]} accessibilityViewIsModal>
+          <View nativeID={sheetId} role="dialog" aria-modal aria-label={title} tabIndex={-1} style={{ flexShrink: 1 }}>
+          {wide ? null : <View style={styles.grabber} />}
           <View style={styles.sheetHeader}>
             <T v="heading" style={{ flex: 1 }} accessibilityRole="header">
               {title}
@@ -219,6 +283,7 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
             {children}
           </ScrollView>
           {footer}
+          </View>
         </Animated.View>
       </Animated.View>
   );
@@ -260,7 +325,7 @@ export function Spark({ size = 24, fill = color.paper, accent = color.ink }: { s
 
 export function Wordmark({ size = 24 }: { size?: number }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="header" accessibilityLabel="Whimway">
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="image" accessibilityLabel="Whimway">
       <View style={[styles.mark, { width: size * 1.35, height: size * 1.35, borderRadius: size * 0.42 }]}>
         <Spark size={size * 1.35} />
       </View>
@@ -294,7 +359,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chip: {
-    minHeight: 38,
+    minHeight: touch,
     paddingHorizontal: 14,
     borderRadius: radius.pill,
     borderWidth: 1,

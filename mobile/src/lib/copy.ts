@@ -2,7 +2,7 @@ import type { interests, PlanRequest, Vibe } from "@shared/schema";
 import type { IconName } from "@/ui/kit";
 
 export const companionCopy: Record<NonNullable<PlanRequest["companions"]>, { label: string; hint: string; icon: IconName }> = {
-  partner: { label: "My partner", hint: "Dates & nights for two", icon: "heart" },
+  partner: { label: "Someone special", hint: "A partner, or a date", icon: "heart" },
   friends: { label: "Friends", hint: "Hangouts with the crew", icon: "users" },
   solo: { label: "Just me", hint: "Solo adventures", icon: "user" },
   family: { label: "Family", hint: "Something for everyone", icon: "home" },
@@ -11,7 +11,7 @@ export const vibeCopy: Record<Vibe, { label: string; hint: string; icon: IconNam
   romantic: { label: "Romantic", hint: "Candlelight, views", icon: "heart" },
   adventurous: { label: "Adventurous", hint: "Say yes to new", icon: "compass" },
   cozy: { label: "Cozy", hint: "Warm, slow, snug", icon: "moon" },
-  cinematic: { label: "Cinematic", hint: "Main-character energy", icon: "film" },
+  cinematic: { label: "Cinematic", hint: "Movies, views, great photos", icon: "film" },
   chill: { label: "Chill", hint: "Low-key and easy", icon: "sunset" },
   lively: { label: "Lively", hint: "Buzz and music", icon: "zap" },
   artsy: { label: "Artsy", hint: "Galleries, culture", icon: "aperture" },
@@ -36,11 +36,14 @@ export const modeCopy: Record<PlanRequest["mode"], { label: string; icon: IconNa
   TRANSIT: { label: "Transit", icon: "git-commit", verb: "transit" },
   DRIVE: { label: "Driving", icon: "truck", verb: "drive" },
 };
-export const examplePrompts = [
-  { title: "Cinematic & romantic", prompt: "Something cinematic and romantic tonight with my girlfriend", icon: "film" as IconName },
-  { title: "Squad Saturday", prompt: "An adventurous Saturday with three friends under $40 each", icon: "users" as IconName },
-  { title: "Rainy day hideaway", prompt: "Plan a cozy rainy afternoon with cafés and hidden gems", icon: "umbrella" as IconName },
-  { title: "Birthday surprise", prompt: "Surprise me with a memorable birthday experience for my partner", icon: "gift" as IconName },
+export const examplePrompts: { title: string; prompt: string; icon: IconName; who?: string; vibes?: string[] }[] = [
+  { title: "Cinematic & romantic", prompt: "Something cinematic and romantic tonight for the two of us", icon: "film", who: "partner", vibes: ["cinematic", "romantic"] },
+  { title: "Squad Saturday", prompt: "An adventurous Saturday with three friends under $40 each", icon: "users", who: "friends", vibes: ["adventurous", "lively"] },
+  { title: "Rainy day hideaway", prompt: "Plan a cozy rainy afternoon with cafés and hidden gems", icon: "umbrella", vibes: ["cozy", "chill", "foodie"] },
+  { title: "Family day out", prompt: "A full Saturday with the kids, 10am to 5pm, lunch included", icon: "sun", who: "family" },
+  { title: "Solo reset", prompt: "A slow solo afternoon: a gallery, a good coffee and a long walk", icon: "user", who: "solo", vibes: ["artsy", "chill"] },
+  { title: "Sober first date", prompt: "First date, no alcohol, somewhere quiet where we can talk", icon: "coffee", who: "partner", vibes: ["cozy"] },
+  { title: "Birthday surprise", prompt: "Surprise me with a memorable birthday experience for my partner", icon: "gift", who: "partner", vibes: ["romantic", "adventurous"] },
 ];
 export function money(n: number, currency = "CAD") {
   const rounded = Math.round(n);

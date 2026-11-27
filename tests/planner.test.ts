@@ -243,7 +243,7 @@ describe("Planner and editor", () => {
         new FixtureAI(),
         true,
       ).generate(s.request, s, "Surprise me"),
-    ).rejects.toThrow("All stops are locked");
+    ).rejects.toThrow("Every stop is locked in");
   });
   it("rejects AI-invented IDs and invalid outputs", async () => {
     const r = request();
@@ -276,7 +276,7 @@ describe("Planner and editor", () => {
         s.request,
         s,
       ),
-    ).rejects.toThrow("locked stop");
+    ).rejects.toThrow("stop you locked in");
   });
   it("rejects a too-long edit but allows a clearly labelled partial generation", async () => {
     const s = spec();

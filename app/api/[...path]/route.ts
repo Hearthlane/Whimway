@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -10,17 +11,22 @@ import {
   interests,
   travelModes,
 } from "@/lib/schema";
-import { planner, demoAllowed } from "@/lib/server/providers";
+import { planner, demoAllowed, aiConfigured } from "@/lib/server/providers";
+import { withStatedNeeds } from "@/lib/intent";
 import {
   GooglePlaces,
   autocomplete,
   resolvePoint,
   photoUrl,
+  staticMap,
+  staticMapKey,
+  mapTile,
 } from "@/lib/providers/google";
 import { fixtureLocations } from "@/lib/providers/fixtures";
 import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
 import {
   body,
+  networkId,
   rateLimit,
   telemetry,
   sameOrigin,
@@ -33,6 +39,19 @@ import { providerStats } from "@/lib/server/provider-context";
 import { eventNames } from "@/lib/analytics";
 import { summarize } from "@/lib/metrics";
 import { FREE } from "@/lib/plus";
+import { cuisines, customGroup, groupByKey } from "@/lib/guide";
+import {
+  AdEvent,
+  NewCampaign,
+  choose,
+  surfaces,
+  toPlacement,
+} from "@/lib/sponsored";
+import {
+  invalidateServable,
+  servable,
+  sponsoredStore,
+} from "@/lib/server/sponsored";
 import {
   countPlanMade,
   entitlementFor,
@@ -40,6 +59,7 @@ import {
   installOf,
   plansThisMonth,
   requireEditAllowance,
+  plusEnabled,
   requirePlanAllowance,
 } from "@/lib/server/entitlements";
 import { allEvents, logEvent } from "@/lib/server/event-log";
@@ -59,6 +79,11 @@ type Context = { params: Promise<{ path: string[] }> };
 const ok = (data: unknown) =>
   NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
 function failure(e: unknown) {
+  // In development, say which field failed so provider data problems are easy to trace.
+  if (e instanceof z.ZodError && process.env.NODE_ENV !== "production")
+    console.error(
+      JSON.stringify({ event: "invalid_input", issues: e.issues.slice(0, 5) }),
+    );
   if (e instanceof z.ZodError)
     return NextResponse.json(
       {
@@ -82,6 +107,23 @@ function failure(e: unknown) {
     { status: 500 },
   );
 }
+/** Founder/admin endpoints need ADMIN_KEY; without one they work only in non-production demo mode. */
+function requireAdmin(request: Request) {
+  // Header only (a query string ends up in logs and history); compared in constant time.
+  const key = process.env.ADMIN_KEY;
+  const given = request.headers.get("x-admin-key") ?? "";
+  const matches =
+    Boolean(key) &&
+    given.length === key!.length &&
+    timingSafeEqual(Buffer.from(given), Buffer.from(key!));
+  if (key ? !matches : !demoAllowed())
+    throw new AppError(
+      "FORBIDDEN",
+      "Set ADMIN_KEY and pass it to manage this.",
+      403,
+    );
+}
+
 export async function GET(request: Request, ctx: Context) {
   return withProviderContext(request.signal, () => handleGET(request, ctx));
 }
@@ -94,22 +136,86 @@ async function handleGET(request: Request, ctx: Context) {
       return ok({
         places: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
         maps: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
-        ai: Boolean(
-          (process.env.WHIMWAY_OPENAI_KEY || process.env.OPENAI_API_KEY) &&
-          (process.env.WHIMWAY_OPENAI_MODEL || process.env.OPENAI_MODEL),
-        ),
+        /** Real map images for the browser build (Maps Static API, key kept on the server). */
+        staticMap: Boolean(staticMapKey()),
+        /** Real map tiles for the browser build (Map Tiles API, works with the header key). */
+        tiles: Boolean(process.env.GOOGLE_MAPS_SERVER_KEY),
+        ai: aiConfigured(),
         cloud: Boolean(
           process.env.NEXT_PUBLIC_SUPABASE_URL &&
           process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
         ),
         demo: demoAllowed(),
+        /** Plus limits and paywall; off by default (free, ad-supported). */
+        plus: plusEnabled(),
         user: user ? { id: user.id, email: user.email } : null,
       });
     }
     if (path === "auth/signout") {
       throw new AppError("METHOD", "Use the sign-out button.", 405);
     }
+    if (path === "admin/campaigns") {
+      await rateLimit(request, "write");
+      requireAdmin(request);
+      const store = sponsoredStore();
+      const [campaigns, stats] = await Promise.all([
+        store.listAll(),
+        store.stats(),
+      ]);
+      return ok(
+        campaigns.map((c) => ({
+          ...c,
+          stats: stats[c.id] ?? { impressions: 0, clicks: 0 },
+        })),
+      );
+    }
+    if (path.startsWith("tiles/")) {
+      // A map needs a dozen tiles at once: its own allowance, separate from other reads.
+      await rateLimit(request, "tile");
+      const [zoom, tx, ty] = z
+        .tuple([
+          z.coerce.number().int().min(3).max(20),
+          z.coerce.number().int().min(0),
+          z.coerce.number().int().min(0),
+        ])
+        .parse(path.split("/").slice(1));
+      if (tx >= 2 ** zoom || ty >= 2 ** zoom)
+        throw new AppError("INVALID_INPUT", "Tile out of range.", 400);
+      const tile = await mapTile(zoom, tx, ty);
+      return new NextResponse(tile.body, {
+        headers: {
+          "Content-Type": tile.type,
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
+    }
     await rateLimit(request, "read", (await currentUser())?.id);
+    if (path === "sponsored") {
+      // At most one clearly labelled placement for a surface; none when no campaign fits.
+      const q = z
+        .object({
+          surface: z.enum(surfaces),
+          lat: z.coerce.number().min(-90).max(90),
+          lng: z.coerce.number().min(-180).max(180),
+          category: z.string().max(40).optional(),
+        })
+        .parse(Object.fromEntries(url.searchParams));
+      const { campaigns, impressions } = await servable().catch(() => ({
+        campaigns: [],
+        impressions: {} as Record<string, number>,
+      }));
+      if (!campaigns.length) return ok([]);
+      const pick = choose(
+        campaigns,
+        {
+          surface: q.surface,
+          point: { lat: q.lat, lng: q.lng },
+          category: q.category,
+        },
+        impressions,
+      );
+      return ok(pick ? [toPlacement(pick, q.surface)] : []);
+    }
     if (path === "autocomplete") {
       const input = z.string().min(2).max(150).parse(url.searchParams.get("q"));
       const session = z.string().uuid().parse(url.searchParams.get("session"));
@@ -132,6 +238,48 @@ async function handleGET(request: Request, ctx: Context) {
       const session = url.searchParams.get("session");
       if (session) z.string().uuid().parse(session);
       return ok(await new GooglePlaces().location(id, session ?? undefined));
+    }
+    if (path === "staticmap") {
+      // ?stops=lat,lng;lat,lng&paths=<enc>;<enc>&w=600&h=240 (paths may be empty per leg)
+      const q = z
+        .object({
+          stops: z
+            .string()
+            .max(400)
+            .transform((v) => v.split(";").map((p) => p.split(",").map(Number)))
+            .pipe(
+              z
+                .array(
+                  z.tuple([
+                    z.number().min(-90).max(90),
+                    z.number().min(-180).max(180),
+                  ]),
+                )
+                .min(1)
+                .max(8),
+            ),
+          // Encoded polylines use ASCII 63-126; legs are separated by spaces.
+          paths: z
+            .string()
+            .max(12000)
+            .regex(/^[\x3F-\x7E ]*$/)
+            .default(""),
+          w: z.coerce.number().int().min(100).max(640).default(600),
+          h: z.coerce.number().int().min(100).max(640).default(260),
+        })
+        .parse(Object.fromEntries(url.searchParams));
+      const image = await staticMap({
+        stops: q.stops.map(([lat, lng]) => ({ lat, lng })),
+        paths: q.paths ? q.paths.split(" ") : [],
+        width: q.w,
+        height: q.h,
+      });
+      return new NextResponse(image.body, {
+        headers: {
+          "Content-Type": image.type,
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
     }
     if (path === "photo")
       return NextResponse.redirect(
@@ -194,25 +342,38 @@ async function handleGET(request: Request, ctx: Context) {
       });
     }
     if (path === "admin/metrics") {
-      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.
-      const key = process.env.ADMIN_KEY;
-      const given =
-        request.headers.get("x-admin-key") ?? url.searchParams.get("key");
-      if (key ? given !== key : !demoAllowed())
-        throw new AppError(
-          "FORBIDDEN",
-          "Set ADMIN_KEY and pass it to view metrics.",
-          403,
-        );
+      // Founder dashboard data. Needs ADMIN_KEY; open only in non-production demo mode.      await rateLimit(request, "write");
+      requireAdmin(request);
       const store = signalStore();
       const [tallies, pollTallies] = await Promise.all([
         store.tallies().catch(() => ({})),
         store.polls().catch(() => ({})),
       ]);
+      const sponsored = sponsoredStore();
+      const [campaigns, adStats] = await Promise.all([
+        sponsored.listAll().catch(() => []),
+        sponsored
+          .stats()
+          .catch(
+            () =>
+              ({}) as Record<string, { impressions: number; clicks: number }>,
+          ),
+      ]);
       return ok({
         summary: summarize(await allEvents()),
         tallies,
         polls: pollTallies,
+        campaigns: campaigns.map((c) => ({
+          id: c.id,
+          business: c.business.name,
+          headline: c.headline,
+          running:
+            c.active &&
+            Date.parse(c.startsAt) <= Date.now() &&
+            Date.now() < Date.parse(c.endsAt),
+          endsAt: c.endsAt,
+          ...(adStats[c.id] ?? { impressions: 0, clicks: 0 }),
+        })),
       });
     }
     if (path === "crowd/places") {
@@ -294,19 +455,24 @@ async function handlePOST(request: Request, ctx: Context) {
     const user = await currentUser();
     await rateLimit(
       request,
-      path === "generate"
+      path === "generate" || path === "guide/plans"
         ? "generate"
-        : path === "remix" || path === "edit" || path === "magic-edit"
-          ? "remix"
-          : [
-                "events",
-                "signals",
-                "polls/answer",
-                "errors",
-                "feedback",
-              ].includes(path)
-            ? "signal"
-            : "write",
+        : path === "guide/options"
+          ? "browse"
+          : path === "sponsored/event"
+            ? "ad"
+            : path === "remix" || path === "edit" || path === "magic-edit"
+              ? "remix"
+              : [
+                    "events",
+                    "signals",
+
+                    "polls/answer",
+                    "errors",
+                    "feedback",
+                  ].includes(path)
+                ? "signal"
+                : "write",
       user?.id,
     );
     if (path === "point") return ok(await resolvePoint(Point.parse(input)));
@@ -314,6 +480,7 @@ async function handlePOST(request: Request, ctx: Context) {
       const data = z
         .object({ request: PlanRequest, demo: z.boolean().default(false) })
         .parse(input);
+      data.request = withStatedNeeds(data.request);
       await requirePlanAllowance(request, user?.id);
       const started = Date.now();
       const result = await planner(data.request, data.demo)
@@ -331,6 +498,64 @@ async function handlePOST(request: Request, ctx: Context) {
         outputTokens: stats?.outputTokens,
       });
       return ok(result);
+    }
+    if (path === "sponsored/event") {
+      const event = AdEvent.parse(input);
+      await sponsoredStore().record({
+        campaignId: event.campaignId,
+        kind: event.kind,
+        network: networkId(request),
+      });
+      return ok({ recorded: true });
+    }
+    if (path === "admin/campaigns") {
+      requireAdmin(request);
+      const store = sponsoredStore();
+      const id = z.string().uuid().optional().parse(input.id);
+      // An update merges only the fields sent, then validates the whole campaign, so
+      // unsent fields keep their values instead of falling back to defaults.
+      const patch = { ...z.record(z.string(), z.unknown()).parse(input) };
+      delete patch.id;
+      const saved = id
+        ? await store.update(id, patch).catch((e) => {
+            if ((e as Error).message === "not_found")
+              throw new AppError("NOT_FOUND", "No campaign with that id.", 404);
+            throw e;
+          })
+        : await store.create(NewCampaign.parse(input));
+      invalidateServable();
+      return ok(saved);
+    }
+    if (path === "guide/plans") {
+      const data = z
+        .object({
+          request: PlanRequest,
+          /** What the person said was missing from the options they were shown. */
+          feedback: z.string().max(300).default(""),
+          /** Stops already shown, so a new set is actually different. */
+          avoid: z.array(z.string().max(250)).max(40).default([]),
+          demo: z.boolean().default(false),
+        })
+        .parse(input);
+      data.request = withStatedNeeds(data.request, data.feedback);
+      await requirePlanAllowance(request, user?.id);
+      const started = Date.now();
+      const options = await planner(data.request, data.demo)
+        .withCrowd(await crowdSignals())
+        .alternatives(data.request, data.feedback, data.avoid);
+      // A set of options counts as one plan against the monthly allowance, and only the first set.      // A first set counts as one plan; asking for different options (avoid set) does not.
+      if (!data.avoid.length)
+        await countPlanMade(installOf(request), user?.id).catch(
+          () => undefined,
+        );
+      telemetry("plan_generated", {
+        ms: Date.now() - started,
+        stops: options[0]?.plan.stops.length ?? 0,
+        demo: data.demo,
+        options: options.length,
+        refined: Boolean(data.feedback),
+      });
+      return ok(options);
     }
     if (path === "hydrate") {
       const spec = PlanSpec.parse(input);
@@ -363,6 +588,10 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "remix") {
       const data = RemixRequest.parse(input);
+      data.spec = {
+        ...data.spec,
+        request: withStatedNeeds(data.spec.request, data.action),
+      };
       const result = await planner(data.spec.request, data.spec.demo)
         .withCrowd(await crowdSignals())
         .generate(data.spec.request, data.spec, data.action);
@@ -371,6 +600,10 @@ async function handlePOST(request: Request, ctx: Context) {
     }
     if (path === "magic-edit") {
       const data = MagicEditRequest.parse(input);
+      data.spec = {
+        ...data.spec,
+        request: withStatedNeeds(data.spec.request, data.instruction),
+      };
       const countEdit = await requireEditAllowance(
         request,
         user?.id,
@@ -545,6 +778,41 @@ async function handlePOST(request: Request, ctx: Context) {
           .explore(data.request, data.query),
       );
     }
+    if (path === "guide/options") {
+      const data = z
+        .object({
+          request: PlanRequest,
+          group: z.string().max(40),
+          /** Free text when the person typed what they want instead of picking a tile. */
+          text: z.string().max(80).optional(),
+          /** Minutes a place must stay open from the start time (browsing needs less). */
+          openFor: z.number().int().min(30).max(240).optional(),
+          limit: z.number().int().min(1).max(12).default(8),
+          demo: z.boolean().default(false),
+        })
+        .parse(input);
+      const group =
+        data.group === "custom" && data.text?.trim()
+          ? customGroup(data.text)
+          : groupByKey(data.group);
+      if (!group)
+        throw new AppError(
+          "UNKNOWN_GROUP",
+          "That category is not available.",
+          422,
+        );
+      return ok(
+        await planner(data.request, data.demo)
+          .withCrowd(await crowdSignals())
+          // A meal needs about 90 minutes; an activity about two hours of opening time left.
+          .options(
+            data.request,
+            group,
+            data.limit,
+            data.openFor ?? (cuisines.includes(group) || group.key === "sweet" ? 90 : 120),
+          ),
+      );
+    }
     if (path === "place") {
       const data = z
         .object({
@@ -700,6 +968,13 @@ export async function DELETE(request: Request, ctx: Context) {
   try {
     sameOrigin(request);
     const path = (await ctx.params).path.join("/");
+    if (path.startsWith("admin/campaigns/")) {
+      await rateLimit(request, "write");
+      requireAdmin(request);
+      await sponsoredStore().remove(z.string().uuid().parse(path.slice(16)));
+      invalidateServable();
+      return ok({ deleted: true });
+    }
     const { db, user } = await requireUser();
     await rateLimit(request, "write", user.id);
     if (path.startsWith("plans/")) {

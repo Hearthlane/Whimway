@@ -1,8 +1,8 @@
-import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
-import { Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit";
+import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
+import { InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold } from "@expo-google-fonts/instrument-sans";
 import { useFonts } from "expo-font";
-import { Stack, type ErrorBoundaryProps } from "expo-router";
-import { Platform, View , StyleSheet, useWindowDimensions } from "react-native";
+import { router, Stack, type ErrorBoundaryProps } from "expo-router";
+import { Platform, StyleSheet, View } from "react-native";
 import { api } from "@/lib/api";
 import { Button, Icon, T , Spark } from "@/ui/kit";
 import * as SplashScreen from "expo-splash-screen";
@@ -11,13 +11,40 @@ import { useEffect, useState } from "react";
 import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider, useStore } from "@/lib/store";
+import { allowReminders, onReminderOpened, syncReminders } from "@/lib/reminders";
+import { endOf } from "@shared/today";
+import { DateTime } from "luxon";
 import { color } from "@/ui/theme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
+// Web: a clear keyboard focus ring that follows each control's shape, and visible
+// scrollbars on horizontal rows so they can be scrolled with a mouse.
+if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("whimway-focus")) {
+  const css = document.createElement("style");
+  css.id = "whimway-focus";
+  css.textContent = `
+    [tabindex]:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid ${color.ink} !important; outline-offset: 2px; box-shadow: 0 0 0 4px ${color.paper};
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  `;
+  document.head.appendChild(css);
+}
+
 function Navigator() {
-  const { ready, track } = useStore();
-  const [fontsLoaded] = useFonts({ DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, Outfit_500Medium, Outfit_600SemiBold });
+  const { ready, track, plans, profile } = useStore();
+  // Phone reminders follow the saved plans; opening one opens its plan.
+  useEffect(() => {
+    if (!ready) return;
+    const wanted = (profile.remindDayOf || profile.remindRate) && Object.values(plans).some((p) => p.saved && endOf(p) > DateTime.now());
+    void (async () => {
+      if (wanted) await allowReminders();
+      await syncReminders(plans, profile);
+    })().catch(() => undefined);
+  }, [ready, plans, profile]);
+  useEffect(() => onReminderOpened((url) => router.push(url as never)), []);
+  const [fontsLoaded] = useFonts({ InstrumentSans_400Regular, InstrumentSans_500Medium, InstrumentSans_600SemiBold, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
   const visible = ready && fontsLoaded;
   useEffect(() => {
     if (visible) {
@@ -41,9 +68,13 @@ function Navigator() {
         <Stack.Screen name="plan/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="import" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="plus" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="create" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
+        <Stack.Screen name="activity" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="history" options={{ animation: "slide_from_right" }} />
       </Stack>
       {launching ? (
-        <Animated.View exiting={FadeOut.duration(320)} style={[StyleSheet.absoluteFill, { backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }]} pointerEvents="none">
+        <Animated.View exiting={FadeOut.duration(240)} style={[StyleSheet.absoluteFill, { backgroundColor: color.coral, alignItems: "center", justifyContent: "center" }]} pointerEvents="none">
           <Animated.View entering={ZoomIn.springify().damping(11)}>
             <Spark size={120} />
           </Animated.View>
@@ -53,14 +84,15 @@ function Navigator() {
   );
 }
 
-/** On a desktop browser, present the app at phone size in a device frame. */
+/**
+ * The page's main landmark. On a wide browser the app sits in a centred column at full height
+ * (no fake phone bezel); on phones it fills the screen.
+ */
 function Frame({ children }: { children: React.ReactNode }) {
-  const { width, height } = useWindowDimensions();
-  if (Platform.OS !== "web" || width < 600) return <>{children}</>;
-  const frameHeight = Math.min(880, height - 48);
+  if (Platform.OS !== "web") return <>{children}</>;
   return (
-    <View style={{ flex: 1, backgroundColor: "#E9E7DF", alignItems: "center", justifyContent: "center" }}>
-      <View style={{ width: 412, height: frameHeight, borderRadius: 44, overflow: "hidden", backgroundColor: color.canvas, borderWidth: 10, borderColor: color.ink, shadowColor: color.ink, shadowOpacity: 0.25, shadowRadius: 40, shadowOffset: { width: 0, height: 24 } }}>{children}</View>
+    <View role="main" style={{ flex: 1 }}>
+      {children}
     </View>
   );
 }

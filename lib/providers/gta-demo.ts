@@ -14,6 +14,17 @@ import { distance } from "../geo";
 import { hoursCheck } from "../hours";
 import { localStart } from "../time";
 import { voice } from "./demo-voice";
+import { activities, inGroup } from "../guide";
+import { mealsFor, stopsFor, sunsetMinutes } from "../arc";
+// Parks and trails are dark after sunset; lit squares and landmarks are fine.
+const isNature = (p: CandidatePlace) =>
+  /park|hiking|beach|garden|campground|picnic|playground|trail|ravine|conservation/.test(
+    `${p.types[0] ?? ""} ${p.category}`.toLowerCase(),
+  ) && !/amusement|theme|water_park|skating|rink/.test(p.types.join(" "));
+
+/** Two places are the same kind of outing (both games, both shows) even if named differently. */
+const sameActivity = (a: CandidatePlace, b: CandidatePlace) =>
+  activities.some((g) => g.key !== "drinks" && inGroup(a, g) && inGroup(b, g));
 
 type Row = [
   key: string,
@@ -595,6 +606,338 @@ const rows: Row[] = [
     [15, 22],
     [12, 24],
   ],
+  // More places to eat, so guided planning has real choices per cuisine
+  [
+    "kinka",
+    "Kinka Izakaya",
+    43.6603,
+    -79.3789,
+    "japanese restaurant",
+    ["japanese_restaurant", "restaurant", "bar"],
+    [30, 50],
+    [17, 24],
+  ],
+  [
+    "mothers-dumplings",
+    "Mother's Dumplings",
+    43.6577,
+    -79.3997,
+    "chinese restaurant",
+    ["chinese_restaurant", "restaurant"],
+    [15, 28],
+    [11, 22],
+  ],
+  [
+    "sansotei",
+    "Sansotei Ramen",
+    43.6553,
+    -79.3866,
+    "ramen restaurant",
+    ["ramen_restaurant", "japanese_restaurant", "restaurant"],
+    [16, 24],
+    [11, 22],
+  ],
+  [
+    "buk-chang-dong",
+    "Buk Chang Dong Soon Tofu",
+    43.6636,
+    -79.417,
+    "korean restaurant",
+    ["korean_restaurant", "restaurant"],
+    [14, 22],
+    [11, 22],
+  ],
+  [
+    "seven-lives",
+    "Seven Lives Tacos",
+    43.6545,
+    -79.4006,
+    "mexican restaurant",
+    ["mexican_restaurant", "restaurant"],
+    [10, 20],
+    [12, 19],
+  ],
+  [
+    "la-carnita",
+    "La Carnita",
+    43.6557,
+    -79.4098,
+    "mexican restaurant",
+    ["mexican_restaurant", "restaurant", "bar"],
+    [25, 45],
+    [17, 23],
+  ],
+  [
+    "terroni",
+    "Terroni Queen West",
+    43.647,
+    -79.4057,
+    "italian restaurant",
+    ["italian_restaurant", "restaurant"],
+    [28, 50],
+    [12, 22],
+  ],
+  [
+    "burgers-priest",
+    "The Burger's Priest",
+    43.6487,
+    -79.3961,
+    "burger restaurant",
+    ["hamburger_restaurant", "american_restaurant", "restaurant"],
+    [14, 24],
+    [11, 22],
+  ],
+  [
+    "frans",
+    "Fran's Restaurant",
+    43.6613,
+    -79.3838,
+    "diner",
+    ["diner", "american_restaurant", "restaurant"],
+    [16, 30],
+    [7, 23],
+  ],
+  [
+    "banjara",
+    "Banjara Indian Cuisine",
+    43.6635,
+    -79.4186,
+    "indian restaurant",
+    ["indian_restaurant", "restaurant"],
+    [20, 35],
+    [12, 22],
+  ],
+  [
+    "paramount",
+    "Paramount Fine Foods",
+    43.6569,
+    -79.3813,
+    "middle eastern restaurant",
+    ["middle_eastern_restaurant", "lebanese_restaurant", "restaurant"],
+    [16, 30],
+    [11, 23],
+  ],
+  [
+    "ding-tai-fung",
+    "Ding Tai Fung",
+    43.8497,
+    -79.3516,
+    "chinese restaurant",
+    ["chinese_restaurant", "dim_sum_restaurant", "restaurant"],
+    [18, 32],
+    [11, 21],
+  ],
+  [
+    "congee-queen",
+    "Congee Queen",
+    43.8262,
+    -79.3063,
+    "chinese restaurant",
+    ["chinese_restaurant", "restaurant"],
+    [15, 30],
+    [10, 23],
+  ],
+  // More things to do, so each kind of fun has real choices
+  [
+    "ballroom",
+    "The Ballroom Bowl",
+    43.6487,
+    -79.3907,
+    "bowling & sports bar",
+    ["bowling_alley", "bar", "game"],
+    [20, 40],
+    [12, 26],
+  ],
+  [
+    "spin",
+    "SPiN Toronto",
+    43.6442,
+    -79.3977,
+    "ping pong bar",
+    ["bar", "game", "amusement_center"],
+    [15, 35],
+    [16, 26],
+  ],
+  [
+    "tilt",
+    "Tilt Arcade Bar",
+    43.6655,
+    -79.4107,
+    "arcade bar",
+    ["amusement_center", "bar", "game"],
+    [10, 25],
+    [16, 26],
+  ],
+  [
+    "batl",
+    "BATL Axe Throwing",
+    43.656,
+    -79.3563,
+    "axe throwing",
+    ["amusement_center", "game"],
+    [30, 45],
+    [12, 23],
+  ],
+  [
+    "captive",
+    "Captive Escape Rooms",
+    43.6535,
+    -79.3792,
+    "escape room",
+    ["amusement_center", "game", "escape_room"],
+    [28, 35],
+    [11, 23],
+  ],
+  [
+    "lob",
+    "Lob Toronto",
+    43.6583,
+    -79.3506,
+    "indoor bocce golf bar",
+    ["amusement_center", "bar", "game"],
+    [25, 40],
+    [12, 24],
+  ],
+  [
+    "for-the-win",
+    "For The Win Board Game Caf\u00e9",
+    43.7075,
+    -79.3977,
+    "board game caf\u00e9",
+    ["cafe", "game"],
+    [8, 20],
+    [12, 23],
+  ],
+  [
+    "comedy-bar",
+    "Comedy Bar",
+    43.661,
+    -79.4287,
+    "comedy club",
+    ["comedy_club", "performing_arts_theater", "bar"],
+    [15, 30],
+    [19, 24],
+  ],
+  [
+    "scotiabank",
+    "Scotiabank Theatre Toronto",
+    43.6488,
+    -79.3912,
+    "cinema",
+    ["movie_theater"],
+    [15, 24],
+    [11, 24],
+  ],
+  [
+    "royal-alex",
+    "Royal Alexandra Theatre",
+    43.6473,
+    -79.3877,
+    "theatre",
+    ["performing_arts_theater"],
+    [60, 150],
+    [19, 23],
+  ],
+  [
+    "paradise",
+    "Paradise Theatre",
+    43.661,
+    -79.4302,
+    "indie cinema",
+    ["movie_theater", "bar"],
+    [14, 20],
+    [17, 24],
+  ],
+  [
+    "illusions",
+    "Museum of Illusions",
+    43.6497,
+    -79.3711,
+    "interactive museum",
+    ["museum", "tourist_attraction", "amusement_center"],
+    [24, 30],
+    [10, 20],
+  ],
+  [
+    "hhof",
+    "Hockey Hall of Fame",
+    43.6473,
+    -79.3774,
+    "museum",
+    ["museum", "tourist_attraction"],
+    [20, 26],
+    [10, 18],
+  ],
+  [
+    "little-canada",
+    "Little Canada",
+    43.6565,
+    -79.381,
+    "miniature attraction",
+    ["tourist_attraction", "museum"],
+    [26, 36],
+    [10, 19],
+  ],
+  [
+    "bata",
+    "Bata Shoe Museum",
+    43.6672,
+    -79.4002,
+    "museum",
+    ["museum"],
+    [10, 14],
+    [10, 17],
+  ],
+  [
+    "high-park",
+    "High Park",
+    43.6465,
+    -79.4637,
+    "park",
+    ["park", "hiking_area"],
+    [0, 0],
+    "always",
+  ],
+  [
+    "hto",
+    "HTO Park",
+    43.6377,
+    -79.3883,
+    "waterfront park",
+    ["park", "beach"],
+    [0, 0],
+    "always",
+  ],
+  [
+    "bellwoods-brewery",
+    "Bellwoods Brewery",
+    43.6471,
+    -79.4199,
+    "brewery",
+    ["brewery", "bar"],
+    [15, 30],
+    [12, 23],
+  ],
+  [
+    "mahjong",
+    "Mahjong Bar",
+    43.6496,
+    -79.4204,
+    "cocktail bar",
+    ["cocktail_bar", "bar"],
+    [20, 40],
+    [18, 26],
+  ],
+  [
+    "millie",
+    "Millie Desserts",
+    43.6532,
+    -79.3984,
+    "dessert",
+    ["dessert_shop", "cafe"],
+    [8, 15],
+    [12, 22],
+  ],
 ];
 
 function periods(h: Row[7]): OpeningPeriod[] {
@@ -685,8 +1028,8 @@ const vibeTypes: Record<string, RegExp> = {
 };
 // A meal is a venue whose primary purpose is eating (not a mall that happens to have a food court).
 const isMeal = (p: CandidatePlace) =>
-  /restaurant|brunch|food court/.test(p.category) ||
-  /restaurant|food_court/.test(p.types[0] ?? "");
+  /restaurant|brunch|food court|steak ?house|diner|bistro|brewpub|gastropub|hot pot/.test(p.category) ||
+  /restaurant|food_court|steak_house|diner|bistro|brewpub|gastropub/.test(p.types[0] ?? "");
 const isSweetOrDrink = (p: CandidatePlace) =>
   /dessert|ice_cream|bar|brewery|wine|cocktail|cafe|bakery/.test(
     p.types.join(" "),
@@ -753,7 +1096,7 @@ const titles: Record<string, string[]> = {
     "Golden Hour Cut",
     "Scenes From the City",
   ],
-  chill: ["Easy Does It", "Slow Lane Saturday", "No Rush Ramble"],
+  chill: ["Easy Does It", "Slow Lane", "No Rush Ramble"],
   lively: ["Loud, Bright & Ours", "Turn It Up", "The Good Kind of Busy"],
   artsy: ["Gallery Hours", "Colour Outside the Lines", "Muse Mode"],
   foodie: ["Eat Our Way Across Town", "Bite by Bite", "The Tasting Route"],
@@ -793,31 +1136,57 @@ export function demoSelect(
     ? locked.length + 1
     : previousStops?.length
       ? Math.max(previousStops.length, locked.length + 1)
-      : req.pace === "relaxed"
-        ? 2
-        : req.pace === "packed" || req.duration >= 360
-          ? 4
-          : 3;
+      : stopsFor(req);
   const chosen: CandidatePlace[] = [];
+  const startMin =
+    Number(req.startTime.slice(0, 2)) * 60 + Number(req.startTime.slice(3, 5));
+  const allDark = startMin >= sunsetMinutes(req.date) - 30;
+  // Words from what the person asked for ("we want games"), to honour over a soft budget.
+  const askedFor = (
+    (action ?? "").match(/"(.+?)"/)?.[1] ??
+    (action ?? "").match(/matching: (.+?)\./)?.[1] ??
+    ""
+  )
+    .toLowerCase()
+    .split(/\W+/)
+    .filter((w) => w.length > 3)
+    .map((w) => w.replace(/s$/, ""));
+  const asked = (p: CandidatePlace) =>
+    askedFor.some((w) => text(p).includes(w));
   const lockedPlaces = candidates.filter((p) => lockedIds.has(p.id));
   let meals = lockedPlaces.filter(isMeal).length;
   // Stay within the per-person budget across the whole outing (published upper range).
   // Free places always fit; unknown prices count as the whole budget.
   let spent = lockedPlaces.reduce((n, p) => n + (p.price.high ?? 0), 0);
   // Free-to-browse places (optional spend) cost their minimum; unknown prices cost the whole budget.
+  // A listed range ("$30–$80") is budgeted at its middle, what a typical visit costs; planning
+  // at the top end let one dinner use a whole evening's budget and left a one-stop plan.
   const cost = (p: CandidatePlace) =>
-    p.price.optional ? (p.price.low ?? 0) : (p.price.high ?? req.budget);
+    p.price.optional
+      ? (p.price.low ?? 0)
+      : p.price.high == null
+        ? // Live data often has no price at all; count a modest share so one unknown doesn't
+          // crowd out the rest (the plan still says which prices are unknown).
+          Math.min(req.budget * 0.15, 15)
+        : p.price.low != null && p.price.low < p.price.high
+          ? (p.price.low + p.price.high) / 2
+          : p.price.high;
   // Evening outings of 3h+ reserve budget for one proper meal before anything else.
-  const wantsMeal =
-    req.duration >= 180 &&
-    meals === 0 &&
-    !previousStops?.length &&
-    (Number(req.startTime.slice(0, 2)) >= 16 ||
-      req.interests.includes("Food & drinks"));
-  const meal = wantsMeal
-    ? pool.find((p) => isMeal(p) && spent + cost(p) <= req.budget * 1.1)
-    : undefined;
-  if (meal) {
+  // Outings that span a mealtime get a proper meal; a long day gets lunch and dinner.
+  const mealTarget = previousStops?.length
+    ? Math.max(meals, 1)
+    : Math.max(meals, mealsFor(req));
+  while (!previousStops?.length && meals < mealTarget) {
+    const fits = (p: CandidatePlace, share: number) =>
+      isMeal(p) &&
+      !chosen.includes(p) &&
+      !chosen.some((c) => c.category === p.category) &&
+      spent + cost(p) <= req.budget * share;
+    // Prefer a meal that leaves room for the rest of the outing; else the best that fits at all.
+    const meal =
+      pool.find((p) => fits(p, (meals + 0.65) / mealTarget)) ??
+      pool.find((p) => fits(p, 1.1 * (meals + 1)));
+    if (!meal) break;
     chosen.push(meal);
     meals++;
     spent += cost(meal);
@@ -828,11 +1197,22 @@ export function demoSelect(
     if (
       cost(p) > 0 &&
       spent + cost(p) > req.budget * 1.1 &&
-      chosen.length + locked.length >= 1
+      chosen.length + locked.length >= 1 &&
+      // An explicit "add dessert", or a place matching what they asked for, is the
+      // person choosing to spend a little more; the plan shows the higher cost.
+      !action?.startsWith("Add") &&
+      !asked(p)
     )
       continue;
-    if (isMeal(p) && meals >= 1) continue; // one proper meal per outing
-    if (chosen.some((c) => c.category === p.category)) continue;
+    if (isMeal(p) && meals >= mealTarget) continue; // meals only at mealtimes
+    // A park or walk only while it's light, unless they asked for the outdoors.
+    if (allDark && isNature(p) && !req.vibes.includes("outdoorsy")) continue;
+    if (
+      [...chosen, ...lockedPlaces].some(
+        (c) => c.category === p.category || sameActivity(c, p),
+      )
+    )
+      continue; // no second escape room, or an arcade, next to the one they picked
     if (isMeal(p)) meals++;
     spent += cost(p);
     chosen.push(p);
@@ -853,7 +1233,10 @@ export function demoSelect(
           : 0;
   const fresh = chosen.sort((a, b) => rank(a) - rank(b));
   const vibe = req.vibes[0] ?? "chill";
-  const options = titles[vibe] ?? titles.chill;
+  const evening17 = Number(req.startTime.slice(0, 2)) >= 17;
+  const pool0 = titles[vibe] ?? titles.chill;
+  // A daytime plan isn't a "night".
+  const options = evening17 ? pool0 : pool0.filter((t) => !/night/i.test(t)).length ? pool0.filter((t) => !/night/i.test(t)) : titles.chill;
   const title =
     options[(req.date.charCodeAt(9) + req.participants) % options.length];
   const who = {
@@ -870,7 +1253,9 @@ export function demoSelect(
     return `${p.category[0].toUpperCase()}${p.category.slice(1)} that gives ${who} something to do together${fit ? `, and it suits a ${fit} mood` : ""}.`;
   };
   const minutes = (p: CandidatePlace) =>
-    isMeal(p)
+    /movie_theater|cinema|performing_arts|theater/.test(p.types.join(" "))
+      ? 120
+      : isMeal(p)
       ? 75
       : /museum|gallery|aquarium|castle|amusement|island/.test(text(p))
         ? 90
@@ -991,4 +1376,15 @@ function summarise(places: CandidatePlace[], req: PlanRequest, who: string) {
     0,
     350,
   );
+}
+
+/** The demo voice's pitch for a place the person picked themselves, if it has one. */
+export function demoReason(
+  placeId: string,
+  req: Pick<PlanRequest, "companions">,
+) {
+  const note = voice[placeId.replace(/^gta-/, "")];
+  if (!note) return undefined;
+  const group = req.companions === "friends" || req.companions === "family";
+  return (group ? note.crew : note.date).slice(0, 240);
 }

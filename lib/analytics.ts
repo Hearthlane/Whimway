@@ -6,6 +6,9 @@ export const eventNames = [
   "plan_requested",
   "plan_generated",
   "plan_failed",
+  "options_shown",
+  "options_refined",
+  "option_chosen",
   "plan_viewed",
   "magic_edit_applied",
   "stop_locked",
@@ -23,5 +26,7 @@ export const eventNames = [
   "paywall_viewed",
   "plus_started",
   "plus_cancelled",
+  "auth_code_sent",
+  "auth_signed_in",
 ] as const;
 export type EventName = (typeof eventNames)[number];

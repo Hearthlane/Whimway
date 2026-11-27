@@ -25,29 +25,29 @@ let page;
   await p.waitForTimeout(2600);
   await shot(p, '01-welcome');
   await p.getByTestId('onboarding-next').click();
+  // Who: picking a tile moves on by itself.
   await p.getByTestId('who-partner').click();
-  await p.getByTestId('onboarding-next').click();
   await p.getByTestId('vibe-romantic').click();
   await p.getByTestId('vibe-adventurous').click();
   await shot(p, '03-vibes');
   await p.getByTestId('onboarding-next').click();
+  // People (optional): later.
   await p.getByTestId('onboarding-next').click();
-  await p.getByTestId('onboarding-next').click();
+  await p.getByTestId('mode-TRANSIT').click();
+  await p.getByTestId('areas-more').click();
   await p.getByTestId('area-queen-west').click();
   await p.getByTestId('onboarding-next').click();
-  await p.getByLabel('What should we call you?').fill('Sam').catch(() => {});
+  await p.getByTestId('budget-50').click();
   await p.getByTestId('onboarding-next').click();
   await p.getByTestId('persona').waitFor({ timeout: 15000 });
+  await p.getByLabel('What should we call you?').fill('Sam');
   await p.waitForTimeout(1400);
   const personaName = await p.getByTestId('persona').innerText();
   await shot(p, '03b-reveal');
   await p.getByTestId('onboarding-next').click();
-  // Plus offer after onboarding: continue free.
-  await p.getByTestId('plus-skip').waitFor();
-  await p.waitForTimeout(700);
-  await shot(p, '03c-paywall');
-  await p.getByTestId('plus-skip').click();
-  await p.getByTestId('prompt-input').waitFor();
+  // The app is free by default: onboarding goes straight home, no paywall.
+  await p.getByTestId('home-start').waitFor();
+  const sawPaywall = await p.getByTestId('plus-skip').isVisible().catch(() => false);
   const onboardMs = Date.now() - t0;
   // Poll
   await p.getByTestId('poll-card').scrollIntoViewIfNeeded();
@@ -60,13 +60,24 @@ let page;
   await p.waitForTimeout(300);
   const nextPollText = await p.getByTestId('poll-card').innerText();
   await p.evaluate(() => window.scrollTo(0, 0));
-  const prompt = "Plan a spontaneous Saturday night with my girlfriend. We have $100 total, we're near Toronto, we want something romantic but adventurous, and we don't want to drive too far.";
+  // The centre "Plan" tab opens the Create sheet.
+  await p.getByTestId('tab-plan').click();
+  await p.getByTestId('prompt-input').waitFor();
+  const prompt = "Plan a spontaneous night out tomorrow at 6pm with my girlfriend. We have $100 total, we're near Toronto, we want something romantic but adventurous, and we don't want to drive too far.";
   await p.getByTestId('prompt-input').fill(prompt);
   await p.waitForTimeout(300);
   const chips = (await p.locator('[data-testid^="chip-"]').allInnerTexts()).map(s => s.trim());
   await shot(p, '06-home-heard');
   const g0 = Date.now();
   await p.getByTestId('plan-it').click();
+  // Typed ideas are clarified first: only the questions the words left open are asked.
+  await p.getByTestId('guide-food-any').waitFor({ timeout: 15000 });
+  const askedWho = await p.getByTestId('guide-who-partner').isVisible().catch(() => false);
+  await shot(p, '06b-clarify');
+  await p.getByTestId('guide-food-any').click();
+  await p.getByTestId('guide-fun-any').click();
+  await p.getByTestId('guide-build').click();
+  await p.getByTestId('option-0').click({ timeout: 60000 });
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   const genMs = Date.now() - g0;
   await p.waitForTimeout(600);
@@ -124,12 +135,41 @@ let page;
   await p.goto(`${base}/profile`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(500);
   await shot(p, '16-profile');
+  const planTiles = await p.locator('[data-testid^="plan-tile-"]').count();
+  const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
+  // People: add someone with what they like, then plan with them from home.
+  await p.getByRole('button', { name: 'Add person' }).click();
+  await p.getByTestId('person-name').fill('Sam');
+  await p.getByTestId('person-like-games').click();
+  await p.getByTestId('person-save').click();
+  await p.getByTestId('profile-tab-people').click();
+  await p.waitForTimeout(300);
+  const peopleListed = await p.locator('[data-testid^="people-row-"]').allInnerTexts();
+  await shot(p, '16b-profile-people');
+  await p.goto(`${base}/`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(600);
+  const todayCard = await p.getByTestId('today-card').count() ? (await p.getByTestId('today-card').innerText()).replace(/\n+/g, ' / ') : '';
+  await shot(p, '16c-home');
+  await p.mouse.move(200, 400);
+  await p.mouse.wheel(0, 800);
+  await p.waitForTimeout(500);
+  await shot(p, '16e-home-scrolled');
+  await p.mouse.wheel(0, -2000);
+  await p.waitForTimeout(300);
+  await p.getByRole('button', { name: 'Plan with Sam' }).click();
+  await p.waitForURL(/guide\?person=/, { timeout: 10000 });
+  await p.waitForTimeout(600);
+  const guideOpening = (await p.locator('body').innerText()).split('\n').filter((l) => /\?$/.test(l.trim()))[0] ?? '';
+  const withSam = await p.getByTestId('planning-with').innerText().catch(() => '');
+  const samAskedWho = await p.getByTestId('guide-who-partner').isVisible().catch(() => false);
+  await shot(p, '16d-guide-with-sam');
+  // Saved places live in Saved › Places.
+  await p.goto(`${base}/saved`, { waitUntil: 'networkidle' });
+  await p.getByTestId('saved-tab-places').click();
+  await p.waitForTimeout(300);
   // Favourites → plan around it
   const favListed = (await p.getByTestId('favourite').allInnerTexts()).join(' ');
-  const nights = (await p.getByTestId('your-nights').innerText()).replace(/\n+/g, ' ');
-  // Plan-around is a Plus feature: free users see the paywall, then start the (demo) trial.
-  await p.getByRole('button', { name: 'Plan around it' }).first().click();
-  await p.getByTestId('plus-start').click();
+  // Plan around a favourite: open to everyone in the free app.
   await p.getByRole('button', { name: 'Plan around it' }).first().click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   await p.waitForTimeout(400);
@@ -141,8 +181,8 @@ let page;
   await p.getByTestId('import-open').click();
   await p.getByTestId('plan-title').waitFor({ timeout: 60000 });
   const importedTitle = await p.getByTestId('plan-title').innerText();
-  // Near me
-  await p.goto(`${base}/`, { waitUntil: 'networkidle' });
+  // Near me (in the Create sheet)
+  await p.goto(`${base}/create`, { waitUntil: 'networkidle' });
   await p.getByTestId('chip-area').click();
   await p.getByTestId('near-me').click();
   await p.getByText('Using your location').waitFor({ timeout: 10000 });
@@ -158,12 +198,18 @@ let page;
   const summarize = a => a.map(s => s.split('\n').filter(Boolean).slice(0, 4).join(' | '));
   // Assertions: the core journey must hold end to end.
   assert.deepEqual(errors, [], "browser errors");
+  assert.equal(sawPaywall, false, "free app shows no paywall after onboarding");
+  assert.equal(askedWho, false, "does not re-ask what the words already said");
   assert.ok(chips.some((c) => c.includes("$100 total · $50/person")), "budget understood");
-  assert.ok(chips.some((c) => c.includes("With your partner")), "companion understood");
+  assert.ok(chips.some((c) => c.includes("The two of you")), "companion understood");
   assert.ok(stopsBefore.length >= 2 && stopsBefore.length <= 4, "2–4 stops");
   assert.equal(stopsAfter.length, stopsBefore.length, "magic edit keeps the stop count");
   assert.deepEqual(summarize(stopsAfter).slice(0, -1), summarize(stopsBefore).slice(0, -1), "kept stops untouched");
   assert.ok(link.includes("/p#"), "account-free share link");
+  assert.ok(planTiles >= 1, `plans shown on the profile grid (${planTiles})`);
+  assert.ok(peopleListed.some((t) => t.includes('Sam')), `person added (${peopleListed})`);
+  assert.ok(/Planning with Sam/.test(withSam), `guide shows who it's for (${withSam})`);
+  assert.equal(samAskedWho, false, `planning with Sam skips "who" (${guideOpening})`);
   assert.ok(favListed.includes(favName), `favourite listed (${favName})`);
   assert.ok(anchoredStops.includes(favName), "plan built around the favourite");
   assert.equal(importedTitle, title, "shared link opens inside the app");
@@ -173,7 +219,7 @@ let page;
     assert.ok(apiCalls.includes(call), call);
   assert.equal(personaName, 'Romantic Adventurer', 'personality reveal');
   assert.ok(bookKinds.includes('book-directions'), 'booking options');
-  assert.ok(/1 plan made/.test(nights), `history counts plans (${nights})`);
-  console.log(JSON.stringify({ nights, bookKinds, personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: Object.entries(apiCalls.reduce((m, c) => ((m[c] = (m[c] || 0) + 1), m), {})).map(([k, n]) => `${n}x ${k}`), errors }, null, 2));
+  assert.ok(/\b1 plan\b/.test(nights), `history counts plans (${nights})`);
+  console.log(JSON.stringify({ nights, planTiles, todayCard, guideOpening, bookKinds, personaName, favName, areaChip, importedTitle, onboardMs, genMs, title, chips, pollText: pollText.replace(/\n+/g, ' / '), nextPollText: nextPollText.split('\n').filter(Boolean).slice(0, 2).join(' / '), stopsBefore: summarize(stopsBefore), stopsAfter: summarize(stopsAfter), toast: toast.replace(/\n/g, ' '), linkLen: link.length, recipientTitle, apiCalls: Object.entries(apiCalls.reduce((m, c) => ((m[c] = (m[c] || 0) + 1), m), {})).map(([k, n]) => `${n}x ${k}`), errors }, null, 2));
   await b.close();
 })().catch(async e => { await page?.screenshot({ path: `${out}/zz-failure.png` }).catch(() => {}); console.error('JOURNEY FAILED', e.message.split('\n').slice(0, 6).join(' // ')); process.exit(1); });

@@ -7,6 +7,10 @@ const config: NextConfig = {
   devIndicators: false,
   logging: { incomingRequests: false, serverFunctions: false },
   allowedDevOrigins: ["127.0.0.1", ...(codespaceHost ? [codespaceHost] : [])],
+  // The Expo app, tests and local data are never part of a server function.
+  outputFileTracingExcludes: {
+    "/*": ["./mobile/**/*", "./tests/**/*", "./e2e/**/*", "./.data/**/*", "./docs/**/*"],
+  },
   async headers() {
     return [
       {

@@ -10,6 +10,7 @@ import {
 } from "../schema";
 import { safeUrl } from "../geo";
 import { AppError, providerFetch, requireEnv } from "../errors";
+import { nearestArea } from "../areas";
 import type { PlacesProvider, RouteProvider } from "./types";
 import { z } from "zod";
 const Money = z.object({
@@ -73,7 +74,8 @@ const RawPlace = z.object({
     .array(
       z.object({
         shortText: z.string().optional(),
-        types: z.array(z.string()),
+        // Google occasionally omits types on a component; treat it as untyped.
+        types: z.array(z.string()).default([]),
       }),
     )
     .optional(),
@@ -81,6 +83,16 @@ const RawPlace = z.object({
     .object({ wheelchairAccessibleEntrance: z.boolean().optional() })
     .optional(),
 });
+/**
+ * With GOOGLE_MAPS_SERVER_KEY=proxy-injected the key lives in a network secret and the
+ * egress proxy adds the X-Goog-Api-Key header, but only when the request carries none.
+ * So the placeholder is never sent; a real key is sent as usual.
+ */
+const INJECTED = "proxy-injected";
+function googleKey(): Record<string, string> {
+  const key = requireEnv("GOOGLE_MAPS_SERVER_KEY");
+  return key === INJECTED ? {} : { "X-Goog-Api-Key": key };
+}
 const fields =
   "id,displayName,location,formattedAddress,primaryType,types,googleMapsUri,businessStatus,rating,userRatingCount";
 const detailFields = `${fields},websiteUri,photos,priceRange,currentOpeningHours,regularOpeningHours,addressComponents,accessibilityOptions`;
@@ -236,17 +248,62 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
     wheelchairAccessible: p.accessibilityOptions?.wheelchairAccessibleEntrance,
   });
 }
+/**
+ * Short-lived, bounded cache of successful Google responses, shared by every request on
+ * this server. Guided planning asks for the same places several times while someone
+ * browses and picks options; this keeps that to one paid call. Entries live minutes,
+ * not days, in line with Google's limits on storing Places content. Concurrent identical
+ * calls share one request.
+ */
+const CACHE_MAX = 500;
+const cache = new Map<
+  string,
+  { at: number; ttl: number; value: Promise<unknown> }
+>();
+export function cached<T>(
+  key: string,
+  ttlMs: number,
+  load: () => Promise<T>,
+): Promise<T> {
+  if (process.env.WHIMWAY_PROVIDER_CACHE === "off") return load();
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < hit.ttl) {
+    cache.delete(key);
+    cache.set(key, hit); // most recently used last
+    return hit.value as Promise<T>;
+  }
+  const value = load();
+  cache.set(key, { at: Date.now(), ttl: ttlMs, value });
+  value.catch(() => cache.delete(key)); // never keep failures
+  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+  return value;
+}
+/** Test hook. */
+export const providerCache = cache;
+
 async function call(path: string, body?: unknown, mask = fields) {
-  const r = await providerFetch(`https://places.googleapis.com/v1/${path}`, {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY"),
-      "X-Goog-FieldMask": mask,
-    },
-    body: body ? JSON.stringify(body) : undefined,
+  const key = `places|${path}|${mask}|${body ? JSON.stringify(body) : ""}`;
+  // Details change rarely within an hour; searches are kept for 15 minutes.
+  const ttl = body ? 15 * 60_000 : 60 * 60_000;
+  return cached(key, ttl, async () => {
+    const r = await providerFetch(`https://places.googleapis.com/v1/${path}`, {
+      method: body ? "POST" : "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...googleKey(),
+        "X-Goog-FieldMask": mask,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json();
+    if (!r.ok || data?.error)
+      throw Object.assign(new Error("google"), { data });
+    return data;
+  }).catch((e: { data?: unknown }) => {
+    // Callers handle Google's error body themselves, as before.
+    if (e && typeof e === "object" && "data" in e) return e.data;
+    throw e;
   });
-  return r.json();
 }
 const searches: Record<string, string> = {
   "Food & drinks": "restaurants and cafes",
@@ -260,13 +317,35 @@ const searches: Record<string, string> = {
   "Hidden gems": "local cultural attractions",
   "Surprise me": "interesting things to do",
 };
+// Moods add their own searches, so a "romantic" plan isn't built only from generic results.
+const moodSearches: Record<string, string> = {
+  romantic: "romantic restaurants and scenic views",
+  adventurous: "unique experiences and activities",
+  cozy: "cozy cafes and bookstores",
+  cinematic: "cinemas and scenic viewpoints",
+  chill: "relaxed cafes and lounges",
+  lively: "live music and lively bars",
+  artsy: "art galleries and theatres",
+  foodie: "best restaurants and food halls",
+  outdoorsy: "parks trails and waterfront",
+  playful: "arcades games and fun activities",
+};
 export class GooglePlaces implements PlacesProvider {
   async search(req: PlanRequest, query?: string) {
+    const hour = Number(req.startTime.slice(0, 2));
+    // Interests and moods, plus something for the time of day, so every plan has food, a
+    // thing to do and somewhere to finish. Up to four searches, cached for 15 minutes.
     const categories = query
       ? [query]
-      : (req.interests.length ? req.interests : ["Surprise me"])
-          .slice(0, 2)
-          .map((i) => searches[i]);
+      : [
+          ...new Set([
+            ...(req.interests.length ? req.interests : ["Surprise me"]).slice(0, 2).map((i) => searches[i]),
+            ...req.vibes.slice(0, 2).map((v) => moodSearches[v]),
+            req.skipFood ? "things to do" : hour >= 17 ? "dessert and cocktail bars" : "things to do and attractions",
+          ]),
+        ]
+          .filter(Boolean)
+          .slice(0, 4);
     const mask = `places.${fields.split(",").join(",places.")}`;
     const jobs = categories.map((q) =>
       call(
@@ -325,13 +404,20 @@ export class GooglePlaces implements PlacesProvider {
       );
     }
     const results = await Promise.all(jobs);
+    const seen = new Set<string>();
     return results
       .flatMap((r) =>
-        (r.places ?? []).map((p: unknown) =>
-          normalize(p, req.location.currency),
-        ),
+        // One malformed result is dropped instead of failing the whole search.
+        (r.places ?? []).flatMap((p: unknown) => {
+          try {
+            return [normalize(p, req.location.currency)];
+          } catch {
+            return [];
+          }
+        }),
       )
-      .slice(0, 36);
+      .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+      .slice(0, 60);
   }
   async details(id: string, currency: string) {
     if (!/^[\w-]+$/.test(id))
@@ -387,16 +473,33 @@ export async function autocomplete(input: string, sessionToken: string) {
   );
 }
 export async function resolvePoint(point: Point): Promise<Location> {
+  // The key goes in the header, like the other Google calls, so a network secret that
+  // injects X-Goog-Api-Key works here too. A real key in the environment is also sent as
+  // the query parameter for older Geocoding setups.
+  const key = requireEnv("GOOGLE_MAPS_SERVER_KEY");
+  const query = key === INJECTED ? "" : `&key=${encodeURIComponent(key)}`;
   const r = await providerFetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}&key=${encodeURIComponent(requireEnv("GOOGLE_MAPS_SERVER_KEY"))}`,
+    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}${query}`,
+    { headers: googleKey() },
   );
   const data = await r.json();
-  if (data.status !== "OK" && data.status !== "ZERO_RESULTS")
+  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+    // Geocoding reads the key only from the query string, so with a proxy-injected key it
+    // refuses. Inside the beta region the nearest neighbourhood is a good enough name.
+    const near = key === INJECTED ? nearestArea(point) : undefined;
+    if (near)
+      return {
+        center: point,
+        name: near.name,
+        timezone: near.timezone,
+        currency: near.currency,
+      };
     throw new AppError(
       "LOCATION_FAILED",
       "Could not look up this area. Check Geocoding API configuration.",
       502,
     );
+  }
   const result = data.results?.[0];
   const country = result?.address_components?.find((x: { types: string[] }) =>
     x.types.includes("country"),
@@ -416,13 +519,25 @@ export class GoogleRoutes implements RouteProvider {
     fromId: string,
     toId: string,
   ): Promise<TravelLeg> {
+    // The same pair of stops is routed again for every option and edit; reuse it briefly.
+    const key = `route|${mode}|${from.lat.toFixed(5)},${from.lng.toFixed(5)}|${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+    const leg = await cached(key, 15 * 60_000, () =>
+      this.fetchLeg(from, to, mode),
+    );
+    return { ...leg, from: fromId, to: toId };
+  }
+  private async fetchLeg(
+    from: Point,
+    to: Point,
+    mode: PlanRequest["mode"],
+  ): Promise<Omit<TravelLeg, "from" | "to">> {
     const response = await providerFetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY"),
+          ...googleKey(),
           "X-Goog-FieldMask":
             "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
         },
@@ -461,8 +576,6 @@ export class GoogleRoutes implements RouteProvider {
       );
     const r = data.data.routes[0];
     return {
-      from: fromId,
-      to: toId,
       minutes: Math.ceil(parseFloat(r.duration) / 60),
       meters: r.distanceMeters,
       polyline: r.polyline.encodedPolyline,
@@ -476,7 +589,7 @@ export async function photoUrl(name: string) {
   const data = await (
     await providerFetch(
       `https://places.googleapis.com/v1/${name}/media?maxWidthPx=1000&skipHttpRedirect=true`,
-      { headers: { "X-Goog-Api-Key": requireEnv("GOOGLE_MAPS_SERVER_KEY") } },
+      { headers: googleKey() },
     )
   ).json();
   const url = safeUrl(data.photoUri);
@@ -490,3 +603,169 @@ export async function photoUrl(name: string) {
   return url;
 }
 export { PlacePhoto };
+
+/**
+ * Real map images (Maps Static API) for the browser build. Static Maps reads the key only
+ * from the URL, so this needs a real key on the server: GOOGLE_MAPS_STATIC_KEY, or
+ * GOOGLE_MAPS_SERVER_KEY when it holds the key itself rather than "proxy-injected".
+ */
+export function staticMapKey() {
+  const own = process.env.GOOGLE_MAPS_STATIC_KEY;
+  const server = process.env.GOOGLE_MAPS_SERVER_KEY;
+  return own || (server && server !== INJECTED ? server : "");
+}
+export type StaticMapInput = {
+  stops: Point[];
+  /** Encoded route geometry per leg, or empty for a straight line. */
+  paths: string[];
+  width: number;
+  height: number;
+};
+// Quiet basemap so the route and numbered stops stand out, in the app's ink colour.
+const MAP_STYLE = [
+  "feature:poi|visibility:off",
+  "feature:transit|element:labels.icon|visibility:off",
+  "element:labels.text.fill|color:0x4e5674",
+  "feature:road|element:geometry|color:0xffffff",
+  "feature:landscape|element:geometry|color:0xf1f3f7",
+  "feature:water|element:geometry|color:0xcfe0ff",
+  "feature:park|element:geometry|color:0xdcefe3",
+];
+export function staticMapUrl(input: StaticMapInput, key: string) {
+  const q = new URLSearchParams({
+    size: `${input.width}x${input.height}`,
+    scale: "2",
+    maptype: "roadmap",
+    language: "en",
+    key,
+  });
+  for (const style of MAP_STYLE) q.append("style", style);
+  input.stops.forEach((s, i) =>
+    q.append(
+      "markers",
+      `color:0x10173A|label:${(i + 1) % 10}|${s.lat.toFixed(6)},${s.lng.toFixed(6)}`,
+    ),
+  );
+  input.stops.slice(1).forEach((to, i) => {
+    const from = input.stops[i];
+    const enc = input.paths[i];
+    q.append(
+      "path",
+      enc
+        ? `color:0x10173ACC|weight:5|enc:${enc}`
+        : `color:0x10173A88|weight:4|${from.lat.toFixed(6)},${from.lng.toFixed(6)}|${to.lat.toFixed(6)},${to.lng.toFixed(6)}`,
+    );
+  });
+  return `https://maps.googleapis.com/maps/api/staticmap?${q}`;
+}
+export async function staticMap(input: StaticMapInput) {
+  const key = staticMapKey();
+  if (!key)
+    throw new AppError(
+      "MAP_UNAVAILABLE",
+      "Map images need a Google key on the server.",
+      503,
+    );
+  const url = staticMapUrl(input, key);
+  return cached(`staticmap|${url}`, 60 * 60_000, async () => {
+    const r = await providerFetch(url);
+    const type = r.headers.get("content-type") ?? "";
+    if (!r.ok || !type.startsWith("image/"))
+      throw new AppError(
+        "MAP_UNAVAILABLE",
+        "Google did not return a map image.",
+        502,
+      );
+    return { type, body: new Uint8Array(await r.arrayBuffer()) };
+  });
+}
+
+/**
+ * Real map tiles (Map Tiles API) for the browser build. Unlike Static Maps this reads the
+ * key from the X-Goog-Api-Key header, so it works with a proxy-injected key too. A
+ * session token (valid about two weeks) is created once and reused.
+ */
+let tileSession: { token: string; until: number } | null = null;
+const TILE_STYLES = [
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "transit",
+    elementType: "labels.icon",
+    stylers: [{ visibility: "off" }],
+  },
+  { elementType: "labels.text.fill", stylers: [{ color: "#4e5674" }] },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#f1f3f7" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#cfe0ff" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#dcefe3" }],
+  },
+];
+async function tileToken() {
+  if (tileSession && Date.now() < tileSession.until) return tileSession.token;
+  const r = await providerFetch(
+    "https://tile.googleapis.com/v1/createSession",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...googleKey() },
+      body: JSON.stringify({
+        mapType: "roadmap",
+        language: "en-US",
+        region: "CA",
+        scale: "scaleFactor2x",
+        highDpi: true,
+        styles: TILE_STYLES,
+      }),
+    },
+  );
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.session)
+    throw new AppError(
+      "MAP_UNAVAILABLE",
+      "Map tiles are not enabled for this Google key.",
+      503,
+    );
+  // Renew a day early.
+  const expiry = Number(data.expiry) * 1000;
+  tileSession = {
+    token: data.session,
+    until: (Number.isFinite(expiry) ? expiry : Date.now() + 7 * 864e5) - 864e5,
+  };
+  return tileSession.token;
+}
+export async function mapTile(z: number, x: number, y: number) {
+  return cached(`tile|${z}|${x}|${y}`, 60 * 60_000, async () => {
+    const token = await tileToken();
+    const r = await providerFetch(
+      `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${encodeURIComponent(token)}`,
+      { headers: googleKey() },
+    );
+    const type = r.headers.get("content-type") ?? "";
+    if (r.status === 401 || r.status === 403) tileSession = null;
+    if (!r.ok || !type.startsWith("image/"))
+      throw new AppError(
+        "MAP_UNAVAILABLE",
+        "Google did not return a map tile.",
+        502,
+      );
+    return { type, body: new Uint8Array(await r.arrayBuffer()) };
+  });
+}
+/** Test hook. */
+export function resetTileSession() {
+  tileSession = null;
+}

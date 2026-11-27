@@ -1,4 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { saveFile } from "@/lib/files";
+import { planToIcs } from "@/plan/calendar";
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,6 +23,7 @@ import { countPlan, editsLeft } from "@shared/plus";
 import { nearestArea } from "@shared/areas";
 import { RouteMap } from "@/plan/RouteMap";
 import { Generating, stages } from "@/plan/Generating";
+import { Timetable } from "@/plan/Timetable";
 import { StopCard } from "@/plan/StopCard";
 import { Badge, Button, Icon, IconButton, Notice, Press, Sheet, T, tap } from "@/ui/kit";
 import { color, radius, shadow, space } from "@/ui/theme";
@@ -34,14 +37,19 @@ const friendly: Record<string, string> = {
   OFFLINE: "You’re offline",
   ANCHOR_CLOSED: "That place is closed then",
   TIMEOUT: "That took too long",
+  PROVIDER_DAILY_LIMIT: "Live place details are paused for today",
 };
+// Errors that trying again right now can't fix.
+const final = new Set(["PROVIDER_DAILY_LIMIT", "GLOBAL_LIMIT", "RATE_LIMIT", "PAST_TIME"]);
 
 export default function PlanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const store = useStore();
   const insets = useSafeAreaInsets();
   const [plan, setPlan] = useState<Itinerary | undefined>(id === "new" ? undefined : store.live[id]);
-  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [born] = useState(id === "new");
+  const leave = () => (born ? router.dismissTo("/") : router.canGoBack() ? router.back() : router.replace("/"));
+  const [error, setError] = useState<{ title: string; message: string; code?: string } | null>(null);
   const [stage, setStage] = useState(0);
   const [selected, setSelected] = useState<string>();
   const [editOpen, setEditOpen] = useState(false);
@@ -66,12 +74,17 @@ export default function PlanScreen() {
   const started = useRef(0);
   const once = useRef(false);
   const entry = plan ? store.plans[plan.id] : store.plans[id];
+  // History: when this plan was last opened.
+  const { viewedPlan } = store;
+  useEffect(() => {
+    if (plan?.id) viewedPlan(plan.id);
+  }, [plan?.id, viewedPlan]);
 
   const fail = (e: unknown) => {
     const err = e instanceof ApiError ? e : new ApiError((e as Error).message);
     // The server enforces the free monthly allowance; send people to Plus instead of an error.
     if (err.code === "PLAN_LIMIT") return router.replace({ pathname: "/plus", params: { reason: "limit" } });
-    setError({ title: friendly[err.code] ?? "We couldn’t build that plan", message: err.message });
+    setError({ title: friendly[err.code] ?? "", message: err.message, code: err.code });
   };
 
   // New plan: generate from the pending request.
@@ -141,14 +154,16 @@ export default function PlanScreen() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Every change is kept on the device; a saved plan also syncs to the account.
   const update = (next: Itinerary) => {
     setPlan(next);
     store.remember(next);
+    if (store.plans[next.id]?.saved && store.session && !next.demo) void api("plans", toSpec(next)).catch(() => undefined);
   };
 
   const magicEdit = async (instruction: string) => {
     if (!plan) return;
-    if (editsLeft(store.profile, editsUsed) <= 0) {
+    if (store.limits && editsLeft(store.profile, editsUsed) <= 0) {
       setEditOpen(false);
       router.push({ pathname: "/plus", params: { reason: "edits" } });
       return;
@@ -171,7 +186,12 @@ export default function PlanScreen() {
       if (e instanceof ApiError && e.code === "EDIT_LIMIT") {
         setEditOpen(false);
         router.push({ pathname: "/plus", params: { reason: "edits" } });
-      } else setEditError(e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.");
+      } else {
+        const message = e instanceof Error ? e.message : "That edit didn’t work. Try wording it differently.";
+        setEditError(message);
+        // Quick actions ("Add a stop", "Swap it") run without the sheet open: say it on screen.
+        if (!editOpen) setToast({ text: message });
+      }
     } finally {
       setEditBusy(false);
     }
@@ -182,6 +202,52 @@ export default function PlanScreen() {
     const stops = plan.stops.map((s, i) => (i === index ? { ...s, locked: !s.locked } : s));
     update({ ...plan, stops });
     store.track("stop_locked", { locked: stops[index].locked });
+  };
+
+  // Direct edits: reorder, remove or retime a stop. The server reschedules the whole plan
+  // (hours, travel, cost) and rejects changes to stops the person locked.
+  const [arranging, setArranging] = useState(false);
+  const arrange = async (index: number, action: "earlier" | "later" | "remove" | "longer" | "shorter") => {
+    if (!plan || arranging) return;
+    const refs = plan.stops.map((s) => ({ placeId: s.placeId, minutes: s.minutes, locked: s.locked, reason: s.reason }));
+    const target = refs[index];
+    if (action === "remove") refs.splice(index, 1);
+    else if (action === "earlier" || action === "later") {
+      const to = action === "earlier" ? index - 1 : index + 1;
+      [refs[index], refs[to]] = [refs[to], refs[index]];
+    } else target.minutes = Math.max(15, Math.min(180, target.minutes + (action === "longer" ? 15 : -15)));
+    setArranging(true);
+    try {
+      const before = plan;
+      // Changing the time of, or removing, a stop the person kept is their explicit choice:
+      // unlock it for this edit. Reordering never needs to.
+      const unlock = action === "remove" || action === "longer" || action === "shorter";
+      const spec = toSpec(unlock ? { ...plan, stops: plan.stops.map((s, i) => (i === index ? { ...s, locked: false } : s)) } : plan);
+      if (unlock) target.locked = false;
+      const edited = await api<Itinerary>("edit", { spec, stops: refs });
+      // Changing a kept stop's length keeps it kept: the new length is the person's choice too.
+      const wasKept = before.stops[index].locked && (action === "longer" || action === "shorter");
+      const next = wasKept
+        ? { ...edited, stops: edited.stops.map((s) => (s.placeId === target.placeId ? { ...s, locked: true } : s)) }
+        : edited;
+      update(next);
+      setChanged([]);
+      tap("select");
+      setToast({
+        text:
+          action === "remove"
+            ? `Removed ${before.stops[index].place.name}. Times updated.`
+            : action === "longer" || action === "shorter"
+              ? `${before.stops[index].place.name} is now ${target.minutes} min. Times updated.`
+              : "Order changed. Times and travel updated.",
+        undo: before,
+      });
+      store.track("magic_edit_applied", { kind: `direct_${action}`, changed: 0 });
+    } catch (e) {
+      setToast({ text: e instanceof Error ? e.message : "That change didn’t fit. Try another." });
+    } finally {
+      setArranging(false);
+    }
   };
 
   const swap = (index: number) => {
@@ -248,14 +314,35 @@ export default function PlanScreen() {
           <Icon name="compass" size={28} />
         </View>
         <T v="title" style={{ textAlign: "center" }}>
-          {error.title}
+          {error.title || (id === "new" ? "We couldn’t build that plan" : "We couldn’t open that plan")}
         </T>
         <T v="body" tone={color.muted} style={{ textAlign: "center", maxWidth: 360 }}>
           {error.message}
         </T>
-        <View style={{ flexDirection: "row", gap: space.md, marginTop: space.lg }}>
-          <Button kind="soft" label="Change request" icon="edit-2" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
-          <Button label="Try again" icon="refresh-cw" onPress={() => (id === "new" && !plan ? generate() : hydrate())} />
+        {entry?.meta.brief?.length ? (
+          // A plan already made still shows its stops, times and directions without the server.
+          <View style={s.offline} testID="plan-offline">
+            <T v="smallStrong">{entry.meta.title}</T>
+            {entry.meta.brief.map((b) => (
+              <Press key={b.placeId} accessibilityRole="link" accessibilityLabel={`Directions to ${b.name}`} onPress={() => void Linking.openURL(b.mapsUrl)} style={s.offlineRow}>
+                <T v="small" tone={color.muted} style={{ width: 64 }}>
+                  {DateTime.fromISO(b.at).setZone("America/Toronto").toFormat("h:mm a")}
+                </T>
+                <T v="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+                  {b.name}
+                </T>
+                <Icon name="navigation" size={14} tint={color.coralText} />
+              </Press>
+            ))}
+          </View>
+        ) : null}
+        <View style={{ flexDirection: "row", gap: space.md, marginTop: space.lg, flexWrap: "wrap", justifyContent: "center" }}>
+          <Button kind="soft" label={id === "new" ? "Change request" : "Back"} icon={id === "new" ? "edit-2" : "arrow-left"} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
+          {final.has(error.code ?? "") ? (
+            <Button label="Home" icon="home" onPress={() => router.replace("/")} />
+          ) : (
+            <Button label="Try again" icon="refresh-cw" onPress={() => (id === "new" && !plan ? generate() : hydrate())} />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -277,26 +364,26 @@ export default function PlanScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.canvas }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        <LinearGradient colors={[color.ink, "#24394A"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
+        <LinearGradient colors={[color.ink, "#1B2660"]} style={[s.hero, { paddingTop: insets.top + space.md }]}>
           <View style={s.heroInner}>
           <View style={s.heroTop}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={s.heroBtn}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={leave} style={s.heroBtn}>
               <Icon name="arrow-left" tint={color.paper} />
             </Pressable>
             {plan.demo ? <Badge tone="yellow" label="Demo estimates" /> : null}
           </View>
-          <Animated.View entering={FadeInDown.duration(420)}>
+          <Animated.View entering={FadeInDown.duration(240)}>
             <T v="eyebrow" tone={color.mint} style={{ marginTop: space.lg }}>
               {start.isValid ? start.toFormat("cccc d LLLL") : plan.request.date} in {plan.request.location.name}
             </T>
             <T v="hero" tone={color.paper} style={{ marginTop: space.sm }} testID="plan-title" accessibilityRole="header">
               {plan.title}
             </T>
-            <T v="body" tone="#C9D1D6" style={{ marginTop: space.sm }}>
+            <T v="body" tone="#C7CCE4" style={{ marginTop: space.sm }}>
               {plan.summary}
             </T>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(80).duration(420)} style={s.stats}>
+          <Animated.View entering={FadeInDown.delay(80).duration(240)} style={s.stats}>
             <Stat value={start.isValid ? start.toFormat("h:mm a") : "—"} label={end.isValid ? `until ${end.toFormat("h:mm a")}` : ""} />
             <View style={s.statRule} />
             <Stat
@@ -310,6 +397,11 @@ export default function PlanScreen() {
         </LinearGradient>
 
         <View style={s.content}>
+          <Timetable plan={plan} selected={selected} onSelect={setSelected} />
+          {plan.stops.length < 6 ? (
+            <Button testID="add-stop" kind="soft" icon="plus" label="Add a stop" busy={editBusy} onPress={() => void magicEdit("Add one more stop at the end")} />
+          ) : null}
+
           <RouteMap plan={plan} selected={selected} onSelect={setSelected} />
 
           <PlanPulse key={`${plan.id}-${plan.revision}`} plan={plan} onFix={(instruction) => void magicEdit(instruction)} />
@@ -321,6 +413,9 @@ export default function PlanScreen() {
             </Notice>
           ) : null}
 
+          <T v="heading" style={{ marginTop: space.sm }}>
+            About each stop
+          </T>
           <View>
             {plan.stops.map((stop, i) => {
               const next = plan.stops[i + 1];
@@ -336,6 +431,8 @@ export default function PlanScreen() {
                     onSelect={() => setSelected(stop.placeId)}
                     onToggleLock={() => toggleLock(i)}
                     onSwap={() => swap(i)}
+                    onArrange={(action) => void arrange(i, action)}
+                    count={plan.stops.length}
                     onBook={() => setBooking(i)}
                     crowd={crowd[stop.placeId]}
                     favourite={store.profile.favourites.some((f) => f.id === stop.placeId)}
@@ -445,6 +542,7 @@ export default function PlanScreen() {
         <Button testID="magic-edit" label="Magic edit" icon="star" kind="dark" onPress={() => { setEditError(""); setEditOpen(true); }} style={{ flex: 1 }} />
         <IconButton icon={entry?.saved ? "check" : "bookmark"} label={entry?.saved ? "Saved" : "Save plan"} active={entry?.saved} onPress={save} />
         <IconButton icon={sharing ? "loader" : "share"} label="Share plan" onPress={share} />
+        {entry ? <IconButton icon="calendar" label="Add to calendar" onPress={() => void saveFile(`${entry.meta.title.replace(/[^\w]+/g, "-").toLowerCase() || "plan"}.ics`, "text/calendar", planToIcs(plan.id, entry)).catch(() => undefined)} /> : null}
         <IconButton icon="navigation" label="Start: open directions" onPress={go} tint={color.coralText} />
         </View>
       </View>
@@ -513,10 +611,10 @@ export default function PlanScreen() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={s.stat}>
-      <T v="heading" tone={color.paper} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+      <T v="heading" tone={color.paper} numberOfLines={2}>
         {value}
       </T>
-      <T v="small" tone="#AEB9C0" style={{ fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+      <T v="small" tone="#AEB5D3" style={{ fontSize: 13, lineHeight: 16 }} numberOfLines={2}>
         {label}
       </T>
     </View>
@@ -524,6 +622,8 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const s = StyleSheet.create({
+  offline: { alignSelf: "stretch", maxWidth: 420, width: "100%", gap: space.sm, marginTop: space.lg, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
+  offlineRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 40 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: space.md, padding: space.xl, backgroundColor: color.canvas },
   stateIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
   orb: { width: 72, height: 72, borderRadius: 36, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", ...shadow.lift },

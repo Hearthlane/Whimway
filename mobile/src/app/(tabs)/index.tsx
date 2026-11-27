@@ -1,413 +1,215 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Location from "expo-location";
-import { areaByKey, areas, defaultRadius, nearestArea, type Area } from "@shared/areas";
-import { buildRequest, describe, interpret } from "@shared/intent";
-import { companions as companionKeys, vibes as vibeKeys, type PlanRequest, type Vibe } from "@shared/schema";
+import { areaByKey, defaultArea } from "@shared/areas";
+import { examplePrompts } from "@/lib/copy";
 import { useStore } from "@/lib/store";
-import { FREE, isPlus, plansLeft } from "@shared/plus";
+import { activityFor, isNew } from "@/home/activity";
+import { planAround } from "@/home/actions";
+import { PeopleRow, PersonSheet, type Person } from "@/home/People";
+import { PlanCards, TodayCard, endOf, startOf } from "@/home/Plans";
 import { PollCard } from "@/plan/PollCard";
-import { companionCopy, examplePrompts, modeCopy, vibeCopy } from "@/lib/copy";
-import { Button, Card, Chip, Icon, IconButton, Notice, Sheet, T, Wordmark, type IconName } from "@/ui/kit";
-import { color, font, radius, shadow, space } from "@/ui/theme";
+import { Sponsored } from "@/plan/Sponsored";
+import { Button, Icon, Notice, Press, T, Wordmark, type IconName } from "@/ui/kit";
+import { color, font, radius, space } from "@/ui/theme";
 
-type Field = "who" | "when" | "budget" | "travel" | "length" | "vibe" | "area";
-type Overrides = {
-  companions?: PlanRequest["companions"];
-  participants?: number;
-  date?: string;
-  startTime?: string;
-  budget?: { amount: number; basis: "person" | "total" };
-  mode?: PlanRequest["mode"];
-  duration?: number;
-  vibes?: Vibe[];
-  areaKey?: string;
-  /** Device location (rounded to ~100 m), only when the user taps "Near me". */
-  near?: { lat: number; lng: number; areaKey: string };
-  indoorOnly?: boolean;
-};
 const ZONE = "America/Toronto";
-
 function greeting(name: string) {
   const h = DateTime.now().setZone(ZONE).hour;
   const part = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
   return name ? `${part}, ${name}` : part;
 }
+const tints = [color.mintTint, color.lavenderTint, color.yellowTint, color.coralTint];
 
-export default function PlanHome() {
+/**
+ * Home: what's next, the people you go out with, and a feed of ideas. Making a plan lives
+ * behind the centre "Plan" tab, so Home stays something to browse.
+ */
+export default function Home() {
   const store = useStore();
-  const { profile, status, demo, plans } = store;
-  // Arriving from onboarding, the composer starts with a suggestion built from the new taste profile.
-  const { starter } = useLocalSearchParams<{ starter?: string }>();
-  const [text, setText] = useState(typeof starter === "string" ? starter : "");
-  const [o, setO] = useState<Overrides>({});
-  const [field, setField] = useState<Field | null>(null);
+  const { profile, plans, demo, status } = store;
+  const { welcome, restoredPlans } = useLocalSearchParams<{ welcome?: string; restoredPlans?: string }>();
+  const [welcomed, setWelcomed] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | "new" | null>(null);
   const now = DateTime.now().setZone(ZONE);
+  const area = areaByKey(profile.homeArea) ?? defaultArea;
 
-  // Interpret on every keystroke: deterministic, on-device, free.
-  const minuteKey = now.toFormat("yyyy-MM-dd HH:mm");
-  const request = useMemo(() => {
-    const draft = interpret(text, now);
-    const nearArea: Area | undefined = o.near
-      ? { ...areaByKey(o.near.areaKey)!, key: "near-me", name: "Near you", center: { lat: o.near.lat, lng: o.near.lng } }
-      : undefined;
-    const base = buildRequest(text, draft, profile, now, { area: nearArea ?? areaByKey(o.areaKey) });
-    const r: PlanRequest = { ...base };
-    if (o.companions) r.companions = o.companions;
-    if (o.participants) r.participants = o.participants;
-    if (o.date) r.date = o.date;
-    if (o.startTime) r.startTime = o.startTime;
-    if (o.mode) {
-      r.mode = o.mode;
-      if (!draft.radius) r.area = { ...r.area, radius: defaultRadius(o.mode) };
-    }
-    if (o.duration) r.duration = o.duration;
-    if (o.vibes) r.vibes = o.vibes;
-    if (o.indoorOnly !== undefined) r.indoorOnly = o.indoorOnly;
-    const budget = o.budget ?? (r.budgetBasis === "total" ? { amount: r.budget * base.participants, basis: "total" as const } : undefined);
-    if (budget) {
-      r.budgetBasis = budget.basis;
-      r.budget = budget.basis === "total" ? Math.round((budget.amount / r.participants) * 100) / 100 : budget.amount;
-    }
-    return r;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, o, profile, minuteKey]);
-  const chips = describe(request, now);
-  const totalBudget = Math.round(request.budgetBasis === "total" ? request.budget * request.participants : request.budget);
-
-  const ready = Boolean(status && ((status.places && status.ai) || status.demo));
-  const left = plansLeft(profile);
-  const plan = (prompt = text) => {
-    if (left <= 0) return router.push({ pathname: "/plus", params: { reason: "limit" } });
-    store.setPending({ ...request, prompt: prompt.slice(0, 1500) });
-    store.track("plan_requested", { words: prompt.trim().split(/\s+/).filter(Boolean).length, edited: Object.keys(o).length });
-    router.push("/plan/new");
-  };
+  const upcoming = Object.entries(plans)
+    .filter(([, e]) => endOf(e) > now)
+    .sort((a, b) => startOf(a[1]).toMillis() - startOf(b[1]).toMillis())
+    .slice(0, 6);
   const recent = Object.entries(plans)
+    .filter(([id]) => !upcoming.some(([u]) => u === id))
     .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
-    .slice(0, 4);
+    .slice(0, 8);
+  const seenAt = store.history.activitySeenAt;
+  const alerts = useMemo(() => activityFor(plans, profile).filter((i) => isNew(i, seenAt)).length, [plans, profile, seenAt]);
 
-  const chipRow: { key: Field; icon: IconName; label: string }[] = [
-    { key: "who", icon: companionCopy[request.companions ?? "partner"].icon, label: chips.who },
-    { key: "when", icon: "calendar", label: chips.when },
-    { key: "budget", icon: "credit-card", label: chips.budget },
-    { key: "travel", icon: modeCopy[request.mode].icon, label: chips.travel },
-    { key: "length", icon: "clock", label: chips.length },
-    { key: "area", icon: "map-pin", label: chips.area },
-    { key: "vibe", icon: "star", label: chips.vibe || "Any vibe" },
-  ];
+  // The feed: ideas that match who they go out with and their moods first, mixed with saved places, a poll and a sponsored pick.
+  const ideas = useMemo(() => {
+    const score = (e: (typeof examplePrompts)[number]) =>
+      (profile.onboarded && e.who === profile.companions ? 3 : 0) + (e.vibes ?? []).filter((v) => profile.vibes.includes(v as never)).length;
+    return [...examplePrompts].sort((a, b) => score(b) - score(a));
+  }, [profile.vibes, profile.companions, profile.onboarded]);
+  const firstRun = Object.keys(plans).length === 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={["top"]}>
-      <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={s.page}>
         <View style={s.header}>
           <Wordmark size={22} />
-          {demo ? (
-            <View style={s.demoPill} accessibilityLabel="Demo mode">
-              <T v="smallStrong" tone={color.warning} style={{ fontSize: 12 }}>
-                Demo data
-              </T>
-            </View>
-          ) : null}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            {demo ? (
+              <View style={s.demoPill} accessibilityLabel="Demo mode">
+                <T v="smallStrong" tone={color.warning} style={{ fontSize: 13 }}>
+                  Demo data
+                </T>
+              </View>
+            ) : null}
+            <Press testID="home-activity" accessibilityRole="button" accessibilityLabel={alerts ? `Activity, ${alerts} new` : "Activity"} onPress={() => router.push("/activity")} hitSlop={8} style={s.bell}>
+              <Icon name="bell" size={22} />
+              {alerts ? (
+                <View style={s.badge}>
+                  <T style={s.badgeText}>{alerts > 9 ? "9+" : alerts}</T>
+                </View>
+              ) : null}
+            </Press>
+          </View>
         </View>
 
-        <Animated.View entering={FadeInDown.duration(380)}>
+        <Animated.View entering={FadeInDown.duration(240)} style={{ gap: 4 }}>
           <T v="small" tone={color.muted}>
             {greeting(profile.name)}
           </T>
-          <T v="hero" style={{ marginTop: 4 }} accessibilityRole="header">
+          <T v="hero" accessibilityRole="header" aria-level={1}>
             What should we do?
           </T>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(60).duration(380)} style={s.composer}>
-          <TextInput
-            testID="prompt-input"
-            value={text}
-            onChangeText={setText}
-            multiline
-            maxLength={1500}
-            accessibilityLabel="Describe the experience you want"
-            placeholder="A spontaneous Saturday night with my girlfriend, $100 total, romantic but a little adventurous…"
-            placeholderTextColor={color.faint}
-            style={s.input}
-          />
-          <View style={s.heardHeader}>
-            <T v="eyebrow" tone={color.muted}>
-              {text.trim() ? "Here’s what I heard" : "Your defaults"}
-            </T>
-            {Object.keys(o).length ? (
-              <Pressable onPress={() => setO({})} accessibilityRole="button" hitSlop={8}>
-                <T v="smallStrong" tone={color.coralText}>
-                  Reset
-                </T>
-              </Pressable>
-            ) : null}
+        <Press testID="home-start" accessibilityRole="button" accessibilityLabel="Tell us the mood, who’s coming, when. Start a plan" onPress={() => router.push("/create")} style={s.start} scaleTo={0.98}>
+          <Icon name="edit-3" size={18} tint={color.muted} />
+          <T v="body" tone={color.muted} style={{ flex: 1 }}>
+            Tell us the mood, who’s coming, when…
+          </T>
+          <View style={s.startGo}>
+            <Icon name="arrow-right" size={18} tint={color.paper} />
           </View>
-          {/* One swipeable row keeps "Plan it" in view on small phones. */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
-            {chipRow.map((c) => (
-              <Chip key={c.key} testID={`chip-${c.key}`} icon={c.icon} label={c.label} onPress={() => setField(c.key)} tone={c.key === "budget" ? "yellow" : c.key === "vibe" ? "lavender" : "mint"} />
-            ))}
-            <Chip
-              icon="umbrella"
-              label={request.indoorOnly ? "Indoors only" : "Indoor or outdoor"}
-              selected={request.indoorOnly}
-              onPress={() => setO({ ...o, indoorOnly: !request.indoorOnly })}
-            />
-          </ScrollView>
-          <View style={s.actions}>
-            <Button testID="plan-it" size="lg" label="Plan it" icon="star" onPress={() => plan()} disabled={!ready} style={{ flex: 1 }} />
-            <IconButton
-              icon="shuffle"
-              label="Surprise me"
-              onPress={() => (isPlus(profile) ? plan("Surprise me with something memorable") : router.push({ pathname: "/plus", params: { reason: "surprise" } }))}
-            />
-          </View>
-          {isPlus(profile) ? null : (
-            <Pressable accessibilityRole="button" onPress={() => router.push("/plus")} hitSlop={6} testID="allowance">
-              <T v="small" tone={left <= 1 ? color.coralText : color.muted} style={{ textAlign: "center" }}>
-                {left > 0 ? `${left} of ${FREE.plansPerMonth} free plans left this month.` : "No free plans left this month."} Get unlimited with Plus
-              </T>
-            </Pressable>
-          )}
-        </Animated.View>
+        </Press>
 
-        {status && !ready ? (
-          <Notice tone="coral" icon="alert-circle">
-            Planning isn’t switched on for this server yet. Add the Google Places and AI keys (see README), or run it in demo mode.
-          </Notice>
-        ) : !status ? (
+        {welcome === "back" && !welcomed ? (
+          <Press testID="welcome-back" accessibilityRole="button" accessibilityHint="Dismiss" onPress={() => setWelcomed(true)}>
+            <Notice icon="check-circle">
+              {`Welcome back${profile.name ? `, ${profile.name}` : ""}. Your taste profile${Number(restoredPlans) > 0 ? ` and ${restoredPlans} saved plan${restoredPlans === "1" ? "" : "s"} are` : " is"} back on this device.`}
+            </Notice>
+          </Press>
+        ) : null}
+        {!status ? (
           <Notice tone="coral" icon="wifi-off">
-            Can’t reach the Whimway server. Check your connection and that the API is running, then pull to retry.
+            Can’t reach Whimway right now. Your plans are still here; new plans need a connection.
           </Notice>
-        ) : demo ? (
-          <Notice icon="info">Demo mode. The places are real; hours, prices and travel times are estimates.</Notice>
         ) : null}
 
-        <PollCard />
+        {firstRun ? (
+          <Animated.View entering={FadeInDown.duration(240)} style={s.firstRun} testID="home-first-run">
+            <T v="title">Your first plan</T>
+            <T v="body" tone={color.inkSoft}>
+              {profile.vibes.length ? `Tuned for ${profile.vibes.slice(0, 2).join(" and ")} moods. ` : ""}Make one any time with Plan, or let us pick something now.
+            </T>
+            <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.xs }}>
+              <Button kind="dark" icon="shuffle" label="Surprise me" onPress={() => router.push({ pathname: "/create", params: { surprise: "1" } })} style={{ flex: 1 }} testID="home-surprise" />
+              <Button kind="soft" label="Describe it" onPress={() => router.push("/create")} style={{ flex: 1 }} />
+            </View>
+          </Animated.View>
+        ) : null}
 
-        <T v="heading" style={s.section}>
-          Need a spark?
-        </T>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md, paddingRight: space.xl }} style={{ marginHorizontal: -space.xl, paddingLeft: space.xl }}>
-          {examplePrompts.map((e, i) => (
-            <Pressable
-              key={e.title}
-              accessibilityRole="button"
-              accessibilityLabel={`Use idea: ${e.prompt}`}
-              onPress={() => setText(e.prompt)}
-              style={({ pressed }) => [s.idea, { backgroundColor: [color.mintTint, color.lavenderTint, color.yellowTint, color.coralTint][i % 4] }, pressed && { opacity: 0.8 }]}
-            >
-              <Icon name={e.icon} size={20} />
-              <T v="bodyStrong" style={{ marginTop: space.md }}>
-                {e.title}
-              </T>
-              <T v="small" tone={color.inkSoft} numberOfLines={3}>
-                “{e.prompt}”
-              </T>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <TodayCard plans={plans} />
+
+        <PeopleRow onEdit={setEditingPerson} />
+
+        {upcoming.length ? (
+          <Section title="Coming up" onMore={() => router.push("/saved")}>
+            <PlanCards entries={upcoming} prefix="upcoming" />
+          </Section>
+        ) : null}
+
+        <Section title="Ideas for you">
+          <View style={{ gap: space.md }}>
+            {ideas.map((e, i) => (
+              <View key={e.title} style={{ gap: space.md }}>
+                <IdeaCard icon={e.icon} title={e.title} body={`“${e.prompt}”`} tint={tints[i % 4]} onPress={() => router.push({ pathname: "/create", params: { starter: e.prompt } })} />
+                {i === 0 && profile.favourites[0] ? (
+                  <IdeaCard icon="heart" title={`Around ${profile.favourites[0].name}`} body="A whole outing built around a place you saved." tint={color.paper} onPress={() => planAround(profile.favourites[0], profile, store)} />
+                ) : null}
+                {i === 1 ? <PollCard /> : null}
+                {i === 2 ? <Sponsored surface="home" point={area.center} /> : null}
+                {i === 3 ? (
+                  <IdeaCard testID="home-discover" icon="compass" title="Open near you right now" body={`Food, games, shows and more around ${area.name}.`} tint={color.paper} onPress={() => router.push({ pathname: "/discover", params: { when: "now" } })} />
+                ) : null}
+              </View>
+            ))}
+          </View>
+        </Section>
 
         {recent.length ? (
-          <>
-            <T v="heading" style={s.section}>
-              Pick up where you left off
-            </T>
-            <View style={{ gap: space.sm }}>
-              {recent.map(([id, e]) => (
-                <Pressable key={id} accessibilityRole="button" onPress={() => router.push(`/plan/${id}`)} style={({ pressed }) => [s.recent, pressed && { opacity: 0.75 }]}>
-                  <View style={s.recentIcon}>
-                    <Icon name={e.saved ? "bookmark" : "clock"} size={16} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <T v="bodyStrong" numberOfLines={1}>
-                      {e.meta.title}
-                    </T>
-                    <T v="small" tone={color.muted} numberOfLines={1}>
-                      {DateTime.fromISO(`${e.meta.date}T${e.meta.startTime}`).toFormat("ccc d LLL · h:mm a")} · {e.meta.stops} stops
-                    </T>
-                  </View>
-                  <Icon name="chevron-right" tint={color.faint} />
-                </Pressable>
-              ))}
-            </View>
-          </>
+          <Section title="Recently created" onMore={() => router.push("/profile")}>
+            <PlanCards entries={recent} prefix="recent" />
+          </Section>
         ) : null}
       </ScrollView>
-
-      <Editors field={field} close={() => setField(null)} request={request} o={o} setO={setO} totalBudget={totalBudget} now={now} />
+      <PersonSheet person={editingPerson} onClose={() => setEditingPerson(null)} />
     </SafeAreaView>
   );
 }
 
-function Editors({ field, close, request, o, setO, totalBudget, now }: { field: Field | null; close: () => void; request: PlanRequest; o: Overrides; setO: (o: Overrides) => void; totalBudget: number; now: DateTime }) {
-  const days = Array.from({ length: 7 }, (_, i) => now.plus({ days: i }));
-  const times = ["10:00", "12:00", "14:00", "16:00", "17:30", "18:30", "19:30", "20:30", "21:30"];
-  const titles: Record<Field, string> = { who: "Who’s coming?", when: "When?", budget: "Budget", travel: "Getting around", length: "How long?", vibe: "The vibe", area: "Where?" };
-  const isPast = (date: string, time: string) => DateTime.fromISO(`${date}T${time}`, { zone: ZONE }) <= now.plus({ minutes: 20 });
-  const amount = o.budget?.amount ?? totalBudget;
-  const basis = o.budget?.basis ?? request.budgetBasis;
+function Section({ title, onMore, children }: { title: string; onMore?: () => void; children: React.ReactNode }) {
   return (
-    <Sheet open={field !== null} onClose={close} title={field ? titles[field] : ""} footer={<Button label="Done" kind="dark" onPress={close} />}>
-      {field === "who" ? (
-        <View style={{ gap: space.lg }}>
-          <View style={s.chips}>
-            {companionKeys.map((c) => (
-              <Chip key={c} icon={companionCopy[c].icon} label={companionCopy[c].label} selected={request.companions === c} onPress={() => setO({ ...o, companions: c, participants: c === "partner" ? 2 : c === "solo" ? 1 : Math.max(3, request.participants) })} />
-            ))}
-          </View>
-          <Stepper label="People" value={request.participants} min={1} max={20} onChange={(participants) => setO({ ...o, participants })} />
-        </View>
-      ) : null}
-      {field === "when" ? (
-        <View style={{ gap: space.lg }}>
-          <View style={s.chips}>
-            {days.map((d, i) => (
-              <Chip key={d.toISODate()} label={i === 0 ? "Today" : i === 1 ? "Tomorrow" : d.toFormat("ccc d")} selected={request.date === d.toISODate()} onPress={() => setO({ ...o, date: d.toISODate()! })} />
-            ))}
-          </View>
-          <View style={s.chips}>
-            {times.map((t) => (
-              <Chip key={t} label={DateTime.fromISO(`2000-01-01T${t}`).toFormat("h:mm a")} selected={request.startTime === t} onPress={() => !isPast(request.date, t) && setO({ ...o, startTime: t })} tone={isPast(request.date, t) ? "neutral" : "mint"} />
-            ))}
-          </View>
-          <T v="small" tone={color.muted}>
-            Times are Toronto time. Past times are skipped.
-          </T>
-        </View>
-      ) : null}
-      {field === "budget" ? (
-        <View style={{ gap: space.lg }}>
-          <View style={s.chips}>
-            <Chip label="Total for everyone" selected={basis === "total"} onPress={() => setO({ ...o, budget: { amount: basis === "total" ? amount : Math.round(amount * request.participants), basis: "total" } })} />
-            <Chip label="Per person" selected={basis === "person"} onPress={() => setO({ ...o, budget: { amount: basis === "person" ? amount : Math.round(amount / request.participants), basis: "person" } })} />
-          </View>
-          <Stepper label={basis === "total" ? "Total budget" : "Per person"} prefix="$" value={Math.round(amount)} min={0} max={2000} step={10} onChange={(v) => setO({ ...o, budget: { amount: v, basis } })} />
-          <T v="small" tone={color.muted}>
-            {basis === "total" ? `≈ $${Math.round(amount / request.participants)} per person. ` : ""}Estimates only — excludes taxes, tips and transport.
-          </T>
-        </View>
-      ) : null}
-      {field === "travel" ? (
-        <View style={s.chips}>
-          {(["WALK", "TRANSIT", "DRIVE"] as const).map((m) => (
-            <Chip key={m} icon={modeCopy[m].icon} label={modeCopy[m].label} selected={request.mode === m} onPress={() => setO({ ...o, mode: m })} />
-          ))}
-        </View>
-      ) : null}
-      {field === "length" ? (
-        <View style={s.chips}>
-          {[120, 180, 240, 300, 360, 480].map((d) => (
-            <Chip key={d} label={`${d / 60} hours`} selected={request.duration === d} onPress={() => setO({ ...o, duration: d })} />
-          ))}
-        </View>
-      ) : null}
-      {field === "vibe" ? (
-        <View style={s.chips}>
-          {vibeKeys.map((v) => (
-            <Chip
-              key={v}
-              icon={vibeCopy[v].icon}
-              label={vibeCopy[v].label}
-              selected={request.vibes.includes(v)}
-              onPress={() => setO({ ...o, vibes: request.vibes.includes(v) ? request.vibes.filter((x) => x !== v) : [...request.vibes, v].slice(-4) })}
-            />
-          ))}
-        </View>
-      ) : null}
-      {field === "area" ? (
-        <View style={{ gap: space.sm }}>
-          <NearMe
-            active={Boolean(o.near)}
-            onLocated={(near) => setO({ ...o, near, areaKey: undefined })}
-          />
-          {areas.map((a) => (
-            <Pressable key={a.key} accessibilityRole="radio" accessibilityState={{ checked: request.location.name === a.name }} onPress={() => setO({ ...o, areaKey: a.key, near: undefined })} style={[s.areaRow, request.location.name === a.name && { borderColor: color.ink, backgroundColor: color.paper }]}>
-              <Icon name="map-pin" size={16} tint={request.location.name === a.name ? color.coralText : color.muted} />
-              <T v="bodyStrong" style={{ flex: 1 }}>
-                {a.name}
-              </T>
-              <T v="small" tone={color.muted}>
-                {a.city}
-              </T>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-    </Sheet>
-  );
-}
-
-function NearMe({ active, onLocated }: { active: boolean; onLocated: (near: { lat: number; lng: number; areaKey: string }) => void }) {
-  const [state, setState] = useState<"idle" | "busy" | "denied" | "outside" | "error">("idle");
-  const locate = async () => {
-    setState("busy");
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return setState("denied");
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      // Round to ~100 m: precise enough to plan nearby, never an exact address.
-      const point = { lat: Math.round(pos.coords.latitude * 1000) / 1000, lng: Math.round(pos.coords.longitude * 1000) / 1000 };
-      const area = nearestArea(point);
-      if (!area) return setState("outside");
-      onLocated({ ...point, areaKey: area.key });
-      setState("idle");
-    } catch {
-      setState("error");
-    }
-  };
-  return (
-    <View style={{ gap: space.sm, marginBottom: space.sm }}>
-      <Pressable accessibilityRole="button" onPress={locate} style={[s.areaRow, active && { borderColor: color.ink, backgroundColor: color.paper }]} testID="near-me">
-        <Icon name="crosshair" size={16} tint={active ? color.coralText : color.muted} />
-        <T v="bodyStrong" style={{ flex: 1 }}>
-          {state === "busy" ? "Finding you…" : "Near me"}
-        </T>
-        <T v="small" tone={color.muted}>
-          {active ? "Using your location" : "Uses location once"}
-        </T>
-      </Pressable>
-      {state === "denied" ? <Notice icon="map-pin">Location is off for Whimway. Pick an area below, or allow location in Settings.</Notice> : null}
-      {state === "outside" ? <Notice icon="map">Whimway is Greater Toronto–only for now. Pick a GTA area below — more cities soon.</Notice> : null}
-      {state === "error" ? <Notice tone="coral" icon="alert-circle">Couldn’t get your location. Pick an area below instead.</Notice> : null}
+    <View style={{ gap: space.md }}>
+      <View style={s.sectionRow}>
+        <T v="heading">{title}</T>
+        {onMore ? (
+          <Press accessibilityRole="button" accessibilityLabel={`See all ${title.toLowerCase()}`} onPress={onMore} hitSlop={10} style={{ minHeight: 44, justifyContent: "center" }}>
+            <T v="smallStrong" tone={color.coralText}>
+              See all
+            </T>
+          </Press>
+        ) : null}
+      </View>
+      {children}
     </View>
   );
 }
 
-function Stepper({ label, value, onChange, min, max, step = 1, prefix = "" }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; step?: number; prefix?: string }) {
+function IdeaCard({ icon, title, body, tint, onPress, testID }: { icon: IconName; title: string; body: string; tint: string; onPress: () => void; testID?: string }) {
   return (
-    <Card style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-      <T v="bodyStrong" style={{ flex: 1 }}>
-        {label}
-      </T>
-      <IconButton icon="minus" label={`Decrease ${label}`} onPress={() => onChange(Math.max(min, value - step))} />
-      <T v="heading" style={{ minWidth: 64, textAlign: "center" }} accessibilityLiveRegion="polite">
-        {prefix}
-        {value}
-      </T>
-      <IconButton icon="plus" label={`Increase ${label}`} onPress={() => onChange(Math.min(max, value + step))} />
-    </Card>
+    <Press testID={testID} accessibilityRole="button" accessibilityLabel={`${title}. ${body}`} onPress={onPress} style={[s.idea, { backgroundColor: tint }]} scaleTo={0.98}>
+      <View style={s.ideaIcon}>
+        <Icon name={icon} size={20} />
+      </View>
+      <View style={{ flex: 1, gap: 4 }}>
+        <T v="bodyStrong">{title}</T>
+        <T v="small" tone={color.inkSoft} numberOfLines={3}>
+          {body}
+        </T>
+      </View>
+      <Icon name="chevron-right" tint={color.inkSoft} />
+    </Press>
   );
 }
 
 const s = StyleSheet.create({
-  page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.lg, maxWidth: 680, width: "100%", alignSelf: "center" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: space.sm },
-  demoPill: { backgroundColor: color.yellowTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
-  composer: { backgroundColor: color.paper, borderRadius: radius.xl, borderWidth: 1, borderColor: color.line, padding: space.lg, gap: space.md, ...shadow.lift },
-  input: { minHeight: 84, fontFamily: font.body, fontSize: 18, lineHeight: 26, color: color.ink, textAlignVertical: "top", padding: 0 },
-  heardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.md },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  actions: { flexDirection: "row", gap: space.md, alignItems: "center", marginTop: space.xs },
-  section: { marginTop: space.lg },
-  idea: { width: 210, minHeight: 150, borderRadius: radius.lg, padding: space.lg, gap: 4 },
-  recent: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line, minHeight: 64 },
-  recentIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.mintTint, alignItems: "center", justifyContent: "center" },
-  areaRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 50, paddingHorizontal: space.lg, borderRadius: radius.md, borderWidth: 1, borderColor: color.line },
+  page: { padding: space.xl, paddingBottom: space.xxxl, gap: space.xl, maxWidth: 680, width: "100%", alignSelf: "center" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  demoPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: color.yellowTint },
+  bell: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  badge: { position: "absolute", top: 6, right: 4, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: color.coral, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: color.canvas },
+  badgeText: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 12, color: color.ink },
+  start: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 56, paddingLeft: space.lg, paddingRight: 6, borderRadius: radius.pill, backgroundColor: color.paper, borderWidth: 1.5, borderColor: color.line },
+  startGo: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.ink, alignItems: "center", justifyContent: "center" },
+  sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
+  idea: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, minHeight: 84 },
+  firstRun: { gap: space.sm, padding: space.xl, borderRadius: radius.xl, backgroundColor: color.yellowTint, borderWidth: 1, borderColor: color.line },
+  ideaIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.paper, alignItems: "center", justifyContent: "center" },
 });

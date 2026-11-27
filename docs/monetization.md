@@ -1,5 +1,13 @@
 # How Whimway makes money
 
+> **Current model (decided Nov 2026): free for everyone, paid for by local businesses
+> through clearly labelled sponsored placements.** See `docs/sponsored.md`. The Plus
+> subscription described below is kept in the code but **off by default**
+> (`WHIMWAY_PLUS_ENABLED=true` turns it on). The earlier note that we would not do
+> sponsored placement is superseded. Placements are kept out of organic ranking and plans,
+> always labelled, and limited to one slot per screen, so trust in the recommendations is
+> protected.
+
 Everything here is a hypothesis to test in the beta, not validated demand. The dashboard
 at `/admin` and `docs/metrics.sql` measure each one.
 

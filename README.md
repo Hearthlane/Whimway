@@ -22,6 +22,8 @@ npm run preview
 
 Then open **http://localhost:8090** — the full app in your browser (onboarding, planning, Magic Edit, polls, saved, sharing). The web app and share links run on http://localhost:3000. In **GitHub Codespaces** (Code → Codespaces → Create codespace) this starts automatically and opens the app port. Everything runs in labelled demo mode with raised fair-use limits; reset the app via You → Delete data on this device.
 
+**Live in Codespaces.** Add `GOOGLE_MAPS_SERVER_KEY` (and `ANTHROPIC_API_KEY` for Claude planning) under GitHub → Settings → Codespaces → Secrets, give them access to this repository, then create the codespace. The preview then starts **live**: real places, Claude planning, accounts on. Ports stay private, so only you, signed in to GitHub, can open the link, on your computer or your phone. Daily caps stay on (40 plans per person per day; change with `DAILY_GUEST_GENERATIONS`).
+
 ## Quick start (no credentials needed)
 
 ```sh
@@ -48,12 +50,13 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | --- | --- |
 | Natural-language understanding (who, when, budget total vs per person, transport, area, vibe, indoors) | **Working**, deterministic, on device and server; 20+ unit tests |
 | Onboarding → prompt → plan → Magic Edit → save → share → feedback (app) | **Working in demo mode**; verified end to end in mobile Chromium via the Expo web build with zero errors. **Not yet run on physical iOS/Android devices** |
-| Real venues, hours, photos, routes (Google Places API (New) + Routes API) | **Implemented, awaiting credentials** (`GOOGLE_MAPS_SERVER_KEY`). Adapter predates this work and is unit-tested with mocked HTTP |
-| AI selection + Magic Edit wording (OpenAI Structured Outputs) | **Implemented, awaiting credentials** (`WHIMWAY_OPENAI_KEY` + model). Demo uses a transparent heuristic stand-in |
+| Real venues, hours, photos, routes (Google Places API (New) + Routes API) | **Working with a live key** (checked against Google on 2026-11-22). Key is a network secret sending `X-Goog-Api-Key`; set `GOOGLE_MAPS_SERVER_KEY=proxy-injected`. Without an OpenAI key the built-in planner picks stops from the live places |
+| AI planner (picks stops from the real places found, writes titles and reasons; hours, travel and cost still checked by code) | **Claude** (`ANTHROPIC_API_KEY`, default Haiku 5.5) or **OpenAI** (`WHIMWAY_OPENAI_KEY` + model): implemented and tested with simulated API responses, awaiting a key. Without one, the built-in planner picks stops |
 | Deterministic validation (hours, DST, budgets, locks, travel buffers, area) | **Working**; the AI can only choose provider place IDs |
 | Magic Edit (structured: keep/replace/remove/add specific stops) | **Working**; preview shown before applying; undo |
 | Polls, Plan Pulse, stop 👍/👎, post-outing feedback → personal taste + community ranking | **Working**; in-memory in dev, durable with Supabase |
-| Accounts (email code), cloud save, short revocable share links, taste sync | **Implemented, awaiting Supabase project**; SQL + RLS verified on real PostgreSQL (47 assertions) |
+| Sign-in in onboarding ("I already have an account", "Save your profile?") and Settings; restore profile, people and saved plans on a new device | **Implemented, awaiting Supabase project**; all four sign-in paths tested end to end against a simulated Supabase |
+| Accounts (email code), cloud save, short revocable share links, taste sync | **Implemented, awaiting Supabase project**; SQL + RLS verified on real PostgreSQL (80 assertions across all migrations, including sponsored campaigns) |
 | Account-free share links (`/p#…`), recipient can copy the plan | **Working**; E2E-tested; private details never in the link |
 | Analytics events + metrics queries (`docs/metrics.sql`) | **Working** (stored once Supabase is configured; console logs otherwise) |
 | Native maps | iOS Apple Maps (no key). Android needs a Maps SDK key in a dev build. Web shows a route sketch |
@@ -62,19 +65,28 @@ Node 24 / npm 11 were used for the web app; Expo resolves its own SDK-pinned ver
 | Near me (device location, rounded to ~100 m, GTA-only) | **Working** in the browser preview; native permission prompts untested on devices |
 | Crash screen + scrubbed crash reports (`/api/errors` → server logs) | **Working** |
 | Brand icon, adaptive icon, splash, favicon; `app.config.ts`; `eas.json` | **Done**; store builds need your Expo/Apple/Google accounts |
-| Whimway Plus: free limits, paywall, Plus-only features | **Working**; the monthly plan limit and the entitlement are enforced on the server. Purchases are a demo (no payment) until the stores are connected |
+| Guided planning: who, when, food (with cuisine photos and nearby picks), something to do, travel, mood/budget/notes; typed ideas ask only what is missing | **Working**; tested on demo data and live Google data |
+| Plan options: up to three timetables per request, "None of these?" refine by tap or description | **Working** |
+| Itinerary editing: reorder, 15 min more/less, remove, add a stop, Magic Edit, undo | **Working**; the server reschedules hours, travel and cost |
+| Discover: search and browse real places by category, area and time; sort; plan around any place | **Working**; tested on live Google data |
+| Home: a live "today" card (the stop you're at, what's next, a progress bar, directions), your people, Upcoming and Recently created plans as photo cards | **Working**; tested in the app journey; the timing logic (`lib/today.ts`) has unit tests |
+| Your people: a private list of who you go out with and what they enjoy; tap someone to plan with them (skips "who", their favourites first) | **Working**; kept on the device and in the synced profile (up to 30). Nobody is contacted |
+| Profile: avatar, stats, persona, Edit profile, Plans / Places / People tabs; Settings screen for account, privacy and fine-tuning | **Working** |
+| Sponsored placements (the business model): campaigns, labelled slots, view/tap counts, admin API, dashboard | **Working**; nothing is shown until you create a campaign. See `docs/sponsored.md`. No self-serve portal or billing yet |
+| Whimway Plus (optional): limits, paywall, Plus-only features | **Off by default** (`WHIMWAY_PLUS_ENABLED`). The app is free. When on, limits and the entitlement are enforced on the server; purchases are a demo until the stores are connected |
+| Google cost control | Bounded server cache for Places and Routes; per-person and daily budgets for place lists |
 | Billing webhook (`/api/webhooks/billing`, RevenueCat format) | **Implemented and tested with simulated events**; needs your store and RevenueCat accounts (see `docs/monetization.md`) |
 | Booking options per stop (table search, tickets, website, directions, ride) | **Working** as tracked hand-off links; no partner agreements, nothing is reserved |
 | Community ratings on stops | **Working**; shown only once 5+ people have reacted to a venue |
 | Your history ("Your nights"), pace and alcohol-free preferences | **Working** |
 | Metrics dashboard at `/admin` with recorded daily history | **Working** on a single server (file-backed event log); set `ADMIN_KEY` in production. On serverless hosts use Supabase + `docs/metrics.sql` |
-| Real payments, in-app reservations, social feed | **Not built** (see `docs/monetization.md` and roadmap) |
+| Real payments, in-app reservations, social feed, push notifications | **Not built** (see `docs/monetization.md` and roadmap) |
 
 ## What is implemented
 
 **The experience companion (new in this phase)**
 
-- **Native app** (`mobile/`): personality-style onboarding (every step skippable), the “What should we do?” composer with live “here’s what I heard” chips you can tap to adjust, staged generation, premium plan view (hero summary, route map, timeline of stop cards with hours confidence, price, reasoning, directions and website links), Magic Edit sheet with live preview and undo, save, native share, “start” navigation, Saved (upcoming / been there / plan again), You (taste, account, privacy, deletion).
+- **Native app** (`mobile/`): personality-style onboarding (every step skippable), the “What should we do?” composer with live “here’s what I heard” chips you can tap to adjust, staged generation, premium plan view (hero summary, route map, timeline of stop cards with hours confidence, price, reasoning, directions and website links), Magic Edit sheet with live preview and undo, save, native share, “start” navigation, Saved (upcoming / been there / plan again), a home screen built around today's plan and your people, and an Instagram-style profile (Plans / Places / People) with a separate Settings screen (taste, account, privacy, deletion).
 - **Intent interpreter** (`lib/intent.ts`): turns “Saturday night with my girlfriend, $100 total, romantic but adventurous, don’t want to drive too far” into constraints (partner · 2 people · Sat 6:30 PM · $100 total = $50/person · driving within 8 km · romantic + adventurous). Instant, free, testable; the LLM still reads the full prompt for venue choice.
 - **Magic Edit** (`lib/magic-edit.ts` + `Planner.magicEdit`): “make it cheaper”, “replace dinner with something adventurous”, “keep the first two stops, change the last”, “reduce walking”, “it’s raining — indoors”, “add dessert”, “make it shorter”. Kept stops are temporarily locked so they survive verbatim; user locks are never touched; replaced venues are excluded; a no-op is explained instead of faked.
 - **Community feedback loop**: one-tap “this or that” polls on the home screen, **Plan Pulse** (“Does this feel like you?” 👍/👎 with reasons that each offer a one-tap fix), per-stop “Into it / Not for us”, and post-outing “Did you go? How was it?”. Every answer updates the user’s own taste immediately and adds an anonymous vote to **community signals** that re-rank everyone’s recommendations: sentiment counts only once 5+ distinct people weigh in, is smoothed toward neutral, nudges ranking by at most ±0.3, and a venue with strong, well-attested dislike (≤ −0.5) is excluded from new plans.
@@ -107,6 +119,9 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`                    | Browser-restricted Maps JavaScript key                                                                                      |
 | `NEXT_PUBLIC_GOOGLE_MAP_ID`                          | Optional own cloud map ID; documented Google development map ID is the fallback                                             |
 | `GOOGLE_MAPS_SERVER_KEY`                             | Server key for Places API (New), Routes API and Geocoding API                                                               |
+| `GOOGLE_MAPS_STATIC_KEY`                             | Optional server key for real map images in the browser build (Maps Static API reads the key only from the URL, so a proxy-injected header cannot be used) |
+| `ANTHROPIC_API_KEY`                                  | Claude API key for the AI planner (used first when set). In a Claude cloud environment it must be an environment variable: network secrets are never added to requests to Anthropic |
+| `WHIMWAY_CLAUDE_MODEL`                               | Claude model for planning; default `claude-haiku-5-5` (cheapest). E.g. `claude-sonnet-5-5` or `claude-opus-5-5` for richer copy |
 | `WHIMWAY_OPENAI_KEY`                                 | OpenAI credential with a cloud-compatible variable name                                                                     |
 | `OPENAI_API_KEY`                                     | Alternative for conventional local/Vercel configuration; `OPENAI_` target names are reserved in Codex cloud secret bindings |
 | `WHIMWAY_OPENAI_MODEL` / `OPENAI_MODEL`              | Structured Outputs capable model available to your account; deliberately not hardcoded                                      |
@@ -114,12 +129,22 @@ See [docs/providers.md](docs/providers.md) for exact steps, API restrictions, ne
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`               | Optional public Supabase key, protected by database RLS                                                                     |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Production distributed usage protection                                                                                     |
 | `APP_ORIGIN`                                         | Recommended canonical deployed origin for mutation checks                                                                   |
+| `SUPABASE_SECRET_KEY`                                | Server-only secret (service-role) key; used only for sponsored campaigns. Never in the app                                 |
+| `ADMIN_KEY`                                          | Long random secret for `/admin` and the campaign API (sent in the `x-admin-key` header)                                    |
+| `WHIMWAY_PLUS_ENABLED`                               | `true` turns on Plus limits and the paywall. Default off: the app is free and ad-supported                                 |
+| `WHIMWAY_PROVIDER_CACHE`                             | `off` disables the Google response cache (default on)                                                                       |
+| `HOURLY_BROWSE_LIMIT`, `GLOBAL_DAILY_BROWSE_LIMIT`   | Place-list budgets per person per hour (120) and site-wide per day (2000)                                                   |
+| `WHIMWAY_DEMO_MODE`                                  | `true` allows demo data outside production (`npm run preview` sets it)                                                      |
 
-There is no service-role key in the application. Public keys and map ID are build-time Next.js variables: rebuild after changing them. Provider secrets and the model are runtime server variables. Inspect names/presence only; do not dump credentials.
+The only service-role key is `SUPABASE_SECRET_KEY`, read by the server for sponsored campaigns; it is never sent to the app. Public keys and map ID are build-time Next.js variables: rebuild after changing them. Provider secrets and the model are runtime server variables. Inspect names/presence only; do not dump credentials.
 
 ## Supabase
 
-Apply **all six** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
+**Whimway's project:** `Whimway` (`studvwvuoqdsevlhwofw`, Canada Central), created with all nine migrations applied. URL `https://studvwvuoqdsevlhwofw.supabase.co`; the publishable key is set for store builds in `mobile/eas.json` and for cloud sessions on the `whimway` environment (`NEXT_PUBLIC_SUPABASE_*`, `EXPO_PUBLIC_SUPABASE_*`). Publishable keys are designed to be public; row-level security protects the data. `SUPABASE_SECRET_KEY` (only needed for sponsored campaigns) is not set.
+
+To set up another project from scratch:
+
+Apply **all nine** migrations in order in a **new** Supabase project (SQL Editor, or `supabase db push` with the CLI):
 
 1. `202610130001_whimway.sql` — plans, profiles, shares, RLS, share RPC, self-deletion
 2. `202611110001_experience.sql` — analytics events (`track_event`), feedback, larger profile size
@@ -127,8 +152,17 @@ Apply **all six** migrations in order in a **new** Supabase project (SQL Editor,
 4. `202611130001_plus_events.sql` — paywall funnel events
 5. `202611140001_entitlements.sql` — Plus entitlements, monthly plan usage, billing webhook secret
 6. `202611150001_edit_usage.sql` — Magic Edit counters per plan
+7. `202611160001_option_events.sql` — plan-option analytics events
+8. `202611170001_sponsored.sql` — sponsored campaigns and view/tap counts (service role only; see `docs/sponsored.md`)
+9. `202611220001_auth_events.sql` — sign-in analytics events
 
-For the app’s email sign-in, edit Authentication → Email Templates → Magic Link to include `{{ .Token }}` (users type a 6-digit code). It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
+**App sign-in (email code).** Accounts are optional. The app offers them in three places: "I already have an account" on the first onboarding screen (restores the profile, people and saved plans, then skips the questions), "Save your profile?" after the onboarding reveal, and Settings. Signing in combines the device and account (`mergeProfiles` in `lib/profile.ts`: a fresh device takes the account's profile; otherwise the device's choices win and favourites, people, skipped places and poll answers are combined), downloads saved plans the device lacks and uploads saved plans the account lacks. Signing out keeps everything on the device. To switch it on:
+
+- Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the app build (and the matching server variables for the API).
+- In Authentication → Email Templates, edit **Magic Link** (and **Confirm signup**) so the email shows the code: `Your Whimway code is {{ .Token }}`. Without this, people get a link instead of the 6-digit code the app asks for.
+- Configure SMTP; Supabase's built-in mailer is heavily rate-limited.
+
+Without the two app variables, the app hides every sign-in option and keeps everything on the device. It creates owned plans/profiles/shares, RLS policies, a token-addressed read-only share RPC, and a self-account deletion RPC. Review SQL and test it against your project before deployment.
 
 Enable email OTP/magic-link auth, configure your site URL, add your `/auth/callback` redirect URL, and configure SMTP for real users. Private table access uses the authenticated cookie session and database RLS. Anonymous users cannot write database rows or list public shares. Anyone possessing a share token can read that snapshot until revoked.
 
@@ -139,10 +173,17 @@ Share links require signing in and cloud-saving a live plan. They do not expose 
 ```sh
 npm run typecheck
 npm run lint
-npm test            # 141 unit/integration tests
-(cd mobile && npx tsc --noEmit)
-npm run test:e2e
-npm run test:db # Optional: Docker; disposable PostgreSQL authorization checks
+npm test            # 164 unit/integration tests
+(cd mobile && npx tsc --noEmit && npx expo lint)
+npm run test:e2e    # Playwright journeys on the web app
+npm run test:db     # 80 PostgreSQL authorization checks in a disposable Docker container
+TEST_DATABASE_ADMIN_URL=postgres://postgres@localhost/postgres npm run test:db   # same, on any Postgres you have
+# App click-throughs against a running `npm run preview`:
+(cd mobile && node scripts/web-journey.mjs)              # onboarding → plan → Magic Edit → share → profile
+(cd mobile && node scripts/guide-journey.cjs shots)       # guided planner → options → timetable → edits
+(cd mobile && node scripts/discover-journey.cjs shots)    # Discover → search → place → plan around it
+# Sign-in journeys need an accounts-on build; see the header of mobile/scripts/auth-journey.cjs
+(cd mobile && node scripts/auth-journey.cjs)              # new account, wrong code, sync, sign out, restore on a new device
 npm run build
 npm start
 ```

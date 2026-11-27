@@ -34,6 +34,8 @@ export function StopCard({
   onSelect,
   onToggleLock,
   onSwap,
+  onArrange,
+  count,
   onReact,
   favourite,
   onFavourite,
@@ -49,6 +51,9 @@ export function StopCard({
   onSelect: () => void;
   onToggleLock: () => void;
   onSwap: () => void;
+  /** Reorder, remove or retime this stop; the server re-checks hours and travel. */
+  onArrange?: (action: "earlier" | "later" | "remove" | "longer" | "shorter") => void;
+  count?: number;
   onOpenLink: (kind: "navigation" | "booking") => void;
   onReact: (value: 1 | -1) => void;
   favourite: boolean;
@@ -97,7 +102,7 @@ export function StopCard({
             until {t(stop.departure)}
           </T>
           {isNew ? <Badge tone="coral" icon="star" label="New" /> : null}
-          {stop.locked ? <Badge tone="ink" icon="lock" label="Kept" /> : null}
+          {stop.locked ? <Badge tone="ink" icon="lock" label="Locked in" /> : null}
         </View>
 
         <View style={[s.card, selected && s.cardOn, isNew && s.cardNew]}>
@@ -117,7 +122,7 @@ export function StopCard({
                 <Image source={{ uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}` }} style={s.photo} contentFit="cover" transition={250} accessibilityIgnoresInvertColors />
                 {photo.authors[0] ? (
                   <View style={s.credit}>
-                    <T v="small" tone={color.paper} style={{ fontSize: 10 }}>
+                    <T v="small" tone={color.paper} style={{ fontSize: 13 }}>
                       Photo: {photo.authors[0].name}
                     </T>
                   </View>
@@ -163,7 +168,7 @@ export function StopCard({
             <Animated.View entering={FadeIn.duration(motion.standard)} style={s.more}>
               <Fact icon="clock">
                 {stop.hoursStatus}
-                {stop.place.hours[0] ? `. ${stop.place.hours[0]}` : ""}
+                {hoursOn(stop.place.hours, stop.arrival, plan.request.location.timezone)}
               </Fact>
               <Fact icon="map-pin">{stop.place.address}</Fact>
               <Fact icon="tag">
@@ -172,9 +177,18 @@ export function StopCard({
               <View style={s.actions}>
                 <Action icon="calendar" label="Book or go" onPress={onBook} primary />
                 <Action icon="heart" label={favourite ? "Saved place" : "Save place"} onPress={onFavourite} active={favourite} />
-                <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Unlock" : "Keep this"} onPress={onToggleLock} />
+                <Action icon={stop.locked ? "unlock" : "lock"} label={stop.locked ? "Let it change" : "Lock it in"} onPress={onToggleLock} />
                 {!stop.locked ? <Action icon="refresh-cw" label="Swap it" onPress={onSwap} /> : null}
               </View>
+              {onArrange ? (
+                <View style={s.actions}>
+                  {index > 0 ? <Action icon="arrow-up" label="Earlier" onPress={() => onArrange("earlier")} /> : null}
+                  {count && index < count - 1 ? <Action icon="arrow-down" label="Later" onPress={() => onArrange("later")} /> : null}
+                  {stop.minutes < 180 ? <Action icon="plus" label="15 min more" onPress={() => onArrange("longer")} /> : null}
+                  {stop.minutes > 30 ? <Action icon="minus" label="15 min less" onPress={() => onArrange("shorter")} /> : null}
+                  {count && count > 1 ? <Action icon="trash-2" label="Remove" onPress={() => onArrange("remove")} /> : null}
+                </View>
+              ) : null}
               <View style={s.reactRow}>
                 <T v="small" tone={color.muted} style={{ flex: 1 }}>
                   {reaction === 1 ? "You’re into it. Noted." : reaction === -1 ? "Not for you. We’ll skip it." : "Into this one?"}
@@ -214,6 +228,13 @@ function Fact({ icon, children }: { icon: IconName; children: React.ReactNode })
       </T>
     </View>
   );
+}
+
+/** The opening hours for the day of the visit ("Saturday: 10 AM – 6 PM"), not Monday's. */
+export function hoursOn(hours: string[], iso: string, zone: string) {
+  const day = DateTime.fromISO(iso).setZone(zone).toFormat("cccc");
+  const line = hours.find((h) => h.startsWith(day));
+  return line ? `. ${line}` : "";
 }
 
 function Action({ icon, label, onPress, active, primary }: { icon: IconName; label: string; onPress: () => void; active?: boolean; primary?: boolean }) {

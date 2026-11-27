@@ -7,3 +7,14 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .data/
+
+# Skills without a published licence: local use only
+/.claude/skills/web-design-guidelines/
+/.claude/skills/react-native-skills/
+/.claude/skills/react-best-practices/
+/.claude/skills/react-native-design/
+mobile/discover-shots/
+mobile/guide-shots/
+# Built by scripts/build-edge.mjs in CI
+supabase/functions/api/index.js
+!mobile/.env.cloudflare

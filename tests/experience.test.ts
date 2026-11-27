@@ -318,7 +318,8 @@ describe("GTA demo planning end-to-end", () => {
     expect(edited.stops.every((s) => !s.locked)).toBe(true);
   });
   it("magic edit preserves user locks and can add a stop", async () => {
-    const r = make("chill afternoon with friends downtown");
+    // Queen West has dessert open late; downtown at 9:30pm on this budget honestly has none.
+    const r = make("chill evening with friends in Queen West");
     const plan = await planner(r).generate(r);
     const spec = {
       ...plan,
@@ -368,7 +369,7 @@ describe("Transit navigation", () => {
 
 describe("Plan around a favourite", () => {
   const future = DateTime.now().setZone("America/Toronto").plus({ days: 3 });
-  it("keeps the anchored place, locked, and builds the rest around it", async () => {
+  it("keeps the anchored place and builds the rest around it; it can be changed afterwards", async () => {
     const area = areaByKey("kensington")!;
     const r = {
       ...buildRequest("", interpret("", future), profile, future, { area }),
@@ -384,7 +385,7 @@ describe("Plan around a favourite", () => {
     ).generate(r);
     const anchor = plan.stops.find((s) => s.placeId === "gta-bar-raval");
     expect(anchor).toBeDefined();
-    expect(anchor!.locked).toBe(true);
+    expect(anchor!.locked).toBe(false); // held while building, then editable
     expect(plan.stops.length).toBeGreaterThanOrEqual(2);
   });
   it("finds the nearest launch area for a favourite, or none outside the GTA", async () => {
