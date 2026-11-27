@@ -47,3 +47,6 @@ example
 /shots
 /dist-auth
 /auth-shots
+
+# Wrangler local dev state
+.wrangler/
