@@ -5,6 +5,8 @@
   "name": "whimway",
   "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
+  // Serve at whimway.<account>.workers.dev (kept on with every deploy).
+  "workers_dev": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
