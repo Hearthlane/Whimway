@@ -82,3 +82,16 @@ export function serviceClient() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+/**
+ * The server's own database client, for the functions only the server may call (usage
+ * counters, community signals, analytics, entitlements). It uses the server key, which a
+ * Supabase Edge Function receives automatically and which is never sent to the app. Without
+ * that key (local development) it falls back to the request's client.
+ */
+export async function serviceDb() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return supabase();
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}

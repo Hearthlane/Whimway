@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { money } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { PlaceImage } from "@/plan/PlaceImage";
+import { Gallery, Stars, WeekHours } from "@/plan/PlaceBits";
 import { Sponsored } from "@/plan/Sponsored";
 import { Button, Chip, Icon, Notice, Press, Sheet, T, tap } from "@/ui/kit";
 import { color, font, radius, space } from "@/ui/theme";
@@ -308,15 +309,13 @@ export default function Discover() {
                   {open.address}
                 </T>
               ) : null}
+              <Stars rating={open.rating} reviews={open.reviews} />
               <T v="small" tone={color.muted}>
-                {[open.rating ? `★ ${open.rating.toFixed(1)}${open.reviews ? ` from ${open.reviews.toLocaleString()} reviews` : ""}` : "", open.price.high == null ? "Price varies" : open.price.high === 0 ? "Free" : `${money(open.price.low ?? 0)}–${money(open.price.high)} per person`].filter(Boolean).join(" · ")}
+                {open.price.high == null ? "Price varies" : open.price.high === 0 ? "Free" : `${money(open.price.low ?? 0)}–${money(open.price.high)} per person`}
               </T>
-              {open.hours.find((h) => h.startsWith(DateTime.fromISO(request.date).toFormat("cccc"))) ? (
-                <T v="small" tone={color.muted}>
-                  {open.hours.find((h) => h.startsWith(DateTime.fromISO(request.date).toFormat("cccc")))}
-                </T>
-              ) : null}
             </View>
+            <WeekHours hours={open.hours} iso={`${request.date}T12:00:00`} zone={request.location.timezone} />
+            <Gallery place={open} inline />
             <Button testID="discover-plan-around" label="Plan around this place" icon="arrow-right" onPress={() => planAround(open)} />
             <View style={s.actions}>
               <Button kind="soft" label={isFavourite(open) ? "Saved" : "Save place"} icon="heart" onPress={() => toggleFavourite(open)} style={{ flex: 1 }} />
@@ -348,7 +347,7 @@ const s = StyleSheet.create({
   sortOn: { backgroundColor: color.ink },
   place: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.sm, paddingRight: space.lg, borderRadius: radius.lg, backgroundColor: color.paper, borderWidth: 1, borderColor: color.line },
   photo: { width: 84, height: 84, borderRadius: radius.md, backgroundColor: color.line },
-  hero: { width: "100%", height: 180, borderRadius: radius.lg, backgroundColor: color.line },
+  hero: { width: "100%", aspectRatio: 16 / 9, maxHeight: 260, borderRadius: radius.lg, backgroundColor: color.line },
   facts: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 },
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: color.faint },
   skeleton: { height: 100, borderRadius: radius.lg, backgroundColor: color.line, opacity: 0.6 },

@@ -115,6 +115,7 @@ const s = StyleSheet.create({
   blockOn: { borderColor: color.ink },
   text: { flex: 1, gap: 2 },
   doing: { fontFamily: font.displayBold, fontSize: 21, lineHeight: 24, letterSpacing: -0.5, color: color.ink },
-  photo: { width: 76, alignSelf: "stretch", minHeight: 60, borderRadius: radius.md, backgroundColor: color.line, overflow: "hidden" },
+  // Square, so a tall row never stretches the picture into a strip.
+  photo: { width: 76, height: 76, alignSelf: "flex-start", borderRadius: radius.md, backgroundColor: color.line, overflow: "hidden" },
   leg: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingLeft: space.md },
 });

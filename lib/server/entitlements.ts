@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { AppError } from "../errors";
 import { FREE, monthKey, type PlusPlan } from "../plus";
 import { demoAllowed } from "./providers";
-import { supabase } from "./supabase";
+import { serviceDb, supabase } from "./supabase";
 
 /**
  * Server-side Whimway Plus. The entitlement comes from the billing webhook (store
@@ -81,7 +81,7 @@ export async function plansThisMonth(
 ) {
   if (!install && !userId) return 0;
   if (cloud()) {
-    const db = await supabase();
+    const db = await serviceDb();
     const { data } = await db.rpc("plans_this_month", {
       install: install ?? "unknown-install",
     });
@@ -97,7 +97,7 @@ export async function countPlanMade(
 ) {
   if (!install && !userId) return;
   if (cloud()) {
-    const db = await supabase();
+    const db = await serviceDb();
     await db.rpc("count_plan", { install: install ?? "unknown-install" });
     return;
   }
@@ -136,7 +136,7 @@ export async function requireEditAllowance(
     `${userId ? `u:${userId}` : `i:${install}`}:edit:${planId}`,
   );
   if (cloud()) {
-    const db = await supabase();
+    const db = await serviceDb();
     used = Number(
       (
         await db.rpc("edits_on_plan", {
@@ -155,7 +155,7 @@ export async function requireEditAllowance(
   // Call after a successful edit so failed attempts never use up the allowance.
   return async () => {
     if (cloud()) {
-      const db = await supabase();
+      const db = await serviceDb();
       await db.rpc("count_edit", {
         install: install ?? "unknown-install",
         plan: planId,
@@ -221,7 +221,7 @@ export async function handleBillingWebhook(request: Request) {
   const change = entitlementChange(payload.event ?? {});
   if (!change) return { applied: false };
   if (cloud()) {
-    const db = await supabase();
+    const db = await serviceDb();
     const { error } = await db.rpc("apply_entitlement", {
       secret,
       target: change.user,

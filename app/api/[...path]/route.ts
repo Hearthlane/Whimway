@@ -23,7 +23,7 @@ import {
   mapTile,
 } from "@/lib/providers/google";
 import { fixtureLocations } from "@/lib/providers/fixtures";
-import { currentUser, requireUser, supabase } from "@/lib/server/supabase";
+import { currentUser, requireUser, serviceDb, supabase } from "@/lib/server/supabase";
 import {
   body,
   networkId,
@@ -285,8 +285,10 @@ async function handleGET(request: Request, ctx: Context) {
       return NextResponse.redirect(
         await photoUrl(
           z.string().max(1500).parse(url.searchParams.get("name")),
+          url.searchParams.get("w") === "400" ? 400 : 1000,
         ),
-        { headers: { "Cache-Control": "no-store" } },
+        // The browser may reuse the redirect for a while; the photo itself is public.
+        { headers: { "Cache-Control": "private, max-age=3000" } },
       );
     if (path === "plans") {
       const { db } = await requireUser();
@@ -654,7 +656,7 @@ async function handlePOST(request: Request, ctx: Context) {
         process.env.NEXT_PUBLIC_SUPABASE_URL &&
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
       ) {
-        const db = await supabase();
+        const db = await serviceDb();
         // Best effort: analytics must never break the product.
         await db.rpc("track_event", {
           event_name: data.name,

@@ -4,11 +4,11 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, LinearTransition, ZoomIn } from "react-native-reanimated";
 import type { Itinerary, ItineraryStop } from "@shared/schema";
-import { API_URL } from "@/lib/config";
 import { money } from "@/lib/copy";
 import { Badge, Icon, Press, T, tap, type IconName } from "@/ui/kit";
 import { color, motion, radius, shadow, space } from "@/ui/theme";
 import { StopArt } from "./StopArt";
+import { Gallery, Stars, WeekHours, hoursFor, photoSrc } from "./PlaceBits";
 
 export function priceLabel(stop: ItineraryStop) {
   const p = stop.place.price;
@@ -77,6 +77,7 @@ export function StopCard({
   const mode = plan.request.mode;
   const verb = mode === "WALK" ? "walk" : mode === "TRANSIT" ? "by transit" : "drive";
   const category = stop.place.category[0].toUpperCase() + stop.place.category.slice(1);
+  const today = hoursFor(stop.place.hours, stop.arrival, zone);
 
   return (
     <Animated.View
@@ -119,7 +120,7 @@ export function StopCard({
           >
             {photo ? (
               <View>
-                <Image source={{ uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}` }} style={s.photo} contentFit="cover" transition={250} accessibilityIgnoresInvertColors />
+                <Image source={photoSrc(photo.name)} style={s.photo} contentFit="cover" transition={250} accessibilityIgnoresInvertColors alt="" />
                 {photo.authors[0] ? (
                   <View style={s.credit}>
                     <T v="small" tone={color.paper} style={{ fontSize: 13 }}>
@@ -140,8 +141,20 @@ export function StopCard({
               <T v="heading">{stop.place.name}</T>
               <T v="small" tone={color.muted} style={{ marginTop: 2 }}>
                 {category}, {priceLabel(stop)}
-                {stop.place.rating && !plan.demo ? `, rated ${stop.place.rating.toFixed(1)}` : ""}
               </T>
+              {!plan.demo ? (
+                <View style={{ marginTop: 6 }}>
+                  <Stars rating={stop.place.rating} reviews={stop.place.reviews} />
+                </View>
+              ) : null}
+              {today ? (
+                <View style={s.today}>
+                  <Icon name="clock" size={13} tint={color.muted} />
+                  <T v="small" tone={color.inkSoft} style={{ flex: 1 }} numberOfLines={1}>
+                    {today}
+                  </T>
+                </View>
+              ) : null}
               <T v="body" tone={color.inkSoft} style={{ marginTop: space.sm }} numberOfLines={open ? undefined : 2}>
                 {stop.reason}
               </T>
@@ -166,10 +179,9 @@ export function StopCard({
 
           {open ? (
             <Animated.View entering={FadeIn.duration(motion.standard)} style={s.more}>
-              <Fact icon="clock">
-                {stop.hoursStatus}
-                {hoursOn(stop.place.hours, stop.arrival, plan.request.location.timezone)}
-              </Fact>
+              <Fact icon="clock">{stop.hoursStatus}</Fact>
+              <WeekHours hours={stop.place.hours} iso={stop.arrival} zone={zone} />
+              <Gallery place={stop.place} />
               <Fact icon="map-pin">{stop.place.address}</Fact>
               <Fact icon="tag">
                 {stop.place.price.high === null ? "No published price. Confirm before going." : plan.demo ? "Demo price estimate." : "Published range, not a quote."} Plan for about {stop.minutes} minutes here.
@@ -258,7 +270,9 @@ const s = StyleSheet.create({
   card: { backgroundColor: color.paper, borderRadius: radius.lg, borderWidth: 1, borderColor: color.line, overflow: "hidden", ...shadow.card },
   cardOn: { borderColor: color.ink },
   cardNew: { borderColor: color.coral, borderWidth: 2 },
-  photo: { width: "100%", height: 150, backgroundColor: color.mintTint },
+  // A fixed 16:9 frame with cover cropping, so photos are never stretched or squashed.
+  photo: { width: "100%", aspectRatio: 16 / 9, maxHeight: 280, backgroundColor: color.mintTint },
+  today: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
   credit: { position: "absolute", right: 8, bottom: 8, backgroundColor: "rgba(25,38,48,0.6)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   heart: { position: "absolute", top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: color.paper, alignItems: "center", justifyContent: "center" },
   body: { padding: space.lg },

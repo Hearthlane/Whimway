@@ -1,6 +1,6 @@
 import { slug, toSignals, type CrowdSignals, type Tally } from "../crowd";
 import { polls, type PollTally, type SignalBatch } from "../polls";
-import { supabase } from "./supabase";
+import { serviceDb, supabase } from "./supabase";
 
 /**
  * Where community signals live. Supabase (durable, aggregated in SQL with a
@@ -70,7 +70,7 @@ class MemoryStore implements SignalStore {
 
 class SupabaseStore implements SignalStore {
   async record(batch: SignalBatch) {
-    const db = await supabase();
+    const db = await serviceDb();
     const { error } = await db.rpc("record_signals", {
       install: batch.installId,
       src: batch.source,
@@ -80,7 +80,7 @@ class SupabaseStore implements SignalStore {
     if (error) throw new Error("signals");
   }
   async answer(pollId: string, installId: string, choice: "a" | "b") {
-    const db = await supabase();
+    const db = await serviceDb();
     const { data, error } = await db.rpc("answer_poll", {
       poll: pollId,
       install: installId,

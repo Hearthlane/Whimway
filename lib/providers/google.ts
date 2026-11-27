@@ -209,7 +209,7 @@ export function normalize(input: unknown, currency: string): CandidatePlace {
     rating: p.rating,
     reviews: p.userRatingCount,
     businessStatus: p.businessStatus,
-    photos: (p.photos ?? []).slice(0, 2).map((x) => ({
+    photos: (p.photos ?? []).slice(0, 8).map((x) => ({
       name: x.name,
       authors: (x.authorAttributions ?? []).map((a) => ({
         name: a.displayName ?? "Photo contributor",
@@ -583,15 +583,18 @@ export class GoogleRoutes implements RouteProvider {
     };
   }
 }
-export async function photoUrl(name: string) {
+export async function photoUrl(name: string, width: 400 | 1000 = 1000) {
   if (!/^places\/[\w-]+\/photos\/[\w-]+$/.test(name))
     throw new AppError("INVALID_PHOTO", "Invalid photo reference.");
-  const data = await (
-    await providerFetch(
-      `https://places.googleapis.com/v1/${name}/media?maxWidthPx=1000&skipHttpRedirect=true`,
-      { headers: googleKey() },
-    )
-  ).json();
+  // Google bills each photo lookup; the resulting image link stays valid, so reuse it for an hour.
+  const data = await cached(`photo|${width}|${name}`, 60 * 60_000, async () =>
+    (
+      await providerFetch(
+        `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${width}&skipHttpRedirect=true`,
+        { headers: googleKey() },
+      )
+    ).json(),
+  );
   const url = safeUrl(data.photoUri);
   if (
     !url ||

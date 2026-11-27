@@ -25,6 +25,7 @@ import { RouteMap } from "@/plan/RouteMap";
 import { Generating, stages } from "@/plan/Generating";
 import { Timetable } from "@/plan/Timetable";
 import { StopCard } from "@/plan/StopCard";
+import { EditPanel } from "@/plan/EditPanel";
 import { Badge, Button, Icon, IconButton, Notice, Press, Sheet, T, tap } from "@/ui/kit";
 import { color, radius, shadow, space } from "@/ui/theme";
 
@@ -250,6 +251,29 @@ export default function PlanScreen() {
     }
   };
 
+  // Customize: move the whole plan earlier or later; the server re-times every stop.
+  const [editing, setEditing] = useState(false);
+  const shiftStart = async (minutes: number) => {
+    if (!plan || arranging) return;
+    const zone = plan.request.location.timezone;
+    const at = DateTime.fromISO(`${plan.request.date}T${plan.request.startTime}`, { zone }).plus({ minutes });
+    const request = { ...plan.request, date: at.toISODate()!, startTime: at.toFormat("HH:mm") };
+    const refs = plan.stops.map((s) => ({ placeId: s.placeId, minutes: s.minutes, locked: s.locked, reason: s.reason }));
+    setArranging(true);
+    try {
+      const before = plan;
+      const edited = await api<Itinerary>("edit", { spec: toSpec(plan), stops: refs, request });
+      update(edited);
+      tap("select");
+      setToast({ text: `Now starts at ${at.toFormat("h:mm a")}. Times updated.`, undo: before });
+      store.track("magic_edit_applied", { kind: "direct_start", changed: 0 });
+    } catch (e) {
+      setToast({ text: e instanceof Error ? e.message : "That time didn’t fit. Try another." });
+    } finally {
+      setArranging(false);
+    }
+  };
+
   const swap = (index: number) => {
     if (!plan) return;
     const ordinal = ["first", "second", "third", "fourth", "fifth", "sixth"][index] ?? "last";
@@ -397,10 +421,29 @@ export default function PlanScreen() {
         </LinearGradient>
 
         <View style={s.content}>
-          <Timetable plan={plan} selected={selected} onSelect={setSelected} />
-          {plan.stops.length < 6 ? (
-            <Button testID="add-stop" kind="soft" icon="plus" label="Add a stop" busy={editBusy} onPress={() => void magicEdit("Add one more stop at the end")} />
-          ) : null}
+          {editing ? (
+            <EditPanel
+              plan={plan}
+              busy={arranging || editBusy}
+              onShiftStart={(m) => void shiftStart(m)}
+              onArrange={(i, action) => void arrange(i, action)}
+              onAdd={() => void magicEdit("Add one more stop at the end")}
+              onDone={() => setEditing(false)}
+            />
+          ) : (
+            <>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+                <T v="heading" style={{ flex: 1 }}>
+                  Your timeline
+                </T>
+                <Button testID="customize" kind="soft" icon="sliders" label="Customize" onPress={() => setEditing(true)} />
+              </View>
+              <Timetable plan={plan} selected={selected} onSelect={setSelected} />
+              {plan.stops.length < 6 ? (
+                <Button testID="add-stop" kind="soft" icon="plus" label="Add a stop" busy={editBusy} onPress={() => void magicEdit("Add one more stop at the end")} />
+              ) : null}
+            </>
+          )}
 
           <RouteMap plan={plan} selected={selected} onSelect={setSelected} />
 

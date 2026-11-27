@@ -16,7 +16,7 @@ export function PlaceImage({ place, style }: { place: Pick<CandidatePlace, "phot
   if (photo && !failed)
     return (
       <Image
-        source={{ uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}` }}
+        source={{ uri: `${API_URL}/api/photo?name=${encodeURIComponent(photo.name)}&w=400` }}
         onError={() => setFailed(true)}
         style={style}
         contentFit="cover"
